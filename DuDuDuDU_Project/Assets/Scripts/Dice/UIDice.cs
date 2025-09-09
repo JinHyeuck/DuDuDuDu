@@ -39,8 +39,8 @@ public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
         StarText.text = $"¡Ú{Star}";
         TypeText.text = Type.ToString();
 
-        Color typeColor = DiceTypeResourceManager.Instance.GetColor(Type);
-        Sprite typeSprite = DiceTypeResourceManager.Instance.GetIcon(Type);
+        Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
+        Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(Type);
 
         if (BGImage != null)
             BGImage.color = typeColor;

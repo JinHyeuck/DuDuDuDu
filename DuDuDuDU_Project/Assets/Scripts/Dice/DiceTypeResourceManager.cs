@@ -5,8 +5,6 @@ using UnityEngine.UI;
 [CreateAssetMenu(fileName = "DiceTypeResources", menuName = "Dice/TypeResourceManager")]
 public class DiceTypeResourceManager : ScriptableObject
 {
-    public static DiceTypeResourceManager Instance;
-
     [System.Serializable]
     public class TypeVisual
     {
@@ -20,7 +18,6 @@ public class DiceTypeResourceManager : ScriptableObject
 
     private void OnEnable()
     {
-        Instance = this;
         visualDict.Clear();
         foreach (var t in TypeVisuals)
             visualDict[t.Type] = t;

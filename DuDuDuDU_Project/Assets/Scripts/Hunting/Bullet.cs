@@ -10,7 +10,7 @@ public class Bullet : MonoBehaviour
 
     public void SetBulletStat(DiceType diceType)
     {
-        Color typeColor = DiceTypeResourceManager.Instance.GetColor(diceType);
+        Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(diceType);
         
         bulletImage.color = typeColor;
 
