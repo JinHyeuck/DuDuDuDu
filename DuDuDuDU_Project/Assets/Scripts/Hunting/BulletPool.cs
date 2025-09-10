@@ -32,7 +32,7 @@ public class BulletPool : MonoBehaviour
         return obj.GetComponent<Bullet>();
     }
 
-    public void GetBullet(Bullet bullet)
+    public void PoolBullet(Bullet bullet)
     {
         bullet.gameObject.SetActive(false);
         pool.Enqueue(bullet);

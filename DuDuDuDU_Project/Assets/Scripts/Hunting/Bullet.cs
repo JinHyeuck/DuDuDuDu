@@ -28,7 +28,7 @@ public class Bullet : MonoBehaviour
         transform.Translate(moveDir * speed * Time.deltaTime);
 
         if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
-            gameObject.SetActive(false);
+            BulletPool.Instance.PoolBullet(this);
     }
 
     void OnTriggerEnter2D(Collider2D col)
@@ -43,7 +43,7 @@ public class Bullet : MonoBehaviour
             dtObj.transform.position = col.transform.position; // 몬스터 위치
             dtObj.GetComponent<DamageText>().SetText(damage);
 
-            BulletPool.Instance.GetBullet(this);
+            BulletPool.Instance.PoolBullet(this);
         }
     }
 }

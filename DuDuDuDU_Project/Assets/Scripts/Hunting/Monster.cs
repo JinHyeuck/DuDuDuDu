@@ -17,7 +17,6 @@ public class Monster : MonoBehaviour
     private void OnDisable()
     {
         MonsterManager.Instance.UnregisterMonster(this);
-        UIDiceSummonSystem.Instance?.AddSP(10);
     }
 
     void Update()
@@ -26,6 +25,9 @@ public class Monster : MonoBehaviour
         if (!isAttacking)
         {
             transform.Translate(Vector2.down * moveSpeed * Time.deltaTime);
+
+            if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
+                MonsterSpawner.Instance.PoolBullet(this);
         }
     }
 
@@ -33,7 +35,11 @@ public class Monster : MonoBehaviour
     {
         _hp -= dmg;
         if (_hp <= 0)
-            gameObject.SetActive(false);
+        {
+            UIDiceSummonSystem.Instance?.AddSP(10);
+            MonsterSpawner.Instance.PoolBullet(this);
+            //gameObject.SetActive(false);
+        }
     }
 
     void OnTriggerEnter2D(Collider2D col)
@@ -58,7 +64,7 @@ public class Monster : MonoBehaviour
 
             yield return new WaitForSeconds(attackInterval);
         }
-        gameObject.SetActive(false);
+        //gameObject.SetActive(false);
     }
 
     public void SetHp(int hp)
