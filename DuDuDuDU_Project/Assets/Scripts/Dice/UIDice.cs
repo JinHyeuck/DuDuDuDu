@@ -36,14 +36,14 @@ public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
 
     public void Refresh()
     {
-        StarText.text = $"¡Ú{Star}";
-        TypeText.text = Type.ToString();
+        StarText.SetText("Lv.{0}", Star);
+        //TypeText.text = Type.ToString();
 
-        Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
+        //Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
         Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(Type);
 
-        if (BGImage != null)
-            BGImage.color = typeColor;
+        //if (BGImage != null)
+        //    BGImage.color = typeColor;
 
         if (Icon != null)
         {

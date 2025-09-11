@@ -27,12 +27,12 @@ public class TypeUIComponent : MonoBehaviour
     {
         if (DiceTypeStarManager.Instance == null) return;
 
-        Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(type);
+        //Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(type);
         Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(type);
 
         // BG 색상만 변경
-        if (BGImage != null)
-            BGImage.color = typeColor;
+        //if (BGImage != null)
+        //    BGImage.color = typeColor;
 
         if (Icon != null)
         {

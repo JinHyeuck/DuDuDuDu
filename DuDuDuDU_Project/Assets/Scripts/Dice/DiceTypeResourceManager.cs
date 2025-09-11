@@ -11,6 +11,7 @@ public class DiceTypeResourceManager : ScriptableObject
         public DiceType Type;
         public Color Color;
         public Sprite Icon;
+        public Sprite Bullet;
     }
 
     public List<TypeVisual> TypeVisuals = new List<TypeVisual>();
