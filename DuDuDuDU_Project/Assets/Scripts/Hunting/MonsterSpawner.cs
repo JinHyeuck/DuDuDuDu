@@ -18,7 +18,10 @@ public class MonsterSpawner : MonoBehaviour
     void Awake() 
     { 
         Instance = this;
+    }
 
+    private void Start()
+    {
         for (int i = 0; i < poolSize; i++)
         {
             GameObject obj = Instantiate(monsterPrefab.gameObject);
@@ -64,6 +67,7 @@ public class MonsterSpawner : MonoBehaviour
         //GameObject clone = Instantiate(monsterPrefab.gameObject, spawnPos, Quaternion.identity);
         //clone.gameObject.SetActive(true);
         Monster monster = GetBullet();
+        monster.OnSpawn();
         monster.transform.position = spawnPos;
         monster.transform.rotation = Quaternion.identity;
         monster.SetHp(hp);

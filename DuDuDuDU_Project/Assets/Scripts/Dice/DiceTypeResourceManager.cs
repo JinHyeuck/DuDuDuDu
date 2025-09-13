@@ -37,4 +37,11 @@ public class DiceTypeResourceManager : ScriptableObject
             return visual.Icon;
         return null;
     }
+
+    public Sprite GetBullet(DiceType type)
+    {
+        if (visualDict.TryGetValue(type, out var visual))
+            return visual.Bullet;
+        return null;
+    }
 }

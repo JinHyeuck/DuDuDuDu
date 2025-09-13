@@ -9,7 +9,7 @@ public class Monster : MonoBehaviour
     public float moveSpeed = 2f; // 이동 속도
     private bool isAttacking = false;
 
-    private void OnEnable()
+    public void OnSpawn()
     {
         MonsterManager.Instance.RegisterMonster(this);
     }
@@ -53,7 +53,7 @@ public class Monster : MonoBehaviour
 
     IEnumerator AttackWall(Wall wall)
     {
-        while (wall != null && wall.hp > 0)
+        while (wall != null && wall.CurrentHp > 0)
         {
             wall.TakeDamage(attackDamage);
 

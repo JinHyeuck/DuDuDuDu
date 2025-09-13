@@ -10,9 +10,9 @@ public class Bullet : MonoBehaviour
 
     public void SetBulletStat(DiceType diceType)
     {
-        Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(diceType);
-        
-        bulletImage.color = typeColor;
+        Sprite sprite = StaticResource.Instance.DiceTypeResourceManager.GetBullet(diceType);
+
+        bulletImage.sprite = sprite;
 
         damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
     }
@@ -20,12 +20,14 @@ public class Bullet : MonoBehaviour
     public void Shoot(Vector2 dir)
     {
         moveDir = dir;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
         gameObject.SetActive(true);
     }
 
     void Update()
     {
-        transform.Translate(moveDir * speed * Time.deltaTime);
+        transform.Translate(Vector2.up * speed * Time.deltaTime);
 
         if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
             BulletPool.Instance.PoolBullet(this);

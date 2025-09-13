@@ -12,6 +12,15 @@ public enum DiceType
     // 필요하면 추가
 }
 
+public enum CharacterState
+{
+    None = 0,
+    Idle = 11,
+    Attack,
+    Hit,
+    Dead
+}
+
 public static class Define
 {
 
