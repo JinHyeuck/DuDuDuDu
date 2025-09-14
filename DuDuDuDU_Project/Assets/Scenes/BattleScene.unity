@@ -144,7 +144,7 @@ Transform:
   m_GameObject: {fileID: 3120973}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.41, z: 0}
+  m_LocalPosition: {x: 0.06, y: 0.41, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1399,6 +1399,7 @@ GameObject:
   - component: {fileID: 1190512292}
   - component: {fileID: 1190512291}
   - component: {fileID: 1190512294}
+  - component: {fileID: 1190512295}
   - component: {fileID: 1190512293}
   m_Layer: 0
   m_Name: player
@@ -1451,12 +1452,12 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 70
-  m_Sprite: {fileID: -2848691817430110522, guid: 016d2fe51c14a3b4da133a27d1146b1c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9f533de24fcfb5b408d3eb76896e65b1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.6, y: 0.6}
+  m_Size: {x: 1.28, y: 1.28}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -1517,8 +1518,45 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81ce92a789069f54caeb0097c4f3a8dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  characterAnimation: {fileID: 1190512295}
   firePoint: {fileID: 3120974}
   fireRate: 0.5
+--- !u!114 &1190512295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1190512290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dff869a18d6f1d4f8690cf55b02c5fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterAniDatas:
+  - AniType: 11
+    AniDefaultFrameTime: 0.2
+    FrameTime: 0.2
+    AniSprites:
+    - {fileID: 21300000, guid: 83f4a3fd2f68ef54da8cf17383a91072, type: 3}
+    - {fileID: 21300000, guid: 953566d9157ebd94c8dc8c4c5848f12a, type: 3}
+    - {fileID: 21300000, guid: 930366cc1f012ce4fbd835738d5ecba4, type: 3}
+    - {fileID: 21300000, guid: 3ae1ba9ef3a9caf4c81ff64e58060165, type: 3}
+    - {fileID: 21300000, guid: 32f31d6de57d015479545c72359f3d67, type: 3}
+    - {fileID: 21300000, guid: c9e91a378650c4e4dac7b5aadc151280, type: 3}
+    - {fileID: 21300000, guid: faba6b275965b804b9640cea9e5b4d92, type: 3}
+    Loop: 1
+    AniAndAction: 0
+  - AniType: 12
+    AniDefaultFrameTime: 0.1
+    FrameTime: 0.1
+    AniSprites:
+    - {fileID: 21300000, guid: 016d2fe51c14a3b4da133a27d1146b1c, type: 3}
+    - {fileID: 21300000, guid: 9f533de24fcfb5b408d3eb76896e65b1, type: 3}
+    Loop: 0
+    AniAndAction: 11
+  spriteRenderer: {fileID: 1190512291}
+  CurrentAni: 0
 --- !u!1 &1634973164
 GameObject:
   m_ObjectHideFlags: 0

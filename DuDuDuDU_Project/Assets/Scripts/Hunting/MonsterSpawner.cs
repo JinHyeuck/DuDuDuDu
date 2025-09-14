@@ -8,7 +8,7 @@ public class MonsterSpawner : MonoBehaviour
     public int poolSize = 20;
     private Queue<Monster> pool = new Queue<Monster>();
 
-    public Monster monsterPrefab;
+    public List<Monster> monsterPrefab;
     public float spawnInterval = 2f;
     public float spawnXRange = 7f;
     public float spawnY = 5f;
@@ -24,7 +24,8 @@ public class MonsterSpawner : MonoBehaviour
     {
         for (int i = 0; i < poolSize; i++)
         {
-            GameObject obj = Instantiate(monsterPrefab.gameObject);
+            Monster monster = monsterPrefab[Random.Range(0, monsterPrefab.Count)];
+            GameObject obj = Instantiate(monster.gameObject);
             obj.SetActive(false);
             pool.Enqueue(obj.GetComponent<Monster>());
         }
@@ -49,7 +50,9 @@ public class MonsterSpawner : MonoBehaviour
             return queuebullet;
         }
 
-        GameObject obj = Instantiate(monsterPrefab.gameObject);
+        Monster monster = monsterPrefab[Random.Range(0, monsterPrefab.Count)];
+        GameObject obj = Instantiate(monster.gameObject);
+
         return obj.GetComponent<Monster>();
     }
 

@@ -6,6 +6,8 @@ public class PlayerController : MonoBehaviour
 {
     public static PlayerController Instance;
 
+    public CharacterAnimation characterAnimation;
+
     public Transform firePoint;
     public float fireRate = 0.5f;
     private float timer = 0f;
@@ -21,6 +23,11 @@ public class PlayerController : MonoBehaviour
             return;
         }
         Instance = this;
+    }
+
+    private void Start()
+    {
+        characterAnimation.PlayAnimation(CharacterState.Idle);
     }
 
     void Update()
@@ -71,5 +78,6 @@ public class PlayerController : MonoBehaviour
         bulletObj.transform.rotation = Quaternion.identity;
         bulletObj.SetBulletStat(diceType);
         bulletObj.Shoot(dir);
+        characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
     }
 }
