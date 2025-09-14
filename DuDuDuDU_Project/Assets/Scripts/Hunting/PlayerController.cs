@@ -7,6 +7,9 @@ public class PlayerController : MonoBehaviour
     public static PlayerController Instance;
 
     public CharacterAnimation characterAnimation;
+    public CharacterAnimation bowAnimation;
+    public Transform bowTransform;
+
 
     public Transform firePoint;
     public float fireRate = 0.5f;
@@ -28,6 +31,7 @@ public class PlayerController : MonoBehaviour
     private void Start()
     {
         characterAnimation.PlayAnimation(CharacterState.Idle);
+        bowAnimation.PlayAnimation(CharacterState.Idle);
     }
 
     void Update()
@@ -73,11 +77,15 @@ public class PlayerController : MonoBehaviour
 
         Vector2 dir = (target.transform.position - firePoint.position).normalized;
 
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
+        bowTransform.rotation = Quaternion.Euler(0, 0, angle);
+
         Bullet bulletObj = BulletPool.Instance.GetBullet();
         bulletObj.transform.position = firePoint.position;
         bulletObj.transform.rotation = Quaternion.identity;
         bulletObj.SetBulletStat(diceType);
         bulletObj.Shoot(dir);
         characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+        bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
     }
 }
