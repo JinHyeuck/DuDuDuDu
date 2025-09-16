@@ -777,6 +777,8 @@ MonoBehaviour:
   dicePrefab: {fileID: 403657436340985947, guid: a299c7ab2fc4ba94e9ca687c7d256c56, type: 3}
   rows: 5
   cols: 3
+  diceMap: []
+  ShotIndex: 0
 --- !u!114 &764558804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1523,7 +1525,7 @@ MonoBehaviour:
   bowAnimation: {fileID: 2114003083}
   bowTransform: {fileID: 1657337177}
   firePoint: {fileID: 3120974}
-  fireRate: 0.5
+  fireRate: 0.3
 --- !u!114 &1190512295
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1862,6 +1864,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3ab255c9ab006a45b9141dd94d84a95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  UseDices: 
 --- !u!4 &1877710218
 Transform:
   m_ObjectHideFlags: 0

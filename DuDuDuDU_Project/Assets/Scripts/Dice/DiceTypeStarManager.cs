@@ -19,6 +19,8 @@ public class DiceTypeStarManager : MonoBehaviour
 
         foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
         {
+            if (type == DiceType.Max)
+                continue;
             typeCountTotals[type] = 0;
             typeStarTotals[type] = 0;
         }

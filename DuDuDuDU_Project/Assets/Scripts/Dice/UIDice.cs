@@ -2,11 +2,15 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+using Cysharp.Threading.Tasks;
 
 public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     public Image BGImage;          // 다이스 배경
     public Image Icon;
+    public Transform ShootEffectTrans;
+    public Animator ShootEffectAni;
+    public Image ShootEffectImage;
     public TMP_Text StarText;
     public TMP_Text TypeText;
     public Animator animator;
@@ -39,11 +43,14 @@ public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
         StarText.SetText("Lv.{0}", Star);
         //TypeText.text = Type.ToString();
 
-        //Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
+        Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
         Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(Type);
 
-        //if (BGImage != null)
-        //    BGImage.color = typeColor;
+        if (ShootEffectImage != null)
+            ShootEffectImage.color = typeColor;
+
+        if (ShootEffectTrans != null)
+            ShootEffectTrans.gameObject.SetActive(false);
 
         if (Icon != null)
         {
@@ -61,6 +68,62 @@ public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
         Star = star;
         Refresh();
     }
+    //------------------------------------------------------------------------------------
+    private float _hideEffectTime = 0.0f;
+    //------------------------------------------------------------------------------------
+    public void PlayLevelUpEffect()
+    {
+        _hideEffectTime = Time.time + 0.5f;
+        AutoHideEffect().Forget();
+        return;
+
+        if (ShootEffectTrans != null)
+        {
+            ShootEffectTrans.gameObject.SetActive(true);
+            if (ShootEffectAni != null)
+            {
+                ShootEffectAni.enabled = false;
+                ShootEffectAni.enabled = true;
+                ShootEffectAni.Play(0);
+            }
+
+            if (_hideEffectTime > Time.time)
+            {
+                _hideEffectTime = Time.time + 1.0f;
+            }
+            else
+            {
+                
+            }
+        }
+    }
+    //------------------------------------------------------------------------------------
+    private async UniTask AutoHideEffect()
+    {
+        if (ShootEffectTrans != null)
+            ShootEffectTrans.gameObject.SetActive(false);
+
+        await UniTask.NextFrame();
+
+        if (ShootEffectTrans != null)
+            ShootEffectTrans.gameObject.SetActive(true);
+
+        float myhidetime = Time.time + 0.6f;
+
+        while (myhidetime > Time.time)
+        {
+            await UniTask.NextFrame();
+        }
+
+        if (_hideEffectTime > Time.time)
+            return;
+
+        if (ShootEffectTrans != null)
+        {
+            ShootEffectTrans.gameObject.SetActive(false);
+        }
+    }
+    //------------------------------------------------------------------------------------
 
     #region Drag Handlers
 

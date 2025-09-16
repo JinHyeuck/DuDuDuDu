@@ -24,6 +24,9 @@ public class UIDiceBoardUI : MonoBehaviour
     {
         foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
         {
+            if (type == DiceType.Max)
+                continue;
+
             GameObject go = Instantiate(TypeUIPrefab, TypeUIParent);
             TypeUIComponent comp = go.GetComponent<TypeUIComponent>();
             comp.Init(type);

@@ -14,7 +14,7 @@ public class PlayerController : MonoBehaviour
     public Transform firePoint;
     public float fireRate = 0.5f;
     private float timer = 0f;
-    private int shotcount = 0;
+    private int shotindex = 0;
 
     private List<DiceType> diceTypes = new List<DiceType>();
 
@@ -36,19 +36,58 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (diceTypes.Count <= 0)
+        if (UIBoard.Instance == null
+            || UIBoard.Instance.diceMap == null
+            || UIBoard.Instance.diceMap.Length <= 0)
             return;
+
+
+        //if (diceTypes.Count <= 0)
+        //    return;
 
         timer += Time.deltaTime;
         if (timer >= fireRate)
         {
-            if (shotcount >= diceTypes.Count)
-                shotcount = 0;
+            shotindex++;
 
-            ShootAtClosest(diceTypes[shotcount]);
+            if (shotindex >= UIBoard.Instance.diceMap.Length)
+                shotindex = 0;
+
+            DiceType diceType = DiceType.Max;
+
+            bool IsFirst = true;
+
+            for (int i = shotindex; i < UIBoard.Instance.diceMap.Length; ++i)
+            {
+                if (shotindex == i)
+                {
+                    if (IsFirst == false)
+                        break;
+                    else
+                        IsFirst = false;
+                }
+
+                if (UIBoard.Instance.diceMap[i] == null)
+                {
+                    if (UIBoard.Instance.diceMap.Length - 1 <= i)
+                        i = -1;
+                    continue;
+                }
+                else
+                {
+                    UIDice uIDice = UIBoard.Instance.diceMap[i];
+                    shotindex = i;
+                    diceType = uIDice.Type;
+                    uIDice.PlayLevelUpEffect();
+                    break;
+                }
+            }
+
+            if (diceType != DiceType.Max)
+                ShootAtClosest(diceType);
             timer = 0f;
 
-            shotcount++;
+            
         }
     }
 
@@ -66,8 +105,8 @@ public class PlayerController : MonoBehaviour
 
         diceTypes.Shuffle();
 
-        fireRate = 1.0f / (float)diceTypes.Count;
-        shotcount = 0;
+        //fireRate = 1.0f / (float)diceTypes.Count;
+        //shotindex = 0;
     }
 
     void ShootAtClosest(DiceType diceType)

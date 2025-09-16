@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using OJ;
 
 public class MergeSystem : MonoBehaviour
 {
@@ -6,7 +8,7 @@ public class MergeSystem : MonoBehaviour
 
     public const int MaxStar = 5;  // 정적 상수로 변경
 
-    private DiceType[] DiceTypeCache = null;
+    public List<DiceType> UseDices = new List<DiceType>();
 
     private void Awake()
     {
@@ -17,7 +19,11 @@ public class MergeSystem : MonoBehaviour
         }
         Instance = this;
 
-        DiceTypeCache = (DiceType[])System.Enum.GetValues(typeof(DiceType));
+        for (int i = DiceType.Normal.Enum32ToInt(); i < DiceType.Max.Enum32ToInt(); ++i)
+        {
+            UseDices.Add(i.IntToEnum32<DiceType>());
+        }
+
     }
 
 
@@ -40,7 +46,7 @@ public class MergeSystem : MonoBehaviour
         int newStar = to.Star + 1;
 
         // 랜덤 타입 선택
-        DiceType newType = DiceTypeCache[Random.Range(0, DiceTypeCache.Length)];
+        DiceType newType = UseDices[Random.Range(0, UseDices.Count)];
 
         // 타겟 다이스에 적용
         to.Init(newType, newStar, to.SlotIndex);

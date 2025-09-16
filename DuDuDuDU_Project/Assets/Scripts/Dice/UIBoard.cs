@@ -15,7 +15,9 @@ public class UIBoard : MonoBehaviour
 
     private UIDice selectedDice;
     private List<GameObject> slots = new();
-    private UIDice[] diceMap; // 슬롯 인덱스별 다이스 참조
+    public UIDice[] diceMap; // 슬롯 인덱스별 다이스 참조
+
+    public int ShotIndex = 0;
 
     private void Awake()
     {
