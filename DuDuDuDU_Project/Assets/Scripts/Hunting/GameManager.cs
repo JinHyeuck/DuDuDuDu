@@ -1,25 +1,29 @@
 using UnityEngine;
 
-public class GameManager : MonoBehaviour
+namespace OJ
 {
-    public static GameManager Instance;
-    private bool isGameOver = false;
-
-    public int WallHp;
-
-    public Wall wall;
-
-    void Awake() { Instance = this; }
-
-    private void Start()
+    public class GameManager : MonoBehaviour
     {
-        wall.SetInit(WallHp);
+        public static GameManager Instance;
+        private bool isGameOver = false;
+
+        public int WallHp;
+
+        public Wall wall;
+
+        void Awake() { Instance = this; }
+
+        private void Start()
+        {
+            wall.SetInit(WallHp);
+        }
+
+        public void GameOver()
+        {
+            if (isGameOver) return;
+            isGameOver = true;
+            Debug.Log("Game Over!");
+        }
     }
 
-    public void GameOver()
-    {
-        if (isGameOver) return;
-        isGameOver = true;
-        Debug.Log("Game Over!");
-    }
 }

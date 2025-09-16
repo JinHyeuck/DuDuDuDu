@@ -4,168 +4,172 @@ using UnityEngine.UI;
 using TMPro;
 using Cysharp.Threading.Tasks;
 
-public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+namespace OJ
 {
-    public Image BGImage;          // 다이스 배경
-    public Image Icon;
-    public Transform ShootEffectTrans;
-    public Animator ShootEffectAni;
-    public Image ShootEffectImage;
-    public TMP_Text StarText;
-    public TMP_Text TypeText;
-    public Animator animator;
-
-    public DiceType Type { get; private set; }
-    public int Star { get; private set; }
-    public int SlotIndex { get; private set; }
-
-    private Transform originalParent;
-    private Vector3 originalPos;
-    private CanvasGroup canvasGroup;
-    private Canvas canvas;
-
-    public void Init(DiceType type, int star, int slotIndex)
+    public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
-        Type = type;
-        Star = star;
-        SlotIndex = slotIndex;
-        Refresh();
-    }
+        public Image BGImage;          // 다이스 배경
+        public Image Icon;
+        public Transform ShootEffectTrans;
+        public Animator ShootEffectAni;
+        public Image ShootEffectImage;
+        public TMP_Text StarText;
+        public TMP_Text TypeText;
+        public Animator animator;
 
-    private void Awake()
-    {
-        canvasGroup = gameObject.AddComponent<CanvasGroup>();
-        canvas = GetComponentInParent<Canvas>();
-    }
+        public DiceType Type { get; private set; }
+        public int Star { get; private set; }
+        public int SlotIndex { get; private set; }
 
-    public void Refresh()
-    {
-        StarText.SetText("Lv.{0}", Star);
-        //TypeText.text = Type.ToString();
+        private Transform originalParent;
+        private Vector3 originalPos;
+        private CanvasGroup canvasGroup;
+        private Canvas canvas;
 
-        Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
-        Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(Type);
-
-        if (ShootEffectImage != null)
-            ShootEffectImage.color = typeColor;
-
-        if (ShootEffectTrans != null)
-            ShootEffectTrans.gameObject.SetActive(false);
-
-        if (Icon != null)
+        public void Init(DiceType type, int star, int slotIndex)
         {
-            if (typeSprite != null) Icon.sprite = typeSprite;
+            Type = type;
+            Star = star;
+            SlotIndex = slotIndex;
+            Refresh();
         }
 
-        if (Star >= MergeSystem.MaxStar && animator != null)
-            animator.SetBool("MaxStar", true);
-        else if (animator != null)
-            animator.SetBool("MaxStar", false);
-    }
-
-    public void SetStar(int star)
-    {
-        Star = star;
-        Refresh();
-    }
-    //------------------------------------------------------------------------------------
-    private float _hideEffectTime = 0.0f;
-    //------------------------------------------------------------------------------------
-    public void PlayLevelUpEffect()
-    {
-        _hideEffectTime = Time.time + 0.5f;
-        AutoHideEffect().Forget();
-        return;
-
-        if (ShootEffectTrans != null)
+        private void Awake()
         {
-            ShootEffectTrans.gameObject.SetActive(true);
-            if (ShootEffectAni != null)
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            canvas = GetComponentInParent<Canvas>();
+        }
+
+        public void Refresh()
+        {
+            StarText.SetText("Lv.{0}", Star);
+            //TypeText.text = Type.ToString();
+
+            Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
+            Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(Type);
+
+            if (ShootEffectImage != null)
+                ShootEffectImage.color = typeColor;
+
+            if (ShootEffectTrans != null)
+                ShootEffectTrans.gameObject.SetActive(false);
+
+            if (Icon != null)
             {
-                ShootEffectAni.enabled = false;
-                ShootEffectAni.enabled = true;
-                ShootEffectAni.Play(0);
+                if (typeSprite != null) Icon.sprite = typeSprite;
+            }
+
+            if (Star >= MergeSystem.MaxStar && animator != null)
+                animator.SetBool("MaxStar", true);
+            else if (animator != null)
+                animator.SetBool("MaxStar", false);
+        }
+
+        public void SetStar(int star)
+        {
+            Star = star;
+            Refresh();
+        }
+        //------------------------------------------------------------------------------------
+        private float _hideEffectTime = 0.0f;
+        //------------------------------------------------------------------------------------
+        public void PlayLevelUpEffect()
+        {
+            _hideEffectTime = Time.time + 0.5f;
+            AutoHideEffect().Forget();
+            return;
+
+            if (ShootEffectTrans != null)
+            {
+                ShootEffectTrans.gameObject.SetActive(true);
+                if (ShootEffectAni != null)
+                {
+                    ShootEffectAni.enabled = false;
+                    ShootEffectAni.enabled = true;
+                    ShootEffectAni.Play(0);
+                }
+
+                if (_hideEffectTime > Time.time)
+                {
+                    _hideEffectTime = Time.time + 1.0f;
+                }
+                else
+                {
+
+                }
+            }
+        }
+        //------------------------------------------------------------------------------------
+        private async UniTask AutoHideEffect()
+        {
+            if (ShootEffectTrans != null)
+                ShootEffectTrans.gameObject.SetActive(false);
+
+            await UniTask.NextFrame();
+
+            if (ShootEffectTrans != null)
+                ShootEffectTrans.gameObject.SetActive(true);
+
+            float myhidetime = Time.time + 0.6f;
+
+            while (myhidetime > Time.time)
+            {
+                await UniTask.NextFrame();
             }
 
             if (_hideEffectTime > Time.time)
+                return;
+
+            if (ShootEffectTrans != null)
             {
-                _hideEffectTime = Time.time + 1.0f;
-            }
-            else
-            {
-                
-            }
-        }
-    }
-    //------------------------------------------------------------------------------------
-    private async UniTask AutoHideEffect()
-    {
-        if (ShootEffectTrans != null)
-            ShootEffectTrans.gameObject.SetActive(false);
-
-        await UniTask.NextFrame();
-
-        if (ShootEffectTrans != null)
-            ShootEffectTrans.gameObject.SetActive(true);
-
-        float myhidetime = Time.time + 0.6f;
-
-        while (myhidetime > Time.time)
-        {
-            await UniTask.NextFrame();
-        }
-
-        if (_hideEffectTime > Time.time)
-            return;
-
-        if (ShootEffectTrans != null)
-        {
-            ShootEffectTrans.gameObject.SetActive(false);
-        }
-    }
-    //------------------------------------------------------------------------------------
-
-    #region Drag Handlers
-
-    public void OnBeginDrag(PointerEventData eventData)
-    {
-        originalParent = transform.parent;
-        originalPos = transform.localPosition;
-
-        transform.SetParent(canvas.transform, true); // 최상위 캔버스로 이동
-        canvasGroup.blocksRaycasts = false;          // Raycast 무시해서 자기 자신이 Drop 타겟 막지 않게
-    }
-
-    public void OnDrag(PointerEventData eventData)
-    {
-        if (canvas == null) return;
-        Vector2 pos;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvas.transform as RectTransform, eventData.position, canvas.worldCamera, out pos);
-        transform.position = canvas.transform.TransformPoint(pos);
-    }
-
-    public void OnEndDrag(PointerEventData eventData)
-    {
-        canvasGroup.blocksRaycasts = true;
-
-        // 머지 시도
-        GameObject hitObj = eventData.pointerCurrentRaycast.gameObject;
-        if (hitObj != null)
-        {
-            UIDice targetDice = hitObj.GetComponentInParent<UIDice>();
-            if (targetDice != null && targetDice != this)
-            {
-                bool merged = MergeSystem.Instance.TryMerge(this, targetDice);
-                if (merged)
-                    return; // 머지 성공하면 드래그 다이스 파괴됐으므로 종료
+                ShootEffectTrans.gameObject.SetActive(false);
             }
         }
+        //------------------------------------------------------------------------------------
 
-        // 드래그 실패 시 원래 자리로 복귀
-        transform.SetParent(originalParent);
-        transform.localPosition = originalPos;
+        #region Drag Handlers
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            originalParent = transform.parent;
+            originalPos = transform.localPosition;
+
+            transform.SetParent(canvas.transform, true); // 최상위 캔버스로 이동
+            canvasGroup.blocksRaycasts = false;          // Raycast 무시해서 자기 자신이 Drop 타겟 막지 않게
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            if (canvas == null) return;
+            Vector2 pos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvas.transform as RectTransform, eventData.position, canvas.worldCamera, out pos);
+            transform.position = canvas.transform.TransformPoint(pos);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            canvasGroup.blocksRaycasts = true;
+
+            // 머지 시도
+            GameObject hitObj = eventData.pointerCurrentRaycast.gameObject;
+            if (hitObj != null)
+            {
+                UIDice targetDice = hitObj.GetComponentInParent<UIDice>();
+                if (targetDice != null && targetDice != this)
+                {
+                    bool merged = MergeSystem.Instance.TryMerge(this, targetDice);
+                    if (merged)
+                        return; // 머지 성공하면 드래그 다이스 파괴됐으므로 종료
+                }
+            }
+
+            // 드래그 실패 시 원래 자리로 복귀
+            transform.SetParent(originalParent);
+            transform.localPosition = originalPos;
+        }
+
+        #endregion
     }
 
-    #endregion
 }

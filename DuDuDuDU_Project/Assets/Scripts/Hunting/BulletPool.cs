@@ -1,40 +1,44 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class BulletPool : MonoBehaviour
+namespace OJ
 {
-    public static BulletPool Instance;
-    public GameObject bulletPrefab;
-    public int poolSize = 20;
-    private Queue<Bullet> pool = new Queue<Bullet>();
-
-    void Awake()
+    public class BulletPool : MonoBehaviour
     {
-        Instance = this;
-        for (int i = 0; i < poolSize; i++)
+        public static BulletPool Instance;
+        public GameObject bulletPrefab;
+        public int poolSize = 20;
+        private Queue<Bullet> pool = new Queue<Bullet>();
+
+        void Awake()
         {
+            Instance = this;
+            for (int i = 0; i < poolSize; i++)
+            {
+                GameObject obj = Instantiate(bulletPrefab);
+                obj.SetActive(false);
+                pool.Enqueue(obj.GetComponent<Bullet>());
+            }
+        }
+
+        public Bullet GetBullet()
+        {
+            if (pool.Count > 0)
+            {
+                Bullet queuebullet = pool.Dequeue();
+                queuebullet.gameObject.SetActive(true);
+                return queuebullet;
+            }
+
             GameObject obj = Instantiate(bulletPrefab);
-            obj.SetActive(false);
-            pool.Enqueue(obj.GetComponent<Bullet>());
+            return obj.GetComponent<Bullet>();
         }
-    }
 
-    public Bullet GetBullet()
-    {
-        if (pool.Count > 0)
+        public void PoolBullet(Bullet bullet)
         {
-            Bullet queuebullet = pool.Dequeue();
-            queuebullet.gameObject.SetActive(true);
-            return queuebullet;
+            bullet.gameObject.SetActive(false);
+            pool.Enqueue(bullet);
         }
-
-        GameObject obj = Instantiate(bulletPrefab);
-        return obj.GetComponent<Bullet>();
     }
 
-    public void PoolBullet(Bullet bullet)
-    {
-        bullet.gameObject.SetActive(false);
-        pool.Enqueue(bullet);
-    }
 }

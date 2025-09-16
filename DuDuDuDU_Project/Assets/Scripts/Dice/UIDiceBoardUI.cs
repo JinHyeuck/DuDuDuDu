@@ -1,43 +1,47 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UIDiceBoardUI : MonoBehaviour
+namespace OJ
 {
-    public static UIDiceBoardUI Instance;
-
-    public Transform TypeUIParent;
-    public GameObject TypeUIPrefab;
-
-    private Dictionary<DiceType, TypeUIComponent> typeUIDict = new Dictionary<DiceType, TypeUIComponent>();
-
-    private void Awake()
+    public class UIDiceBoardUI : MonoBehaviour
     {
-        if (Instance != null && Instance != this)
+        public static UIDiceBoardUI Instance;
+
+        public Transform TypeUIParent;
+        public GameObject TypeUIPrefab;
+
+        private Dictionary<DiceType, TypeUIComponent> typeUIDict = new Dictionary<DiceType, TypeUIComponent>();
+
+        private void Awake()
         {
-            Destroy(gameObject);
-            return;
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
         }
-        Instance = this;
-    }
 
-    private void Start()
-    {
-        foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
+        private void Start()
         {
-            if (type == DiceType.Max)
-                continue;
+            foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
+            {
+                if (type == DiceType.Max)
+                    continue;
 
-            GameObject go = Instantiate(TypeUIPrefab, TypeUIParent);
-            TypeUIComponent comp = go.GetComponent<TypeUIComponent>();
-            comp.Init(type);
-            comp.UpdateVisual();
-            typeUIDict[type] = comp;
+                GameObject go = Instantiate(TypeUIPrefab, TypeUIParent);
+                TypeUIComponent comp = go.GetComponent<TypeUIComponent>();
+                comp.Init(type);
+                comp.UpdateVisual();
+                typeUIDict[type] = comp;
+            }
+        }
+
+        public void UpdateTypeStars()
+        {
+            foreach (var kvp in typeUIDict)
+                kvp.Value.UpdateVisual();
         }
     }
 
-    public void UpdateTypeStars()
-    {
-        foreach (var kvp in typeUIDict)
-            kvp.Value.UpdateVisual();
-    }
 }

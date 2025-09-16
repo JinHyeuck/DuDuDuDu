@@ -1,6 +1,10 @@
 using UnityEngine;
 
-public class StaticResource : MonoSingleton<StaticResource>
+namespace OJ
 {
-    public DiceTypeResourceManager DiceTypeResourceManager;
+    public class StaticResource : MonoSingleton<StaticResource>
+    {
+        public DiceTypeResourceManager DiceTypeResourceManager;
+    }
+
 }

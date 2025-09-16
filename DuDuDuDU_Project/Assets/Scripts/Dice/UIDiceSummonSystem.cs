@@ -3,95 +3,99 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
 
-public class UIDiceSummonSystem : MonoBehaviour
+namespace OJ
 {
-    public static UIDiceSummonSystem Instance;
-
-    [Header("References")]
-    public UIBoard board;
-    public Button summonButton;
-    public TMP_Text spText;
-
-    [Header("SP Settings")]
-    public int currentSP = 100;
-    public int summonCost = 10;
-
-    [Header("Dice Settings")]
-    public List<DiceType> deckTypes = new()
+    public class UIDiceSummonSystem : MonoBehaviour
     {
-        DiceType.Normal,
-        DiceType.Fire,
-        DiceType.Ice,
-        DiceType.Poison,
-        DiceType.Thunder
-    };
+        public static UIDiceSummonSystem Instance;
 
-    private void Awake()
-    {
-        if (Instance != null && Instance != this)
+        [Header("References")]
+        public UIBoard board;
+        public Button summonButton;
+        public TMP_Text spText;
+
+        [Header("SP Settings")]
+        public int currentSP = 100;
+        public int summonCost = 10;
+
+        [Header("Dice Settings")]
+        public List<DiceType> deckTypes = new()
         {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-    }
+            DiceType.Normal,
+            DiceType.Fire,
+            DiceType.Ice,
+            DiceType.Poison,
+            DiceType.Thunder
+        };
 
-    private void Start()
-    {
-        summonButton.onClick.AddListener(OnSummonButton);
-        UpdateSPUI();
-    }
-
-    private void UpdateSPUI()
-    {
-        spText.text = $"SP: {currentSP}";
-    }
-
-    public void AddSP(int addsp)
-    {
-        currentSP += addsp;
-        UpdateSPUI();
-    }
-
-    private void OnSummonButton()
-    {
-        if (currentSP < summonCost)
+        private void Awake()
         {
-            Debug.Log("SP ºÎÁ·!");
-            return;
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
         }
 
-        int slotIndex = GetRandomEmptySlot();
-        if (slotIndex == -1)
+        private void Start()
         {
-            Debug.Log("º¸µå°¡ ²Ë Ã¡À½!");
-            return;
+            summonButton.onClick.AddListener(OnSummonButton);
+            UpdateSPUI();
         }
 
-        // SP Â÷°¨
-        currentSP -= summonCost;
-        UpdateSPUI();
-
-        // Å¸ÀÔ ·£´ý, º° 1°³
-        DiceType type = deckTypes[Random.Range(0, deckTypes.Count)];
-        int star = 1;
-
-        DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
-        board.SpawnDice(type, star, slotIndex);
-    }
-
-    private int GetRandomEmptySlot()
-    {
-        List<int> emptySlots = new();
-        int total = board.rows * board.cols;
-
-        for (int i = 0; i < total; i++)
+        private void UpdateSPUI()
         {
-            if (board.GetDice(i) == null)
-                emptySlots.Add(i);
+            spText.text = $"SP: {currentSP}";
         }
 
-        if (emptySlots.Count == 0) return -1;
-        return emptySlots[Random.Range(0, emptySlots.Count)];
+        public void AddSP(int addsp)
+        {
+            currentSP += addsp;
+            UpdateSPUI();
+        }
+
+        private void OnSummonButton()
+        {
+            if (currentSP < summonCost)
+            {
+                Debug.Log("SP ºÎÁ·!");
+                return;
+            }
+
+            int slotIndex = GetRandomEmptySlot();
+            if (slotIndex == -1)
+            {
+                Debug.Log("º¸µå°¡ ²Ë Ã¡À½!");
+                return;
+            }
+
+            // SP Â÷°¨
+            currentSP -= summonCost;
+            UpdateSPUI();
+
+            // Å¸ÀÔ ·£´ý, º° 1°³
+            DiceType type = deckTypes[Random.Range(0, deckTypes.Count)];
+            int star = 1;
+
+            DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
+            board.SpawnDice(type, star, slotIndex);
+        }
+
+        private int GetRandomEmptySlot()
+        {
+            List<int> emptySlots = new();
+            int total = board.rows * board.cols;
+
+            for (int i = 0; i < total; i++)
+            {
+                if (board.GetDice(i) == null)
+                    emptySlots.Add(i);
+            }
+
+            if (emptySlots.Count == 0) return -1;
+            return emptySlots[Random.Range(0, emptySlots.Count)];
+        }
     }
+
 }

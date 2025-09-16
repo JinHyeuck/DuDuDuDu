@@ -1,79 +1,83 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class MonsterSpawner : MonoBehaviour
+namespace OJ
 {
-    public static MonsterSpawner Instance;
-
-    public int poolSize = 20;
-    private Queue<Monster> pool = new Queue<Monster>();
-
-    public List<Monster> monsterPrefab;
-    public float spawnInterval = 2f;
-    public float spawnXRange = 7f;
-    public float spawnY = 5f;
-
-    private float timer = 0f;
-
-    void Awake() 
-    { 
-        Instance = this;
-    }
-
-    private void Start()
+    public class MonsterSpawner : MonoBehaviour
     {
-        for (int i = 0; i < poolSize; i++)
+        public static MonsterSpawner Instance;
+
+        public int poolSize = 20;
+        private Queue<Monster> pool = new Queue<Monster>();
+
+        public List<Monster> monsterPrefab;
+        public float spawnInterval = 2f;
+        public float spawnXRange = 7f;
+        public float spawnY = 5f;
+
+        private float timer = 0f;
+
+        void Awake()
         {
+            Instance = this;
+        }
+
+        private void Start()
+        {
+            for (int i = 0; i < poolSize; i++)
+            {
+                Monster monster = monsterPrefab[Random.Range(0, monsterPrefab.Count)];
+                GameObject obj = Instantiate(monster.gameObject);
+                obj.SetActive(false);
+                pool.Enqueue(obj.GetComponent<Monster>());
+            }
+        }
+
+        void Update()
+        {
+            timer += Time.deltaTime;
+            if (timer >= spawnInterval)
+            {
+                SpawnMonster();
+                timer = 0f;
+            }
+        }
+
+        public Monster GetBullet()
+        {
+            if (pool.Count > 0)
+            {
+                Monster queuebullet = pool.Dequeue();
+                queuebullet.gameObject.SetActive(true);
+                return queuebullet;
+            }
+
             Monster monster = monsterPrefab[Random.Range(0, monsterPrefab.Count)];
             GameObject obj = Instantiate(monster.gameObject);
-            obj.SetActive(false);
-            pool.Enqueue(obj.GetComponent<Monster>());
-        }
-    }
 
-    void Update()
-    {
-        timer += Time.deltaTime;
-        if (timer >= spawnInterval)
+            return obj.GetComponent<Monster>();
+        }
+
+        public void PoolBullet(Monster bullet)
         {
-            SpawnMonster();
-            timer = 0f;
+            bullet.gameObject.SetActive(false);
+            pool.Enqueue(bullet);
         }
-    }
 
-    public Monster GetBullet()
-    {
-        if (pool.Count > 0)
+        int hp = 1;
+        void SpawnMonster()
         {
-            Monster queuebullet = pool.Dequeue();
-            queuebullet.gameObject.SetActive(true);
-            return queuebullet;
+            Vector2 spawnPos = new Vector2(Random.Range(-spawnXRange, spawnXRange), spawnY);
+
+            //GameObject clone = Instantiate(monsterPrefab.gameObject, spawnPos, Quaternion.identity);
+            //clone.gameObject.SetActive(true);
+            Monster monster = GetBullet();
+            monster.OnSpawn();
+            monster.transform.position = spawnPos;
+            monster.transform.rotation = Quaternion.identity;
+            monster.SetHp(hp);
+            hp++;
         }
-
-        Monster monster = monsterPrefab[Random.Range(0, monsterPrefab.Count)];
-        GameObject obj = Instantiate(monster.gameObject);
-
-        return obj.GetComponent<Monster>();
     }
 
-    public void PoolBullet(Monster bullet)
-    {
-        bullet.gameObject.SetActive(false);
-        pool.Enqueue(bullet);
-    }
-
-    int hp = 1;
-    void SpawnMonster()
-    {
-        Vector2 spawnPos = new Vector2(Random.Range(-spawnXRange, spawnXRange), spawnY);
-
-        //GameObject clone = Instantiate(monsterPrefab.gameObject, spawnPos, Quaternion.identity);
-        //clone.gameObject.SetActive(true);
-        Monster monster = GetBullet();
-        monster.OnSpawn();
-        monster.transform.position = spawnPos;
-        monster.transform.rotation = Quaternion.identity;
-        monster.SetHp(hp);
-        hp++;
-    }
 }

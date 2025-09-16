@@ -9,83 +9,86 @@
 // -------------------------------------------------------------------------------------------------
 using UnityEngine;
 
-
-public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoSingleton<T>
+namespace OJ
 {
-	static T _instance = null;
-	public static T Instance
+	public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoSingleton<T>
 	{
-		get
+		static T _instance = null;
+		public static T Instance
 		{
-			if (_instance == null)
+			get
 			{
-				_instance = GameObject.FindObjectOfType(typeof(T)) as T;
 				if (_instance == null)
 				{
-					Debug.LogFormat("Create Singleton-instance. - Begin - Type: {0}", typeof(T).FullName);
-
-					var obj = new GameObject(typeof(T).ToString());
-					_instance = obj.AddComponent<T>();	// 이 때 Awake() 호출됨
-
-					Debug.LogFormat("Create Singleton-instance. - End - Type: {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
-
-					// Problem during the creation, this should not happen
+					_instance = GameObject.FindObjectOfType(typeof(T)) as T;
 					if (_instance == null)
 					{
-						Debug.LogError("Problem during the creation of " + typeof(T).ToString());
+						Debug.LogFormat("Create Singleton-instance. - Begin - Type: {0}", typeof(T).FullName);
+
+						var obj = new GameObject(typeof(T).ToString());
+						_instance = obj.AddComponent<T>();  // 이 때 Awake() 호출됨
+
+						Debug.LogFormat("Create Singleton-instance. - End - Type: {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
+
+						// Problem during the creation, this should not happen
+						if (_instance == null)
+						{
+							Debug.LogError("Problem during the creation of " + typeof(T).ToString());
+						}
+					}
+					else
+					{
+						Debug.LogFormat("Find Singleton-instance. Type: {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
+						_instance.Init();
 					}
 				}
-				else
-				{
-					Debug.LogFormat("Find Singleton-instance. Type: {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
-					_instance.Init();
-				}
+				return _instance;
 			}
-			return _instance;
 		}
-	}
 
-	public static bool isAlive { get { return (_instance != null); } }
+		public static bool isAlive { get { return (_instance != null); } }
 
 
-	void Awake()
-	{
-		DontDestroyOnLoad(gameObject);
-
-		if (_instance == null)
+		void Awake()
 		{
-			_instance = this as T;
-			Debug.LogFormat("Awake Singleton-instance. - OK - Type: {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
+			DontDestroyOnLoad(gameObject);
 
-			_instance.Init();
+			if (_instance == null)
+			{
+				_instance = this as T;
+				Debug.LogFormat("Awake Singleton-instance. - OK - Type: {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
+
+				_instance.Init();
+			}
+			else if (_instance != this)
+			{
+				Debug.LogFormat("Awake Singleton-instance. - Duplicate - Type: {0}, InstanceID: {1}, This: {2}", typeof(T).FullName, _instance.GetInstanceID(), this.GetInstanceID());
+				Destroy(gameObject);
+			}
 		}
-		else if (_instance != this)
+
+		// This function is called when the instance is used the first time
+		// Put all the initializations you need here, as you would do in Awake
+		protected virtual void Init()
 		{
-			Debug.LogFormat("Awake Singleton-instance. - Duplicate - Type: {0}, InstanceID: {1}, This: {2}", typeof(T).FullName, _instance.GetInstanceID(), this.GetInstanceID());
-			Destroy(gameObject);
+			/* BLANK */
 		}
-	}
 
-	// This function is called when the instance is used the first time
-	// Put all the initializations you need here, as you would do in Awake
-	protected virtual void Init()
-	{
-		/* BLANK */
-	}
-
-	protected virtual void Release()
-	{
-		/* BLANK */
-	}
-
-	void OnDestroy()
-	{
-		if (_instance == this)
+		protected virtual void Release()
 		{
-			Debug.LogFormat("Destroy : {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
-				
-			_instance.Release();
-			_instance = null;
+			/* BLANK */
+		}
+
+		void OnDestroy()
+		{
+			if (_instance == this)
+			{
+				Debug.LogFormat("Destroy : {0}, InstanceID: {1}", typeof(T).FullName, _instance.GetInstanceID());
+
+				_instance.Release();
+				_instance = null;
+			}
 		}
 	}
+
 }

@@ -2,90 +2,94 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
-public class UIBoard : MonoBehaviour
+namespace OJ
 {
-    public static UIBoard Instance;
-
-    [Header("Board Settings")]
-    public GridLayoutGroup grid;      // BoardPanel에 붙인 GridLayoutGroup
-    public GameObject slotPrefab;     // Slot (빈칸 UI)
-    public UIDice dicePrefab;         // UIDice 프리팹
-    public int rows = 6;
-    public int cols = 4;
-
-    private UIDice selectedDice;
-    private List<GameObject> slots = new();
-    public UIDice[] diceMap; // 슬롯 인덱스별 다이스 참조
-
-    public int ShotIndex = 0;
-
-    private void Awake()
+    public class UIBoard : MonoBehaviour
     {
-        Instance = this;
-    }
+        public static UIBoard Instance;
 
-    private void Start()
-    {
-        CreateBoard();
-    }
+        [Header("Board Settings")]
+        public GridLayoutGroup grid;      // BoardPanel에 붙인 GridLayoutGroup
+        public GameObject slotPrefab;     // Slot (빈칸 UI)
+        public UIDice dicePrefab;         // UIDice 프리팹
+        public int rows = 6;
+        public int cols = 4;
 
-    private void CreateBoard()
-    {
-        int total = rows * cols;
-        diceMap = new UIDice[total];
+        private UIDice selectedDice;
+        private List<GameObject> slots = new();
+        public UIDice[] diceMap; // 슬롯 인덱스별 다이스 참조
 
-        for (int i = 0; i < total; i++)
+        public int ShotIndex = 0;
+
+        private void Awake()
         {
-            var slot = Instantiate(slotPrefab, grid.transform);
-            slots.Add(slot);
+            Instance = this;
         }
-    }
 
-    public void SpawnDice(DiceType type, int star, int slotIndex)
-    {
-        if (diceMap[slotIndex] != null) return;
-
-        var dice = Instantiate(dicePrefab, slots[slotIndex].transform);
-        dice.Init(type, star, slotIndex);
-        diceMap[slotIndex] = dice;
-    }
-
-    public void ClearDice(int slotIndex)
-    {
-        if (diceMap[slotIndex] != null)
+        private void Start()
         {
-            Destroy(diceMap[slotIndex].gameObject);
-            diceMap[slotIndex] = null;
+            CreateBoard();
         }
-    }
 
-    public void OnDiceClicked(UIDice dice)
-    {
-        if (selectedDice == null)
+        private void CreateBoard()
         {
-            selectedDice = dice;
-            Highlight(dice, true);
-        }
-        else
-        {
-            if (selectedDice == dice)
+            int total = rows * cols;
+            diceMap = new UIDice[total];
+
+            for (int i = 0; i < total; i++)
             {
-                Highlight(dice, false);
-                selectedDice = null;
-                return;
+                var slot = Instantiate(slotPrefab, grid.transform);
+                slots.Add(slot);
             }
-
-            // 병합 시도
-            bool merged = MergeSystem.Instance.TryMerge(selectedDice, dice);
-            Highlight(selectedDice, false);
-            selectedDice = null;
         }
+
+        public void SpawnDice(DiceType type, int star, int slotIndex)
+        {
+            if (diceMap[slotIndex] != null) return;
+
+            var dice = Instantiate(dicePrefab, slots[slotIndex].transform);
+            dice.Init(type, star, slotIndex);
+            diceMap[slotIndex] = dice;
+        }
+
+        public void ClearDice(int slotIndex)
+        {
+            if (diceMap[slotIndex] != null)
+            {
+                Destroy(diceMap[slotIndex].gameObject);
+                diceMap[slotIndex] = null;
+            }
+        }
+
+        public void OnDiceClicked(UIDice dice)
+        {
+            if (selectedDice == null)
+            {
+                selectedDice = dice;
+                Highlight(dice, true);
+            }
+            else
+            {
+                if (selectedDice == dice)
+                {
+                    Highlight(dice, false);
+                    selectedDice = null;
+                    return;
+                }
+
+                // 병합 시도
+                bool merged = MergeSystem.Instance.TryMerge(selectedDice, dice);
+                Highlight(selectedDice, false);
+                selectedDice = null;
+            }
+        }
+
+        private void Highlight(UIDice dice, bool on)
+        {
+            // 선택 시 테두리 색상 바꾸기 같은 효과 넣기
+        }
+
+        public UIDice GetDice(int slotIndex) => diceMap[slotIndex];
     }
 
-    private void Highlight(UIDice dice, bool on)
-    {
-        // 선택 시 테두리 색상 바꾸기 같은 효과 넣기
-    }
-
-    public UIDice GetDice(int slotIndex) => diceMap[slotIndex];
 }

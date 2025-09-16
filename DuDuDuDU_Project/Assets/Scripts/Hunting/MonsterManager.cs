@@ -1,39 +1,43 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MonsterManager : MonoBehaviour
+namespace OJ
 {
-    public static MonsterManager Instance;
-    public List<Monster> activeMonsters = new List<Monster>();
-
-    void Awake() { Instance = this; }
-
-    public void RegisterMonster(Monster monster)
+    public class MonsterManager : MonoBehaviour
     {
-        if (!activeMonsters.Contains(monster))
-            activeMonsters.Add(monster);
-    }
+        public static MonsterManager Instance;
+        public List<Monster> activeMonsters = new List<Monster>();
 
-    public void UnregisterMonster(Monster monster)
-    {
-        if (activeMonsters.Contains(monster))
-            activeMonsters.Remove(monster);
-    }
+        void Awake() { Instance = this; }
 
-    public Monster GetClosestMonster(Vector3 position)
-    {
-        Monster closest = null;
-        float minDist = Mathf.Infinity;
-
-        foreach (Monster m in activeMonsters)
+        public void RegisterMonster(Monster monster)
         {
-            float dist = Vector2.Distance(position, m.transform.position);
-            if (dist < minDist)
-            {
-                minDist = dist;
-                closest = m;
-            }
+            if (!activeMonsters.Contains(monster))
+                activeMonsters.Add(monster);
         }
-        return closest;
+
+        public void UnregisterMonster(Monster monster)
+        {
+            if (activeMonsters.Contains(monster))
+                activeMonsters.Remove(monster);
+        }
+
+        public Monster GetClosestMonster(Vector3 position)
+        {
+            Monster closest = null;
+            float minDist = Mathf.Infinity;
+
+            foreach (Monster m in activeMonsters)
+            {
+                float dist = Vector2.Distance(position, m.transform.position);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closest = m;
+                }
+            }
+            return closest;
+        }
     }
+
 }
