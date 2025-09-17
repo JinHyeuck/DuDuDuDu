@@ -15,7 +15,6 @@ namespace OJ
         [SerializeField]
         private SpriteRenderer m_spriteRenderer;
 
-        private float m_lineEndTime = 0.0f;
 
         private bool m_isPlay = false;
 
@@ -24,10 +23,8 @@ namespace OJ
         private int aniIndex = 0;
         private float nextFrameTime = 0;
 
-        public void PlayEffect(float duration = 1.0f)
+        public void PlayEffect()
         {
-            m_lineEndTime = Time.time + duration;
-
             aniIndex = 0;
             nextFrameTime = 0.0f;
 
@@ -35,7 +32,7 @@ namespace OJ
             Update();
         }
 
-        public void PlayLineEffect(Vector3 startPos, Vector3 endPos, float duration)
+        public void PlayLineEffect(Vector3 startPos, Vector3 endPos)
         {
             Vector3 myPos = startPos + endPos;
             myPos *= 0.5f;
@@ -52,8 +49,6 @@ namespace OJ
             dirvec.Normalize();
 
             transform.rotation = Quaternion.FromToRotation(Vector3.right, dirvec);
-
-            m_lineEndTime = Time.time + duration;
 
             aniIndex = 0;
             nextFrameTime = 0.0f;

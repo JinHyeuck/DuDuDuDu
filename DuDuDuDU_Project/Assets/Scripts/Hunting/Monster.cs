@@ -9,16 +9,22 @@ namespace OJ
         public int attackDamage = 1;
         public float attackInterval = 0.5f;
         public float moveSpeed = 2f; // 이동 속도
+        public float ApplyMoveSpeed = 2f; // 이동 속도
         private bool isAttacking = false;
+
+        private Coroutine poisonCoroutine = null;
+        private WaitForSeconds poisonDelay = new WaitForSeconds(0.5f);
 
         public void OnSpawn()
         {
             MonsterManager.Instance.RegisterMonster(this);
+            ApplyMoveSpeed = moveSpeed;
         }
 
         private void OnDisable()
         {
             MonsterManager.Instance.UnregisterMonster(this);
+            StopAllCoroutines();
         }
 
         void Update()
@@ -26,7 +32,7 @@ namespace OJ
             // Wall을 향해 계속 이동 (아직 공격하지 않을 때만)
             if (!isAttacking)
             {
-                transform.Translate(Vector2.down * moveSpeed * Time.deltaTime);
+                transform.Translate(Vector2.down * ApplyMoveSpeed * Time.deltaTime);
 
                 if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
                     MonsterSpawner.Instance.PoolBullet(this);
@@ -50,6 +56,37 @@ namespace OJ
             {
                 isAttacking = true;
                 StartCoroutine(AttackWall(col.GetComponent<Wall>()));
+            }
+        }
+
+        public void ApplySlow()
+        {
+            ApplyMoveSpeed *= 0.8f;
+        }
+
+        public void ApplyPoison()
+        {
+            StartCoroutine(PlayPoison());
+        }
+
+        IEnumerator PlayPoison()
+        {
+            while (_hp > 0)
+            {
+                int intdamage = _hp * 10 / 100;
+                if (intdamage <= 0)
+                    intdamage = 1;
+
+                GameObject dtObj = DamageTextPool.Instance.GetDamageText();
+                dtObj.transform.position = transform.position; // 몬스터 위치
+                dtObj.transform.ResetLocalZ();
+                Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(DiceType.Poison);
+
+                dtObj.GetComponent<DamageText>().SetText(intdamage, typeColor);
+
+                TakeDamage(intdamage);
+
+                yield return poisonDelay;
             }
         }
 
