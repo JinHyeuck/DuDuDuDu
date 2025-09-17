@@ -47,7 +47,7 @@ namespace OJ
                 // 데미지 UI 표시
                 GameObject dtObj = DamageTextPool.Instance.GetDamageText();
                 dtObj.transform.position = col.transform.position; // 몬스터 위치
-
+                dtObj.transform.ResetLocalZ();
                 Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(_diceType);
 
                 dtObj.GetComponent<DamageText>().SetText(damage, typeColor);

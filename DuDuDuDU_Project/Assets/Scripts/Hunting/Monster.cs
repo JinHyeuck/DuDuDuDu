@@ -62,7 +62,8 @@ namespace OJ
                 // 데미지 UI 표시
                 GameObject dtObj = DamageTextPool.Instance.GetDamageText();
                 dtObj.transform.position = transform.position; // 몬스터 위치
-                dtObj.GetComponent<DamageText>().SetText(attackDamage, Color.red);
+                dtObj.transform.ResetLocalZ();
+                dtObj.GetComponent<DamageText>().SetText(attackDamage * -1, Color.red);
 
                 yield return new WaitForSeconds(attackInterval);
             }

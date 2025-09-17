@@ -188,6 +188,13 @@ namespace OJ
 			tm.localScale = Vector3.one;
 		}
 
+		public static void ResetLocalZ(this Transform tm)
+		{
+			Vector3 pos = tm.localPosition;
+			pos.z = 0;
+			tm.localPosition = pos;
+		}
+
 		public static void ResetWorld(this Transform tm)
 		{
 			tm.position = Vector3.zero;
