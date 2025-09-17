@@ -6,6 +6,7 @@ namespace OJ
     public class BulletPool : MonoBehaviour
     {
         public static BulletPool Instance;
+
         public GameObject bulletPrefab;
         public int poolSize = 20;
         private Queue<Bullet> pool = new Queue<Bullet>();
@@ -15,7 +16,7 @@ namespace OJ
             Instance = this;
             for (int i = 0; i < poolSize; i++)
             {
-                GameObject obj = Instantiate(bulletPrefab);
+                GameObject obj = Instantiate(bulletPrefab, transform);
                 obj.SetActive(false);
                 pool.Enqueue(obj.GetComponent<Bullet>());
             }
@@ -30,7 +31,7 @@ namespace OJ
                 return queuebullet;
             }
 
-            GameObject obj = Instantiate(bulletPrefab);
+            GameObject obj = Instantiate(bulletPrefab, transform);
             return obj.GetComponent<Bullet>();
         }
 

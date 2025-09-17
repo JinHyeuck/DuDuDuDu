@@ -9,6 +9,7 @@ namespace OJ
         public float speed = 8f;
         public int damage = 1;
         private Vector2 moveDir;
+        private DiceType _diceType;
 
         public void SetBulletStat(DiceType diceType)
         {
@@ -17,6 +18,7 @@ namespace OJ
             bulletImage.sprite = sprite;
 
             damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
+            _diceType = diceType;
         }
 
         public void Shoot(Vector2 dir)
@@ -45,9 +47,16 @@ namespace OJ
                 // 데미지 UI 표시
                 GameObject dtObj = DamageTextPool.Instance.GetDamageText();
                 dtObj.transform.position = col.transform.position; // 몬스터 위치
-                dtObj.GetComponent<DamageText>().SetText(damage);
+
+                Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(_diceType);
+
+                dtObj.GetComponent<DamageText>().SetText(damage, typeColor);
 
                 BulletPool.Instance.PoolBullet(this);
+
+                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(_diceType);
+                bulletEffect.transform.position = transform.position;
+                bulletEffect.PlayEffect();
             }
         }
     }

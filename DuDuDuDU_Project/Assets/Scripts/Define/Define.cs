@@ -4,6 +4,20 @@ using UnityEngine;
 
 namespace OJ
 {
+    public enum TargetProjectileState
+    {
+        None = 0,
+        Eject,
+        Shoot,
+        Hit,
+    }
+
+    public enum IFFType
+    {
+        IFF_None = 0,
+        IFF_Friend, // ¿ì¸®ÆÀ
+        IFF_Foe, // »ó´ëÆÀ
+    }
 
     public enum DiceType : int
     {

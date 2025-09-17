@@ -18,6 +18,15 @@ namespace OJ
         public void SetText(int damage)
         {
             textMesh.text = damage.ToString();
+            textMesh.color = Color.white;
+            timer = 0f;
+            gameObject.SetActive(true);
+        }
+
+        public void SetText(int damage, Color color)
+        {
+            textMesh.text = damage.ToString();
+            textMesh.color = color;
             timer = 0f;
             gameObject.SetActive(true);
         }
