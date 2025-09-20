@@ -55,7 +55,7 @@ namespace OJ
                 if (shotindex >= UIBoard.Instance.diceMap.Length)
                     shotindex = 0;
 
-                DiceType diceType = DiceType.Max;
+                List<DiceType> diceType = null;
 
                 bool IsFirst = true;
 
@@ -85,7 +85,7 @@ namespace OJ
                     }
                 }
 
-                if (diceType != DiceType.Max)
+                if (diceType != null)
                     ShootAtClosest(diceType);
                 timer = 0f;
 
@@ -111,7 +111,7 @@ namespace OJ
             //shotindex = 0;
         }
 
-        void ShootAtClosest(DiceType diceType)
+        void ShootAtClosest(List<DiceType> diceType)
         {
             Monster target = MonsterManager.Instance.GetClosestMonster(firePoint.position);
             if (target == null) return;

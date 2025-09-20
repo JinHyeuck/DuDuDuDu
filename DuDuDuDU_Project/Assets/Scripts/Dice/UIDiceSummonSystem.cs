@@ -77,9 +77,10 @@ namespace OJ
             // 타입 랜덤, 별 1개
             DiceType type = deckTypes[Random.Range(0, deckTypes.Count)];
             int star = 1;
-
-            DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
-            board.SpawnDice(type, star, slotIndex);
+            List<DiceType> diceTypes = new List<DiceType>();
+            diceTypes.Add(type);
+            DiceTypeStarManager.Instance.OnDiceSpawn(diceTypes, star);
+            board.SpawnDice(diceTypes, star, slotIndex);
         }
 
         private int GetRandomEmptySlot()

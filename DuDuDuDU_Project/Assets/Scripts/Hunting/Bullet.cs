@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace OJ
@@ -7,18 +8,24 @@ namespace OJ
         public SpriteRenderer bulletImage;
 
         public float speed = 8f;
-        public int damage = 1;
         private Vector2 moveDir;
-        private DiceType _diceType;
+        private List<DiceType> _diceType = new List<DiceType>();
 
-        public void SetBulletStat(DiceType diceType)
+        public void SetBulletStat(List<DiceType> diceType)
         {
-            Sprite sprite = StaticResource.Instance.DiceTypeResourceManager.GetBullet(diceType);
+            DiceType firstDiceType = diceType[0];
+
+            Sprite sprite = StaticResource.Instance.DiceTypeResourceManager.GetBullet(firstDiceType);
 
             bulletImage.sprite = sprite;
 
-            damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
-            _diceType = diceType;
+            _diceType.Clear();
+
+            for (int i = 0; i < diceType.Count; ++i)
+            {
+                _diceType.Add(diceType[i]);
+            }
+            
         }
 
         public void Shoot(Vector2 dir)

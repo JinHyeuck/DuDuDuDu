@@ -43,7 +43,7 @@ namespace OJ
             }
         }
 
-        public void SpawnDice(DiceType type, int star, int slotIndex)
+        public void SpawnDice(List<DiceType> type, int star, int slotIndex)
         {
             if (diceMap[slotIndex] != null) return;
 

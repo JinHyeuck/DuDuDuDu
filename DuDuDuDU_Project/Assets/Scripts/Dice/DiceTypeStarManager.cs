@@ -28,16 +28,24 @@ namespace OJ
             }
         }
 
-        public void OnDiceSpawn(DiceType type, int star)
+        public void OnDiceSpawn(List<DiceType> type, int star)
         {
-            AddStars(type, star);
+            for (int i = 0; i < type.Count; ++i)
+            {
+                AddStars(type[i], star);
+            }
+
             UIDiceBoardUI.Instance?.UpdateTypeStars();
             PlayerController.Instance?.RefreshDice();
         }
 
-        public void OnDiceRemove(DiceType type, int star)
+        public void OnDiceRemove(List<DiceType> type, int star)
         {
-            RemoveStars(type, star);
+            for (int i = 0; i < type.Count; ++i)
+            {
+                RemoveStars(type[i], star);
+            }
+            
             UIDiceBoardUI.Instance?.UpdateTypeStars();
             PlayerController.Instance?.RefreshDice();
         }

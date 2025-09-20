@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -17,7 +18,7 @@ namespace OJ
         public TMP_Text TypeText;
         public Animator animator;
 
-        public DiceType Type { get; private set; }
+        public List<DiceType> Type { get; private set; }
         public int Star { get; private set; }
         public int SlotIndex { get; private set; }
 
@@ -26,7 +27,7 @@ namespace OJ
         private CanvasGroup canvasGroup;
         private Canvas canvas;
 
-        public void Init(DiceType type, int star, int slotIndex)
+        public void Init(List<DiceType> type, int star, int slotIndex)
         {
             Type = type;
             Star = star;
@@ -45,8 +46,10 @@ namespace OJ
             StarText.SetText("Lv.{0}", Star);
             //TypeText.text = Type.ToString();
 
-            Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(Type);
-            Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(Type);
+            DiceType diceType = Type[0];
+
+            Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(diceType);
+            Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(diceType);
 
             if (ShootEffectImage != null)
                 ShootEffectImage.color = typeColor;
