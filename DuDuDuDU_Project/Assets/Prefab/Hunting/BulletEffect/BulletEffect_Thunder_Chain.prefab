@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &3387872912333133728
+--- !u!1 &6181500816094894840
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,38 +8,38 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6368575075648460567}
-  - component: {fileID: 812728589144278855}
-  - component: {fileID: 6035269022472480307}
+  - component: {fileID: 4811645312295768396}
+  - component: {fileID: 366472249506757265}
+  - component: {fileID: 5367087045388389193}
   m_Layer: 16
-  m_Name: BulletEffect_Fire
+  m_Name: BulletEffect_Thunder_Chain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6368575075648460567
+--- !u!4 &4811645312295768396
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3387872912333133728}
+  m_GameObject: {fileID: 6181500816094894840}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.5, y: 0.94, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &812728589144278855
+--- !u!212 &366472249506757265
 SpriteRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3387872912333133728}
+  m_GameObject: {fileID: 6181500816094894840}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -77,36 +77,37 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 32
-  m_Sprite: {fileID: 21300000, guid: c86b014f1a41cf945b0873504dcaa368, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 246d9ad8877b3c4419f182f8fe253e3b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
-  m_DrawMode: 0
-  m_Size: {x: 1.28, y: 1.28}
+  m_DrawMode: 2
+  m_Size: {x: 1.28, y: 0.64}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &6035269022472480307
+--- !u!114 &5367087045388389193
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3387872912333133728}
+  m_GameObject: {fileID: 6181500816094894840}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fe7324d154e09d4cb1bc2822b4798c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  myDiceType: 1
+  myDiceType: 4
+  myEffectType: 1
   spriteEffect:
-  - {fileID: 21300000, guid: c86b014f1a41cf945b0873504dcaa368, type: 3}
-  - {fileID: 21300000, guid: 2d528f7a87f196e4da2d27c651db1292, type: 3}
-  - {fileID: 21300000, guid: 790fb181d0cae704cbcc890c243bcb05, type: 3}
-  - {fileID: 21300000, guid: 496138272a1e7a544864f64f571ddae5, type: 3}
-  - {fileID: 21300000, guid: 307f98e2f77ccda408594f00ee5d219a, type: 3}
-  - {fileID: 21300000, guid: 3f57b5f33004ff54fb9707c258148f1c, type: 3}
-  m_spriteRenderer: {fileID: 812728589144278855}
+  - {fileID: 21300000, guid: 246d9ad8877b3c4419f182f8fe253e3b, type: 3}
+  - {fileID: 21300000, guid: 2ae9a0eab2d1b964a9a9e3dde84813ff, type: 3}
+  - {fileID: 21300000, guid: 744ae3156ea82a3498d6c8debe426436, type: 3}
+  - {fileID: 21300000, guid: a518ec376734c8b43a3008db22317b48, type: 3}
+  - {fileID: 21300000, guid: 498a66c8c751365468f78a230cdc97a6, type: 3}
+  - {fileID: 21300000, guid: 6cb8ca7c7cbec6f42ae22f338786e5cc, type: 3}
+  m_spriteRenderer: {fileID: 366472249506757265}
   FrameTime: 0.05

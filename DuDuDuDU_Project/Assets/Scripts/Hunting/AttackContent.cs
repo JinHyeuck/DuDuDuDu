@@ -23,80 +23,6 @@ namespace OJ
         {
         }
         //------------------------------------------------------------------------------------
-        public void PlayHit(Monster target, DiceType diceType)
-        {
-            int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
-            if (diceType == DiceType.Thunder)
-            {
-                thunderOper.Clear();
-                thunderOper.Add(target);
-                
-                Dictionary<Monster, List<Monster>> sunderTarget = GetNPerTarget_NoGlobalDup(MonsterManager.Instance.activeMonsters, thunderOper, 2);
-
-                HitMonster(target, diceType, damage);
-
-                foreach (var pair in sunderTarget)
-                {
-                    if (pair.Value.Count == 0)
-                    {
-                        BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                        bulletEffect.transform.position = target.transform.position;
-                        bulletEffect.PlayEffect();
-                    }
-                    else
-                    {
-                        for (int i = 0; i < pair.Value.Count; ++i)
-                        {
-                            HitMonster(pair.Value[i], diceType, damage);
-
-                            BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                            bulletEffect.PlayLineEffect(pair.Key.transform.position, pair.Value[i].transform.position);
-                        }
-                    }
-                }
-            }
-            else if (diceType == DiceType.Poison)
-            {
-                HitMonster(target, diceType, damage);
-                target.ApplyPoison();
-                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                bulletEffect.transform.position = target.transform.position;
-                bulletEffect.PlayEffect();
-            }
-            else if (diceType == DiceType.Normal)
-            {
-                HitMonster(target, diceType, damage * 2);
-                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                bulletEffect.transform.position = target.transform.position;
-                bulletEffect.PlayEffect();
-            }
-            else if (diceType == DiceType.Ice)
-            {
-                HitMonster(target, diceType, damage);
-                target.ApplySlow();
-                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                bulletEffect.transform.position = target.transform.position;
-                bulletEffect.PlayEffect();
-            }
-            else if (diceType == DiceType.Fire)
-            {
-                List<Monster> monsters = GetRedHitTarget(target.transform.position,
-                    IFFType.IFF_Friend,
-                    1, 10, target);
-
-                for (int i = 0; i < monsters.Count; ++i)
-                {
-                    HitMonster(monsters[i], diceType, damage);
-                }
-
-                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                bulletEffect.transform.position = target.transform.position;
-                bulletEffect.PlayEffect();
-            }
-            
-
-        }
-        //------------------------------------------------------------------------------------
         private void HitMonster(Monster target, DiceType diceType, int damage)
         { // 맞는 처리는 여기서
             // 데미지 UI 표시
@@ -129,10 +55,6 @@ namespace OJ
             {
                 DiceType diceType = order[dtype];
 
-                int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
-
-                if (cheatDiceDamage > 0)
-                    damage = cheatDiceDamage;
 
                 if (diceType == DiceType.Thunder)
                 {
@@ -140,18 +62,22 @@ namespace OJ
 
                     foreach (var pair in sunderTarget)
                     {
-                        if (pair.Value.Count == 0)
                         {
                             BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
                             bulletEffect.transform.position = pair.Key.transform.position;
                             bulletEffect.PlayEffect();
                         }
-                        else
+
+                        if (pair.Value.Count > 0)
                         {
                             for (int i = 0; i < pair.Value.Count; ++i)
                             {
-                                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
+                                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType, EffectID.C1);
                                 bulletEffect.PlayLineEffect(pair.Key.transform.position, pair.Value[i].transform.position);
+
+                                BulletEffect bulletEffectS = BulletEffectPool.Instance.GetBullet(diceType);
+                                bulletEffectS.transform.position = pair.Value[i].transform.position;
+                                bulletEffectS.PlayEffect();
 
                                 hitmonsters.Add(pair.Value[i]);
                             }
@@ -191,7 +117,13 @@ namespace OJ
             {
                 DiceType diceType = order[dtype];
 
+                //int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
+
                 int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
+
+                if (cheatDiceDamage > 0)
+                    damage = cheatDiceDamage;
+
 
                 for (int i = 0; i < hitmonsters.Count; ++i)
                 {

@@ -31,6 +31,14 @@ namespace OJ
         // 필요하면 추가
     }
 
+    public enum EffectID : int
+    {
+        S = 0,
+        C1,
+        C2,
+        C3,
+    }
+
     public enum CharacterState
     {
         None = 0,

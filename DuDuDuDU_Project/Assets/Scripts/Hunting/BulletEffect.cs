@@ -8,6 +8,7 @@ namespace OJ
     public class BulletEffect : MonoBehaviour
     {
         public DiceType myDiceType = DiceType.Max;
+        public EffectID myEffectType = EffectID.S;
 
         [SerializeField]
         private List<Sprite> spriteEffect;

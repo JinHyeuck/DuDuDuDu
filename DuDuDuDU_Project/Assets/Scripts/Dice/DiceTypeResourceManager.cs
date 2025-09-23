@@ -15,6 +15,8 @@ namespace OJ
             public Sprite Icon;
             public Sprite Bullet;
             public BulletEffect BulletEffect;
+
+            public List<BulletEffect> bulletEffectDatas = new List<BulletEffect>();
         }
 
         public List<TypeVisual> TypeVisuals = new List<TypeVisual>();
@@ -52,6 +54,13 @@ namespace OJ
         {
             if (visualDict.TryGetValue(type, out var visual))
                 return visual.BulletEffect;
+            return null;
+        }
+
+        public TypeVisual GetTypeVisual(DiceType type)
+        {
+            if (visualDict.TryGetValue(type, out var visual))
+                return visual;
             return null;
         }
     }
