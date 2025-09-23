@@ -5,6 +5,7 @@ namespace OJ
 {
     public class Monster : MonoBehaviour
     {
+        public int MonsterID = -1;
         public int _hp = 3;
         public int attackDamage = 1;
         public float attackInterval = 0.5f;
@@ -12,13 +13,15 @@ namespace OJ
         public float ApplyMoveSpeed = 2f; // 이동 속도
         private bool isAttacking = false;
 
-        private Coroutine poisonCoroutine = null;
+        public CharacterAnimation characterAnimation;
+
         private WaitForSeconds poisonDelay = new WaitForSeconds(0.5f);
 
         public void OnSpawn()
         {
             MonsterManager.Instance.RegisterMonster(this);
             ApplyMoveSpeed = moveSpeed;
+            characterAnimation.PlayAnimation(CharacterState.Run);
         }
 
         private void OnDisable()

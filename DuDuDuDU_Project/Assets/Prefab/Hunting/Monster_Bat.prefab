@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &7138836721812630443
+--- !u!1 &4524792215943124225
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,41 +8,41 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 7806338427563544603}
-  - component: {fileID: 6447386671156394547}
-  - component: {fileID: 5094252425560282002}
-  - component: {fileID: 4151324592276541018}
-  - component: {fileID: 20171232969054200}
-  - component: {fileID: 3061696117688244117}
+  - component: {fileID: 2067635365551035216}
+  - component: {fileID: 7264278574207660389}
+  - component: {fileID: 881306225255906131}
+  - component: {fileID: 3878989625299403909}
+  - component: {fileID: 8912693489788792519}
+  - component: {fileID: 8651005820677155293}
   m_Layer: 12
-  m_Name: Monster
+  m_Name: Monster_Bat
   m_TagString: Monster
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &7806338427563544603
+--- !u!4 &2067635365551035216
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7138836721812630443}
+  m_GameObject: {fileID: 4524792215943124225}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.43, y: 1.19, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &6447386671156394547
+--- !u!212 &7264278574207660389
 SpriteRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7138836721812630443}
+  m_GameObject: {fileID: 4524792215943124225}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -80,7 +80,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 9975f2567e5dce340976f07102f24248, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2c83f199cb64236459c967c4be5915ae, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -91,14 +91,58 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!50 &5094252425560282002
+--- !u!114 &881306225255906131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4524792215943124225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f459a1be1aef884dac13ec59a7e3020, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MonsterID: 1
+  _hp: 3
+  attackDamage: 1
+  attackInterval: 0.5
+  moveSpeed: 0.6
+  ApplyMoveSpeed: 2
+  characterAnimation: {fileID: 3878989625299403909}
+--- !u!114 &3878989625299403909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4524792215943124225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dff869a18d6f1d4f8690cf55b02c5fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterAniDatas:
+  - AniType: 13
+    AniDefaultFrameTime: 0.2
+    FrameTime: 0.2
+    AniSprites:
+    - {fileID: 21300000, guid: 2c83f199cb64236459c967c4be5915ae, type: 3}
+    - {fileID: 21300000, guid: f0c66dea6d4ac9c4f84fd1e456dd4dbd, type: 3}
+    - {fileID: 21300000, guid: 4f985dcf69fd12f4b9cbcf6fce455ffc, type: 3}
+    - {fileID: 21300000, guid: 4320afb820f48704fa17fe4854a8a7b6, type: 3}
+    Loop: 1
+    AniAndAction: 13
+  spriteRenderer: {fileID: 7264278574207660389}
+  CurrentAni: 13
+--- !u!50 &8912693489788792519
 Rigidbody2D:
   serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7138836721812630443}
+  m_GameObject: {fileID: 4524792215943124225}
   m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
@@ -118,13 +162,13 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!58 &4151324592276541018
+--- !u!58 &8651005820677155293
 CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7138836721812630443}
+  m_GameObject: {fileID: 4524792215943124225}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -153,36 +197,4 @@ CircleCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_Radius: 0.3
---- !u!114 &20171232969054200
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7138836721812630443}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f459a1be1aef884dac13ec59a7e3020, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _hp: 3
-  attackDamage: 1
-  attackInterval: 0.5
-  moveSpeed: 0.5
-  ApplyMoveSpeed: 2
---- !u!114 &3061696117688244117
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7138836721812630443}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6dff869a18d6f1d4f8690cf55b02c5fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  characterAniDatas: []
-  spriteRenderer: {fileID: 0}
-  CurrentAni: 0
+  m_Radius: 0.15

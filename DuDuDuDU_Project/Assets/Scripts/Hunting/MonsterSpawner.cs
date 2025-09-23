@@ -8,7 +8,9 @@ namespace OJ
         public static MonsterSpawner Instance;
 
         public int poolSize = 20;
-        private Queue<Monster> pool = new Queue<Monster>();
+
+        private Dictionary<int, Queue<Monster>> monsterPools = new Dictionary<int, Queue<Monster>>();
+        private List<int> monsterIdList = new List<int>();
 
         public List<Monster> monsterPrefab;
         public float spawnInterval = 2f;
@@ -24,12 +26,23 @@ namespace OJ
 
         private void Start()
         {
-            for (int i = 0; i < poolSize; i++)
+            for (int i = 0; i < monsterPrefab.Count; ++i)
             {
-                Monster monster = monsterPrefab[Random.Range(0, monsterPrefab.Count)];
-                GameObject obj = Instantiate(monster.gameObject);
-                obj.SetActive(false);
-                pool.Enqueue(obj.GetComponent<Monster>());
+                Monster monster = monsterPrefab[i];
+
+                if (monsterPools.ContainsKey(monster.MonsterID) == true)
+                    continue;
+
+                monsterPools.Add(monster.MonsterID, new Queue<Monster>());
+
+                monsterIdList.Add(monster.MonsterID);
+
+                for (int pools = 0; pools < poolSize; pools++)
+                {
+                    GameObject obj = Instantiate(monster.gameObject);
+                    obj.SetActive(false);
+                    monsterPools[monster.MonsterID].Enqueue(obj.GetComponent<Monster>());
+                }
             }
         }
 
@@ -45,6 +58,10 @@ namespace OJ
 
         public Monster GetBullet()
         {
+            int monsterIdx = monsterIdList[Random.Range(0, monsterIdList.Count)];
+
+            Queue<Monster> pool = monsterPools[monsterIdx];
+
             if (pool.Count > 0)
             {
                 Monster queuebullet = pool.Dequeue();
@@ -52,16 +69,14 @@ namespace OJ
                 return queuebullet;
             }
 
-            Monster monster = monsterPrefab[Random.Range(0, monsterPrefab.Count)];
-            GameObject obj = Instantiate(monster.gameObject);
-
+            GameObject obj = Instantiate(monsterPrefab.Find(x => x.MonsterID == monsterIdx).gameObject);
             return obj.GetComponent<Monster>();
         }
 
         public void PoolBullet(Monster bullet)
         {
             bullet.gameObject.SetActive(false);
-            pool.Enqueue(bullet);
+            monsterPools[bullet.MonsterID].Enqueue(bullet);
         }
 
         int hp = 1;

@@ -44,6 +44,7 @@ namespace OJ
         None = 0,
         Idle = 11,
         Attack,
+        Run,
         Hit,
         Dead
     }
