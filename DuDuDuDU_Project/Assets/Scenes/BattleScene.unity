@@ -1026,7 +1026,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -4939886345378436513, guid: ade83d3a24deb49428eb6b1ddc7c7d84, type: 3}
+  m_Sprite: {fileID: 21300000, guid: de051888395a97146a2e25c3905e0967, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1698,6 +1698,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 32f31d6de57d015479545c72359f3d67, type: 3}
     - {fileID: 21300000, guid: c9e91a378650c4e4dac7b5aadc151280, type: 3}
     - {fileID: 21300000, guid: faba6b275965b804b9640cea9e5b4d92, type: 3}
+    - {fileID: 21300000, guid: f3cf9682e6eca3b4e84930ef362bc6cc, type: 3}
     Loop: 1
     AniAndAction: 0
   - AniType: 12
@@ -1767,7 +1768,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -4939886345378436513, guid: ade83d3a24deb49428eb6b1ddc7c7d84, type: 3}
+  m_Sprite: {fileID: 21300000, guid: de051888395a97146a2e25c3905e0967, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2543,10 +2544,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterAniDatas:
   - AniType: 11
-    AniDefaultFrameTime: 0.3
-    FrameTime: 0.3
+    AniDefaultFrameTime: 0.2
+    FrameTime: 0.2
     AniSprites:
-    - {fileID: 0}
+    - {fileID: 21300000, guid: 7af3522dcf4589b439d7692eec50cda8, type: 3}
+    - {fileID: 21300000, guid: d4172ff07a20bc94e9b9ceca1524955f, type: 3}
+    - {fileID: 21300000, guid: 09b746c417d8cbf46851669747c87dac, type: 3}
+    - {fileID: 21300000, guid: 3a88bbdd293f7b34cb3fc4df7069c426, type: 3}
+    - {fileID: 21300000, guid: 3b925ed9167aeeb41bea2f7cf403a14c, type: 3}
+    - {fileID: 21300000, guid: dfc3439f0cf8d76438db79a08c17d336, type: 3}
+    - {fileID: 21300000, guid: 2c890b76bbdd8d142a486c5dada3f9d8, type: 3}
+    - {fileID: 21300000, guid: 30406addbcf382449b99960882e5139e, type: 3}
     Loop: 1
     AniAndAction: 0
   - AniType: 12
