@@ -57,6 +57,9 @@ namespace OJ
 
         private void OnSummonButton()
         {
+            if (GameManager.Instance.inGameState == InGameState.Wave)
+                return;
+
             if (currentSP < summonCost)
             {
                 Debug.Log("SP ºÎÁ·!");

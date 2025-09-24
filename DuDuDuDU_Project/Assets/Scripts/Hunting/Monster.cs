@@ -5,6 +5,8 @@ namespace OJ
 {
     public class Monster : MonoBehaviour
     {
+        CharacterState CharacterState = CharacterState.None;
+
         public int MonsterID = -1;
         public int _hp = 3;
         public int attackDamage = 1;
@@ -22,12 +24,12 @@ namespace OJ
             MonsterManager.Instance.RegisterMonster(this);
             ApplyMoveSpeed = moveSpeed;
             characterAnimation.PlayAnimation(CharacterState.Run);
+            CharacterState = CharacterState.Run;
         }
 
         private void OnDisable()
         {
-            MonsterManager.Instance.UnregisterMonster(this);
-            StopAllCoroutines();
+
         }
 
         void Update()
@@ -47,9 +49,14 @@ namespace OJ
             _hp -= dmg;
             if (_hp <= 0)
             {
-                UIDiceSummonSystem.Instance?.AddSP(10);
-                MonsterSpawner.Instance.PoolBullet(this);
-                //gameObject.SetActive(false);
+                if (CharacterState != CharacterState.Dead)
+                {
+                    UIDiceSummonSystem.Instance?.AddSP(10);
+                    MonsterSpawner.Instance.PoolBullet(this);
+                    MonsterManager.Instance.UnregisterMonster(this);
+                    StopAllCoroutines();
+                    CharacterState = CharacterState.Dead;
+                }
             }
         }
 

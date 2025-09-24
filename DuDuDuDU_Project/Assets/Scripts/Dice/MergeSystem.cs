@@ -30,6 +30,9 @@ namespace OJ
 
         public bool TryMerge(UIDice from, UIDice to)
         {
+            if (GameManager.Instance.inGameState == InGameState.Wave)
+                return false;
+
             List<DiceType> diceTypes = new List<DiceType>();
 
             if (to.Star >= MaxStar)

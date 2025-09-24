@@ -19,6 +19,8 @@ namespace OJ
 
         private float timer = 0f;
 
+        private int SpawnCount = 0;
+
         void Awake()
         {
             Instance = this;
@@ -46,8 +48,20 @@ namespace OJ
             }
         }
 
+        public void PlayWave()
+        {
+            SpawnCount = 0;
+            timer = 0;
+        }
+
         void Update()
         {
+            if (GameManager.Instance.inGameState == InGameState.Setting)
+                return;
+
+            if (GameManager.Instance.WaveMonsterCount <= SpawnCount)
+                return;
+
             timer += Time.deltaTime;
             if (timer >= spawnInterval)
             {
@@ -92,6 +106,8 @@ namespace OJ
             monster.transform.rotation = Quaternion.identity;
             monster.SetHp(hp);
             hp++;
+
+            SpawnCount++;
         }
     }
 

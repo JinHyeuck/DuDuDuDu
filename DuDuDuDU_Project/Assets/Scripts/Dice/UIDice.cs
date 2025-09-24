@@ -134,6 +134,10 @@ namespace OJ
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            if (GameManager.Instance.inGameState == InGameState.Wave)
+                return;
+
+
             originalParent = transform.parent;
             originalPos = transform.localPosition;
 
@@ -143,6 +147,9 @@ namespace OJ
 
         public void OnDrag(PointerEventData eventData)
         {
+            if (GameManager.Instance.inGameState == InGameState.Wave)
+                return;
+
             if (canvas == null) return;
             Vector2 pos;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -152,12 +159,22 @@ namespace OJ
 
         public void OnEndDrag(PointerEventData eventData)
         {
+            if (GameManager.Instance.inGameState == InGameState.Wave)
+                return;
+
             canvasGroup.blocksRaycasts = true;
 
             // 머지 시도
             GameObject hitObj = eventData.pointerCurrentRaycast.gameObject;
             if (hitObj != null)
             {
+                UIRemoveDice uIRemoveDice = hitObj.GetComponentInParent<UIRemoveDice>();
+                if (uIRemoveDice != null)
+                {
+                    uIRemoveDice.RemoveDice(this);
+                    return;
+                }
+
                 UIDice targetDice = hitObj.GetComponentInParent<UIDice>();
                 if (targetDice != null && targetDice != this)
                 {

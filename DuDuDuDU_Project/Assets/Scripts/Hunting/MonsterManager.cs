@@ -20,6 +20,8 @@ namespace OJ
         {
             if (activeMonsters.Contains(monster))
                 activeMonsters.Remove(monster);
+
+            GameManager.Instance.RemoveMonsterDeadCount();
         }
 
         public Monster GetClosestMonster(Vector3 position)

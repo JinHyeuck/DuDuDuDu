@@ -38,6 +38,9 @@ namespace OJ
 
         void Update()
         {
+            if (GameManager.Instance.inGameState != InGameState.Wave)
+                return;
+
             if (UIBoard.Instance == null
                 || UIBoard.Instance.diceMap == null
                 || UIBoard.Instance.diceMap.Length <= 0)

@@ -4,14 +4,6 @@ using UnityEngine;
 
 namespace OJ
 {
-    public enum TargetProjectileState
-    {
-        None = 0,
-        Eject,
-        Shoot,
-        Hit,
-    }
-
     public enum IFFType
     {
         IFF_None = 0,
@@ -47,6 +39,13 @@ namespace OJ
         Run,
         Hit,
         Dead
+    }
+
+    public enum InGameState
+    {
+        None = 0,
+        Setting,
+        Wave,
     }
 
     public static class Define
