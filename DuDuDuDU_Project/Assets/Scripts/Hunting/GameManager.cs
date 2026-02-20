@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 namespace OJ
 {
@@ -27,6 +28,7 @@ namespace OJ
         private bool isPause = false;
 
         private float timeSpeed = 1.0f;
+        [SerializeField] private float returnToLobbyDelay = 1.0f;
 
         void Awake() 
         {
@@ -117,7 +119,10 @@ namespace OJ
             WaveMonsterDeadCount++;
 
             if (WaveMonsterDeadCount >= WaveMonsterCount)
+            {
                 ChangeState(InGameState.Setting);
+                return;
+            }
 
             SetRemainMonster(WaveMonsterDeadCount);
         }
@@ -132,6 +137,14 @@ namespace OJ
             if (isGameOver) return;
             isGameOver = true;
             Debug.Log("Game Over!");
+            StartCoroutine(CoReturnToLobby());
+        }
+
+        private IEnumerator CoReturnToLobby()
+        {
+            inGameState = InGameState.None;
+            yield return new WaitForSecondsRealtime(returnToLobbyDelay);
+            SceneFlowManager.LoadLobby();
         }
     }
 
