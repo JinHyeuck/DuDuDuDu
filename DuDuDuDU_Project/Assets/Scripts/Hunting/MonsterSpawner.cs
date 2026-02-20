@@ -82,7 +82,7 @@ namespace OJ
             }
         }
 
-        public Monster GetBullet()
+        public Monster GetMonster()
         {
             int monsterIdx = monsterIdList[Random.Range(0, monsterIdList.Count)];
 
@@ -99,10 +99,10 @@ namespace OJ
             return obj.GetComponent<Monster>();
         }
 
-        public void PoolBullet(Monster bullet)
+        public void PoolMonster(Monster monster)
         {
-            bullet.gameObject.SetActive(false);
-            monsterPools[bullet.MonsterID].Enqueue(bullet);
+            monster.gameObject.SetActive(false);
+            monsterPools[monster.MonsterID].Enqueue(monster);
         }
 
         int hp = 1;
@@ -112,7 +112,7 @@ namespace OJ
 
             //GameObject clone = Instantiate(monsterPrefab.gameObject, spawnPos, Quaternion.identity);
             //clone.gameObject.SetActive(true);
-            Monster monster = GetBullet();
+            Monster monster = GetMonster();
             monster.OnSpawn();
             monster.transform.position = spawnPos;
             monster.transform.rotation = Quaternion.identity;
@@ -121,6 +121,10 @@ namespace OJ
 
             SpawnCount++;
         }
+
+        // Backward-compatible wrappers (remove after call sites are fully migrated).
+        public Monster GetBullet() => GetMonster();
+        public void PoolBullet(Monster monster) => PoolMonster(monster);
     }
 
 }

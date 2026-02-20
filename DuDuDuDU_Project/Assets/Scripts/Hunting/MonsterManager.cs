@@ -31,12 +31,12 @@ namespace OJ
                 activeMonsters.Add(monster);
         }
 
-        public void UnregisterMonster(Monster monster)
+        public void UnregisterMonster(Monster monster, bool countAsKill = true)
         {
-            if (activeMonsters.Contains(monster))
-                activeMonsters.Remove(monster);
+            bool removed = activeMonsters.Remove(monster);
 
-            GameManager.Instance?.RemoveMonsterDeadCount();
+            if (removed && countAsKill)
+                GameManager.Instance?.RemoveMonsterDeadCount();
         }
 
         public Monster GetClosestMonster(Vector3 position)

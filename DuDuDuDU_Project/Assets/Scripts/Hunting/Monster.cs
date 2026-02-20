@@ -7,6 +7,8 @@ namespace OJ
     {
         CharacterState CharacterState = CharacterState.None;
 
+        private bool IsAlive => gameObject.activeInHierarchy && isActiveAndEnabled && CharacterState != CharacterState.Dead && _hp > 0;
+
         public int MonsterID = -1;
         public int _hp = 3;
         public int attackDamage = 1;
@@ -21,6 +23,8 @@ namespace OJ
 
         public void OnSpawn()
         {
+            StopAllCoroutines();
+            isAttacking = false;
             MonsterManager.Instance.RegisterMonster(this);
             ApplyMoveSpeed = moveSpeed;
             characterAnimation.PlayAnimation(CharacterState.Run);
@@ -29,7 +33,9 @@ namespace OJ
 
         private void OnDisable()
         {
-
+            StopAllCoroutines();
+            isAttacking = false;
+            MonsterManager.Instance?.UnregisterMonster(this, false);
         }
 
         void Update()
@@ -40,22 +46,25 @@ namespace OJ
                 transform.Translate(Vector2.down * ApplyMoveSpeed * Time.deltaTime);
 
                 if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
-                    MonsterSpawner.Instance.PoolBullet(this);
+                    MonsterSpawner.Instance.PoolMonster(this);
             }
         }
 
         public void TakeDamage(int dmg)
         {
+            if (!gameObject.activeInHierarchy || CharacterState == CharacterState.Dead)
+                return;
+
             _hp -= dmg;
             if (_hp <= 0)
             {
                 if (CharacterState != CharacterState.Dead)
                 {
-                    UIDiceSummonSystem.Instance?.AddSP(10);
-                    MonsterSpawner.Instance.PoolBullet(this);
-                    MonsterManager.Instance.UnregisterMonster(this);
-                    StopAllCoroutines();
                     CharacterState = CharacterState.Dead;
+                    StopAllCoroutines();
+                    UIDiceSummonSystem.Instance?.AddSP(10);
+                    MonsterManager.Instance.UnregisterMonster(this, true);
+                    MonsterSpawner.Instance.PoolMonster(this);
                 }
             }
         }
@@ -71,11 +80,17 @@ namespace OJ
 
         public void ApplySlow()
         {
+            if (!IsAlive)
+                return;
+
             ApplyMoveSpeed *= 0.8f;
         }
 
         public void ApplyPoison()
         {
+            if (!IsAlive)
+                return;
+
             StartCoroutine(PlayPoison());
         }
 

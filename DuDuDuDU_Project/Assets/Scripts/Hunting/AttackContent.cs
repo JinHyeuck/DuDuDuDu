@@ -143,6 +143,9 @@ namespace OJ
                 for (int i = 0; i < hitmonsters.Count; ++i)
                 {
                     Monster target = hitmonsters[i];
+                    if (target == null || target.gameObject.activeInHierarchy == false)
+                        continue;
+
                     if (diceType == DiceType.Normal)
                         HitMonster(target, diceType, damage * 2);
                     else
@@ -150,6 +153,9 @@ namespace OJ
 
                     if (diceType == DiceType.Poison)
                     {
+                        if (target.gameObject.activeInHierarchy == false)
+                            continue;
+
                         target.ApplyPoison();
                         BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
                         bulletEffect.transform.position = target.transform.position;
@@ -163,6 +169,9 @@ namespace OJ
                     }
                     else if (diceType == DiceType.Ice)
                     {
+                        if (target.gameObject.activeInHierarchy == false)
+                            continue;
+
                         target.ApplySlow();
                         BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
                         bulletEffect.transform.position = target.transform.position;
