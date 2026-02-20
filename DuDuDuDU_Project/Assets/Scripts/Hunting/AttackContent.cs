@@ -5,8 +5,10 @@ using UnityEngine;
 namespace OJ
 {
 
-    public class AttackContent : MonoSingleton<AttackContent>
+    public class AttackContent : MonoBehaviour
     {
+        public static AttackContent Instance;
+
         private List<Monster> monsterLists = new List<Monster>();
 
         private Dictionary<int, Collider2D[]> _recvColliderPools = new Dictionary<int, Collider2D[]>();
@@ -19,8 +21,21 @@ namespace OJ
 
         public int cheatDiceDamage = 0;
 
-        protected override void Init()
+        private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
         //------------------------------------------------------------------------------------
         private void HitMonster(Monster target, DiceType diceType, int damage)

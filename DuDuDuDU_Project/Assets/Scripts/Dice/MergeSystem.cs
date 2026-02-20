@@ -20,11 +20,18 @@ namespace OJ
             }
             Instance = this;
 
+            UseDices.Clear();
             for (int i = DiceType.Normal.Enum32ToInt(); i < DiceType.Max.Enum32ToInt(); ++i)
             {
                 UseDices.Add(i.IntToEnum32<DiceType>());
             }
 
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
 

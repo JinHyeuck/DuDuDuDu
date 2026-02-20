@@ -22,6 +22,12 @@ namespace OJ
             Instance = this;
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
         private void Start()
         {
             foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))

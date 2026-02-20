@@ -32,11 +32,27 @@ namespace OJ
 
         void Awake() 
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+
             PlayUI.onClick.AddListener(OnClick_PlayUI);
             Pause.onClick.AddListener(OnClick_Pause);
             Speed.onClick.AddListener(OnClick_Speed);
+        }
 
-            Instance = this; 
+        private void OnDestroy()
+        {
+            if (PlayUI != null) PlayUI.onClick.RemoveListener(OnClick_PlayUI);
+            if (Pause != null) Pause.onClick.RemoveListener(OnClick_Pause);
+            if (Speed != null) Speed.onClick.RemoveListener(OnClick_Speed);
+
+            if (Instance == this)
+                Instance = null;
         }
 
         private void Start()

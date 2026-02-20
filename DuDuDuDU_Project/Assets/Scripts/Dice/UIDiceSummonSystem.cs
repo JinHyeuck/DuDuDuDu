@@ -38,6 +38,15 @@ namespace OJ
             Instance = this;
         }
 
+        private void OnDestroy()
+        {
+            if (summonButton != null)
+                summonButton.onClick.RemoveListener(OnSummonButton);
+
+            if (Instance == this)
+                Instance = null;
+        }
+
         private void Start()
         {
             summonButton.onClick.AddListener(OnSummonButton);

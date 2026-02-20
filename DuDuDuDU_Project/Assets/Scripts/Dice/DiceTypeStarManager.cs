@@ -28,6 +28,12 @@ namespace OJ
             }
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
         public void OnDiceSpawn(List<DiceType> type, int star)
         {
             for (int i = 0; i < type.Count; ++i)

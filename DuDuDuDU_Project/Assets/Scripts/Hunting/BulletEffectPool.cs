@@ -3,13 +3,39 @@ using System.Collections.Generic;
 
 namespace OJ
 {
-    public class BulletEffectPool : MonoSingleton<BulletEffectPool>
+    public class BulletEffectPool : MonoBehaviour
     {
+        public static BulletEffectPool Instance;
+
         public int poolSize = 5;
         private Dictionary<DiceType, Dictionary<EffectID, Queue<BulletEffect>>> effectpool = new Dictionary<DiceType, Dictionary<EffectID, Queue<BulletEffect>>>();
 
-        protected override void Init()
+        private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+        }
+
+        private void Start()
+        {
+            InitializePool();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
+        private void InitializePool()
+        {
+            effectpool.Clear();
+
             for (int dicetype = DiceType.Normal.Enum32ToInt(); dicetype < DiceType.Max.Enum32ToInt(); ++dicetype)
             {
                 DiceType diceType = dicetype.IntToEnum32<DiceType>();

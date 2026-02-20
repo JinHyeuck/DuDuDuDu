@@ -23,7 +23,19 @@ namespace OJ
 
         void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         private void Start()
@@ -56,7 +68,7 @@ namespace OJ
 
         void Update()
         {
-            if (GameManager.Instance.inGameState == InGameState.Setting)
+            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Wave)
                 return;
 
             if (GameManager.Instance.WaveMonsterCount <= SpawnCount)

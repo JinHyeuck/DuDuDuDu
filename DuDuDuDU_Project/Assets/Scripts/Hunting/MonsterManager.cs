@@ -8,7 +8,22 @@ namespace OJ
         public static MonsterManager Instance;
         public List<Monster> activeMonsters = new List<Monster>();
 
-        void Awake() { Instance = this; }
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
 
         public void RegisterMonster(Monster monster)
         {
@@ -21,7 +36,7 @@ namespace OJ
             if (activeMonsters.Contains(monster))
                 activeMonsters.Remove(monster);
 
-            GameManager.Instance.RemoveMonsterDeadCount();
+            GameManager.Instance?.RemoveMonsterDeadCount();
         }
 
         public Monster GetClosestMonster(Vector3 position)

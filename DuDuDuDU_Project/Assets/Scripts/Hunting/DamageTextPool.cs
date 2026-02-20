@@ -12,6 +12,12 @@ namespace OJ
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
             for (int i = 0; i < poolSize; i++)
             {
@@ -19,6 +25,12 @@ namespace OJ
                 obj.SetActive(false);
                 pool.Add(obj);
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         public GameObject GetDamageText()

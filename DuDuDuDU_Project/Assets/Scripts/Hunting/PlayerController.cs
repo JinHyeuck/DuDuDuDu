@@ -30,6 +30,12 @@ namespace OJ
             Instance = this;
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
         private void Start()
         {
             characterAnimation.PlayAnimation(CharacterState.Idle);

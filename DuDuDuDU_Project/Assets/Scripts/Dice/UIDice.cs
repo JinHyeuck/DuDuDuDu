@@ -41,6 +41,18 @@ namespace OJ
             canvas = GetComponentInParent<Canvas>();
         }
 
+        private void OnDestroy()
+        {
+            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+                return;
+
+            if (SlotIndex < 0 || SlotIndex >= UIBoard.Instance.diceMap.Length)
+                return;
+
+            if (UIBoard.Instance.diceMap[SlotIndex] == this)
+                UIBoard.Instance.diceMap[SlotIndex] = null;
+        }
+
         public void Refresh()
         {
             StarText.SetText("Lv.{0}", Star);
