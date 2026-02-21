@@ -7,8 +7,8 @@ namespace OJ
     public enum IFFType
     {
         IFF_None = 0,
-        IFF_Friend, // ¿ì¸®ÆÀ
-        IFF_Foe, // »ó´ëÆÀ
+        IFF_Friend, // ï¿½ì¸®ï¿½ï¿½
+        IFF_Foe, // ï¿½ï¿½ï¿½ï¿½ï¿½
     }
 
     public enum DiceType : int
@@ -20,7 +20,7 @@ namespace OJ
         Thunder = 4,
 
         Max,
-        // ÇÊ¿äÇÏ¸é Ãß°¡
+        // ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½ ï¿½ß°ï¿½
     }
 
     public enum EffectID : int
@@ -46,6 +46,20 @@ namespace OJ
         None = 0,
         Setting,
         Wave,
+    }
+
+    public enum PointType
+    {
+        Gold = 0,
+        Dia,
+        Stamina,
+        NormalScroll,
+        FireScroll,
+        IceScroll,
+        PoisonScroll,
+        ThunderScroll,
+
+        Max
     }
 
     public static class Define
