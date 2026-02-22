@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 281fcc6fc04740279da165bb73196f40, type: 3}
+  m_Name: BulletMetaDataDatabase
+  m_EditorClassIdentifier: 
+  metas:
+  - diceType: 0
+    displayName: Normal Bullet
+    description: 균형형 단일 공격 탄환
+    icon: {fileID: 0}
+    baseAttack: 12
+    levelUpAttackIncrease: 3
+    dicePipAttackFactor: 1.2
+    baseGoldCost: 120
+    goldCostPerLevel: 50
+    baseScrollCost: 8
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 6
+      description: 다이스 눈금당 추가 공격력 +30%
+    - level: 13
+      description: 대미지 2배
+  - diceType: 1
+    displayName: Fire Bullet
+    description: 폭발형 범위 공격 탄환
+    icon: {fileID: 0}
+    baseAttack: 10
+    levelUpAttackIncrease: 4
+    dicePipAttackFactor: 1.1
+    baseGoldCost: 140
+    goldCostPerLevel: 60
+    baseScrollCost: 10
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 3
+      description: 범위 50% 증가
+  - diceType: 2
+    displayName: Ice Bullet
+    description: 감속/제어 특화 탄환
+    icon: {fileID: 0}
+    baseAttack: 9
+    levelUpAttackIncrease: 3
+    dicePipAttackFactor: 1
+    baseGoldCost: 130
+    goldCostPerLevel: 55
+    baseScrollCost: 9
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 8
+      description: 일정 확률로 1초 빙결
+  - diceType: 3
+    displayName: Poison Bullet
+    description: 지속 피해/약화 탄환
+    icon: {fileID: 0}
+    baseAttack: 8
+    levelUpAttackIncrease: 2
+    dicePipAttackFactor: 0.95
+    baseGoldCost: 125
+    goldCostPerLevel: 50
+    baseScrollCost: 9
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 9
+      description: 타격 시 적 방어력 20% 감소
+  - diceType: 4
+    displayName: Thunder Bullet
+    description: 연쇄 타격 특화 탄환
+    icon: {fileID: 0}
+    baseAttack: 11
+    levelUpAttackIncrease: 3
+    dicePipAttackFactor: 1.15
+    baseGoldCost: 150
+    goldCostPerLevel: 65
+    baseScrollCost: 11
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 5
+      description: 추가 대상 1명 탐색 후 연쇄 타격

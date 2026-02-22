@@ -134,7 +134,9 @@ namespace OJ
 
                 //int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
 
-                int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
+                int myDicePip = DiceTypeStarManager.Instance.GetTypeStars(diceType);
+                int bulletLevel = BulletLevelManager.Instance != null ? BulletLevelManager.Instance.GetLevel(diceType) : 1;
+                int damage = BulletMetaDataProvider.CalculateDamage(diceType, myDicePip, bulletLevel);
 
                 if (cheatDiceDamage > 0)
                     damage = cheatDiceDamage;
@@ -146,10 +148,7 @@ namespace OJ
                     if (target == null || target.gameObject.activeInHierarchy == false)
                         continue;
 
-                    if (diceType == DiceType.Normal)
-                        HitMonster(target, diceType, damage * 2);
-                    else
-                        HitMonster(target, diceType, damage);
+                    HitMonster(target, diceType, damage);
 
                     if (diceType == DiceType.Poison)
                     {

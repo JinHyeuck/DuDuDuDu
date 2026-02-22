@@ -6,5 +6,6 @@ namespace OJ
     {
         public DiceTypeResourceManager DiceTypeResourceManager;
         public PointMetadataDatabase PointMetadataDatabase;
+        public BulletMetaDataDatabase BulletMetaDataDatabase;
     }
 }

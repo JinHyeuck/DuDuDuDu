@@ -162,6 +162,11 @@ namespace OJ
             yield return new WaitForSecondsRealtime(returnToLobbyDelay);
             SceneFlowManager.LoadLobby();
         }
+
+        public void OnApplicationQuit()
+        {
+            Application.Quit();
+        }
     }
 
 }
