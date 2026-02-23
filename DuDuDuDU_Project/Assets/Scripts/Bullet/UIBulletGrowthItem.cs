@@ -39,7 +39,7 @@ namespace OJ
         {
             var meta = BulletMetaDataProvider.GetMeta(diceType);
             int level = BulletLevelManager.Instance != null ? BulletLevelManager.Instance.GetLevel(diceType) : 1;
-            DiceTypeResourceManager dtr = StaticResource.Instance.DiceTypeResourceManager;
+            var dtr = StaticResource.Instance.DiceTypeResourceManager;
 
             if (bgImage != null)
                 bgImage.color = dtr != null ? dtr.GetColor(diceType) : Color.white;

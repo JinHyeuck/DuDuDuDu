@@ -10,8 +10,9 @@ namespace OJ
         public float speed = 8f;
         private Vector2 moveDir;
         private List<DiceType> _diceType = new List<DiceType>();
+        private int _diceStar = 1;
 
-        public void SetBulletStat(List<DiceType> diceType)
+        public void SetBulletStat(List<DiceType> diceType, int diceStar)
         {
             DiceType firstDiceType = diceType[0];
 
@@ -25,7 +26,8 @@ namespace OJ
             {
                 _diceType.Add(diceType[i]);
             }
-            
+
+            _diceStar = Mathf.Max(1, diceStar);
         }
 
         public void Shoot(Vector2 dir)
@@ -50,7 +52,7 @@ namespace OJ
             {
                 Monster monster = col.GetComponent<Monster>();
 
-                AttackContent.Instance.PlayHit(monster, _diceType);
+                AttackContent.Instance.PlayHit(monster, _diceType, _diceStar);
 
                 BulletPool.Instance.PoolBullet(this);
             }

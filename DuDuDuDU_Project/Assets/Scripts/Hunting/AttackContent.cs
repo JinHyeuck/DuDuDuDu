@@ -52,7 +52,7 @@ namespace OJ
         }
         //------------------------------------------------------------------------------------
         List<Monster> hitmonsters = new List<Monster>();
-        public void PlayHit(Monster rootTarget, List<DiceType> diceTypes)
+        public void PlayHit(Monster rootTarget, List<DiceType> diceTypes, int shotDicePip)
         {
             List<DiceType> order = null;
             if (cheatDiceTypes.Count > 0)
@@ -134,7 +134,7 @@ namespace OJ
 
                 //int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
 
-                int myDicePip = DiceTypeStarManager.Instance.GetTypeStars(diceType);
+                int myDicePip = Mathf.Max(1, shotDicePip);
                 int bulletLevel = BulletLevelManager.Instance != null ? BulletLevelManager.Instance.GetLevel(diceType) : 1;
                 int damage = BulletMetaDataProvider.CalculateDamage(diceType, myDicePip, bulletLevel);
 

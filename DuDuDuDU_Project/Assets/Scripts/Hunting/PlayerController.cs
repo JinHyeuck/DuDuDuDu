@@ -65,6 +65,7 @@ namespace OJ
                     shotindex = 0;
 
                 List<DiceType> diceType = null;
+                int diceStar = 1;
 
                 bool IsFirst = true;
 
@@ -89,13 +90,14 @@ namespace OJ
                         UIDice uIDice = UIBoard.Instance.diceMap[i];
                         shotindex = i;
                         diceType = uIDice.Type;
+                        diceStar = uIDice.Star;
                         uIDice.PlayLevelUpEffect();
                         break;
                     }
                 }
 
                 if (diceType != null)
-                    ShootAtClosest(diceType);
+                    ShootAtClosest(diceType, diceStar);
                 timer = 0f;
 
 
@@ -120,7 +122,7 @@ namespace OJ
             //shotindex = 0;
         }
 
-        void ShootAtClosest(List<DiceType> diceType)
+        void ShootAtClosest(List<DiceType> diceType, int diceStar)
         {
             Monster target = MonsterManager.Instance.GetClosestMonster(firePoint.position);
             if (target == null) return;
@@ -133,7 +135,7 @@ namespace OJ
             Bullet bulletObj = BulletPool.Instance.GetBullet();
             bulletObj.transform.position = firePoint.position;
             bulletObj.transform.rotation = Quaternion.identity;
-            bulletObj.SetBulletStat(diceType);
+            bulletObj.SetBulletStat(diceType, diceStar);
             bulletObj.Shoot(dir);
             characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
             bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
