@@ -7,13 +7,15 @@ using Cysharp.Threading.Tasks;
 
 namespace OJ
 {
-    public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
-        public Image BGImage;          // 다이스 배경
+        public Image BGImage;
         public Image Icon;
         public Transform ShootEffectTrans;
         public Animator ShootEffectAni;
         public Image ShootEffectImage;
+        public Image CooldownFill;
+        public TMP_Text CooldownText;
         public TMP_Text StarText;
         public TMP_Text TypeText;
         public Animator animator;
@@ -41,6 +43,11 @@ namespace OJ
             canvas = GetComponentInParent<Canvas>();
         }
 
+        private void Update()
+        {
+            UpdateCooldownFill();
+        }
+
         private void OnDestroy()
         {
             if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
@@ -56,7 +63,6 @@ namespace OJ
         public void Refresh()
         {
             StarText.SetText("Lv.{0}", Star);
-            //TypeText.text = Type.ToString();
 
             DiceType diceType = Type[0];
 
@@ -69,15 +75,15 @@ namespace OJ
             if (ShootEffectTrans != null)
                 ShootEffectTrans.gameObject.SetActive(false);
 
-            if (Icon != null)
-            {
-                if (typeSprite != null) Icon.sprite = typeSprite;
-            }
+            if (Icon != null && typeSprite != null)
+                Icon.sprite = typeSprite;
 
             if (Star >= MergeSystem.MaxStar && animator != null)
                 animator.SetBool("MaxStar", true);
             else if (animator != null)
                 animator.SetBool("MaxStar", false);
+
+            UpdateCooldownFill();
         }
 
         public void SetStar(int star)
@@ -85,9 +91,9 @@ namespace OJ
             Star = star;
             Refresh();
         }
-        //------------------------------------------------------------------------------------
+
         private float _hideEffectTime = 0.0f;
-        //------------------------------------------------------------------------------------
+
         public void PlayLevelUpEffect()
         {
             _hideEffectTime = Time.time + 0.5f;
@@ -105,16 +111,10 @@ namespace OJ
                 }
 
                 if (_hideEffectTime > Time.time)
-                {
                     _hideEffectTime = Time.time + 1.0f;
-                }
-                else
-                {
-
-                }
             }
         }
-        //------------------------------------------------------------------------------------
+
         private async UniTask AutoHideEffect()
         {
             if (ShootEffectTrans != null)
@@ -136,11 +136,33 @@ namespace OJ
                 return;
 
             if (ShootEffectTrans != null)
-            {
                 ShootEffectTrans.gameObject.SetActive(false);
+        }
+
+        private void UpdateCooldownFill()
+        {
+            if (CooldownFill == null)
+                return;
+
+            float fill = 0f;
+            float remain = 0f;
+            if (PlayerController.Instance != null)
+            {
+                fill = PlayerController.Instance.GetDiceCooldownFill(this);
+                remain = PlayerController.Instance.GetDiceCooldownRemaining(this);
+            }
+
+            CooldownFill.fillAmount = fill;
+            CooldownFill.enabled = fill > 0.001f;
+
+            if (CooldownText != null)
+            {
+                bool visible = remain > 0.01f;
+                CooldownText.gameObject.SetActive(visible);
+                if (visible)
+                    CooldownText.SetText("{0:0.0}", remain);
             }
         }
-        //------------------------------------------------------------------------------------
 
         #region Drag Handlers
 
@@ -149,12 +171,11 @@ namespace OJ
             if (GameManager.Instance.inGameState == InGameState.Wave)
                 return;
 
-
             originalParent = transform.parent;
             originalPos = transform.localPosition;
 
-            transform.SetParent(canvas.transform, true); // 최상위 캔버스로 이동
-            canvasGroup.blocksRaycasts = false;          // Raycast 무시해서 자기 자신이 Drop 타겟 막지 않게
+            transform.SetParent(canvas.transform, true);
+            canvasGroup.blocksRaycasts = false;
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -163,9 +184,8 @@ namespace OJ
                 return;
 
             if (canvas == null) return;
-            Vector2 pos;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvas.transform as RectTransform, eventData.position, canvas.worldCamera, out pos);
+                canvas.transform as RectTransform, eventData.position, canvas.worldCamera, out Vector2 pos);
             transform.position = canvas.transform.TransformPoint(pos);
         }
 
@@ -176,7 +196,6 @@ namespace OJ
 
             canvasGroup.blocksRaycasts = true;
 
-            // 머지 시도
             GameObject hitObj = eventData.pointerCurrentRaycast.gameObject;
             if (hitObj != null)
             {
@@ -192,16 +211,66 @@ namespace OJ
                 {
                     bool merged = MergeSystem.Instance.TryMerge(this, targetDice);
                     if (merged)
-                        return; // 머지 성공하면 드래그 다이스 파괴됐으므로 종료
+                        return;
                 }
             }
 
-            // 드래그 실패 시 원래 자리로 복귀
             transform.SetParent(originalParent);
             transform.localPosition = originalPos;
         }
 
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (eventData.button != PointerEventData.InputButton.Left)
+                return;
+
+            if (eventData.clickCount < 2)
+                return;
+
+            TryAutoMergeSameDice();
+        }
+
+        private void TryAutoMergeSameDice()
+        {
+            if (GameManager.Instance.inGameState == InGameState.Wave)
+                return;
+
+            if (MergeSystem.Instance == null || UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+                return;
+
+            if (Star >= MergeSystem.MaxStar)
+                return;
+
+            if (Type == null || Type.Count == 0)
+                return;
+
+            DiceType myType = Type[0];
+            UIDice target = null;
+            UIDice[] map = UIBoard.Instance.diceMap;
+
+            for (int i = 0; i < map.Length; i++)
+            {
+                UIDice candidate = map[i];
+                if (candidate == null || candidate == this)
+                    continue;
+
+                if (candidate.Star != Star || candidate.Star >= MergeSystem.MaxStar)
+                    continue;
+
+                if (candidate.Type == null || candidate.Type.Count == 0)
+                    continue;
+
+                if (candidate.Type[0] != myType)
+                    continue;
+
+                target = candidate;
+                break;
+            }
+
+            if (target != null)
+                MergeSystem.Instance.TryMerge(this, target);
+        }
+
         #endregion
     }
-
 }

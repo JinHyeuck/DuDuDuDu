@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using OJ;
 
 namespace OJ
 {
@@ -19,6 +18,9 @@ namespace OJ
         private int shotindex = 0;
 
         private List<DiceType> diceTypes = new List<DiceType>();
+        private readonly Dictionary<UIDice, float> diceNextReadyTime = new Dictionary<UIDice, float>();
+        private readonly List<UIDice> removeCooldownBuffer = new List<UIDice>();
+        private bool wasWaveState = false;
 
         private void Awake()
         {
@@ -44,8 +46,14 @@ namespace OJ
 
         void Update()
         {
-            if (GameManager.Instance.inGameState != InGameState.Wave)
+            bool isWaveState = GameManager.Instance.inGameState == InGameState.Wave;
+            if (!isWaveState)
+            {
+                if (wasWaveState)
+                    ResetAllDiceCooldowns();
                 return;
+            }
+            wasWaveState = true;
 
             if (UIBoard.Instance == null
                 || UIBoard.Instance.diceMap == null
@@ -53,55 +61,22 @@ namespace OJ
                 return;
 
 
-            //if (diceTypes.Count <= 0)
-            //    return;
-
             timer += Time.deltaTime;
-            if (timer >= fireRate)
-            {
-                shotindex++;
+            if (timer < fireRate)
+                return;
 
-                if (shotindex >= UIBoard.Instance.diceMap.Length)
-                    shotindex = 0;
+            CleanupCooldownMap();
 
-                List<DiceType> diceType = null;
-                int diceStar = 1;
+            if (!TryGetReadyDice(out UIDice selectedDice))
+                return;
 
-                bool IsFirst = true;
+            if (!ShootAtClosest(selectedDice.Type, selectedDice.Star))
+                return;
 
-                for (int i = shotindex; i < UIBoard.Instance.diceMap.Length; ++i)
-                {
-                    if (shotindex == i)
-                    {
-                        if (IsFirst == false)
-                            break;
-                        else
-                            IsFirst = false;
-                    }
-
-                    if (UIBoard.Instance.diceMap[i] == null)
-                    {
-                        if (UIBoard.Instance.diceMap.Length - 1 <= i)
-                            i = -1;
-                        continue;
-                    }
-                    else
-                    {
-                        UIDice uIDice = UIBoard.Instance.diceMap[i];
-                        shotindex = i;
-                        diceType = uIDice.Type;
-                        diceStar = uIDice.Star;
-                        uIDice.PlayLevelUpEffect();
-                        break;
-                    }
-                }
-
-                if (diceType != null)
-                    ShootAtClosest(diceType, diceStar);
-                timer = 0f;
-
-
-            }
+            shotindex = selectedDice.SlotIndex;
+            SetDiceNextCooldown(selectedDice);
+            selectedDice.PlayLevelUpEffect();
+            timer = 0f;
         }
 
         public void RefreshDice()
@@ -122,10 +97,120 @@ namespace OJ
             //shotindex = 0;
         }
 
-        void ShootAtClosest(List<DiceType> diceType, int diceStar)
+        private bool TryGetReadyDice(out UIDice selectedDice)
+        {
+            selectedDice = null;
+
+            UIDice[] map = UIBoard.Instance.diceMap;
+            int total = map.Length;
+            if (total <= 0)
+                return false;
+
+            float now = Time.time;
+            float bestReadyTime = float.MaxValue;
+            int start = (shotindex + 1 + total) % total;
+
+            for (int offset = 0; offset < total; offset++)
+            {
+                int idx = (start + offset) % total;
+                UIDice dice = map[idx];
+                if (dice == null || dice.Type == null || dice.Type.Count == 0)
+                    continue;
+
+                float readyTime = GetNextReadyTime(dice);
+                if (readyTime > now)
+                    continue;
+
+                if (selectedDice == null || readyTime < bestReadyTime - 0.0001f)
+                {
+                    selectedDice = dice;
+                    bestReadyTime = readyTime;
+                }
+            }
+
+            return selectedDice != null;
+        }
+
+        private void SetDiceNextCooldown(UIDice dice)
+        {
+            if (dice == null || dice.Type == null || dice.Type.Count == 0)
+                return;
+
+            float cooldown = BulletMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            float effectDuration = Mathf.Max(0f, fireRate);
+            diceNextReadyTime[dice] = Time.time + effectDuration + cooldown;
+        }
+
+        private float GetNextReadyTime(UIDice dice)
+        {
+            if (dice == null)
+                return 0f;
+
+            return diceNextReadyTime.TryGetValue(dice, out float readyTime) ? readyTime : 0f;
+        }
+
+        private void CleanupCooldownMap()
+        {
+            removeCooldownBuffer.Clear();
+
+            foreach (var pair in diceNextReadyTime)
+            {
+                if (pair.Key == null)
+                    removeCooldownBuffer.Add(pair.Key);
+            }
+
+            for (int i = 0; i < removeCooldownBuffer.Count; i++)
+            {
+                diceNextReadyTime.Remove(removeCooldownBuffer[i]);
+            }
+        }
+
+        public float GetDiceCooldownFill(UIDice dice)
+        {
+            if (dice == null || dice.Type == null || dice.Type.Count == 0)
+                return 0f;
+
+            float cooldown = BulletMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            if (cooldown <= 0f)
+                return 0f;
+
+            float endTime = GetNextReadyTime(dice);
+            float startTime = endTime - cooldown;
+            if (Time.time < startTime)
+                return 0f;
+
+            float remain = Mathf.Max(0f, endTime - Time.time);
+            return Mathf.Clamp01(remain / cooldown);
+        }
+
+        public float GetDiceCooldownRemaining(UIDice dice)
+        {
+            if (dice == null || dice.Type == null || dice.Type.Count == 0)
+                return 0f;
+
+            float cooldown = BulletMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            if (cooldown <= 0f)
+                return 0f;
+
+            float endTime = GetNextReadyTime(dice);
+            float startTime = endTime - cooldown;
+            if (Time.time < startTime)
+                return 0f;
+
+            return Mathf.Max(0f, endTime - Time.time);
+        }
+
+        private void ResetAllDiceCooldowns()
+        {
+            timer = 0f;
+            diceNextReadyTime.Clear();
+            wasWaveState = false;
+        }
+
+        bool ShootAtClosest(List<DiceType> diceType, int diceStar)
         {
             Monster target = MonsterManager.Instance.GetClosestMonster(firePoint.position);
-            if (target == null) return;
+            if (target == null) return false;
 
             Vector2 dir = (target.transform.position - firePoint.position).normalized;
 
@@ -139,6 +224,7 @@ namespace OJ
             bulletObj.Shoot(dir);
             characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
             bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+            return true;
         }
     }
 

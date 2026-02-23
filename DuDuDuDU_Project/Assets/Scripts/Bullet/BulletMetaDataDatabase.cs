@@ -27,6 +27,9 @@ namespace OJ
             public int levelUpAttackIncrease;
             public float dicePipAttackFactor;
 
+            [Header("Combat")]
+            public float baseCooldown = 3f;
+
             [Header("Upgrade Cost")]
             public int baseGoldCost = 100;
             public int goldCostPerLevel = 40;

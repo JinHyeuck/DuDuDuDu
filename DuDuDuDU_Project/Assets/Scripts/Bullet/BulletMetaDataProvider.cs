@@ -5,6 +5,7 @@ namespace OJ
 {
     public static class BulletMetaDataProvider
     {
+        private const float CooldownBalanceMultiplier = 2f;
         private static BulletMetaDataDatabase database;
         private static Dictionary<DiceType, BulletMetaDataDatabase.BulletMeta> defaults;
 
@@ -61,6 +62,22 @@ namespace OJ
             return Mathf.Max(1, Mathf.RoundToInt(scaled));
         }
 
+        public static float GetBaseCooldown(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            if (meta != null && meta.baseCooldown > 0f)
+                return meta.baseCooldown;
+
+            return 3f;
+        }
+
+        public static float GetCooldown(DiceType diceType, int diceStar)
+        {
+            float baseCooldown = Mathf.Clamp(GetBaseCooldown(diceType), 0.1f, 10f);
+            int star = Mathf.Max(1, diceStar);
+            return baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
+        }
+
         private static void EnsureDefaults()
         {
             if (defaults != null)
@@ -68,20 +85,20 @@ namespace OJ
 
             defaults = new Dictionary<DiceType, BulletMetaDataDatabase.BulletMeta>
             {
-                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Bullet", "균형형 단일 공격 탄환", 12, 3, 1.20f, 120, 50, 8, 2, new []{
+                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Bullet", "균형형 단일 공격 탄환", 12, 3, 1.20f, 120, 50, 8, 2, 2.4f, new []{
                     (6, "다이스 눈금당 추가 공격력 +30%"),
                     (13, "대미지 2배")
                 }) },
-                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Bullet", "폭발형 범위 공격 탄환", 10, 4, 1.10f, 140, 60, 10, 2, new []{
+                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Bullet", "폭발형 범위 공격 탄환", 10, 4, 1.10f, 140, 60, 10, 2, 3.1f, new []{
                     (3, "범위 50% 증가")
                 }) },
-                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Bullet", "감속/제어 특화 탄환", 9, 3, 1.00f, 130, 55, 9, 2, new []{
+                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Bullet", "감속/제어 특화 탄환", 9, 3, 1.00f, 130, 55, 9, 2, 3.8f, new []{
                     (8, "일정 확률로 1초 빙결")
                 }) },
-                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Bullet", "지속 피해/약화 탄환", 8, 2, 0.95f, 125, 50, 9, 2, new []{
+                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Bullet", "지속 피해/약화 탄환", 8, 2, 0.95f, 125, 50, 9, 2, 3.4f, new []{
                     (9, "타격 시 적 방어력 20% 감소")
                 }) },
-                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Bullet", "연쇄 타격 특화 탄환", 11, 3, 1.15f, 150, 65, 11, 2, new []{
+                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Bullet", "연쇄 타격 특화 탄환", 11, 3, 1.15f, 150, 65, 11, 2, 2.7f, new []{
                     (5, "추가 대상 1명 탐색 후 연쇄 타격")
                 }) }
             };
@@ -98,6 +115,7 @@ namespace OJ
             int goldCostPerLevel,
             int baseScrollCost,
             int scrollCostPerLevel,
+            float baseCooldown,
             (int level, string desc)[] milestones)
         {
             var meta = new BulletMetaDataDatabase.BulletMeta
@@ -111,7 +129,8 @@ namespace OJ
                 baseGoldCost = baseGoldCost,
                 goldCostPerLevel = goldCostPerLevel,
                 baseScrollCost = baseScrollCost,
-                scrollCostPerLevel = scrollCostPerLevel
+                scrollCostPerLevel = scrollCostPerLevel,
+                baseCooldown = baseCooldown
             };
 
             for (int i = 0; i < milestones.Length; i++)
