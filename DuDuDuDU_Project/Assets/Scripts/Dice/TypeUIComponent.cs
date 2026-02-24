@@ -29,8 +29,8 @@ namespace OJ
         {
             if (DiceTypeStarManager.Instance == null) return;
 
-            //Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(type);
-            Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(type);
+            //Color typeColor = DiceMetaDataProvider.GetColor(type);
+            Sprite typeSprite = DiceMetaDataProvider.GetIcon(type);
 
             // BG 색상만 변경
             //if (BGImage != null)

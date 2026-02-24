@@ -48,6 +48,39 @@ namespace OJ
             return (gold, scroll);
         }
 
+        public static Color GetColor(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            return meta != null ? meta.color : Color.white;
+        }
+
+        public static Sprite GetIcon(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            return meta != null ? meta.icon : null;
+        }
+
+        public static Sprite GetProjectileSprite(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            return meta != null ? meta.projectileSprite : null;
+        }
+
+        public static BulletEffect GetPrimaryEffect(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            return meta != null ? meta.primaryEffect : null;
+        }
+
+        public static List<BulletEffect> GetEffectPrefabs(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            if (meta != null && meta.effectPrefabs != null)
+                return meta.effectPrefabs;
+
+            return null;
+        }
+
         public static int CalculateDamage(DiceType diceType, int dicePip, int bulletLevel)
         {
             var meta = GetMeta(diceType);

@@ -46,7 +46,7 @@ namespace OJ
             GameObject dtObj = DamageTextPool.Instance.GetDamageText();
             dtObj.transform.position = target.transform.position; // 몬스터 위치
             dtObj.transform.ResetLocalZ();
-            Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(diceType);
+            Color typeColor = DiceMetaDataProvider.GetColor(diceType);
 
             dtObj.GetComponent<DamageText>().SetText(damage, typeColor);
         }

@@ -66,8 +66,8 @@ namespace OJ
 
             DiceType diceType = Type[0];
 
-            Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(diceType);
-            Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(diceType);
+            Color typeColor = DiceMetaDataProvider.GetColor(diceType);
+            Sprite typeSprite = DiceMetaDataProvider.GetIcon(diceType);
 
             if (ShootEffectImage != null)
                 ShootEffectImage.color = typeColor;

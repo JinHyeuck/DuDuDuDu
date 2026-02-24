@@ -21,6 +21,10 @@ namespace OJ
             public string displayName;
             [TextArea(2, 4)] public string description;
             public Sprite icon;
+            public Color color = Color.white;
+            public Sprite projectileSprite;
+            public BulletEffect primaryEffect;
+            public List<BulletEffect> effectPrefabs = new List<BulletEffect>();
 
             [Header("Damage")]
             public int baseAttack;

@@ -16,7 +16,7 @@ namespace OJ
         {
             DiceType firstDiceType = diceType[0];
 
-            Sprite sprite = StaticResource.Instance.DiceTypeResourceManager.GetBullet(firstDiceType);
+            Sprite sprite = DiceMetaDataProvider.GetProjectileSprite(firstDiceType);
 
             bulletImage.sprite = sprite;
 

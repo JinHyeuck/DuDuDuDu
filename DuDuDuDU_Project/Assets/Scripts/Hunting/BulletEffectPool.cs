@@ -42,11 +42,15 @@ namespace OJ
                 if (effectpool.ContainsKey(diceType) == false)
                     effectpool.Add(diceType, new Dictionary<EffectID, Queue<BulletEffect>>());
 
-                DiceTypeResourceManager.TypeVisual typeVisual = StaticResource.Instance.DiceTypeResourceManager.GetTypeVisual(diceType);
+                List<BulletEffect> effectPrefabs = DiceMetaDataProvider.GetEffectPrefabs(diceType);
+                if (effectPrefabs == null)
+                    continue;
 
-                for (int effects = 0; effects < typeVisual.bulletEffectDatas.Count; ++effects)
+                for (int effects = 0; effects < effectPrefabs.Count; ++effects)
                 {
-                    BulletEffect bulletEffectObj = typeVisual.bulletEffectDatas[effects];
+                    BulletEffect bulletEffectObj = effectPrefabs[effects];
+                    if (bulletEffectObj == null)
+                        continue;
 
                     EffectID ID = bulletEffectObj.myEffectType;
 
@@ -69,7 +73,11 @@ namespace OJ
 
         public BulletEffect GetBullet(DiceType diceType, EffectID effectID = EffectID.S)
         {
-            Queue<BulletEffect> pool = effectpool[diceType][effectID];
+            if (!effectpool.TryGetValue(diceType, out var effectMap))
+                return null;
+
+            if (!effectMap.TryGetValue(effectID, out var pool))
+                return null;
 
             if (pool.Count > 0)
             {
@@ -78,9 +86,13 @@ namespace OJ
                 return queuebullet;
             }
 
-            DiceTypeResourceManager.TypeVisual typeVisual = StaticResource.Instance.DiceTypeResourceManager.GetTypeVisual(diceType);
+            List<BulletEffect> effectPrefabs = DiceMetaDataProvider.GetEffectPrefabs(diceType);
+            if (effectPrefabs == null)
+                return null;
 
-            BulletEffect bulletEffectObj = typeVisual.bulletEffectDatas.Find(x => x.myEffectType == effectID);
+            BulletEffect bulletEffectObj = effectPrefabs.Find(x => x != null && x.myEffectType == effectID);
+            if (bulletEffectObj == null)
+                return null;
             GameObject obj = Instantiate(bulletEffectObj.gameObject, transform);
             return obj.GetComponent<BulletEffect>();
         }
