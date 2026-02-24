@@ -64,6 +64,7 @@ namespace OJ
         IceScroll,
         PoisonScroll,
         ThunderScroll,
+        MythicScroll,
 
         Max
     }

@@ -140,17 +140,17 @@ namespace OJ
                 case DiceType.Thunder:
                     return PointType.ThunderScroll;
                 case DiceType.KingNormal:
-                    return PointType.NormalScroll;
+                    return PointType.MythicScroll;
                 case DiceType.KingFire:
-                    return PointType.FireScroll;
+                    return PointType.MythicScroll;
                 case DiceType.KingIce:
-                    return PointType.IceScroll;
+                    return PointType.MythicScroll;
                 case DiceType.KingPoison:
-                    return PointType.PoisonScroll;
+                    return PointType.MythicScroll;
                 case DiceType.KingThunder:
-                    return PointType.ThunderScroll;
+                    return PointType.MythicScroll;
                 case DiceType.KingMixed:
-                    return PointType.NormalScroll;
+                    return PointType.MythicScroll;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(diceType), diceType, "Unsupported dice type.");
             }

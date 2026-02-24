@@ -9,14 +9,21 @@ namespace OJ
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
-            if (Object.FindFirstObjectByType<UIMythicDiceCraftPanel>() != null)
+            UIMythicDiceCraftPanel existing = Object.FindFirstObjectByType<UIMythicDiceCraftPanel>();
+            if (existing != null)
+            {
+                existing.enabled = true;
+                existing.showPanel = true;
                 return;
+            }
 
             var go = new GameObject(nameof(UIMythicDiceCraftPanel));
             go.AddComponent<UIMythicDiceCraftPanel>();
+            Object.DontDestroyOnLoad(go);
         }
 
         [SerializeField] private bool showPanel = true;
+        [SerializeField] private KeyCode toggleKey = KeyCode.F7;
         [SerializeField] private Vector2 panelPos = new Vector2(16f, 120f);
         [SerializeField] private float panelWidth = 420f;
         [SerializeField] private float panelHeight = 420f;
@@ -26,16 +33,29 @@ namespace OJ
         private readonly List<UIDice> consumeBuffer = new List<UIDice>();
         private readonly StringBuilder lineBuilder = new StringBuilder(128);
 
+        private void Awake()
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(toggleKey))
+                showPanel = !showPanel;
+        }
+
         private void OnGUI()
         {
             if (!showPanel)
                 return;
 
-            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Setting)
-                return;
+            InGameState state = GameManager.Instance != null ? GameManager.Instance.inGameState : InGameState.None;
 
-            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+            if (GameManager.Instance == null || state != InGameState.Setting || UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+            {
+                DrawStatus(state);
                 return;
+            }
 
             BuildMaterialCounts();
 
@@ -51,6 +71,15 @@ namespace OJ
             }
 
             GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
+        private void DrawStatus(InGameState state)
+        {
+            GUILayout.BeginArea(new Rect(panelPos.x, panelPos.y, panelWidth, 86f), GUI.skin.window);
+            GUILayout.Label("Mythic Dice Craft");
+            GUILayout.Label($"State: {state} (Need: Setting)");
+            GUILayout.Label($"Board Ready: {(UIBoard.Instance != null && UIBoard.Instance.diceMap != null ? "Yes" : "No")} | Toggle: {toggleKey}");
             GUILayout.EndArea();
         }
 

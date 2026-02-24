@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace OJ
 {
@@ -42,7 +43,7 @@ namespace OJ
             if (from.Type != to.Type || from.Star != to.Star)
                 return false;
 
-            DiceType mergedType = from.Type;
+            DiceType mergedType = GetRandomMergedType(from.Type);
             DiceTypeStarManager.Instance.OnDiceRemove(from.Type, from.Star);
             DiceTypeStarManager.Instance.OnDiceRemove(to.Type, to.Star);
 
@@ -55,6 +56,28 @@ namespace OJ
             Destroy(from.gameObject);
 
             return true;
+        }
+
+        private DiceType GetRandomMergedType(DiceType fallbackType)
+        {
+            UIDiceSummonSystem summonSystem = UIDiceSummonSystem.Instance;
+            if (summonSystem == null || summonSystem.deckTypes == null || summonSystem.deckTypes.Count == 0)
+                return fallbackType;
+
+            List<DiceType> candidates = new List<DiceType>(summonSystem.deckTypes.Count);
+            for (int i = 0; i < summonSystem.deckTypes.Count; i++)
+            {
+                DiceType type = summonSystem.deckTypes[i];
+                if (!DiceMetaDataProvider.IsSummonable(type))
+                    continue;
+
+                candidates.Add(type);
+            }
+
+            if (candidates.Count == 0)
+                return fallbackType;
+
+            return candidates[Random.Range(0, candidates.Count)];
         }
     }
 }
