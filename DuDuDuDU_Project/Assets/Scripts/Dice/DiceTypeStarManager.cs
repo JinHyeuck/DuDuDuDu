@@ -34,32 +34,16 @@ namespace OJ
                 Instance = null;
         }
 
-        public void OnDiceSpawn(List<DiceType> type, int star)
+        public void OnDiceSpawn(DiceType type, int star)
         {
-            for (int i = 0; i < type.Count; ++i)
-            {
-                AddStars(type[i], star);
-            }
-
+            AddStars(type, star);
             UIDiceBoardUI.Instance?.UpdateTypeStars();
             PlayerController.Instance?.RefreshDice();
         }
 
-        public void OnDiceRemove(List<DiceType> type, int star)
+        public void OnDiceRemove(DiceType type, int star)
         {
-            for (int i = 0; i < type.Count; ++i)
-            {
-                RemoveStars(type[i], star);
-            }
-            
-            UIDiceBoardUI.Instance?.UpdateTypeStars();
-            PlayerController.Instance?.RefreshDice();
-        }
-
-        public void OnDiceMerge(DiceType typeFrom, int starFrom, DiceType typeTo)
-        {
-            RemoveStars(typeFrom, starFrom);
-            AddStars(typeTo, 1);
+            RemoveStars(type, star);
             UIDiceBoardUI.Instance?.UpdateTypeStars();
             PlayerController.Instance?.RefreshDice();
         }
@@ -80,7 +64,6 @@ namespace OJ
                 typeCountTotals[type] -= 1;
                 if (typeCountTotals[type] < 0) typeCountTotals[type] = 0;
             }
-
 
             if (!typeStarTotals.ContainsKey(type)) return;
             typeStarTotals[type] -= stars;
@@ -107,5 +90,4 @@ namespace OJ
             UIDiceBoardUI.Instance?.UpdateTypeStars();
         }
     }
-
 }

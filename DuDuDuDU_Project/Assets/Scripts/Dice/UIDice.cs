@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -20,7 +19,7 @@ namespace OJ
         public TMP_Text TypeText;
         public Animator animator;
 
-        public List<DiceType> Type { get; private set; }
+        public DiceType Type { get; private set; }
         public int Star { get; private set; }
         public int SlotIndex { get; private set; }
 
@@ -29,7 +28,7 @@ namespace OJ
         private CanvasGroup canvasGroup;
         private Canvas canvas;
 
-        public void Init(List<DiceType> type, int star, int slotIndex)
+        public void Init(DiceType type, int star, int slotIndex)
         {
             Type = type;
             Star = star;
@@ -64,7 +63,7 @@ namespace OJ
         {
             StarText.SetText("Lv.{0}", Star);
 
-            DiceType diceType = Type[0];
+            DiceType diceType = Type;
 
             Color typeColor = DiceMetaDataProvider.GetColor(diceType);
             Sprite typeSprite = DiceMetaDataProvider.GetIcon(diceType);
@@ -241,10 +240,7 @@ namespace OJ
             if (Star >= MergeSystem.MaxStar)
                 return;
 
-            if (Type == null || Type.Count == 0)
-                return;
-
-            DiceType myType = Type[0];
+            DiceType myType = Type;
             UIDice target = null;
             UIDice[] map = UIBoard.Instance.diceMap;
 
@@ -257,10 +253,7 @@ namespace OJ
                 if (candidate.Star != Star || candidate.Star >= MergeSystem.MaxStar)
                     continue;
 
-                if (candidate.Type == null || candidate.Type.Count == 0)
-                    continue;
-
-                if (candidate.Type[0] != myType)
+                if (candidate.Type != myType)
                     continue;
 
                 target = candidate;
