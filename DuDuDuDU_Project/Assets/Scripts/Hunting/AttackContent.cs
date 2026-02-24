@@ -135,8 +135,8 @@ namespace OJ
                 //int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
 
                 int myDicePip = Mathf.Max(1, shotDicePip);
-                int bulletLevel = BulletLevelManager.Instance != null ? BulletLevelManager.Instance.GetLevel(diceType) : 1;
-                int damage = BulletMetaDataProvider.CalculateDamage(diceType, myDicePip, bulletLevel);
+                int bulletLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
+                int damage = DiceMetaDataProvider.CalculateDamage(diceType, myDicePip, bulletLevel);
 
                 if (cheatDiceDamage > 0)
                     damage = cheatDiceDamage;

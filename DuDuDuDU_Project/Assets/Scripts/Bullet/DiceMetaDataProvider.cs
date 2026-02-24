@@ -3,30 +3,30 @@ using UnityEngine;
 
 namespace OJ
 {
-    public static class BulletMetaDataProvider
+    public static class DiceMetaDataProvider
     {
         private const float CooldownBalanceMultiplier = 2f;
-        private static BulletMetaDataDatabase database;
-        private static Dictionary<DiceType, BulletMetaDataDatabase.BulletMeta> defaults;
+        private static DiceMetaDataDatabase database;
+        private static Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta> defaults;
 
-        public static BulletMetaDataDatabase Database
+        public static DiceMetaDataDatabase Database
         {
             get
             {
                 if (database == null)
                 {
-                    if (StaticResource.Instance != null && StaticResource.Instance.BulletMetaDataDatabase != null)
-                        database = StaticResource.Instance.BulletMetaDataDatabase;
+                    if (StaticResource.Instance != null && StaticResource.Instance.DiceMetaDataDatabase != null)
+                        database = StaticResource.Instance.DiceMetaDataDatabase;
                 }
 
                 if (database == null)
-                    database = Resources.Load<BulletMetaDataDatabase>("BulletMetaDataDatabase");
+                    database = Resources.Load<DiceMetaDataDatabase>("DiceMetaDataDatabase");
 
                 return database;
             }
         }
 
-        public static BulletMetaDataDatabase.BulletMeta GetMeta(DiceType diceType)
+        public static DiceMetaDataDatabase.DiceMeta GetMeta(DiceType diceType)
         {
             if (Database != null && Database.TryGet(diceType, out var meta))
                 return meta;
@@ -83,28 +83,28 @@ namespace OJ
             if (defaults != null)
                 return;
 
-            defaults = new Dictionary<DiceType, BulletMetaDataDatabase.BulletMeta>
+            defaults = new Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta>
             {
-                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Bullet", "균형형 단일 공격 탄환", 12, 3, 1.20f, 120, 50, 8, 2, 2.4f, new []{
+                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "균형형 단일 공격 탄환", 12, 3, 1.20f, 120, 50, 8, 2, 2.4f, new []{
                     (6, "다이스 눈금당 추가 공격력 +30%"),
                     (13, "대미지 2배")
                 }) },
-                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Bullet", "폭발형 범위 공격 탄환", 10, 4, 1.10f, 140, 60, 10, 2, 3.1f, new []{
+                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "폭발형 범위 공격 탄환", 10, 4, 1.10f, 140, 60, 10, 2, 3.1f, new []{
                     (3, "범위 50% 증가")
                 }) },
-                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Bullet", "감속/제어 특화 탄환", 9, 3, 1.00f, 130, 55, 9, 2, 3.8f, new []{
+                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "감속/제어 특화 탄환", 9, 3, 1.00f, 130, 55, 9, 2, 3.8f, new []{
                     (8, "일정 확률로 1초 빙결")
                 }) },
-                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Bullet", "지속 피해/약화 탄환", 8, 2, 0.95f, 125, 50, 9, 2, 3.4f, new []{
+                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "지속 피해/약화 탄환", 8, 2, 0.95f, 125, 50, 9, 2, 3.4f, new []{
                     (9, "타격 시 적 방어력 20% 감소")
                 }) },
-                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Bullet", "연쇄 타격 특화 탄환", 11, 3, 1.15f, 150, 65, 11, 2, 2.7f, new []{
+                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "연쇄 타격 특화 탄환", 11, 3, 1.15f, 150, 65, 11, 2, 2.7f, new []{
                     (5, "추가 대상 1명 탐색 후 연쇄 타격")
                 }) }
             };
         }
 
-        private static BulletMetaDataDatabase.BulletMeta CreateDefault(
+        private static DiceMetaDataDatabase.DiceMeta CreateDefault(
             DiceType diceType,
             string displayName,
             string description,
@@ -118,7 +118,7 @@ namespace OJ
             float baseCooldown,
             (int level, string desc)[] milestones)
         {
-            var meta = new BulletMetaDataDatabase.BulletMeta
+            var meta = new DiceMetaDataDatabase.DiceMeta
             {
                 diceType = diceType,
                 displayName = displayName,
@@ -135,7 +135,7 @@ namespace OJ
 
             for (int i = 0; i < milestones.Length; i++)
             {
-                meta.milestones.Add(new BulletMetaDataDatabase.BulletLevelMilestone
+                meta.milestones.Add(new DiceMetaDataDatabase.DiceLevelMilestone
                 {
                     level = milestones[i].level,
                     description = milestones[i].desc

@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 281fcc6fc04740279da165bb73196f40, type: 3}
-  m_Name: BulletMetaDataDatabase
+  m_Name: DiceMetaDataDatabase
   m_EditorClassIdentifier: 
   metas:
   - diceType: 0
-    displayName: Normal Bullet
+    displayName: Normal Dice
     description: 균형형 단일 공격 탄환
     icon: {fileID: 0}
     baseAttack: 12
@@ -31,7 +31,7 @@ MonoBehaviour:
     - level: 13
       description: 대미지 2배
   - diceType: 1
-    displayName: Fire Bullet
+    displayName: Fire Dice
     description: 폭발형 범위 공격 탄환
     icon: {fileID: 0}
     baseAttack: 10
@@ -46,7 +46,7 @@ MonoBehaviour:
     - level: 3
       description: 범위 50% 증가
   - diceType: 2
-    displayName: Ice Bullet
+    displayName: Ice Dice
     description: 감속/제어 특화 탄환
     icon: {fileID: 0}
     baseAttack: 9
@@ -61,7 +61,7 @@ MonoBehaviour:
     - level: 8
       description: 일정 확률로 1초 빙결
   - diceType: 3
-    displayName: Poison Bullet
+    displayName: Poison Dice
     description: 지속 피해/약화 탄환
     icon: {fileID: 0}
     baseAttack: 8
@@ -76,7 +76,7 @@ MonoBehaviour:
     - level: 9
       description: 타격 시 적 방어력 20% 감소
   - diceType: 4
-    displayName: Thunder Bullet
+    displayName: Thunder Dice
     description: 연쇄 타격 특화 탄환
     icon: {fileID: 0}
     baseAttack: 11

@@ -4,18 +4,18 @@ using UnityEngine;
 
 namespace OJ
 {
-    [CreateAssetMenu(fileName = "BulletMetaDataDatabase", menuName = "Bullet/MetaData Database")]
-    public class BulletMetaDataDatabase : ScriptableObject
+    [CreateAssetMenu(fileName = "DiceMetaDataDatabase", menuName = "Dice/MetaData Database")]
+    public class DiceMetaDataDatabase : ScriptableObject
     {
         [Serializable]
-        public class BulletLevelMilestone
+        public class DiceLevelMilestone
         {
             public int level;
             [TextArea(2, 4)] public string description;
         }
 
         [Serializable]
-        public class BulletMeta
+        public class DiceMeta
         {
             public DiceType diceType;
             public string displayName;
@@ -37,27 +37,27 @@ namespace OJ
             public int scrollCostPerLevel = 1;
 
             [Header("Milestone Effects")]
-            public List<BulletLevelMilestone> milestones = new List<BulletLevelMilestone>();
+            public List<DiceLevelMilestone> milestones = new List<DiceLevelMilestone>();
         }
 
-        [SerializeField] private List<BulletMeta> metas = new List<BulletMeta>();
-        private readonly Dictionary<DiceType, BulletMeta> metaMap = new Dictionary<DiceType, BulletMeta>();
+        [SerializeField] private List<DiceMeta> metas = new List<DiceMeta>();
+        private readonly Dictionary<DiceType, DiceMeta> metaMap = new Dictionary<DiceType, DiceMeta>();
 
         private void OnEnable()
         {
             RebuildMap();
         }
 
-        public BulletMeta Get(DiceType diceType)
+        public DiceMeta Get(DiceType diceType)
         {
             if (metaMap.Count != metas.Count)
                 RebuildMap();
 
-            metaMap.TryGetValue(diceType, out BulletMeta meta);
+            metaMap.TryGetValue(diceType, out DiceMeta meta);
             return meta;
         }
 
-        public bool TryGet(DiceType diceType, out BulletMeta meta)
+        public bool TryGet(DiceType diceType, out DiceMeta meta)
         {
             if (metaMap.Count != metas.Count)
                 RebuildMap();
@@ -71,7 +71,7 @@ namespace OJ
 
             for (int i = 0; i < metas.Count; i++)
             {
-                BulletMeta meta = metas[i];
+                DiceMeta meta = metas[i];
                 if (meta == null)
                     continue;
                 metaMap[meta.diceType] = meta;

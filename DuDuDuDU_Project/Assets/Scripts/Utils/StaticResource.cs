@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace OJ
 {
@@ -6,6 +7,7 @@ namespace OJ
     {
         public DiceTypeResourceManager DiceTypeResourceManager;
         public PointMetadataDatabase PointMetadataDatabase;
-        public BulletMetaDataDatabase BulletMetaDataDatabase;
+        [FormerlySerializedAs("BulletMetaDataDatabase")]
+        public DiceMetaDataDatabase DiceMetaDataDatabase;
     }
 }

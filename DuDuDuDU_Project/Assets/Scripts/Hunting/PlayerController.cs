@@ -136,7 +136,7 @@ namespace OJ
             if (dice == null || dice.Type == null || dice.Type.Count == 0)
                 return;
 
-            float cooldown = BulletMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
             float effectDuration = Mathf.Max(0f, fireRate);
             diceNextReadyTime[dice] = Time.time + effectDuration + cooldown;
         }
@@ -170,7 +170,7 @@ namespace OJ
             if (dice == null || dice.Type == null || dice.Type.Count == 0)
                 return 0f;
 
-            float cooldown = BulletMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
             if (cooldown <= 0f)
                 return 0f;
 
@@ -188,7 +188,7 @@ namespace OJ
             if (dice == null || dice.Type == null || dice.Type.Count == 0)
                 return 0f;
 
-            float cooldown = BulletMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
             if (cooldown <= 0f)
                 return 0f;
 

@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace OJ
 {
-    public class UIBulletGrowthDetailPanel : IDialog
+    public class UIDiceGrowthDetailPanel : IDialog
     {
         [Header("Header")]
         [SerializeField] private Image iconImage;
@@ -41,14 +41,14 @@ namespace OJ
 
         private void OnEnable()
         {
-            if (BulletLevelManager.Instance != null)
-                BulletLevelManager.Instance.OnBulletLevelChanged += OnBulletLevelChanged;
+            if (DiceLevelManager.Instance != null)
+                DiceLevelManager.Instance.OnDiceLevelChanged += OnDiceLevelChanged;
         }
 
         private void OnDisable()
         {
-            if (BulletLevelManager.Instance != null)
-                BulletLevelManager.Instance.OnBulletLevelChanged -= OnBulletLevelChanged;
+            if (DiceLevelManager.Instance != null)
+                DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
         }
 
         private void OnDestroy()
@@ -67,13 +67,13 @@ namespace OJ
 
         public void Refresh()
         {
-            var meta = BulletMetaDataProvider.GetMeta(currentDiceType);
-            int level = BulletLevelManager.Instance != null ? BulletLevelManager.Instance.GetLevel(currentDiceType) : 1;
+            var meta = DiceMetaDataProvider.GetMeta(currentDiceType);
+            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(currentDiceType) : 1;
             int samplePip = Mathf.Max(1, DiceTypeStarManager.Instance != null ? DiceTypeStarManager.Instance.GetTypeStars(currentDiceType) : 1);
-            int damage = BulletMetaDataProvider.CalculateDamage(currentDiceType, samplePip, level);
-            var cost = BulletLevelManager.Instance != null
-                ? BulletLevelManager.Instance.GetNextUpgradeCost(currentDiceType)
-                : BulletMetaDataProvider.GetUpgradeCost(currentDiceType, level);
+            int damage = DiceMetaDataProvider.CalculateDamage(currentDiceType, samplePip, level);
+            var cost = DiceLevelManager.Instance != null
+                ? DiceLevelManager.Instance.GetNextUpgradeCost(currentDiceType)
+                : DiceMetaDataProvider.GetUpgradeCost(currentDiceType, level);
             var dtr = StaticResource.Instance.DiceTypeResourceManager;
 
             if (iconImage != null) iconImage.sprite = dtr != null ? dtr.GetIcon(currentDiceType) : null;
@@ -97,23 +97,23 @@ namespace OJ
 
         private void OnClickUpgrade()
         {
-            if (BulletLevelManager.Instance == null)
+            if (DiceLevelManager.Instance == null)
                 return;
 
-            if (BulletLevelManager.Instance.TryLevelUp(currentDiceType))
+            if (DiceLevelManager.Instance.TryLevelUp(currentDiceType))
             {
                 Refresh();
                 onChanged?.Invoke();
             }
         }
 
-        private void OnBulletLevelChanged(DiceType diceType, int level)
+        private void OnDiceLevelChanged(DiceType diceType, int level)
         {
             if (diceType == currentDiceType)
                 Refresh();
         }
 
-        private static string BuildMilestoneText(BulletMetaDataDatabase.BulletMeta meta, int currentLevel)
+        private static string BuildMilestoneText(DiceMetaDataDatabase.DiceMeta meta, int currentLevel)
         {
             if (meta == null || meta.milestones == null || meta.milestones.Count == 0)
                 return "특수 효과 없음";

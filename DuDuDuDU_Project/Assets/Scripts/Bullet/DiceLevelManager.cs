@@ -4,14 +4,14 @@ using UnityEngine;
 
 namespace OJ
 {
-    public class BulletLevelManager : MonoBehaviour
+    public class DiceLevelManager : MonoBehaviour
     {
-        public static BulletLevelManager Instance { get; private set; }
+        public static DiceLevelManager Instance { get; private set; }
 
         private const string SaveKeyPrefix = "OJ.Bullet.Level.";
         private readonly Dictionary<DiceType, int> levels = new Dictionary<DiceType, int>();
 
-        public event Action<DiceType, int> OnBulletLevelChanged;
+        public event Action<DiceType, int> OnDiceLevelChanged;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
@@ -19,8 +19,8 @@ namespace OJ
             if (Instance != null)
                 return;
 
-            var go = new GameObject(nameof(BulletLevelManager));
-            go.AddComponent<BulletLevelManager>();
+            var go = new GameObject(nameof(DiceLevelManager));
+            go.AddComponent<DiceLevelManager>();
         }
 
         private void Awake()
@@ -61,7 +61,7 @@ namespace OJ
 
             int clamped = Mathf.Max(1, level);
             levels[diceType] = clamped;
-            OnBulletLevelChanged?.Invoke(diceType, clamped);
+            OnDiceLevelChanged?.Invoke(diceType, clamped);
 
             if (saveNow)
                 Save(diceType);
@@ -70,7 +70,7 @@ namespace OJ
         public bool TryLevelUp(DiceType diceType)
         {
             int currentLevel = GetLevel(diceType);
-            var cost = BulletMetaDataProvider.GetUpgradeCost(diceType, currentLevel);
+            var cost = DiceMetaDataProvider.GetUpgradeCost(diceType, currentLevel);
 
             var costs = new Dictionary<PointType, int>
             {
@@ -87,7 +87,7 @@ namespace OJ
 
         public (int goldCost, int scrollCost) GetNextUpgradeCost(DiceType diceType)
         {
-            return BulletMetaDataProvider.GetUpgradeCost(diceType, GetLevel(diceType));
+            return DiceMetaDataProvider.GetUpgradeCost(diceType, GetLevel(diceType));
         }
 
         public void SaveAll()

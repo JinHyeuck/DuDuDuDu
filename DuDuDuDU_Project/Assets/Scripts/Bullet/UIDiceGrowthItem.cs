@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace OJ
 {
-    public class UIBulletGrowthItem : MonoBehaviour
+    public class UIDiceGrowthItem : MonoBehaviour
     {
         [SerializeField] private Button button;
         [SerializeField] private Image bgImage;
@@ -37,8 +37,8 @@ namespace OJ
 
         public void Refresh()
         {
-            var meta = BulletMetaDataProvider.GetMeta(diceType);
-            int level = BulletLevelManager.Instance != null ? BulletLevelManager.Instance.GetLevel(diceType) : 1;
+            var meta = DiceMetaDataProvider.GetMeta(diceType);
+            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
             var dtr = StaticResource.Instance.DiceTypeResourceManager;
 
             if (bgImage != null)
@@ -62,7 +62,7 @@ namespace OJ
             onClick?.Invoke(diceType);
         }
 
-        private static bool HasMilestoneAtNextLevel(BulletMetaDataDatabase.BulletMeta meta, int currentLevel)
+        private static bool HasMilestoneAtNextLevel(DiceMetaDataDatabase.DiceMeta meta, int currentLevel)
         {
             if (meta == null || meta.milestones == null)
                 return false;

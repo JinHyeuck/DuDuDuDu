@@ -3,27 +3,27 @@ using UnityEngine;
 
 namespace OJ
 {
-    public class UIBulletGrowthPage : IDialog
+    public class UIDiceGrowthPage : IDialog
     {
         [SerializeField] private Transform listRoot;
-        [SerializeField] private UIBulletGrowthItem itemPrefab;
-        [SerializeField] private UIBulletGrowthDetailPanel detailPanel;
+        [SerializeField] private UIDiceGrowthItem itemPrefab;
+        [SerializeField] private UIDiceGrowthDetailPanel detailPanel;
 
-        private readonly List<UIBulletGrowthItem> items = new List<UIBulletGrowthItem>();
+        private readonly List<UIDiceGrowthItem> items = new List<UIDiceGrowthItem>();
 
         protected override void OnEnter()
         {
             BuildIfNeeded();
             RefreshAll();
 
-            if (BulletLevelManager.Instance != null)
-                BulletLevelManager.Instance.OnBulletLevelChanged += OnBulletLevelChanged;
+            if (DiceLevelManager.Instance != null)
+                DiceLevelManager.Instance.OnDiceLevelChanged += OnDiceLevelChanged;
         }
 
         protected override void OnExit()
         {
-            if (BulletLevelManager.Instance != null)
-                BulletLevelManager.Instance.OnBulletLevelChanged -= OnBulletLevelChanged;
+            if (DiceLevelManager.Instance != null)
+                DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
         }
 
         private void BuildIfNeeded()
@@ -34,7 +34,7 @@ namespace OJ
             for (int i = DiceType.Normal.Enum32ToInt(); i < DiceType.Max.Enum32ToInt(); i++)
             {
                 DiceType diceType = i.IntToEnum32<DiceType>();
-                UIBulletGrowthItem item = Instantiate(itemPrefab, listRoot);
+                UIDiceGrowthItem item = Instantiate(itemPrefab, listRoot);
                 item.Bind(diceType, OnClickItem);
                 items.Add(item);
             }
@@ -52,7 +52,7 @@ namespace OJ
                 detailPanel.Open(diceType, RefreshAll);
         }
 
-        private void OnBulletLevelChanged(DiceType diceType, int level)
+        private void OnDiceLevelChanged(DiceType diceType, int level)
         {
             RefreshAll();
         }
