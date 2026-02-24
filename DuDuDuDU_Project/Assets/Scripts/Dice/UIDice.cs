@@ -61,7 +61,13 @@ namespace OJ
 
         public void Refresh()
         {
-            StarText.SetText("Lv.{0}", Star);
+            bool showStarUI = DiceMetaDataProvider.ShowStarUI(Type);
+            if (StarText != null)
+            {
+                StarText.gameObject.SetActive(showStarUI);
+                if (showStarUI)
+                    StarText.SetText("Lv.{0}", Star);
+            }
 
             DiceType diceType = Type;
 
@@ -97,21 +103,6 @@ namespace OJ
         {
             _hideEffectTime = Time.time + 0.5f;
             AutoHideEffect().Forget();
-            return;
-
-            if (ShootEffectTrans != null)
-            {
-                ShootEffectTrans.gameObject.SetActive(true);
-                if (ShootEffectAni != null)
-                {
-                    ShootEffectAni.enabled = false;
-                    ShootEffectAni.enabled = true;
-                    ShootEffectAni.Play(0);
-                }
-
-                if (_hideEffectTime > Time.time)
-                    _hideEffectTime = Time.time + 1.0f;
-            }
         }
 
         private async UniTask AutoHideEffect()
@@ -235,6 +226,9 @@ namespace OJ
                 return;
 
             if (MergeSystem.Instance == null || UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+                return;
+
+            if (!DiceMetaDataProvider.CanMerge(Type))
                 return;
 
             if (Star >= MergeSystem.MaxStar)

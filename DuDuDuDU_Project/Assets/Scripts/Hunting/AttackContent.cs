@@ -50,6 +50,7 @@ namespace OJ
                 return;
 
             DiceType attackType = cheatDiceType != DiceType.Max ? cheatDiceType : diceType;
+            attackType = DiceMetaDataProvider.GetBaseElementType(attackType);
 
             hitmonsters.Clear();
             hitmonsters.Add(rootTarget);

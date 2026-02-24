@@ -32,6 +32,9 @@ namespace OJ
             if (from == null || to == null)
                 return false;
 
+            if (!DiceMetaDataProvider.CanMerge(from.Type) || !DiceMetaDataProvider.CanMerge(to.Type))
+                return false;
+
             // No merge beyond 5-star. Composite/multi-attribute dice is removed.
             if (to.Star >= MaxStar || from.Star >= MaxStar)
                 return false;

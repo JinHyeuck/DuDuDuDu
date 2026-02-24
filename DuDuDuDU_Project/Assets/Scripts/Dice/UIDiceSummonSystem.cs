@@ -82,10 +82,20 @@ namespace OJ
                 return;
             }
 
+            List<DiceType> summonable = new List<DiceType>();
+            for (int i = 0; i < deckTypes.Count; i++)
+            {
+                if (DiceMetaDataProvider.IsSummonable(deckTypes[i]))
+                    summonable.Add(deckTypes[i]);
+            }
+
+            if (summonable.Count == 0)
+                return;
+
             currentSP -= summonCost;
             UpdateSPUI();
 
-            DiceType type = deckTypes[Random.Range(0, deckTypes.Count)];
+            DiceType type = summonable[Random.Range(0, summonable.Count)];
             int star = 1;
             DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);

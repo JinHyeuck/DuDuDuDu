@@ -51,34 +51,158 @@ namespace OJ
         public static Color GetColor(DiceType diceType)
         {
             var meta = GetMeta(diceType);
-            return meta != null ? meta.color : Color.white;
+            if (meta != null && meta.color.a > 0f)
+                return meta.color;
+
+            DiceType baseType = GetBaseElementType(diceType);
+            if (baseType != diceType)
+            {
+                var baseMeta = GetMeta(baseType);
+                if (baseMeta != null)
+                    return baseMeta.color;
+            }
+
+            return Color.white;
         }
 
         public static Sprite GetIcon(DiceType diceType)
         {
             var meta = GetMeta(diceType);
-            return meta != null ? meta.icon : null;
+            if (meta != null && meta.icon != null)
+                return meta.icon;
+
+            DiceType baseType = GetBaseElementType(diceType);
+            if (baseType != diceType)
+            {
+                var baseMeta = GetMeta(baseType);
+                if (baseMeta != null)
+                    return baseMeta.icon;
+            }
+
+            return null;
         }
 
         public static Sprite GetProjectileSprite(DiceType diceType)
         {
             var meta = GetMeta(diceType);
-            return meta != null ? meta.projectileSprite : null;
+            if (meta != null && meta.projectileSprite != null)
+                return meta.projectileSprite;
+
+            DiceType baseType = GetBaseElementType(diceType);
+            if (baseType != diceType)
+            {
+                var baseMeta = GetMeta(baseType);
+                if (baseMeta != null)
+                    return baseMeta.projectileSprite;
+            }
+
+            return null;
         }
 
         public static BulletEffect GetPrimaryEffect(DiceType diceType)
         {
             var meta = GetMeta(diceType);
-            return meta != null ? meta.primaryEffect : null;
+            if (meta != null && meta.primaryEffect != null)
+                return meta.primaryEffect;
+
+            DiceType baseType = GetBaseElementType(diceType);
+            if (baseType != diceType)
+            {
+                var baseMeta = GetMeta(baseType);
+                if (baseMeta != null)
+                    return baseMeta.primaryEffect;
+            }
+
+            return null;
         }
 
         public static List<BulletEffect> GetEffectPrefabs(DiceType diceType)
         {
             var meta = GetMeta(diceType);
-            if (meta != null && meta.effectPrefabs != null)
+            if (meta != null && meta.effectPrefabs != null && meta.effectPrefabs.Count > 0)
                 return meta.effectPrefabs;
 
+            DiceType baseType = GetBaseElementType(diceType);
+            if (baseType != diceType)
+            {
+                var baseMeta = GetMeta(baseType);
+                if (baseMeta != null)
+                    return baseMeta.effectPrefabs;
+            }
+
             return null;
+        }
+
+        public static bool IsMythic(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            return meta != null && meta.isMythic;
+        }
+
+        public static bool IsSummonable(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            if (meta == null)
+                return true;
+            return meta.summonable && !meta.isMythic;
+        }
+
+        public static bool CanMerge(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            if (meta == null)
+                return true;
+            return meta.canMerge;
+        }
+
+        public static bool ShowStarUI(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            if (meta == null)
+                return true;
+            return meta.showStarUI;
+        }
+
+        public static IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> GetRecipeMaterials(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            if (meta == null || meta.recipeMaterials == null)
+                return null;
+            return meta.recipeMaterials;
+        }
+
+        public static List<DiceType> GetMythicTypes()
+        {
+            return new List<DiceType>
+            {
+                DiceType.KingNormal,
+                DiceType.KingFire,
+                DiceType.KingIce,
+                DiceType.KingPoison,
+                DiceType.KingThunder,
+                DiceType.KingMixed
+            };
+        }
+
+        public static DiceType GetBaseElementType(DiceType diceType)
+        {
+            switch (diceType)
+            {
+                case DiceType.KingNormal:
+                    return DiceType.Normal;
+                case DiceType.KingFire:
+                    return DiceType.Fire;
+                case DiceType.KingIce:
+                    return DiceType.Ice;
+                case DiceType.KingPoison:
+                    return DiceType.Poison;
+                case DiceType.KingThunder:
+                    return DiceType.Thunder;
+                case DiceType.KingMixed:
+                    return DiceType.Normal;
+                default:
+                    return diceType;
+            }
         }
 
         public static int CalculateDamage(DiceType diceType, int dicePip, int bulletLevel)
@@ -133,7 +257,19 @@ namespace OJ
                 }) },
                 { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "연쇄 타격 특화 탄환", 11, 3, 1.15f, 150, 65, 11, 2, 2.7f, new []{
                     (5, "추가 대상 1명 탐색 후 연쇄 타격")
-                }) }
+                }) },
+                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "신화 단일 공격 다이스", 45, 9, 1.35f, 3.0f,
+                    (DiceType.Normal, 1, 1), (DiceType.Normal, 2, 1), (DiceType.Normal, 3, 1), (DiceType.Normal, 4, 1), (DiceType.Normal, 5, 1)) },
+                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "신화 범위 공격 다이스", 48, 10, 1.30f, 3.4f,
+                    (DiceType.Fire, 2, 2), (DiceType.Fire, 3, 2)) },
+                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "신화 감속 제어 다이스", 42, 8, 1.25f, 3.6f,
+                    (DiceType.Ice, 1, 1), (DiceType.Ice, 2, 1), (DiceType.Ice, 3, 1), (DiceType.Ice, 4, 1), (DiceType.Ice, 5, 1)) },
+                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "신화 지속 피해 다이스", 40, 8, 1.20f, 3.3f,
+                    (DiceType.Poison, 1, 2), (DiceType.Poison, 2, 2), (DiceType.Poison, 4, 1)) },
+                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "신화 연쇄 타격 다이스", 50, 10, 1.35f, 3.1f,
+                    (DiceType.Thunder, 3, 1), (DiceType.Thunder, 4, 2), (DiceType.Thunder, 5, 1)) },
+                { DiceType.KingMixed, CreateMythicDefault(DiceType.KingMixed, "King Mixed", "모든 속성의 정수", 60, 12, 1.40f, 3.8f,
+                    (DiceType.Normal, 5, 1), (DiceType.Fire, 5, 1), (DiceType.Ice, 5, 1), (DiceType.Poison, 5, 1), (DiceType.Thunder, 5, 1)) }
             };
         }
 
@@ -172,6 +308,48 @@ namespace OJ
                 {
                     level = milestones[i].level,
                     description = milestones[i].desc
+                });
+            }
+
+            return meta;
+        }
+
+        private static DiceMetaDataDatabase.DiceMeta CreateMythicDefault(
+            DiceType diceType,
+            string displayName,
+            string description,
+            int baseAttack,
+            int levelUpAttackIncrease,
+            float dicePipAttackFactor,
+            float baseCooldown,
+            params (DiceType type, int star, int count)[] recipe)
+        {
+            var meta = new DiceMetaDataDatabase.DiceMeta
+            {
+                diceType = diceType,
+                displayName = displayName,
+                description = description,
+                baseAttack = baseAttack,
+                levelUpAttackIncrease = levelUpAttackIncrease,
+                dicePipAttackFactor = dicePipAttackFactor,
+                baseGoldCost = 0,
+                goldCostPerLevel = 0,
+                baseScrollCost = 0,
+                scrollCostPerLevel = 0,
+                baseCooldown = baseCooldown,
+                isMythic = true,
+                summonable = false,
+                canMerge = false,
+                showStarUI = false
+            };
+
+            for (int i = 0; i < recipe.Length; i++)
+            {
+                meta.recipeMaterials.Add(new DiceMetaDataDatabase.DiceRecipeMaterial
+                {
+                    diceType = recipe[i].type,
+                    star = Mathf.Max(1, recipe[i].star),
+                    count = Mathf.Max(1, recipe[i].count)
                 });
             }
 

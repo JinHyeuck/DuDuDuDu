@@ -18,16 +18,15 @@ namespace OJ
         Ice = 2,
         Poison = 3,
         Thunder = 4,
-        
-        // KingNormal = 5,
-        // KingFire = 6,
-        // KingIce = 7,
-        // KingPoison = 8,
-        // KingThunder = 9,
-        // KindMixed = 10,
+
+        KingNormal = 5,
+        KingFire = 6,
+        KingIce = 7,
+        KingPoison = 8,
+        KingThunder = 9,
+        KingMixed = 10,
 
         Max,
-        // �ʿ��ϸ� �߰�
     }
 
     public enum EffectID : int
