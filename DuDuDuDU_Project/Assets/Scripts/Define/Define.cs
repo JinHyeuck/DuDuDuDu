@@ -16,16 +16,26 @@ namespace OJ
         Normal = 0,
         Fire = 1,
         Ice = 2,
-        Poison = 3,
-        Thunder = 4,
+        Thunder = 3,
+        Poison = 4,
 
         KingNormal = 5,
         KingFire = 6,
         KingIce = 7,
-        KingPoison = 8,
-        KingThunder = 9,
+        KingThunder = 8,
+        KingPoison = 9,
         KingMixed = 10,
 
+        Max,
+    }
+
+    public enum ElementType : int
+    {
+        Normal = 0,
+        Fire = 1,
+        Water = 2,
+        Light = 3,
+        Dark = 4,
         Max,
     }
 

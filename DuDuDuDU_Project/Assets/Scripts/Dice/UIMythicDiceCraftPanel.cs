@@ -1,130 +1,112 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
 
 namespace OJ
 {
-    public class UIMythicDiceCraftPanel : MonoBehaviour
+    public class UIMythicDiceCraftPanel : IDialog
     {
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Bootstrap()
-        {
-            UIMythicDiceCraftPanel existing = Object.FindFirstObjectByType<UIMythicDiceCraftPanel>();
-            if (existing != null)
-            {
-                existing.enabled = true;
-                existing.showPanel = true;
-                return;
-            }
+        [Header("UI")]
+        [SerializeField] private Transform listRoot;
+        [SerializeField] private UIMythicDiceCraftItem itemPrefab;
+        [SerializeField] private TMP_Text stateText;
 
-            var go = new GameObject(nameof(UIMythicDiceCraftPanel));
-            go.AddComponent<UIMythicDiceCraftPanel>();
-            Object.DontDestroyOnLoad(go);
-        }
+        [Header("Behavior")]
+        [SerializeField] private bool autoToggleByGameState = true;
+        [SerializeField] private float refreshInterval = 0.2f;
 
-        [SerializeField] private bool showPanel = true;
-        [SerializeField] private KeyCode toggleKey = KeyCode.F7;
-        [SerializeField] private Vector2 panelPos = new Vector2(16f, 120f);
-        [SerializeField] private float panelWidth = 420f;
-        [SerializeField] private float panelHeight = 420f;
-
-        private Vector2 scroll;
+        private readonly List<UIMythicDiceCraftItem> items = new List<UIMythicDiceCraftItem>();
         private readonly Dictionary<(DiceType type, int star), int> materialCounts = new Dictionary<(DiceType type, int star), int>();
         private readonly List<UIDice> consumeBuffer = new List<UIDice>();
-        private readonly StringBuilder lineBuilder = new StringBuilder(128);
-
-        private void Awake()
-        {
-            DontDestroyOnLoad(gameObject);
-        }
+        private float nextRefreshTime;
 
         private void Update()
         {
-            if (Input.GetKeyDown(toggleKey))
-                showPanel = !showPanel;
+            if (autoToggleByGameState)
+                SyncVisibilityWithState();
+
+            if (!isEnter)
+                return;
+
+            if (Time.unscaledTime < nextRefreshTime)
+                return;
+
+            nextRefreshTime = Time.unscaledTime + Mathf.Max(0.05f, refreshInterval);
+            RefreshAll();
         }
 
-        private void OnGUI()
+        protected override void OnLoad()
         {
-            if (!showPanel)
+            BuildIfNeeded();
+            RefreshStateText();
+        }
+
+        protected override void OnEnter()
+        {
+            BuildIfNeeded();
+            RefreshAll();
+        }
+
+        private void SyncVisibilityWithState()
+        {
+            bool shouldOpen = GameManager.Instance != null && GameManager.Instance.inGameState == InGameState.Setting;
+            if (shouldOpen == isEnter)
                 return;
 
-            InGameState state = GameManager.Instance != null ? GameManager.Instance.inGameState : InGameState.None;
+            if (shouldOpen)
+                Enter();
+            else
+                Exit();
+        }
 
-            if (GameManager.Instance == null || state != InGameState.Setting || UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
-            {
-                DrawStatus(state);
+        private void BuildIfNeeded()
+        {
+            if (itemPrefab == null || listRoot == null || items.Count > 0)
                 return;
-            }
-
-            BuildMaterialCounts();
-
-            GUILayout.BeginArea(new Rect(panelPos.x, panelPos.y, panelWidth, panelHeight), GUI.skin.window);
-            GUILayout.Label("Mythic Dice Craft");
-            scroll = GUILayout.BeginScrollView(scroll);
 
             List<DiceType> mythics = DiceMetaDataProvider.GetMythicTypes();
             for (int i = 0; i < mythics.Count; i++)
             {
-                DrawMythicItem(mythics[i]);
-                GUILayout.Space(6f);
+                UIMythicDiceCraftItem item = Instantiate(itemPrefab, listRoot);
+                item.Bind(mythics[i], TryCraftAndRefresh, GetMaterialCount);
+                items.Add(item);
             }
-
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
         }
 
-        private void DrawStatus(InGameState state)
+        public void RefreshAll()
         {
-            GUILayout.BeginArea(new Rect(panelPos.x, panelPos.y, panelWidth, 86f), GUI.skin.window);
-            GUILayout.Label("Mythic Dice Craft");
-            GUILayout.Label($"State: {state} (Need: Setting)");
-            GUILayout.Label($"Board Ready: {(UIBoard.Instance != null && UIBoard.Instance.diceMap != null ? "Yes" : "No")} | Toggle: {toggleKey}");
-            GUILayout.EndArea();
+            BuildMaterialCounts();
+            RefreshStateText();
+
+            for (int i = 0; i < items.Count; i++)
+                items[i].Refresh();
         }
 
-        private void DrawMythicItem(DiceType mythicType)
+        private bool TryCraftAndRefresh(DiceType mythicType)
         {
-            var meta = DiceMetaDataProvider.GetMeta(mythicType);
-            string title = meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : mythicType.ToString();
-            GUILayout.Label(title);
+            bool crafted = TryCraft(mythicType);
+            RefreshAll();
+            return crafted;
+        }
 
-            var recipe = DiceMetaDataProvider.GetRecipeMaterials(mythicType);
-            bool canCraft = recipe != null && recipe.Count > 0;
+        private void RefreshStateText()
+        {
+            if (stateText == null)
+                return;
 
-            if (recipe != null)
-            {
-                for (int i = 0; i < recipe.Count; i++)
-                {
-                    var req = recipe[i];
-                    int have = GetMaterialCount(req.diceType, req.star);
-                    bool ok = have >= req.count;
-                    if (!ok)
-                        canCraft = false;
-
-                    lineBuilder.Clear();
-                    lineBuilder.Append(req.star);
-                    lineBuilder.Append("★ ");
-                    lineBuilder.Append(req.diceType);
-                    lineBuilder.Append(" x");
-                    lineBuilder.Append(req.count);
-                    lineBuilder.Append(" (");
-                    lineBuilder.Append(have);
-                    lineBuilder.Append("/");
-                    lineBuilder.Append(req.count);
-                    lineBuilder.Append(")");
-                    GUILayout.Label((ok ? "[OK] " : "[NO] ") + lineBuilder);
-                }
-            }
-
-            bool pressed = GUILayout.Button(canCraft ? "Craft" : "Need Materials");
-            if (pressed && canCraft)
-                TryCraft(mythicType);
+            InGameState state = GameManager.Instance != null ? GameManager.Instance.inGameState : InGameState.None;
+            bool boardReady = UIBoard.Instance != null && UIBoard.Instance.diceMap != null;
+            stateText.SetText($"State: {state} / Board: {(boardReady ? "Ready" : "Missing")}");
         }
 
         private void BuildMaterialCounts()
         {
             materialCounts.Clear();
+            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+                return;
+
             UIDice[] map = UIBoard.Instance.diceMap;
             for (int i = 0; i < map.Length; i++)
             {
@@ -149,7 +131,14 @@ namespace OJ
             if (DiceMetaDataProvider.IsSummonable(mythicType))
                 return false;
 
-            var recipe = DiceMetaDataProvider.GetRecipeMaterials(mythicType);
+            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+                return false;
+
+            int slotIndex = GetFirstEmptySlot();
+            if (slotIndex < 0)
+                return false;
+
+            IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe = DiceMetaDataProvider.GetRecipeMaterials(mythicType);
             if (recipe == null || recipe.Count == 0)
                 return false;
 
@@ -159,7 +148,7 @@ namespace OJ
 
             for (int i = 0; i < recipe.Count; i++)
             {
-                var req = recipe[i];
+                DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
                 int found = 0;
                 for (int idx = 0; idx < map.Length; idx++)
                 {
@@ -197,11 +186,7 @@ namespace OJ
                 Destroy(dice.gameObject);
             }
 
-            int slotIndex = GetFirstEmptySlot();
-            if (slotIndex < 0)
-                return false;
-
-            int mythicStar = 1;
+            const int mythicStar = 1;
             DiceTypeStarManager.Instance.OnDiceSpawn(mythicType, mythicStar);
             UIBoard.Instance.SpawnDice(mythicType, mythicStar, slotIndex);
             return true;
@@ -217,6 +202,120 @@ namespace OJ
             }
 
             return -1;
+        }
+    }
+
+    public class UIMythicDiceCraftItem : MonoBehaviour
+    {
+        [SerializeField] private Button craftButton;
+        [SerializeField] private TMP_Text craftButtonText;
+        [SerializeField] private Image iconImage;
+        [SerializeField] private Image bgImage;
+        [SerializeField] private TMP_Text nameText;
+        [SerializeField] private TMP_Text recipeText;
+        [SerializeField] private TMP_Text progressText;
+
+        private DiceType mythicType;
+        private System.Func<DiceType, bool> craftCallback;
+        private System.Func<DiceType, int, int> materialCountProvider;
+        private readonly StringBuilder lineBuilder = new StringBuilder(256);
+
+        private void Awake()
+        {
+            if (craftButton != null)
+                craftButton.onClick.AddListener(HandleCraftClick);
+        }
+
+        private void OnDestroy()
+        {
+            if (craftButton != null)
+                craftButton.onClick.RemoveListener(HandleCraftClick);
+        }
+
+        public void Bind(
+            DiceType type,
+            System.Func<DiceType, bool> onCraft,
+            System.Func<DiceType, int, int> countProvider)
+        {
+            mythicType = type;
+            craftCallback = onCraft;
+            materialCountProvider = countProvider;
+            Refresh();
+        }
+
+        public void Refresh()
+        {
+            DiceMetaDataDatabase.DiceMeta meta = DiceMetaDataProvider.GetMeta(mythicType);
+            IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe = DiceMetaDataProvider.GetRecipeMaterials(mythicType);
+
+            if (bgImage != null)
+                bgImage.color = DiceMetaDataProvider.GetColor(mythicType);
+
+            if (iconImage != null)
+                iconImage.sprite = DiceMetaDataProvider.GetIcon(mythicType);
+
+            if (nameText != null)
+                nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : mythicType.ToString());
+
+            bool canCraft = BuildRecipeTexts(recipe);
+
+            if (craftButton != null)
+                craftButton.interactable = canCraft;
+
+            if (craftButtonText != null)
+                craftButtonText.SetText(canCraft ? "소환" : "재료 부족");
+        }
+
+        private bool BuildRecipeTexts(IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe)
+        {
+            if (recipe == null || recipe.Count == 0)
+            {
+                if (recipeText != null)
+                    recipeText.SetText("조합식 없음");
+                if (progressText != null)
+                    progressText.SetText(string.Empty);
+                return false;
+            }
+
+            bool canCraft = true;
+            lineBuilder.Clear();
+            int readyCount = 0;
+
+            for (int i = 0; i < recipe.Count; i++)
+            {
+                DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
+                int have = materialCountProvider != null ? materialCountProvider(req.diceType, req.star) : 0;
+                bool ok = have >= req.count;
+                if (!ok)
+                    canCraft = false;
+                else
+                    readyCount++;
+
+                lineBuilder.Append(req.star);
+                lineBuilder.Append("★ ");
+                lineBuilder.Append(req.diceType);
+                lineBuilder.Append(" x");
+                lineBuilder.Append(req.count);
+                lineBuilder.Append(" (");
+                lineBuilder.Append(have);
+                lineBuilder.Append("/");
+                lineBuilder.Append(req.count);
+                lineBuilder.Append(")");
+                if (i < recipe.Count - 1)
+                    lineBuilder.Append('\n');
+            }
+
+            if (recipeText != null)
+                recipeText.SetText(lineBuilder.ToString());
+            if (progressText != null)
+                progressText.SetText("{0}/{1}", readyCount, recipe.Count);
+
+            return canCraft;
+        }
+
+        private void HandleCraftClick()
+        {
+            craftCallback?.Invoke(mythicType);
         }
     }
 }

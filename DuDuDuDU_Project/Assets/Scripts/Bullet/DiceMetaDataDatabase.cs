@@ -26,6 +26,7 @@ namespace OJ
         public class DiceMeta
         {
             public DiceType diceType;
+            public ElementType[] elementType = new ElementType[0];
             public string displayName;
             [TextArea(2, 4)] public string description;
             public Sprite icon;

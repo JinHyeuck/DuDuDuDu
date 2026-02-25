@@ -24,13 +24,14 @@ namespace OJ
         public Button Speed;
         public TMP_Text SpeedText;
         public TMP_Text RemainMonster;
-
+        public RectTransform RemainMonsterGauge;
+        public float RemainMonsterGauge_Width = 705.0f;
         private bool isPause = false;
 
         private float timeSpeed = 1.0f;
         [SerializeField] private float returnToLobbyDelay = 1.0f;
 
-        void Awake() 
+        void Awake()
         {
             if (Instance != null && Instance != this)
             {
@@ -82,7 +83,7 @@ namespace OJ
 
         public void OnClick_Speed()
         {
-            if(isPause == true) 
+            if (isPause == true)
                 return;
 
             if (timeSpeed == 1)
@@ -111,6 +112,8 @@ namespace OJ
             Speed?.gameObject.SetActive(state == InGameState.Wave);
 
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
+            RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
+
 
             if (state == InGameState.Wave)
             {
@@ -145,7 +148,15 @@ namespace OJ
 
         public void SetRemainMonster(int currentKillMonster)
         {
-            RemainMonster?.SetText(string.Format("({0}/{1})", currentKillMonster, WaveMonsterCount));
+            RemainMonster?.SetText(string.Format("{0}/{1}", currentKillMonster, WaveMonsterCount));
+
+            float ratio = (float)currentKillMonster / (float)WaveMonsterCount;
+            if (ratio < 0)
+                ratio = 0;
+
+            Vector2 vector2 = RemainMonsterGauge.sizeDelta;
+            vector2.x = RemainMonsterGauge_Width * ratio;
+            RemainMonsterGauge.sizeDelta = vector2;
         }
 
         public void GameOver()

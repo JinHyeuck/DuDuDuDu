@@ -12,7 +12,7 @@ namespace OJ
 
         public TMP_Text CurrentHp_Text;
         public RectTransform wallHp_RectTrans;
-        public float wallHp_Width = 1000;
+        public float wallHp_Width = 1025.0f;
 
 
         public void SetInit(int hp)

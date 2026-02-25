@@ -55,7 +55,7 @@ namespace OJ
 
         private void UpdateSPUI()
         {
-            spText.text = $"SP: {currentSP}";
+            spText.text = $"{summonCost} / {currentSP}";
         }
 
         public void AddSP(int addsp)
@@ -93,6 +93,7 @@ namespace OJ
                 return;
 
             currentSP -= summonCost;
+            summonCost++;
             UpdateSPUI();
 
             DiceType type = summonable[Random.Range(0, summonable.Count)];

@@ -148,9 +148,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2cf07210e04905458656bbefca9a4cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DiceTypeResourceManager: {fileID: 11400000, guid: ecc79850a59c888438315bfe2d746138, type: 2}
   PointMetadataDatabase: {fileID: 11400000, guid: eec03055750e845dba1fe7ef8d6973c0, type: 2}
   DiceMetaDataDatabase: {fileID: 11400000, guid: ed8e5358960e45e0b3b37fa53e4d8c8f, type: 2}
+  ElementResources:
+  - ElementType: 0
+    Icon: {fileID: 21300000, guid: c1abf173c229b4be497bbf52983ac985, type: 3}
+    Color: {r: 0.7169812, g: 0.7169812, b: 0.7169812, a: 1}
+  - ElementType: 1
+    Icon: {fileID: 21300000, guid: a491390c2ac884f32922b06d778dff52, type: 3}
+    Color: {r: 1, g: 0, b: 0.018630981, a: 1}
+  - ElementType: 2
+    Icon: {fileID: 21300000, guid: a428aba43abd04215b4ebe2d32457e06, type: 3}
+    Color: {r: 0.08962262, g: 0.40561962, b: 1, a: 1}
+  - ElementType: 3
+    Icon: {fileID: 21300000, guid: 762e70e6d715f480184b47c83b01f263, type: 3}
+    Color: {r: 0.9827944, g: 1, b: 0, a: 1}
+  - ElementType: 4
+    Icon: {fileID: 21300000, guid: 425e75a7551b042999c7dd3bafe0f4cd, type: 3}
+    Color: {r: 0.26415092, g: 0.26415092, b: 0.26415092, a: 1}
 --- !u!4 &252337101
 Transform:
   m_ObjectHideFlags: 0

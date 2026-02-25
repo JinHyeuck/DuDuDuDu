@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   metas:
   - diceType: 0
+    elementType: 00000000
     displayName: Normal Dice
     description: "\uADE0\uD615\uD615 \uB2E8\uC77C \uACF5\uACA9 \uD0C4\uD658"
     icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
-    projectileSprite: {fileID: 1297676262819963973, guid: c48a21b830fffd34e91605c869aca197, type: 3}
+    projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
     effectPrefabs:
     - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
@@ -42,11 +43,12 @@ MonoBehaviour:
     - level: 13
       description: "\uB300\uBBF8\uC9C0 2\uBC30"
   - diceType: 1
+    elementType: 01000000
     displayName: Fire Dice
     description: "\uD3ED\uBC1C\uD615 \uBC94\uC704 \uACF5\uACA9 \uD0C4\uD658"
     icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
-    projectileSprite: {fileID: 3761019683225734862, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
+    projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
     primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
     effectPrefabs:
     - {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
@@ -67,11 +69,12 @@ MonoBehaviour:
     - level: 3
       description: "\uBC94\uC704 50% \uC99D\uAC00"
   - diceType: 2
+    elementType: 02000000
     displayName: Ice Dice
     description: "\uAC10\uC18D/\uC81C\uC5B4 \uD2B9\uD654 \uD0C4\uD658"
     icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
-    projectileSprite: {fileID: -6237786387729538756, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
+    projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
     primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
     effectPrefabs:
     - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
@@ -92,14 +95,16 @@ MonoBehaviour:
     - level: 8
       description: "\uC77C\uC815 \uD655\uB960\uB85C 1\uCD08 \uBE59\uACB0"
   - diceType: 3
-    displayName: Poison Dice
-    description: "\uC9C0\uC18D \uD53C\uD574/\uC57D\uD654 \uD0C4\uD658"
-    icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
-    color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
-    projectileSprite: {fileID: -946646168859441295, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
-    primaryEffect: {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    elementType: 03000000
+    displayName: Thunder Dice
+    description: "\uC5F0\uC1C4 \uD0C0\uACA9 \uD2B9\uD654 \uD0C4\uD658"
+    icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
+    color: {r: 1, g: 0.8745098, b: 0, a: 1}
+    projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
+    primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
     effectPrefabs:
-    - {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    - {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
+    - {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
     isMythic: 0
     summonable: 1
     canMerge: 1
@@ -117,15 +122,15 @@ MonoBehaviour:
     - level: 9
       description: "\uD0C0\uACA9 \uC2DC \uC801 \uBC29\uC5B4\uB825 20% \uAC10\uC18C"
   - diceType: 4
-    displayName: Thunder Dice
-    description: "\uC5F0\uC1C4 \uD0C0\uACA9 \uD2B9\uD654 \uD0C4\uD658"
-    icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
-    color: {r: 1, g: 0.8745099, b: 0, a: 1}
-    projectileSprite: {fileID: 3611656084732968255, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
-    primaryEffect: {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
+    elementType: 04000000
+    displayName: Poison Dice
+    description: "\uC9C0\uC18D \uD53C\uD574/\uC57D\uD654 \uD0C4\uD658"
+    icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
+    color: {r: 0, g: 0.75686276, b: 0.03137255, a: 1}
+    projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
+    primaryEffect: {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
     effectPrefabs:
-    - {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
-    - {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
+    - {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
     isMythic: 0
     summonable: 1
     canMerge: 1
@@ -144,11 +149,12 @@ MonoBehaviour:
       description: "\uCD94\uAC00 \uB300\uC0C1 1\uBA85 \uD0D0\uC0C9 \uD6C4 \uC5F0\uC1C4
         \uD0C0\uACA9"
   - diceType: 5
+    elementType: 00000000
     displayName: King Normal
     description: "\uC2E0\uD654 \uB2E8\uC77C \uACF5\uACA9 \uB2E4\uC774\uC2A4"
     icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
-    projectileSprite: {fileID: 1297676262819963973, guid: c48a21b830fffd34e91605c869aca197, type: 3}
+    projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
     effectPrefabs:
     - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
@@ -182,11 +188,12 @@ MonoBehaviour:
     scrollCostPerLevel: 0
     milestones: []
   - diceType: 6
+    elementType: 01000000
     displayName: King Fire
     description: "\uC2E0\uD654 \uBC94\uC704 \uACF5\uACA9 \uB2E4\uC774\uC2A4"
     icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
-    projectileSprite: {fileID: 3761019683225734862, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
+    projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
     primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
     effectPrefabs:
     - {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
@@ -211,11 +218,12 @@ MonoBehaviour:
     scrollCostPerLevel: 0
     milestones: []
   - diceType: 7
+    elementType: 02000000
     displayName: King Ice
     description: "\uC2E0\uD654 \uAC10\uC18D/\uBE59\uACB0 \uB2E4\uC774\uC2A4"
     icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
-    projectileSprite: {fileID: -6237786387729538756, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
+    projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
     primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
     effectPrefabs:
     - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
@@ -248,39 +256,8 @@ MonoBehaviour:
     baseScrollCost: 0
     scrollCostPerLevel: 0
     milestones: []
-  - diceType: 8
-    displayName: King Poison
-    description: "\uC2E0\uD654 \uC911\uB3C5 \uAC15\uD654 \uB2E4\uC774\uC2A4"
-    icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
-    color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
-    projectileSprite: {fileID: -946646168859441295, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
-    primaryEffect: {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
-    effectPrefabs:
-    - {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
-    isMythic: 1
-    summonable: 0
-    canMerge: 0
-    showStarUI: 0
-    recipeMaterials:
-    - diceType: 3
-      star: 1
-      count: 2
-    - diceType: 3
-      star: 2
-      count: 2
-    - diceType: 3
-      star: 4
-      count: 1
-    baseAttack: 40
-    levelUpAttackIncrease: 8
-    dicePipAttackFactor: 1.18
-    baseCooldown: 3.6
-    baseGoldCost: 0
-    goldCostPerLevel: 0
-    baseScrollCost: 0
-    scrollCostPerLevel: 0
-    milestones: []
   - diceType: 9
+    elementType: 03000000
     displayName: King Thunder
     description: "\uC2E0\uD654 \uC5F0\uC1C4 \uD0C0\uACA9 \uB2E4\uC774\uC2A4"
     icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
@@ -313,12 +290,46 @@ MonoBehaviour:
     baseScrollCost: 0
     scrollCostPerLevel: 0
     milestones: []
+  - diceType: 9
+    elementType: 04000000
+    displayName: King Poison
+    description: "\uC2E0\uD654 \uC911\uB3C5 \uAC15\uD654 \uB2E4\uC774\uC2A4"
+    icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
+    color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
+    projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
+    primaryEffect: {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    effectPrefabs:
+    - {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    isMythic: 1
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 3
+      star: 1
+      count: 2
+    - diceType: 3
+      star: 2
+      count: 2
+    - diceType: 3
+      star: 4
+      count: 1
+    baseAttack: 40
+    levelUpAttackIncrease: 8
+    dicePipAttackFactor: 1.18
+    baseCooldown: 3.6
+    baseGoldCost: 0
+    goldCostPerLevel: 0
+    baseScrollCost: 0
+    scrollCostPerLevel: 0
+    milestones: []
   - diceType: 10
+    elementType: 0000000001000000020000000300000004000000
     displayName: King Mixed
     description: "\uC2E0\uD654 \uBCF5\uD569 \uC6D0\uC18C \uB2E4\uC774\uC2A4"
     icon: {fileID: 21300000, guid: 84d553d016cafbf45b1aabcc80cd55f8, type: 3}
     color: {r: 1, g: 0.35, b: 0.7, a: 1}
-    projectileSprite: {fileID: 3761019683225734862, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
+    projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
     effectPrefabs:
     - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}

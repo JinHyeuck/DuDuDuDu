@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using TMPro;
@@ -10,6 +11,7 @@ namespace OJ
     {
         [Header("Header")]
         [SerializeField] private Image iconImage;
+        [SerializeField] private List<Image> elementIcons;
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text levelText;
 
@@ -76,6 +78,22 @@ namespace OJ
                 : DiceMetaDataProvider.GetUpgradeCost(currentDiceType, level);
 
             if (iconImage != null) iconImage.sprite = DiceMetaDataProvider.GetIcon(currentDiceType);
+            for(int i = 0; i < meta.elementType.Length; i++)
+            {
+                if (elementIcons[i] != null)
+                {
+                    var elementResource = StaticResource.Instance.GetElementResource(meta.elementType[i]);
+                    elementIcons[i].sprite = elementResource != null ? elementResource.Icon : null;
+                    elementIcons[i].gameObject.SetActive(true);
+                }
+            }
+
+            for(int i = meta.elementType.Length; i < elementIcons.Count; i++)
+            {
+                if (elementIcons[i] != null)
+                    elementIcons[i].gameObject.SetActive(false);
+            }
+
             if (nameText != null) nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : currentDiceType.ToString());
             if (levelText != null) levelText.SetText("Lv. {0}", level);
             if (damageText != null) damageText.SetText("{0}", damage);
