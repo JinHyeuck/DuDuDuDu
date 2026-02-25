@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -20,7 +19,7 @@ namespace OJ
         public TMP_Text TypeText;
         public Animator animator;
 
-        public List<DiceType> Type { get; private set; }
+        public DiceType Type { get; private set; }
         public int Star { get; private set; }
         public int SlotIndex { get; private set; }
 
@@ -29,7 +28,7 @@ namespace OJ
         private CanvasGroup canvasGroup;
         private Canvas canvas;
 
-        public void Init(List<DiceType> type, int star, int slotIndex)
+        public void Init(DiceType type, int star, int slotIndex)
         {
             Type = type;
             Star = star;
@@ -62,12 +61,18 @@ namespace OJ
 
         public void Refresh()
         {
-            StarText.SetText("Lv.{0}", Star);
+            bool showStarUI = DiceMetaDataProvider.ShowStarUI(Type);
+            if (StarText != null)
+            {
+                StarText.gameObject.SetActive(showStarUI);
+                if (showStarUI)
+                    StarText.SetText("Lv.{0}", Star);
+            }
 
-            DiceType diceType = Type[0];
+            DiceType diceType = Type;
 
-            Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(diceType);
-            Sprite typeSprite = StaticResource.Instance.DiceTypeResourceManager.GetIcon(diceType);
+            Color typeColor = DiceMetaDataProvider.GetColor(diceType);
+            Sprite typeSprite = DiceMetaDataProvider.GetIcon(diceType);
 
             if (ShootEffectImage != null)
                 ShootEffectImage.color = typeColor;
@@ -98,21 +103,6 @@ namespace OJ
         {
             _hideEffectTime = Time.time + 0.5f;
             AutoHideEffect().Forget();
-            return;
-
-            if (ShootEffectTrans != null)
-            {
-                ShootEffectTrans.gameObject.SetActive(true);
-                if (ShootEffectAni != null)
-                {
-                    ShootEffectAni.enabled = false;
-                    ShootEffectAni.enabled = true;
-                    ShootEffectAni.Play(0);
-                }
-
-                if (_hideEffectTime > Time.time)
-                    _hideEffectTime = Time.time + 1.0f;
-            }
         }
 
         private async UniTask AutoHideEffect()
@@ -238,13 +228,13 @@ namespace OJ
             if (MergeSystem.Instance == null || UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
                 return;
 
+            if (!DiceMetaDataProvider.CanMerge(Type))
+                return;
+
             if (Star >= MergeSystem.MaxStar)
                 return;
 
-            if (Type == null || Type.Count == 0)
-                return;
-
-            DiceType myType = Type[0];
+            DiceType myType = Type;
             UIDice target = null;
             UIDice[] map = UIBoard.Instance.diceMap;
 
@@ -257,10 +247,7 @@ namespace OJ
                 if (candidate.Star != Star || candidate.Star >= MergeSystem.MaxStar)
                     continue;
 
-                if (candidate.Type == null || candidate.Type.Count == 0)
-                    continue;
-
-                if (candidate.Type[0] != myType)
+                if (candidate.Type != myType)
                     continue;
 
                 target = candidate;

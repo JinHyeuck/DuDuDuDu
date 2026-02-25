@@ -19,8 +19,14 @@ namespace OJ
         Poison = 3,
         Thunder = 4,
 
+        KingNormal = 5,
+        KingFire = 6,
+        KingIce = 7,
+        KingPoison = 8,
+        KingThunder = 9,
+        KingMixed = 10,
+
         Max,
-        // �ʿ��ϸ� �߰�
     }
 
     public enum EffectID : int
@@ -58,6 +64,7 @@ namespace OJ
         IceScroll,
         PoisonScroll,
         ThunderScroll,
+        MythicScroll,
 
         Max
     }

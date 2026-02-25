@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace OJ
 {
@@ -7,9 +7,7 @@ namespace OJ
     {
         public static MergeSystem Instance;
 
-        public const int MaxStar = 5;  // 정적 상수로 변경
-
-        public List<DiceType> UseDices = new List<DiceType>();
+        public const int MaxStar = 5;
 
         private void Awake()
         {
@@ -19,13 +17,6 @@ namespace OJ
                 return;
             }
             Instance = this;
-
-            UseDices.Clear();
-            for (int i = DiceType.Normal.Enum32ToInt(); i < DiceType.Max.Enum32ToInt(); ++i)
-            {
-                UseDices.Add(i.IntToEnum32<DiceType>());
-            }
-
         }
 
         private void OnDestroy()
@@ -34,57 +25,59 @@ namespace OJ
                 Instance = null;
         }
 
-
         public bool TryMerge(UIDice from, UIDice to)
         {
             if (GameManager.Instance.inGameState == InGameState.Wave)
                 return false;
 
-            List<DiceType> diceTypes = new List<DiceType>();
+            if (from == null || to == null)
+                return false;
 
-            if (to.Star >= MaxStar)
-            { // 최대 별일때는 속성 머지
-                if (from.Star != to.Star)
-                    return false;
+            if (!DiceMetaDataProvider.CanMerge(from.Type) || !DiceMetaDataProvider.CanMerge(to.Type))
+                return false;
 
-                for (int i = 0; i < from.Type.Count; ++i)
-                {
-                    diceTypes.Add(from.Type[i]);
-                }
-                
-                for (int i = 0; i < to.Type.Count; ++i)
-                {
-                    diceTypes.Add(to.Type[i]);
-                }
-            }
-            else
-            {
-                if (from.Type[0] != to.Type[0] || from.Star != to.Star)
-                    return false;
+            // No merge beyond 5-star. Composite/multi-attribute dice is removed.
+            if (to.Star >= MaxStar || from.Star >= MaxStar)
+                return false;
 
-                diceTypes.Add(UseDices[Random.Range(0, UseDices.Count)]);
-            }
-            
-            
+            if (from.Type != to.Type || from.Star != to.Star)
+                return false;
 
-            // 기존 타입에서 별 제거
+            DiceType mergedType = GetRandomMergedType(from.Type);
             DiceTypeStarManager.Instance.OnDiceRemove(from.Type, from.Star);
             DiceTypeStarManager.Instance.OnDiceRemove(to.Type, to.Star);
 
-            // Star 증가
-            int newStar = to.Star + 1;
+            int newStar = Mathf.Min(MaxStar, to.Star + 1);
 
-            // 타겟 다이스에 적용
-            to.Init(diceTypes, newStar, to.SlotIndex);
+            to.Init(mergedType, newStar, to.SlotIndex);
 
-            // DiceTypeStarManager 갱신
-            DiceTypeStarManager.Instance.OnDiceSpawn(diceTypes, newStar);
+            DiceTypeStarManager.Instance.OnDiceSpawn(mergedType, newStar);
 
-            // 원본 다이스 제거
             Destroy(from.gameObject);
 
             return true;
         }
-    }
 
+        private DiceType GetRandomMergedType(DiceType fallbackType)
+        {
+            UIDiceSummonSystem summonSystem = UIDiceSummonSystem.Instance;
+            if (summonSystem == null || summonSystem.deckTypes == null || summonSystem.deckTypes.Count == 0)
+                return fallbackType;
+
+            List<DiceType> candidates = new List<DiceType>(summonSystem.deckTypes.Count);
+            for (int i = 0; i < summonSystem.deckTypes.Count; i++)
+            {
+                DiceType type = summonSystem.deckTypes[i];
+                if (!DiceMetaDataProvider.IsSummonable(type))
+                    continue;
+
+                candidates.Add(type);
+            }
+
+            if (candidates.Count == 0)
+                return fallbackType;
+
+            return candidates[Random.Range(0, candidates.Count)];
+        }
+    }
 }

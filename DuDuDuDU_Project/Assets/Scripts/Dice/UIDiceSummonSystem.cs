@@ -71,28 +71,34 @@ namespace OJ
 
             if (currentSP < summonCost)
             {
-                Debug.Log("SP ºÎÁ·!");
+                Debug.Log("SP ë¶€ì¡±!");
                 return;
             }
 
             int slotIndex = GetRandomEmptySlot();
             if (slotIndex == -1)
             {
-                Debug.Log("º¸µå°¡ ²Ë Ã¡À½!");
+                Debug.Log("ë³´ë“œê°€ ê½‰ ì°¼ìŒ!");
                 return;
             }
 
-            // SP Â÷°¨
+            List<DiceType> summonable = new List<DiceType>();
+            for (int i = 0; i < deckTypes.Count; i++)
+            {
+                if (DiceMetaDataProvider.IsSummonable(deckTypes[i]))
+                    summonable.Add(deckTypes[i]);
+            }
+
+            if (summonable.Count == 0)
+                return;
+
             currentSP -= summonCost;
             UpdateSPUI();
 
-            // Å¸ÀÔ ·£´ý, º° 1°³
-            DiceType type = deckTypes[Random.Range(0, deckTypes.Count)];
+            DiceType type = summonable[Random.Range(0, summonable.Count)];
             int star = 1;
-            List<DiceType> diceTypes = new List<DiceType>();
-            diceTypes.Add(type);
-            DiceTypeStarManager.Instance.OnDiceSpawn(diceTypes, star);
-            board.SpawnDice(diceTypes, star, slotIndex);
+            DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
+            board.SpawnDice(type, star, slotIndex);
         }
 
         private int GetRandomEmptySlot()
@@ -110,5 +116,4 @@ namespace OJ
             return emptySlots[Random.Range(0, emptySlots.Count)];
         }
     }
-
 }

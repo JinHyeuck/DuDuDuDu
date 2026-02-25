@@ -39,13 +39,12 @@ namespace OJ
         {
             var meta = DiceMetaDataProvider.GetMeta(diceType);
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
-            var dtr = StaticResource.Instance.DiceTypeResourceManager;
 
             if (bgImage != null)
-                bgImage.color = dtr != null ? dtr.GetColor(diceType) : Color.white;
+                bgImage.color = DiceMetaDataProvider.GetColor(diceType);
 
             if (iconImage != null)
-                iconImage.sprite = dtr != null ? dtr.GetIcon(diceType) : null;
+                iconImage.sprite = DiceMetaDataProvider.GetIcon(diceType);
 
             if (nameText != null)
                 nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : diceType.ToString());

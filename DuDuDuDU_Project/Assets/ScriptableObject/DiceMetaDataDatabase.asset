@@ -15,8 +15,18 @@ MonoBehaviour:
   metas:
   - diceType: 0
     displayName: Normal Dice
-    description: 균형형 단일 공격 탄환
-    icon: {fileID: 0}
+    description: "\uADE0\uD615\uD615 \uB2E8\uC77C \uACF5\uACA9 \uD0C4\uD658"
+    icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
+    color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
+    projectileSprite: {fileID: 1297676262819963973, guid: c48a21b830fffd34e91605c869aca197, type: 3}
+    primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    effectPrefabs:
+    - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    isMythic: 0
+    summonable: 1
+    canMerge: 1
+    showStarUI: 1
+    recipeMaterials: []
     baseAttack: 12
     levelUpAttackIncrease: 3
     dicePipAttackFactor: 1.2
@@ -27,13 +37,24 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 6
-      description: 다이스 눈금당 추가 공격력 +30%
+      description: "\uB2E4\uC774\uC2A4 \uB208\uAE08\uB2F9 \uCD94\uAC00 \uACF5\uACA9\uB825
+        +30%"
     - level: 13
-      description: 대미지 2배
+      description: "\uB300\uBBF8\uC9C0 2\uBC30"
   - diceType: 1
     displayName: Fire Dice
-    description: 폭발형 범위 공격 탄환
-    icon: {fileID: 0}
+    description: "\uD3ED\uBC1C\uD615 \uBC94\uC704 \uACF5\uACA9 \uD0C4\uD658"
+    icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
+    color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
+    projectileSprite: {fileID: 3761019683225734862, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
+    primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
+    effectPrefabs:
+    - {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
+    isMythic: 0
+    summonable: 1
+    canMerge: 1
+    showStarUI: 1
+    recipeMaterials: []
     baseAttack: 10
     levelUpAttackIncrease: 4
     dicePipAttackFactor: 1.1
@@ -44,11 +65,21 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: 범위 50% 증가
+      description: "\uBC94\uC704 50% \uC99D\uAC00"
   - diceType: 2
     displayName: Ice Dice
-    description: 감속/제어 특화 탄환
-    icon: {fileID: 0}
+    description: "\uAC10\uC18D/\uC81C\uC5B4 \uD2B9\uD654 \uD0C4\uD658"
+    icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
+    color: {r: 0, g: 0.40000004, b: 1, a: 1}
+    projectileSprite: {fileID: -6237786387729538756, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
+    primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    effectPrefabs:
+    - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    isMythic: 0
+    summonable: 1
+    canMerge: 1
+    showStarUI: 1
+    recipeMaterials: []
     baseAttack: 9
     levelUpAttackIncrease: 3
     dicePipAttackFactor: 1
@@ -59,11 +90,21 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 8
-      description: 일정 확률로 1초 빙결
+      description: "\uC77C\uC815 \uD655\uB960\uB85C 1\uCD08 \uBE59\uACB0"
   - diceType: 3
     displayName: Poison Dice
-    description: 지속 피해/약화 탄환
-    icon: {fileID: 0}
+    description: "\uC9C0\uC18D \uD53C\uD574/\uC57D\uD654 \uD0C4\uD658"
+    icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
+    color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
+    projectileSprite: {fileID: -946646168859441295, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
+    primaryEffect: {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    effectPrefabs:
+    - {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    isMythic: 0
+    summonable: 1
+    canMerge: 1
+    showStarUI: 1
+    recipeMaterials: []
     baseAttack: 8
     levelUpAttackIncrease: 2
     dicePipAttackFactor: 0.95
@@ -74,11 +115,22 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 9
-      description: 타격 시 적 방어력 20% 감소
+      description: "\uD0C0\uACA9 \uC2DC \uC801 \uBC29\uC5B4\uB825 20% \uAC10\uC18C"
   - diceType: 4
     displayName: Thunder Dice
-    description: 연쇄 타격 특화 탄환
-    icon: {fileID: 0}
+    description: "\uC5F0\uC1C4 \uD0C0\uACA9 \uD2B9\uD654 \uD0C4\uD658"
+    icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
+    color: {r: 1, g: 0.8745099, b: 0, a: 1}
+    projectileSprite: {fileID: 3611656084732968255, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
+    primaryEffect: {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
+    effectPrefabs:
+    - {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
+    - {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
+    isMythic: 0
+    summonable: 1
+    canMerge: 1
+    showStarUI: 1
+    recipeMaterials: []
     baseAttack: 11
     levelUpAttackIncrease: 3
     dicePipAttackFactor: 1.15
@@ -89,4 +141,213 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 5
-      description: 추가 대상 1명 탐색 후 연쇄 타격
+      description: "\uCD94\uAC00 \uB300\uC0C1 1\uBA85 \uD0D0\uC0C9 \uD6C4 \uC5F0\uC1C4
+        \uD0C0\uACA9"
+  - diceType: 5
+    displayName: King Normal
+    description: "\uC2E0\uD654 \uB2E8\uC77C \uACF5\uACA9 \uB2E4\uC774\uC2A4"
+    icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
+    color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
+    projectileSprite: {fileID: 1297676262819963973, guid: c48a21b830fffd34e91605c869aca197, type: 3}
+    primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    effectPrefabs:
+    - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    isMythic: 1
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 0
+      star: 1
+      count: 1
+    - diceType: 0
+      star: 2
+      count: 1
+    - diceType: 0
+      star: 3
+      count: 1
+    - diceType: 0
+      star: 4
+      count: 1
+    - diceType: 0
+      star: 5
+      count: 1
+    baseAttack: 45
+    levelUpAttackIncrease: 9
+    dicePipAttackFactor: 1.35
+    baseCooldown: 3
+    baseGoldCost: 0
+    goldCostPerLevel: 0
+    baseScrollCost: 0
+    scrollCostPerLevel: 0
+    milestones: []
+  - diceType: 6
+    displayName: King Fire
+    description: "\uC2E0\uD654 \uBC94\uC704 \uACF5\uACA9 \uB2E4\uC774\uC2A4"
+    icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
+    color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
+    projectileSprite: {fileID: 3761019683225734862, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
+    primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
+    effectPrefabs:
+    - {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
+    isMythic: 1
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 1
+      star: 2
+      count: 2
+    - diceType: 1
+      star: 3
+      count: 2
+    baseAttack: 48
+    levelUpAttackIncrease: 10
+    dicePipAttackFactor: 1.3
+    baseCooldown: 3.4
+    baseGoldCost: 0
+    goldCostPerLevel: 0
+    baseScrollCost: 0
+    scrollCostPerLevel: 0
+    milestones: []
+  - diceType: 7
+    displayName: King Ice
+    description: "\uC2E0\uD654 \uAC10\uC18D/\uBE59\uACB0 \uB2E4\uC774\uC2A4"
+    icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
+    color: {r: 0, g: 0.40000004, b: 1, a: 1}
+    projectileSprite: {fileID: -6237786387729538756, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
+    primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    effectPrefabs:
+    - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    isMythic: 1
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 2
+      star: 1
+      count: 1
+    - diceType: 2
+      star: 2
+      count: 1
+    - diceType: 2
+      star: 3
+      count: 1
+    - diceType: 2
+      star: 4
+      count: 1
+    - diceType: 2
+      star: 5
+      count: 1
+    baseAttack: 42
+    levelUpAttackIncrease: 8
+    dicePipAttackFactor: 1.2
+    baseCooldown: 3.8
+    baseGoldCost: 0
+    goldCostPerLevel: 0
+    baseScrollCost: 0
+    scrollCostPerLevel: 0
+    milestones: []
+  - diceType: 8
+    displayName: King Poison
+    description: "\uC2E0\uD654 \uC911\uB3C5 \uAC15\uD654 \uB2E4\uC774\uC2A4"
+    icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
+    color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
+    projectileSprite: {fileID: -946646168859441295, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
+    primaryEffect: {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    effectPrefabs:
+    - {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
+    isMythic: 1
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 3
+      star: 1
+      count: 2
+    - diceType: 3
+      star: 2
+      count: 2
+    - diceType: 3
+      star: 4
+      count: 1
+    baseAttack: 40
+    levelUpAttackIncrease: 8
+    dicePipAttackFactor: 1.18
+    baseCooldown: 3.6
+    baseGoldCost: 0
+    goldCostPerLevel: 0
+    baseScrollCost: 0
+    scrollCostPerLevel: 0
+    milestones: []
+  - diceType: 9
+    displayName: King Thunder
+    description: "\uC2E0\uD654 \uC5F0\uC1C4 \uD0C0\uACA9 \uB2E4\uC774\uC2A4"
+    icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
+    color: {r: 1, g: 0.8745099, b: 0, a: 1}
+    projectileSprite: {fileID: 3611656084732968255, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
+    primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
+    effectPrefabs:
+    - {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
+    - {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
+    isMythic: 1
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 4
+      star: 3
+      count: 1
+    - diceType: 4
+      star: 4
+      count: 2
+    - diceType: 4
+      star: 5
+      count: 1
+    baseAttack: 46
+    levelUpAttackIncrease: 9
+    dicePipAttackFactor: 1.28
+    baseCooldown: 3.2
+    baseGoldCost: 0
+    goldCostPerLevel: 0
+    baseScrollCost: 0
+    scrollCostPerLevel: 0
+    milestones: []
+  - diceType: 10
+    displayName: King Mixed
+    description: "\uC2E0\uD654 \uBCF5\uD569 \uC6D0\uC18C \uB2E4\uC774\uC2A4"
+    icon: {fileID: 21300000, guid: 84d553d016cafbf45b1aabcc80cd55f8, type: 3}
+    color: {r: 1, g: 0.35, b: 0.7, a: 1}
+    projectileSprite: {fileID: 3761019683225734862, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
+    primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    effectPrefabs:
+    - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    isMythic: 1
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 0
+      star: 5
+      count: 1
+    - diceType: 1
+      star: 5
+      count: 1
+    - diceType: 2
+      star: 5
+      count: 1
+    - diceType: 3
+      star: 5
+      count: 1
+    - diceType: 4
+      star: 5
+      count: 1
+    baseAttack: 55
+    levelUpAttackIncrease: 12
+    dicePipAttackFactor: 1.4
+    baseCooldown: 3.8
+    baseGoldCost: 0
+    goldCostPerLevel: 0
+    baseScrollCost: 0
+    scrollCostPerLevel: 0
+    milestones: []

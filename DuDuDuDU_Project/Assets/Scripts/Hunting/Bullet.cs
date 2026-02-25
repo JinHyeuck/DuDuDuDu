@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace OJ
@@ -9,23 +8,16 @@ namespace OJ
 
         public float speed = 8f;
         private Vector2 moveDir;
-        private List<DiceType> _diceType = new List<DiceType>();
+        private DiceType _diceType = DiceType.Normal;
         private int _diceStar = 1;
 
-        public void SetBulletStat(List<DiceType> diceType, int diceStar)
+        public void SetBulletStat(DiceType diceType, int diceStar)
         {
-            DiceType firstDiceType = diceType[0];
+            _diceType = diceType;
 
-            Sprite sprite = StaticResource.Instance.DiceTypeResourceManager.GetBullet(firstDiceType);
+            Sprite sprite = DiceMetaDataProvider.GetProjectileSprite(_diceType);
 
             bulletImage.sprite = sprite;
-
-            _diceType.Clear();
-
-            for (int i = 0; i < diceType.Count; ++i)
-            {
-                _diceType.Add(diceType[i]);
-            }
 
             _diceStar = Mathf.Max(1, diceStar);
         }

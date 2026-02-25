@@ -4,21 +4,16 @@ using UnityEngine;
 
 namespace OJ
 {
-
     public class AttackContent : MonoBehaviour
     {
         public static AttackContent Instance;
 
-        private List<Monster> monsterLists = new List<Monster>();
-
         private Dictionary<int, Collider2D[]> _recvColliderPools = new Dictionary<int, Collider2D[]>();
         private List<Monster> _skillHitReceivers = new List<Monster>();
+        private List<Monster> hitmonsters = new List<Monster>();
 
-        private List<Monster> thunderOper = new List<Monster>();
-
-        [Header("lv5EffectMergyCheat")]
-        public List<DiceType> cheatDiceTypes = new List<DiceType>();
-
+        [Header("Cheat")]
+        public DiceType cheatDiceType = DiceType.Max;
         public int cheatDiceDamage = 0;
 
         private void Awake()
@@ -37,203 +32,169 @@ namespace OJ
             if (Instance == this)
                 Instance = null;
         }
-        //------------------------------------------------------------------------------------
+
         private void HitMonster(Monster target, DiceType diceType, int damage)
-        { // 맞는 처리는 여기서
-            // 데미지 UI 표시
+        {
             target.TakeDamage(damage);
 
             GameObject dtObj = DamageTextPool.Instance.GetDamageText();
-            dtObj.transform.position = target.transform.position; // 몬스터 위치
+            dtObj.transform.position = target.transform.position;
             dtObj.transform.ResetLocalZ();
-            Color typeColor = StaticResource.Instance.DiceTypeResourceManager.GetColor(diceType);
-
+            Color typeColor = DiceMetaDataProvider.GetColor(diceType);
             dtObj.GetComponent<DamageText>().SetText(damage, typeColor);
         }
-        //------------------------------------------------------------------------------------
-        List<Monster> hitmonsters = new List<Monster>();
-        public void PlayHit(Monster rootTarget, List<DiceType> diceTypes, int shotDicePip)
+
+        public void PlayHit(Monster rootTarget, DiceType diceType, int shotDicePip)
         {
-            List<DiceType> order = null;
-            if (cheatDiceTypes.Count > 0)
-                order = cheatDiceTypes;
-            else
-                order = diceTypes;
-            
-            order.Sort(Sort);
+            if (rootTarget == null)
+                return;
+
+            DiceType attackType = cheatDiceType != DiceType.Max ? cheatDiceType : diceType;
+            attackType = DiceMetaDataProvider.GetBaseElementType(attackType);
 
             hitmonsters.Clear();
-
             hitmonsters.Add(rootTarget);
 
-            for (int dtype = 0; dtype < order.Count; ++dtype)
+            if (attackType == DiceType.Thunder)
             {
-                DiceType diceType = order[dtype];
+                Dictionary<Monster, List<Monster>> sunderTarget = GetNPerTarget_NoGlobalDup(
+                    MonsterManager.Instance.activeMonsters,
+                    hitmonsters,
+                    2);
 
-
-                if (diceType == DiceType.Thunder)
+                foreach (var pair in sunderTarget)
                 {
-                    Dictionary<Monster, List<Monster>> sunderTarget = GetNPerTarget_NoGlobalDup(MonsterManager.Instance.activeMonsters, hitmonsters, 2);
-
-                    foreach (var pair in sunderTarget)
+                    BulletEffect originEffect = BulletEffectPool.Instance.GetBullet(attackType);
+                    if (originEffect != null)
                     {
-                        {
-                            BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                            bulletEffect.transform.position = pair.Key.transform.position;
-                            bulletEffect.PlayEffect();
-                        }
-
-                        if (pair.Value.Count > 0)
-                        {
-                            for (int i = 0; i < pair.Value.Count; ++i)
-                            {
-                                BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType, EffectID.C1);
-                                bulletEffect.PlayLineEffect(pair.Key.transform.position, pair.Value[i].transform.position);
-
-                                BulletEffect bulletEffectS = BulletEffectPool.Instance.GetBullet(diceType);
-                                bulletEffectS.transform.position = pair.Value[i].transform.position;
-                                bulletEffectS.PlayEffect();
-
-                                hitmonsters.Add(pair.Value[i]);
-                            }
-                        }
-
-                        
-                    }
-                }
-                else if (diceType == DiceType.Fire)
-                {
-                    List<Monster> firetargets = new List<Monster>();
-
-                    for (int monstertarget = 0; monstertarget < hitmonsters.Count; ++monstertarget)
-                    {
-                        Monster target = hitmonsters[monstertarget];
-
-                        List<Monster> monsters = GetRedHitTarget(target.transform.position,
-                            IFFType.IFF_Friend,
-                            1, 10, target);
-
-                        BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                        bulletEffect.transform.position = target.transform.position;
-                        bulletEffect.PlayEffect();
-
-                        for (int hitmon = 0; hitmon < monsters.Count; ++hitmon)
-                        {
-                            firetargets.Add(monsters[hitmon]);
-                        }
+                        originEffect.transform.position = pair.Key.transform.position;
+                        originEffect.PlayEffect();
                     }
 
-                    hitmonsters.AddRange(firetargets);
+                    for (int i = 0; i < pair.Value.Count; ++i)
+                    {
+                        Monster chained = pair.Value[i];
+
+                        BulletEffect chain = BulletEffectPool.Instance.GetBullet(attackType, EffectID.C1);
+                        if (chain != null)
+                            chain.PlayLineEffect(pair.Key.transform.position, chained.transform.position);
+
+                        BulletEffect impact = BulletEffectPool.Instance.GetBullet(attackType);
+                        if (impact != null)
+                        {
+                            impact.transform.position = chained.transform.position;
+                            impact.PlayEffect();
+                        }
+
+                        hitmonsters.Add(chained);
+                    }
                 }
-                
             }
-
-            for (int dtype = 0; dtype < order.Count; ++dtype)
+            else if (attackType == DiceType.Fire)
             {
-                DiceType diceType = order[dtype];
-
-                //int damage = DiceTypeStarManager.Instance.GetTypeStars(diceType);
-
-                int myDicePip = Mathf.Max(1, shotDicePip);
-                int bulletLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
-                int damage = DiceMetaDataProvider.CalculateDamage(diceType, myDicePip, bulletLevel);
-
-                if (cheatDiceDamage > 0)
-                    damage = cheatDiceDamage;
-
+                List<Monster> firetargets = new List<Monster>();
 
                 for (int i = 0; i < hitmonsters.Count; ++i)
                 {
                     Monster target = hitmonsters[i];
-                    if (target == null || target.gameObject.activeInHierarchy == false)
+                    if (target == null)
                         continue;
 
-                    HitMonster(target, diceType, damage);
+                    List<Monster> monsters = GetRedHitTarget(
+                        target.transform.position,
+                        IFFType.IFF_Friend,
+                        1,
+                        10,
+                        target);
 
-                    if (diceType == DiceType.Poison)
+                    BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(attackType);
+                    if (bulletEffect != null)
                     {
-                        if (target.gameObject.activeInHierarchy == false)
-                            continue;
-
-                        target.ApplyPoison();
-                        BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
                         bulletEffect.transform.position = target.transform.position;
                         bulletEffect.PlayEffect();
                     }
-                    else if (diceType == DiceType.Normal)
-                    {
-                        BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                        bulletEffect.transform.position = target.transform.position;
-                        bulletEffect.PlayEffect();
-                    }
-                    else if (diceType == DiceType.Ice)
-                    {
-                        if (target.gameObject.activeInHierarchy == false)
-                            continue;
 
-                        target.ApplySlow();
-                        BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(diceType);
-                        bulletEffect.transform.position = target.transform.position;
-                        bulletEffect.PlayEffect();
+                    for (int hitIdx = 0; hitIdx < monsters.Count; ++hitIdx)
+                        firetargets.Add(monsters[hitIdx]);
+                }
+
+                hitmonsters.AddRange(firetargets);
+            }
+
+            int myDicePip = Mathf.Max(1, shotDicePip);
+            int diceLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(attackType) : 1;
+            int damage = DiceMetaDataProvider.CalculateDamage(attackType, myDicePip, diceLevel);
+            if (cheatDiceDamage > 0)
+                damage = cheatDiceDamage;
+
+            for (int i = 0; i < hitmonsters.Count; ++i)
+            {
+                Monster target = hitmonsters[i];
+                if (target == null || target.gameObject.activeInHierarchy == false)
+                    continue;
+
+                HitMonster(target, attackType, damage);
+
+                if (attackType == DiceType.Poison)
+                {
+                    if (target.gameObject.activeInHierarchy == false)
+                        continue;
+
+                    target.ApplyPoison();
+                    BulletEffect effect = BulletEffectPool.Instance.GetBullet(attackType);
+                    if (effect != null)
+                    {
+                        effect.transform.position = target.transform.position;
+                        effect.PlayEffect();
+                    }
+                }
+                else if (attackType == DiceType.Normal)
+                {
+                    BulletEffect effect = BulletEffectPool.Instance.GetBullet(attackType);
+                    if (effect != null)
+                    {
+                        effect.transform.position = target.transform.position;
+                        effect.PlayEffect();
+                    }
+                }
+                else if (attackType == DiceType.Ice)
+                {
+                    if (target.gameObject.activeInHierarchy == false)
+                        continue;
+
+                    target.ApplySlow();
+                    BulletEffect effect = BulletEffectPool.Instance.GetBullet(attackType);
+                    if (effect != null)
+                    {
+                        effect.transform.position = target.transform.position;
+                        effect.PlayEffect();
                     }
                 }
             }
         }
-        //------------------------------------------------------------------------------------
-        private int Sort(DiceType x, DiceType y)
+
+        public IEnumerator HitColorEffect(Monster target, DiceType elementType)
         {
-            if (x == DiceType.Thunder && y != DiceType.Thunder)
-                return -1;
-            else if (x != DiceType.Thunder && y == DiceType.Thunder)
-                return 1;
-            else if (x != DiceType.Thunder && y != DiceType.Thunder)
-            {
-                if (x == DiceType.Fire && y != DiceType.Fire)
-                    return -1;
-                else if (x != DiceType.Fire && y == DiceType.Fire)
-                    return 1;
-            }
-
-            return 0;
-        }
-        //------------------------------------------------------------------------------------
-        public IEnumerator HitColorEffect(Monster target, List<DiceType> order)
-        {
-            List<Monster> targets = new List<Monster>();
-            targets.Add(target);
-
-            for (int i = 0; i < order.Count; ++i)
-            {
-                DiceType elementType = order[i];
-
-                if (elementType == DiceType.Thunder)
-                { 
-
-                }
-            }
-
             yield return null;
         }
-        //------------------------------------------------------------------------------------
+
         public int GetThunderTargetCount()
         {
             return 2;
         }
-        //------------------------------------------------------------------------------------
-        public void ShowTrail(Transform start, Transform end)
-        { 
 
+        public void ShowTrail(Transform start, Transform end)
+        {
         }
-        //------------------------------------------------------------------------------------
-        /// </summary>
+
         public Dictionary<T, List<T>> GetNPerTarget_NoGlobalDup<T>(
             List<T> allMonsters,
             List<T> targetMonsters,
             int pickPerTarget)
         {
             var result = new Dictionary<T, List<T>>();
-            var globalUsed = new HashSet<T>(); // 전체 중복 방지
-            var allTargetsSet = new HashSet<T>(targetMonsters); // 타겟 몬스터 전체
+            var globalUsed = new HashSet<T>();
+            var allTargetsSet = new HashSet<T>(targetMonsters);
 
             foreach (var target in targetMonsters)
             {
@@ -241,14 +202,12 @@ namespace OJ
 
                 foreach (var monster in allMonsters)
                 {
-                    // 자기 자신 + 다른 타겟 몬스터 + 이미 선택된 몬스터 제외
                     if (allTargetsSet.Contains(monster)) continue;
                     if (globalUsed.Contains(monster)) continue;
 
                     filtered.Add(monster);
                 }
 
-                // Fisher-Yates 셔플
                 Shuffle(filtered);
 
                 int countToPick = Mathf.Min(pickPerTarget, filtered.Count);
@@ -263,9 +222,6 @@ namespace OJ
             return result;
         }
 
-        /// <summary>
-        /// Fisher-Yates Shuffle
-        /// </summary>
         private void Shuffle<T>(List<T> list)
         {
             for (int i = list.Count - 1; i > 0; i--)
@@ -274,7 +230,7 @@ namespace OJ
                 (list[i], list[j]) = (list[j], list[i]);
             }
         }
-        //------------------------------------------------------------------------------------
+
         public IFFType GetEnemyIFFType(IFFType iFFType)
         {
             if (iFFType == IFFType.IFF_Foe)
@@ -282,23 +238,18 @@ namespace OJ
 
             return IFFType.IFF_Foe;
         }
-        //------------------------------------------------------------------------------------
+
         public List<Monster> GetRedHitTarget(Vector2 pos, IFFType ActorType, float range, int targetCount, Monster fixSkillHitReceiver)
         {
-            int searchLayer = 0;
-
-            searchLayer = LayerMask.NameToLayer(GetEnemyIFFType(ActorType).ToString());
-
+            int searchLayer = LayerMask.NameToLayer(GetEnemyIFFType(ActorType).ToString());
             searchLayer = 1 << searchLayer;
 
-            Collider2D[] colliders = null;
-
-            int colliderCount = 0;
+            Collider2D[] colliders;
+            int colliderCount;
 
             if (targetCount < 0)
             {
                 colliders = Physics2D.OverlapCircleAll(pos, range, searchLayer);
-
                 colliderCount = colliders.Length;
             }
             else
@@ -309,11 +260,13 @@ namespace OJ
                     _recvColliderPools.Add(targetCount, colliders);
                 }
                 else
+                {
                     colliders = _recvColliderPools[targetCount];
+                }
 
                 ContactFilter2D filter = new ContactFilter2D();
                 filter.SetLayerMask(searchLayer);
-                filter.useTriggers = false; 
+                filter.useTriggers = false;
                 colliderCount = Physics2D.OverlapCircle(pos, range, filter, colliders);
             }
 
@@ -325,12 +278,7 @@ namespace OJ
 
             _skillHitReceivers.Clear();
 
-            bool needAddRecver = true;
-
-            if (fixSkillHitReceiver == null)
-            {
-                needAddRecver = false;
-            }
+            bool needAddRecver = fixSkillHitReceiver != null;
 
             for (int i = 0; i < colliderCount; i++)
             {
@@ -338,17 +286,13 @@ namespace OJ
                     continue;
 
                 Monster skillHitReceiver = colliders[i].gameObject.GetComponent<Monster>();
-
                 _skillHitReceivers.Add(skillHitReceiver);
 
-                if (needAddRecver == true)
-                {
-                    if (skillHitReceiver == fixSkillHitReceiver)
-                        needAddRecver = false;
-                }
+                if (needAddRecver && skillHitReceiver == fixSkillHitReceiver)
+                    needAddRecver = false;
             }
 
-            if (needAddRecver == true)
+            if (needAddRecver)
             {
                 if (targetCount < 0)
                     _skillHitReceivers.Add(fixSkillHitReceiver);
@@ -365,15 +309,13 @@ namespace OJ
 
             return _skillHitReceivers;
         }
-        //------------------------------------------------------------------------------------
+
         public Vector3 drawGizmoPos;
         public float drawGizmoRadius;
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.blue;
-            //Use the same vars you use to draw your Overlap SPhere to draw your Wire Sphere.
             Gizmos.DrawWireSphere(drawGizmoPos, drawGizmoRadius);
         }
     }
 }
-

@@ -15,12 +15,29 @@ namespace OJ
         }
 
         [Serializable]
+        public class DiceRecipeMaterial
+        {
+            public DiceType diceType;
+            public int star = 1;
+            public int count = 1;
+        }
+
+        [Serializable]
         public class DiceMeta
         {
             public DiceType diceType;
             public string displayName;
             [TextArea(2, 4)] public string description;
             public Sprite icon;
+            public Color color = Color.white;
+            public Sprite projectileSprite;
+            public BulletEffect primaryEffect;
+            public List<BulletEffect> effectPrefabs = new List<BulletEffect>();
+            public bool isMythic;
+            public bool summonable = true;
+            public bool canMerge = true;
+            public bool showStarUI = true;
+            public List<DiceRecipeMaterial> recipeMaterials = new List<DiceRecipeMaterial>();
 
             [Header("Damage")]
             public int baseAttack;

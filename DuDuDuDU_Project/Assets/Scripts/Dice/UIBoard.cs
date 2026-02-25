@@ -9,15 +9,15 @@ namespace OJ
         public static UIBoard Instance;
 
         [Header("Board Settings")]
-        public GridLayoutGroup grid;      // BoardPanel에 붙인 GridLayoutGroup
-        public GameObject slotPrefab;     // Slot (빈칸 UI)
-        public UIDice dicePrefab;         // UIDice 프리팹
+        public GridLayoutGroup grid;
+        public GameObject slotPrefab;
+        public UIDice dicePrefab;
         public int rows = 6;
         public int cols = 4;
 
         private UIDice selectedDice;
         private List<GameObject> slots = new();
-        public UIDice[] diceMap; // 슬롯 인덱스별 다이스 참조
+        public UIDice[] diceMap;
 
         public int ShotIndex = 0;
 
@@ -55,7 +55,7 @@ namespace OJ
             }
         }
 
-        public void SpawnDice(List<DiceType> type, int star, int slotIndex)
+        public void SpawnDice(DiceType type, int star, int slotIndex)
         {
             if (diceMap[slotIndex] != null) return;
 
@@ -89,8 +89,7 @@ namespace OJ
                     return;
                 }
 
-                // 병합 시도
-                bool merged = MergeSystem.Instance.TryMerge(selectedDice, dice);
+                MergeSystem.Instance.TryMerge(selectedDice, dice);
                 Highlight(selectedDice, false);
                 selectedDice = null;
             }
@@ -98,10 +97,8 @@ namespace OJ
 
         private void Highlight(UIDice dice, bool on)
         {
-            // 선택 시 테두리 색상 바꾸기 같은 효과 넣기
         }
 
         public UIDice GetDice(int slotIndex) => diceMap[slotIndex];
     }
-
 }

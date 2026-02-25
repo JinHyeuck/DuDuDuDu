@@ -17,7 +17,6 @@ namespace OJ
         private float timer = 0f;
         private int shotindex = 0;
 
-        private List<DiceType> diceTypes = new List<DiceType>();
         private readonly Dictionary<UIDice, float> diceNextReadyTime = new Dictionary<UIDice, float>();
         private readonly List<UIDice> removeCooldownBuffer = new List<UIDice>();
         private bool wasWaveState = false;
@@ -81,20 +80,6 @@ namespace OJ
 
         public void RefreshDice()
         {
-            diceTypes.Clear();
-
-            foreach (var pair in DiceTypeStarManager.Instance.typeCountTotals)
-            {
-                for (int i = 0; i < pair.Value; ++i)
-                {
-                    diceTypes.Add(pair.Key);
-                }
-            }
-
-            diceTypes.Shuffle();
-
-            //fireRate = 1.0f / (float)diceTypes.Count;
-            //shotindex = 0;
         }
 
         private bool TryGetReadyDice(out UIDice selectedDice)
@@ -114,7 +99,7 @@ namespace OJ
             {
                 int idx = (start + offset) % total;
                 UIDice dice = map[idx];
-                if (dice == null || dice.Type == null || dice.Type.Count == 0)
+                if (dice == null)
                     continue;
 
                 float readyTime = GetNextReadyTime(dice);
@@ -133,10 +118,10 @@ namespace OJ
 
         private void SetDiceNextCooldown(UIDice dice)
         {
-            if (dice == null || dice.Type == null || dice.Type.Count == 0)
+            if (dice == null)
                 return;
 
-            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type, dice.Star);
             float effectDuration = Mathf.Max(0f, fireRate);
             diceNextReadyTime[dice] = Time.time + effectDuration + cooldown;
         }
@@ -167,10 +152,10 @@ namespace OJ
 
         public float GetDiceCooldownFill(UIDice dice)
         {
-            if (dice == null || dice.Type == null || dice.Type.Count == 0)
+            if (dice == null)
                 return 0f;
 
-            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type, dice.Star);
             if (cooldown <= 0f)
                 return 0f;
 
@@ -185,10 +170,10 @@ namespace OJ
 
         public float GetDiceCooldownRemaining(UIDice dice)
         {
-            if (dice == null || dice.Type == null || dice.Type.Count == 0)
+            if (dice == null)
                 return 0f;
 
-            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type[0], dice.Star);
+            float cooldown = DiceMetaDataProvider.GetCooldown(dice.Type, dice.Star);
             if (cooldown <= 0f)
                 return 0f;
 
@@ -207,7 +192,7 @@ namespace OJ
             wasWaveState = false;
         }
 
-        bool ShootAtClosest(List<DiceType> diceType, int diceStar)
+        bool ShootAtClosest(DiceType diceType, int diceStar)
         {
             Monster target = MonsterManager.Instance.GetClosestMonster(firePoint.position);
             if (target == null) return false;

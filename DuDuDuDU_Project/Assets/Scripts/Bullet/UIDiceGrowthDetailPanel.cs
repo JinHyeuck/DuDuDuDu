@@ -74,9 +74,8 @@ namespace OJ
             var cost = DiceLevelManager.Instance != null
                 ? DiceLevelManager.Instance.GetNextUpgradeCost(currentDiceType)
                 : DiceMetaDataProvider.GetUpgradeCost(currentDiceType, level);
-            var dtr = StaticResource.Instance.DiceTypeResourceManager;
 
-            if (iconImage != null) iconImage.sprite = dtr != null ? dtr.GetIcon(currentDiceType) : null;
+            if (iconImage != null) iconImage.sprite = DiceMetaDataProvider.GetIcon(currentDiceType);
             if (nameText != null) nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : currentDiceType.ToString());
             if (levelText != null) levelText.SetText("Lv. {0}", level);
             if (damageText != null) damageText.SetText("{0}", damage);
