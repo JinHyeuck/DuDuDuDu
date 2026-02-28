@@ -59,38 +59,18 @@ namespace OJ
         {
             float targetWidth = isSelected ? _maxwidth : _minwidth;
             float duration = Mathf.Max(0f, _widthChangeDuration);
-            float rotateTime = duration * 0.5f;
 
-            Transform fromObj = isSelected ? _minWidthObj : _maxWidthObj;
-            Transform toObj = isSelected ? _maxWidthObj : _minWidthObj;
+            if (_minWidthObj != null) _minWidthObj.gameObject.SetActive(!isSelected);
+            if (_maxWidthObj != null) _maxWidthObj.gameObject.SetActive(isSelected);
 
             if (duration <= 0f)
             {
                 if (_rect != null) SetWidth(targetWidth);
-                if (fromObj != null) fromObj.gameObject.SetActive(false);
-                if (toObj != null)
-                {
-                    toObj.gameObject.SetActive(true);
-                    Vector3 toEuler = toObj.localEulerAngles;
-                    toEuler.y = 0f;
-                    toObj.localEulerAngles = toEuler;
-                }
                 _widthRoutine = null;
                 yield break;
             }
 
             float startWidth = _rect != null ? _rect.sizeDelta.x : targetWidth;
-            bool swapped = false;
-
-            if (fromObj != null)
-            {
-                fromObj.gameObject.SetActive(true);
-                Vector3 fromStartEuler = fromObj.localEulerAngles;
-                fromStartEuler.y = 0f;
-                fromObj.localEulerAngles = fromStartEuler;
-            }
-
-            if (toObj != null) toObj.gameObject.SetActive(false);
 
             float elapsed = 0f;
             while (elapsed < duration)
@@ -100,51 +80,10 @@ namespace OJ
 
                 if (_rect != null) SetWidth(Mathf.Lerp(startWidth, targetWidth, widthT));
 
-                if (!swapped && elapsed >= rotateTime)
-                {
-                    swapped = true;
-                    if (fromObj != null) fromObj.gameObject.SetActive(false);
-                    if (toObj != null)
-                    {
-                        toObj.gameObject.SetActive(true);
-                        Vector3 toStartEuler = toObj.localEulerAngles;
-                        toStartEuler.y = 90f;
-                        toObj.localEulerAngles = toStartEuler;
-                    }
-                }
-
-                if (!swapped)
-                {
-                    if (fromObj != null)
-                    {
-                        Vector3 euler = fromObj.localEulerAngles;
-                        euler.y = Mathf.Lerp(0f, 90f, Mathf.Clamp01(elapsed / rotateTime));
-                        fromObj.localEulerAngles = euler;
-                    }
-                }
-                else
-                {
-                    if (toObj != null)
-                    {
-                        float secondElapsed = Mathf.Clamp(elapsed - rotateTime, 0f, rotateTime);
-                        Vector3 euler = toObj.localEulerAngles;
-                        euler.y = Mathf.Lerp(90f, 0f, Mathf.Clamp01(secondElapsed / rotateTime));
-                        toObj.localEulerAngles = euler;
-                    }
-                }
-
                 yield return null;
             }
 
             if (_rect != null) SetWidth(targetWidth);
-            if (fromObj != null) fromObj.gameObject.SetActive(false);
-            if (toObj != null)
-            {
-                toObj.gameObject.SetActive(true);
-                Vector3 toEndEuler = toObj.localEulerAngles;
-                toEndEuler.y = 0f;
-                toObj.localEulerAngles = toEndEuler;
-            }
 
             _widthRoutine = null;
         }
