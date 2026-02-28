@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 namespace OJ
 {
@@ -18,11 +19,7 @@ namespace OJ
         [SerializeField] private Button enterStageButton;
 
         [Header("Bottom Buttons")]
-        [SerializeField] private Button shopButton;
-        [SerializeField] private Button equipmentButton;
-        [SerializeField] private Button homeButton;
-        [SerializeField] private Button bulletButton;
-        [SerializeField] private Button helperButton;
+        [SerializeField] private List<LobbyBottomBtn> bottomButtons;
 
         [Header("Tab Panels")]
         [SerializeField] private IDialog shopPanel;
@@ -35,11 +32,14 @@ namespace OJ
         private void Awake()
         {
             if (enterStageButton != null) enterStageButton.onClick.AddListener(OnClickEnterStage);
-            if (shopButton != null) shopButton.onClick.AddListener(OnClickShop);
-            if (equipmentButton != null) equipmentButton.onClick.AddListener(OnClickEquipment);
-            if (homeButton != null) homeButton.onClick.AddListener(OnClickHome);
-            if (bulletButton != null) bulletButton.onClick.AddListener(OnClickBullet);
-            if (helperButton != null) helperButton.onClick.AddListener(OnClickHelper);
+            if (bottomButtons != null)
+            {
+                for (int i = 0; i < bottomButtons.Count; i++)
+                {
+                    if (bottomButtons[i] == null) continue;
+                    bottomButtons[i].Init(ShowTab);
+                }
+            }
         }
 
         private void OnEnable()
@@ -50,11 +50,6 @@ namespace OJ
         private void OnDestroy()
         {
             if (enterStageButton != null) enterStageButton.onClick.RemoveListener(OnClickEnterStage);
-            if (shopButton != null) shopButton.onClick.RemoveListener(OnClickShop);
-            if (equipmentButton != null) equipmentButton.onClick.RemoveListener(OnClickEquipment);
-            if (homeButton != null) homeButton.onClick.RemoveListener(OnClickHome);
-            if (bulletButton != null) bulletButton.onClick.RemoveListener(OnClickBullet);
-            if (helperButton != null) helperButton.onClick.RemoveListener(OnClickHelper);
         }
 
         public void OnClickEnterStage()
@@ -62,18 +57,22 @@ namespace OJ
             SceneFlowManager.LoadBattle();
         }
 
-        private void OnClickShop() => ShowTab(LobbyTab.Shop);
-        private void OnClickEquipment() => ShowTab(LobbyTab.Equipment);
-        private void OnClickHome() => ShowTab(LobbyTab.Home);
-        private void OnClickBullet() => ShowTab(LobbyTab.Bullet);
-        private void OnClickHelper() => ShowTab(LobbyTab.Helper);
-
         public void ShowTab(LobbyTab tab)
         {
             if (shopPanel != null) shopPanel.SetActive(tab == LobbyTab.Shop);
             if (equipmentPanel != null) equipmentPanel.SetActive(tab == LobbyTab.Equipment);
             if (bulletPanel != null) bulletPanel.SetActive(tab == LobbyTab.Bullet);
             if (helperPanel != null) helperPanel.SetActive(tab == LobbyTab.Helper);
+
+            if (bottomButtons != null)
+            {
+                for (int i = 0; i < bottomButtons.Count; i++)
+                {
+                    LobbyBottomBtn button = bottomButtons[i];
+                    if (button == null) continue;
+                    button.SetState(button._tab == tab);
+                }
+            }
         }
     }
 }
