@@ -66,10 +66,10 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: 9f969d56687cbbe48a257d25254ab895, type: 3}
-  m_Type: 0
+  m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
-  m_FillMethod: 4
+  m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
@@ -173,7 +173,9 @@ MonoBehaviour:
   iconImage: {fileID: 3061286841935150318}
   nameText: {fileID: 6702183894316988855}
   levelText: {fileID: 433532442053887341}
-  hasNewMilestoneDot: {fileID: 9152339507054084194}
+  canUpgradeDot: {fileID: 9152339507054084194}
+  scrollCountFillImage: {fileID: 7694227461479610312}
+  scrollCountText: {fileID: 8536383425512989226}
 --- !u!1 &884271688083688665
 GameObject:
   m_ObjectHideFlags: 0

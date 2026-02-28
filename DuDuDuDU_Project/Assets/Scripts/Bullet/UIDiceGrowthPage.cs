@@ -18,12 +18,16 @@ namespace OJ
 
             if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged += OnDiceLevelChanged;
+            if (PointManager.Instance != null)
+                PointManager.Instance.OnPointChanged += OnPointChanged;
         }
 
         protected override void OnExit()
         {
             if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
+            if (PointManager.Instance != null)
+                PointManager.Instance.OnPointChanged -= OnPointChanged;
         }
 
         private void BuildIfNeeded()
@@ -53,6 +57,11 @@ namespace OJ
         }
 
         private void OnDiceLevelChanged(DiceType diceType, int level)
+        {
+            RefreshAll();
+        }
+
+        private void OnPointChanged(PointType pointType, int value)
         {
             RefreshAll();
         }

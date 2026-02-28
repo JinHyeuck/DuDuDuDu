@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace OJ
@@ -11,7 +12,9 @@ namespace OJ
         [SerializeField] private Image iconImage;
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text levelText;
-        [SerializeField] private GameObject hasNewMilestoneDot;
+        [SerializeField] private GameObject canUpgradeDot;
+        [SerializeField] private Image scrollCountFillImage;
+        [SerializeField] private TMP_Text scrollCountText;
 
         private DiceType diceType;
         private System.Action<DiceType> onClick;
@@ -52,8 +55,29 @@ namespace OJ
             if (levelText != null)
                 levelText.SetText("Lv.{0}", level);
 
-            if (hasNewMilestoneDot != null)
-                hasNewMilestoneDot.SetActive(HasMilestoneAtNextLevel(meta, level));
+            var cost = DiceLevelManager.Instance != null
+                ? DiceLevelManager.Instance.GetNextUpgradeCost(diceType)
+                : DiceMetaDataProvider.GetUpgradeCost(diceType, level);
+
+            PointType scrollType = PointManager.ToScrollType(diceType);
+            int ownedScroll = PointManager.Instance != null ? PointManager.Instance.Get(scrollType) : 0;
+            int requiredScroll = Mathf.Max(0, cost.scrollCost);
+
+            if (scrollCountText != null)
+                scrollCountText.SetText("{0}/{1}", ownedScroll, requiredScroll);
+
+            if (scrollCountFillImage != null)
+            {
+                float fill = requiredScroll <= 0 ? 1f : Mathf.Clamp01((float)ownedScroll / requiredScroll);
+                scrollCountFillImage.fillAmount = fill;
+            }
+
+            if (canUpgradeDot != null)
+            {
+                int ownedGold = PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0;
+                bool canUpgrade = ownedGold >= cost.goldCost && ownedScroll >= requiredScroll;
+                canUpgradeDot.SetActive(canUpgrade);
+            }
         }
 
         private void HandleClick()
@@ -61,19 +85,5 @@ namespace OJ
             onClick?.Invoke(diceType);
         }
 
-        private static bool HasMilestoneAtNextLevel(DiceMetaDataDatabase.DiceMeta meta, int currentLevel)
-        {
-            if (meta == null || meta.milestones == null)
-                return false;
-
-            int nextLevel = currentLevel + 1;
-            for (int i = 0; i < meta.milestones.Count; i++)
-            {
-                if (meta.milestones[i].level == nextLevel)
-                    return true;
-            }
-
-            return false;
-        }
     }
 }
