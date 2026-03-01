@@ -256,13 +256,13 @@ MonoBehaviour:
     baseScrollCost: 0
     scrollCostPerLevel: 0
     milestones: []
-  - diceType: 9
+  - diceType: 8
     elementType: 03000000
     displayName: King Thunder
     description: "\uC2E0\uD654 \uC5F0\uC1C4 \uD0C0\uACA9 \uB2E4\uC774\uC2A4"
     icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
     color: {r: 1, g: 0.8745099, b: 0, a: 1}
-    projectileSprite: {fileID: 3611656084732968255, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
+    projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
     primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
     effectPrefabs:
     - {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
@@ -272,13 +272,13 @@ MonoBehaviour:
     canMerge: 0
     showStarUI: 0
     recipeMaterials:
-    - diceType: 4
+    - diceType: 3
       star: 3
       count: 1
-    - diceType: 4
+    - diceType: 3
       star: 4
       count: 2
-    - diceType: 4
+    - diceType: 3
       star: 5
       count: 1
     baseAttack: 46
@@ -305,13 +305,13 @@ MonoBehaviour:
     canMerge: 0
     showStarUI: 0
     recipeMaterials:
-    - diceType: 3
+    - diceType: 4
       star: 1
       count: 2
-    - diceType: 3
+    - diceType: 4
       star: 2
       count: 2
-    - diceType: 3
+    - diceType: 4
       star: 4
       count: 1
     baseAttack: 40
@@ -339,19 +339,19 @@ MonoBehaviour:
     showStarUI: 0
     recipeMaterials:
     - diceType: 0
-      star: 5
+      star: 2
       count: 1
     - diceType: 1
-      star: 5
+      star: 2
       count: 1
     - diceType: 2
-      star: 5
+      star: 2
       count: 1
     - diceType: 3
-      star: 5
+      star: 2
       count: 1
     - diceType: 4
-      star: 5
+      star: 2
       count: 1
     baseAttack: 55
     levelUpAttackIncrease: 12

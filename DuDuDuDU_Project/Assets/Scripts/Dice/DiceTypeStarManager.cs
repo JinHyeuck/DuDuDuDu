@@ -6,6 +6,7 @@ namespace OJ
     public class DiceTypeStarManager : MonoBehaviour
     {
         public static DiceTypeStarManager Instance;
+        public event System.Action OnDiceInventoryChanged;
 
         public Dictionary<DiceType, int> typeCountTotals = new Dictionary<DiceType, int>();
         private Dictionary<DiceType, int> typeStarTotals = new Dictionary<DiceType, int>();
@@ -43,6 +44,7 @@ namespace OJ
             AddStars(type, star);
             UIDiceBoardUI.Instance?.UpdateTypeStars();
             PlayerController.Instance?.RefreshDice();
+            OnDiceInventoryChanged?.Invoke();
         }
 
         public void OnDiceRemove(DiceType type, int star)
@@ -50,6 +52,7 @@ namespace OJ
             RemoveStars(type, star);
             UIDiceBoardUI.Instance?.UpdateTypeStars();
             PlayerController.Instance?.RefreshDice();
+            OnDiceInventoryChanged?.Invoke();
         }
 
         private void AddStars(DiceType type, int stars)
@@ -145,30 +148,25 @@ namespace OJ
             if (recipe == null || recipe.Count == 0)
                 return 0;
 
-            Dictionary<DiceType, int> requiredBaseByType = new Dictionary<DiceType, int>();
-            int totalRequiredBase = 0;
+            long totalRequiredBase = 0;
+            long satisfiedBase = 0;
 
             for (int i = 0; i < recipe.Count; i++)
             {
                 DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
-                int requiredBase = req.count * GetBaseUnitFromStar(req.star);
+                long requiredBase = (long)req.count * GetBaseUnitFromStar(req.star);
                 totalRequiredBase += requiredBase;
 
-                requiredBaseByType.TryGetValue(req.diceType, out int accum);
-                requiredBaseByType[req.diceType] = accum + requiredBase;
+                int haveExact = GetTypeStarCount(req.diceType, req.star);
+                int usedCount = Mathf.Min(haveExact, req.count);
+                satisfiedBase += (long)usedCount * GetBaseUnitFromStar(req.star);
             }
 
             if (totalRequiredBase <= 0)
                 return 0;
 
-            int totalOwnedForRecipe = 0;
-            foreach (var pair in requiredBaseByType)
-            {
-                int haveBase = GetTypeBaseEquivalent(pair.Key);
-                totalOwnedForRecipe += Mathf.Min(haveBase, pair.Value);
-            }
-
-            return Mathf.Clamp(Mathf.RoundToInt((totalOwnedForRecipe * 100f) / totalRequiredBase), 0, 100);
+            float ratio = (float)satisfiedBase / totalRequiredBase;
+            return Mathf.Clamp(Mathf.RoundToInt(ratio * 100f), 0, 100);
         }
 
         public void ResetAll()
@@ -183,6 +181,7 @@ namespace OJ
                 typeStarCounts[key] = 0;
 
             UIDiceBoardUI.Instance?.UpdateTypeStars();
+            OnDiceInventoryChanged?.Invoke();
         }
 
         private static int GetBaseUnitFromStar(int star)
@@ -190,5 +189,6 @@ namespace OJ
             int s = Mathf.Max(1, star);
             return 1 << (s - 1);
         }
+
     }
 }

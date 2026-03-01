@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace OJ
 {
-    public class UIMythicDiceCraftItem : MonoBehaviour
+    public class UIDiceCraftItem : MonoBehaviour
     {
         [SerializeField] private Button craftButton;
         [SerializeField] private TMP_Text craftButtonText;

@@ -5,34 +5,31 @@ using UnityEngine.UI;
 
 namespace OJ
 {
-    public class UIMythicDiceProgressDialog : IDialog
+    public class UIDiceCraftProgressDialog : IDialog
     {
         [Header("UI")]
         [SerializeField] private Transform listRoot;
-        [SerializeField] private UIMythicDiceProgressItem itemPrefab;
+        [SerializeField] private UIDiceCraftProgressItem itemPrefab;
         [SerializeField] private Button openDetailButton;
-        [SerializeField] private UIMythicDiceCraftPanel detailDialog;
-        [SerializeField] private TMP_Text stateText;
+        [SerializeField] private UIDiceCraftPanelDialog detailDialog;
 
         [Header("Behavior")]
         [SerializeField] private bool showOnlyInSetting = true;
-        [SerializeField] private float refreshInterval = 0.25f;
 
-        private readonly List<UIMythicDiceProgressItem> items = new List<UIMythicDiceProgressItem>();
-        private float nextRefreshTime;
+        private readonly List<UIDiceCraftProgressItem> items = new List<UIDiceCraftProgressItem>();
+        private DiceType selectedMythicType = DiceType.KingNormal;
+        private bool hasSelection;
 
         private void Update()
         {
-            SyncVisibility();
-
-            if (!isEnter)
+            if (!showOnlyInSetting || GameManager.Instance == null)
                 return;
 
-            if (Time.unscaledTime < nextRefreshTime)
-                return;
-
-            nextRefreshTime = Time.unscaledTime + Mathf.Max(0.05f, refreshInterval);
-            RefreshAll();
+            bool shouldOpen = GameManager.Instance.inGameState == InGameState.Setting;
+            if (shouldOpen && !isEnter)
+                Enter();
+            else if (!shouldOpen && isEnter)
+                Exit();
         }
 
         protected override void OnLoad()
@@ -40,31 +37,35 @@ namespace OJ
             BuildIfNeeded();
             if (openDetailButton != null)
                 openDetailButton.onClick.AddListener(OpenDetailDialog);
-            RefreshStateText();
+            if (DiceTypeStarManager.Instance != null)
+                DiceTypeStarManager.Instance.OnDiceInventoryChanged += HandleDiceInventoryChanged;
         }
 
         protected override void OnUnload()
         {
             if (openDetailButton != null)
                 openDetailButton.onClick.RemoveListener(OpenDetailDialog);
+            if (DiceTypeStarManager.Instance != null)
+                DiceTypeStarManager.Instance.OnDiceInventoryChanged -= HandleDiceInventoryChanged;
         }
 
         protected override void OnEnter()
         {
             BuildIfNeeded();
+            if (DiceTypeStarManager.Instance != null)
+            {
+                DiceTypeStarManager.Instance.OnDiceInventoryChanged -= HandleDiceInventoryChanged;
+                DiceTypeStarManager.Instance.OnDiceInventoryChanged += HandleDiceInventoryChanged;
+            }
             RefreshAll();
         }
 
-        private void SyncVisibility()
+        private void HandleDiceInventoryChanged()
         {
-            bool shouldOpen = !showOnlyInSetting || (GameManager.Instance != null && GameManager.Instance.inGameState == InGameState.Setting);
-            if (shouldOpen == isEnter)
+            if (!isEnter)
                 return;
 
-            if (shouldOpen)
-                Enter();
-            else
-                Exit();
+            RefreshAll();
         }
 
         private void BuildIfNeeded()
@@ -75,29 +76,18 @@ namespace OJ
             List<DiceType> mythics = DiceMetaDataProvider.GetMythicTypes();
             for (int i = 0; i < mythics.Count; i++)
             {
-                UIMythicDiceProgressItem item = Instantiate(itemPrefab, listRoot);
-                item.Bind(mythics[i], GetRecipeProgressPercent, HandleClickMythic);
+                UIDiceCraftProgressItem item = Instantiate(itemPrefab, listRoot);
+                item.Bind(mythics[i], GetRecipeProgressPercent, HandleClickMythic, true);
                 items.Add(item);
             }
         }
 
         private void RefreshAll()
         {
-            RefreshStateText();
-
             for (int i = 0; i < items.Count; i++)
                 items[i].Refresh();
 
             SortItemsByPercentDesc();
-        }
-
-        private void RefreshStateText()
-        {
-            if (stateText == null)
-                return;
-
-            InGameState state = GameManager.Instance != null ? GameManager.Instance.inGameState : InGameState.None;
-            stateText.SetText($"조합 진행도 - {state}");
         }
 
         private int GetRecipeProgressPercent(DiceType mythicType)
@@ -111,6 +101,15 @@ namespace OJ
 
         private void HandleClickMythic(DiceType mythicType)
         {
+            if (detailDialog == null)
+                return;
+
+            detailDialog.Open(mythicType);
+
+            return;
+
+            selectedMythicType = mythicType;
+            hasSelection = true;
             OpenDetailDialog();
         }
 
@@ -132,8 +131,10 @@ namespace OJ
             if (detailDialog == null)
                 return;
 
-            detailDialog.Enter();
-            detailDialog.RefreshAll();
+            if (!hasSelection && items.Count > 0)
+                selectedMythicType = items[0].MythicType;
+
+            detailDialog.Open(selectedMythicType);
         }
 
     }
