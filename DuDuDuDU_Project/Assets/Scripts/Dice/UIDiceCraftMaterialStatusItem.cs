@@ -10,7 +10,7 @@ namespace OJ
         [SerializeField] private TMP_Text starText;
         [SerializeField] private TMP_Text stateText;
 
-        public void Bind(DiceType diceType, int star, bool owned)
+        public void Bind(DiceType diceType, int star, bool owned, bool showState = true)
         {
             if (iconImage != null)
             {
@@ -23,8 +23,12 @@ namespace OJ
 
             if (stateText != null)
             {
-                stateText.SetText(owned ? "보유" : "미보유");
-                stateText.color = owned ? new Color(0.2f, 0.9f, 0.4f) : new Color(1f, 0.35f, 0.35f);
+                stateText.gameObject.SetActive(showState);
+                if (showState)
+                {
+                    stateText.SetText(owned ? "보유" : "미보유");
+                    stateText.color = owned ? new Color(0.2f, 0.9f, 0.4f) : new Color(1f, 0.35f, 0.35f);
+                }
             }
         }
     }
