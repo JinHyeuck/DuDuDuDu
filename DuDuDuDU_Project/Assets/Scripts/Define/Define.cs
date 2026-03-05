@@ -69,19 +69,61 @@ namespace OJ
         Gold = 0,
         Dia,
         Stamina,
-        NormalScroll,
+        NormalScroll = 100,
         FireScroll,
         IceScroll,
         PoisonScroll,
         ThunderScroll,
         MythicScroll,
+        WeaponScroll = 200,
+        HelmetScroll,
+        ArmorScroll,
+        RingScroll,
+        ShoesScroll,
+        NecklaceScroll,
 
         Max
     }
 
+    public enum Rarity
+    {
+        Uncommon = 0,
+        Common,
+        Normal,
+        Rare,
+        Epic,
+        Mythic,
+
+    }
+
+    public enum EquipmentType
+    {
+        Weapon,
+        Helmet,
+        Armor,
+        Ring,
+        Shoes,
+        Necklace,
+    }
+
+    public enum GemStatType
+    {
+        AttackPercent = 0,
+        AttackFlat,
+        CooldownReducePercent,
+        FirstNWavesDamageFlat,
+        FireExplosionRangePercent,
+        WellHpOnKill,
+        FinalDamagePercent,
+        FireExplosionTargetCountFlat,
+        ThunderChainCountFlat,
+        GoldOnKill,
+    }
+
     public static class Define
     {
-
+        public const int MaxEquipmentSlot = 8;
+        public static readonly int[] EquipmentSlotUnlockLevels = { 1, 10, 20, 30, 40, 50, 60, 70 };
     }
 
 }

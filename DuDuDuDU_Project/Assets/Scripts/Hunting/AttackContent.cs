@@ -57,10 +57,11 @@ namespace OJ
 
             if (attackType == DiceType.Thunder)
             {
+                int thunderTargets = GetThunderTargetCount();
                 Dictionary<Monster, List<Monster>> sunderTarget = GetNPerTarget_NoGlobalDup(
                     MonsterManager.Instance.activeMonsters,
                     hitmonsters,
-                    2);
+                    thunderTargets);
 
                 foreach (var pair in sunderTarget)
                 {
@@ -93,6 +94,13 @@ namespace OJ
             else if (attackType == DiceType.Fire)
             {
                 List<Monster> firetargets = new List<Monster>();
+                float explosionRange = 1f;
+                int fireHitTargetCount = 10;
+                if (EquipmentManager.Instance != null)
+                {
+                    explosionRange *= (1f + EquipmentManager.Instance.GetFireExplosionRangeBonus(attackType));
+                    fireHitTargetCount += EquipmentManager.Instance.GetFireExplosionExtraTargetCount(attackType);
+                }
 
                 for (int i = 0; i < hitmonsters.Count; ++i)
                 {
@@ -103,8 +111,8 @@ namespace OJ
                     List<Monster> monsters = GetRedHitTarget(
                         target.transform.position,
                         IFFType.IFF_Friend,
-                        1,
-                        10,
+                        explosionRange,
+                        fireHitTargetCount,
                         target);
 
                     BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(attackType);
@@ -180,7 +188,10 @@ namespace OJ
 
         public int GetThunderTargetCount()
         {
-            return 2;
+            int count = 2;
+            if (EquipmentManager.Instance != null)
+                count += EquipmentManager.Instance.GetThunderChainExtraCount(DiceType.Thunder);
+            return Mathf.Max(0, count);
         }
 
         public void ShowTrail(Transform start, Transform end)

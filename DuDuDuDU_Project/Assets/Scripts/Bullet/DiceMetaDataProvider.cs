@@ -215,7 +215,27 @@ namespace OJ
             int level = Mathf.Max(1, bulletLevel);
 
             float attackBase = meta.baseAttack + (level * meta.levelUpAttackIncrease);
+            if (EquipmentManager.Instance != null)
+                attackBase += EquipmentManager.Instance.GetTotalEquipmentAttack();
+
             float scaled = attackBase * (pips * Mathf.Max(0.01f, meta.dicePipAttackFactor));
+
+            if (EquipmentManager.Instance != null)
+            {
+                float attackPercent = EquipmentManager.Instance.GetAttackPercentBonus(diceType);
+                int attackFlat = EquipmentManager.Instance.GetAttackFlatBonus(diceType);
+
+                int currentWave = 0;
+                if (GameManager.Instance != null)
+                    currentWave = GameManager.Instance.CurrentWaveIndex;
+                int earlyWaveFlat = EquipmentManager.Instance.GetFirstNWavesDamageFlatBonus(diceType, currentWave);
+                float finalDamagePercent = EquipmentManager.Instance.GetFinalDamagePercentBonus(diceType);
+
+                scaled *= (1f + attackPercent);
+                scaled += attackFlat + earlyWaveFlat;
+                scaled *= (1f + finalDamagePercent);
+            }
+
             return Mathf.Max(1, Mathf.RoundToInt(scaled));
         }
 
@@ -232,7 +252,15 @@ namespace OJ
         {
             float baseCooldown = Mathf.Clamp(GetBaseCooldown(diceType), 0.1f, 10f);
             int star = Mathf.Max(1, diceStar);
-            return baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
+            float cooldown = baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
+
+            if (EquipmentManager.Instance != null)
+            {
+                float reducePercent = EquipmentManager.Instance.GetCooldownReductionPercent(diceType);
+                cooldown *= Mathf.Max(0.05f, 1f - reducePercent);
+            }
+
+            return cooldown;
         }
 
         private static void EnsureDefaults()

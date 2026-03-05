@@ -63,6 +63,7 @@ namespace OJ
                     CharacterState = CharacterState.Dead;
                     StopAllCoroutines();
                     UIDiceSummonSystem.Instance?.AddSP(10);
+                    EquipmentManager.Instance?.OnMonsterKilled();
                     MonsterManager.Instance.UnregisterMonster(this, true);
                     MonsterSpawner.Instance.PoolMonster(this);
                 }

@@ -125,6 +125,17 @@ namespace OJ
             return TrySpend(costs);
         }
 
+        public bool TrySpendEquipmentUpgrade(EquipmentType equipmentType, int goldCost, int scrollCost)
+        {
+            var costs = new Dictionary<PointType, int>
+            {
+                { PointType.Gold, goldCost },
+                { ToEquipmentScrollType(equipmentType), scrollCost }
+            };
+
+            return TrySpend(costs);
+        }
+
         public static PointType ToScrollType(DiceType diceType)
         {
             switch (diceType)
@@ -153,6 +164,27 @@ namespace OJ
                     return PointType.MythicScroll;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(diceType), diceType, "Unsupported dice type.");
+            }
+        }
+
+        public static PointType ToEquipmentScrollType(EquipmentType equipmentType)
+        {
+            switch (equipmentType)
+            {
+                case EquipmentType.Weapon:
+                    return PointType.WeaponScroll;
+                case EquipmentType.Helmet:
+                    return PointType.HelmetScroll;
+                case EquipmentType.Armor:
+                    return PointType.ArmorScroll;
+                case EquipmentType.Ring:
+                    return PointType.RingScroll;
+                case EquipmentType.Shoes:
+                    return PointType.ShoesScroll;
+                case EquipmentType.Necklace:
+                    return PointType.NecklaceScroll;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(equipmentType), equipmentType, "Unsupported equipment type.");
             }
         }
 

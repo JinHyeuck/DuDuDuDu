@@ -16,8 +16,8 @@ namespace OJ
     public class StaticResource : MonoSingleton<StaticResource>
     {
         public PointMetadataDatabase PointMetadataDatabase;
-        [FormerlySerializedAs("BulletMetaDataDatabase")]
         public DiceMetaDataDatabase DiceMetaDataDatabase;
+        public GemDefinitionDatabase GemDefinitionDatabase;
         public List<ElementResource> ElementResources;
 
         private Dictionary<ElementType, ElementResource> elementResourceMap = new Dictionary<ElementType, ElementResource>();
