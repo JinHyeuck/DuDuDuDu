@@ -8,6 +8,7 @@ namespace OJ
         [SerializeField] private Transform listRoot;
         [SerializeField] private UIDiceGrowthItem itemPrefab;
         [SerializeField] private UIDiceGrowthDetailPanel detailPanel;
+        [SerializeField] private LobbyLayoutController lobbyLayoutController;
 
         private readonly List<UIDiceGrowthItem> items = new List<UIDiceGrowthItem>();
 
@@ -28,6 +29,11 @@ namespace OJ
                 DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
             if (PointManager.Instance != null)
                 PointManager.Instance.OnPointChanged -= OnPointChanged;
+        }
+
+        public override void BackKeyCall()
+        {
+            lobbyLayoutController?.ShowTab(LobbyTab.Home);
         }
 
         private void BuildIfNeeded()
