@@ -27,8 +27,7 @@ namespace OJ
 
         KingNormal = 200,
         KingFire,
-        KingIc,
-        KingIce = KingIc,
+        KingIce,
         KingThunder,
         KingPoison,
         KingMixed,

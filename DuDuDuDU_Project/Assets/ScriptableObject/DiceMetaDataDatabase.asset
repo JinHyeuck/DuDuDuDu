@@ -195,6 +195,184 @@ MonoBehaviour:
     - level: 5
       description: "\uCD94\uAC00 \uB300\uC0C1 1\uBA85 \uD0D0\uC0C9 \uD6C4 \uC5F0\uC1C4
         \uD0C0\uACA9"
+  - diceType: 100
+    elementType: 000000000400000002000000
+    displayName: Tornado Dice
+    description: "\uD68C\uC624\uB9AC\uD615. \uC801\uC911 \uC9C0\uC810 \uC8FC\uBCC0
+      \uC801\uC744 \uC911\uC2EC\uC73C\uB85C \uB04C\uC5B4\uB2F9\uAE40."
+    icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
+    color: {r: 0.68, g: 0.78, b: 0.96, a: 1}
+    projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
+    primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    effectPrefabs:
+    - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    isMythic: 0
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 0
+      star: 2
+      count: 1
+    - diceType: 2
+      star: 1
+      count: 2
+    - diceType: 4
+      star: 1
+      count: 1
+    baseAttack: 9
+    levelUpAttackIncrease: 3
+    dicePipAttackFactor: 1.05
+    baseCooldown: 3
+    baseGoldCost: 145
+    goldCostPerLevel: 62
+    baseScrollCost: 10
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 7
+      description: "\uB04C\uC5B4\uB2F9\uAE40 \uAC15\uB3C4 \uC99D\uAC00"
+  - diceType: 101
+    elementType: 0400000002000000
+    displayName: Paralysis Dice
+    description: "\uC81C\uC5B4\uD615. \uC801\uC911 \uB300\uC0C1\uC744 \uC7A0\uC2DC
+      \uB9C8\uBE44\uC2DC\uD0B4."
+    icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
+    color: {r: 0.62, g: 0.51, b: 0.97, a: 1}
+    projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
+    primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
+    effectPrefabs:
+    - {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
+    - {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
+    isMythic: 0
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 3
+      star: 2
+      count: 1
+    - diceType: 4
+      star: 1
+      count: 1
+    - diceType: 2
+      star: 1
+      count: 1
+    baseAttack: 8
+    levelUpAttackIncrease: 2
+    dicePipAttackFactor: 1
+    baseCooldown: 3.5
+    baseGoldCost: 140
+    goldCostPerLevel: 58
+    baseScrollCost: 10
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 6
+      description: "\uB9C8\uBE44 \uC9C0\uC18D\uC2DC\uAC04 \uC99D\uAC00"
+  - diceType: 102
+    elementType: 0400000001000000
+    displayName: Armor Break Dice
+    description: "\uC57D\uD654\uD615. \uC801\uC911 \uB300\uC0C1 \uBC29\uC5B4\uB825\uC744
+      \uC77C\uC815 \uC2DC\uAC04 \uAC10\uC18C."
+    icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
+    color: {r: 0.93, g: 0.26, b: 0.18, a: 1}
+    projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
+    primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
+    effectPrefabs:
+    - {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
+    isMythic: 0
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 1
+      star: 2
+      count: 1
+    - diceType: 4
+      star: 2
+      count: 1
+    baseAttack: 10
+    levelUpAttackIncrease: 3
+    dicePipAttackFactor: 1.05
+    baseCooldown: 3.2
+    baseGoldCost: 150
+    goldCostPerLevel: 64
+    baseScrollCost: 11
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 8
+      description: "\uBC29\uC5B4\uB825 \uAC10\uC18C\uB7C9 \uC99D\uAC00"
+  - diceType: 103
+    elementType: 0200000003000000
+    displayName: Wind Dice
+    description: "\uAD00\uD1B5\uD615 \uBC14\uB78C. \uC804\uBC29 \uBC15\uC2A4 \uBC94\uC704
+      \uC801\uC744 \uBC00\uC5B4\uB0C4."
+    icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
+    color: {r: 0.56, g: 0.93, b: 0.9, a: 1}
+    projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
+    primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    effectPrefabs:
+    - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
+    isMythic: 0
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 2
+      star: 2
+      count: 1
+    - diceType: 3
+      star: 1
+      count: 1
+    - diceType: 0
+      star: 1
+      count: 1
+    baseAttack: 7
+    levelUpAttackIncrease: 2
+    dicePipAttackFactor: 0.95
+    baseCooldown: 2.9
+    baseGoldCost: 135
+    goldCostPerLevel: 56
+    baseScrollCost: 9
+    scrollCostPerLevel: 2
+    milestones:
+    - level: 5
+      description: "\uBC14\uB78C \uC9C0\uC18D\uC2DC\uAC04 \uC99D\uAC00"
+  - diceType: 104
+    elementType: 0300000000000000
+    displayName: Time Dice
+    description: "\uC9C0\uC6D0\uD615. \uACF5\uACA9 \uB300\uC2E0 \uB2E4\uB978 \uB2E4\uC774\uC2A4
+      \uCFE8\uD0C0\uC784 \uAC10\uC18C."
+    icon: {fileID: 21300000, guid: 84d553d016cafbf45b1aabcc80cd55f8, type: 3}
+    color: {r: 1, g: 0.84, b: 0.48, a: 1}
+    projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
+    primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    effectPrefabs:
+    - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
+    isMythic: 0
+    summonable: 0
+    canMerge: 0
+    showStarUI: 0
+    recipeMaterials:
+    - diceType: 0
+      star: 2
+      count: 1
+    - diceType: 3
+      star: 2
+      count: 1
+    - diceType: 2
+      star: 2
+      count: 1
+    baseAttack: 1
+    levelUpAttackIncrease: 0
+    dicePipAttackFactor: 0.1
+    baseCooldown: 4
+    baseGoldCost: 170
+    goldCostPerLevel: 70
+    baseScrollCost: 12
+    scrollCostPerLevel: 3
+    milestones:
+    - level: 9
+      description: "\uCD94\uAC00 \uCFE8\uD0C0\uC784 \uAC10\uC18C +1\uCD08"
   - diceType: 200
     elementType: 00000000
     displayName: King Normal
@@ -416,181 +594,3 @@ MonoBehaviour:
     baseScrollCost: 0
     scrollCostPerLevel: 0
     milestones: []
-  - diceType: 100
-    elementType: 000000000400000002000000
-    displayName: Tornado Dice
-    description: "\uD68C\uC624\uB9AC\uD615. \uC801\uC911 \uC9C0\uC810 \uC8FC\uBCC0
-      \uC801\uC744 \uC911\uC2EC\uC73C\uB85C \uB04C\uC5B4\uB2F9\uAE40."
-    icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
-    color: {r: 0.68, g: 0.78, b: 0.96, a: 1}
-    projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
-    primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
-    effectPrefabs:
-    - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
-    isMythic: 0
-    summonable: 0
-    canMerge: 0
-    showStarUI: 0
-    recipeMaterials:
-    - diceType: 0
-      star: 2
-      count: 1
-    - diceType: 2
-      star: 1
-      count: 2
-    - diceType: 4
-      star: 1
-      count: 1
-    baseAttack: 9
-    levelUpAttackIncrease: 3
-    dicePipAttackFactor: 1.05
-    baseCooldown: 3
-    baseGoldCost: 145
-    goldCostPerLevel: 62
-    baseScrollCost: 10
-    scrollCostPerLevel: 2
-    milestones:
-    - level: 7
-      description: "\uB04C\uC5B4\uB2F9\uAE40 \uAC15\uB3C4 \uC99D\uAC00"
-  - diceType: 101
-    elementType: 0400000002000000
-    displayName: Paralysis Dice
-    description: "\uC81C\uC5B4\uD615. \uC801\uC911 \uB300\uC0C1\uC744 \uC7A0\uC2DC
-      \uB9C8\uBE44\uC2DC\uD0B4."
-    icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
-    color: {r: 0.62, g: 0.51, b: 0.97, a: 1}
-    projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
-    primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
-    effectPrefabs:
-    - {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
-    - {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
-    isMythic: 0
-    summonable: 0
-    canMerge: 0
-    showStarUI: 0
-    recipeMaterials:
-    - diceType: 3
-      star: 2
-      count: 1
-    - diceType: 4
-      star: 1
-      count: 1
-    - diceType: 2
-      star: 1
-      count: 1
-    baseAttack: 8
-    levelUpAttackIncrease: 2
-    dicePipAttackFactor: 1
-    baseCooldown: 3.5
-    baseGoldCost: 140
-    goldCostPerLevel: 58
-    baseScrollCost: 10
-    scrollCostPerLevel: 2
-    milestones:
-    - level: 6
-      description: "\uB9C8\uBE44 \uC9C0\uC18D\uC2DC\uAC04 \uC99D\uAC00"
-  - diceType: 102
-    elementType: 0400000001000000
-    displayName: Armor Break Dice
-    description: "\uC57D\uD654\uD615. \uC801\uC911 \uB300\uC0C1 \uBC29\uC5B4\uB825\uC744
-      \uC77C\uC815 \uC2DC\uAC04 \uAC10\uC18C."
-    icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
-    color: {r: 0.93, g: 0.26, b: 0.18, a: 1}
-    projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
-    primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
-    effectPrefabs:
-    - {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
-    isMythic: 0
-    summonable: 0
-    canMerge: 0
-    showStarUI: 0
-    recipeMaterials:
-    - diceType: 1
-      star: 2
-      count: 1
-    - diceType: 4
-      star: 2
-      count: 1
-    baseAttack: 10
-    levelUpAttackIncrease: 3
-    dicePipAttackFactor: 1.05
-    baseCooldown: 3.2
-    baseGoldCost: 150
-    goldCostPerLevel: 64
-    baseScrollCost: 11
-    scrollCostPerLevel: 2
-    milestones:
-    - level: 8
-      description: "\uBC29\uC5B4\uB825 \uAC10\uC18C\uB7C9 \uC99D\uAC00"
-  - diceType: 103
-    elementType: 0200000003000000
-    displayName: Wind Dice
-    description: "\uAD00\uD1B5\uD615 \uBC14\uB78C. \uC804\uBC29 \uBC15\uC2A4 \uBC94\uC704
-      \uC801\uC744 \uBC00\uC5B4\uB0C4."
-    icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
-    color: {r: 0.56, g: 0.93, b: 0.9, a: 1}
-    projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
-    primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
-    effectPrefabs:
-    - {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
-    isMythic: 0
-    summonable: 0
-    canMerge: 0
-    showStarUI: 0
-    recipeMaterials:
-    - diceType: 2
-      star: 2
-      count: 1
-    - diceType: 3
-      star: 1
-      count: 1
-    - diceType: 0
-      star: 1
-      count: 1
-    baseAttack: 7
-    levelUpAttackIncrease: 2
-    dicePipAttackFactor: 0.95
-    baseCooldown: 2.9
-    baseGoldCost: 135
-    goldCostPerLevel: 56
-    baseScrollCost: 9
-    scrollCostPerLevel: 2
-    milestones:
-    - level: 5
-      description: "\uBC14\uB78C \uC9C0\uC18D\uC2DC\uAC04 \uC99D\uAC00"
-  - diceType: 104
-    elementType: 0300000000000000
-    displayName: Time Dice
-    description: "\uC9C0\uC6D0\uD615. \uACF5\uACA9 \uB300\uC2E0 \uB2E4\uB978 \uB2E4\uC774\uC2A4
-      \uCFE8\uD0C0\uC784 \uAC10\uC18C."
-    icon: {fileID: 21300000, guid: 84d553d016cafbf45b1aabcc80cd55f8, type: 3}
-    color: {r: 1, g: 0.84, b: 0.48, a: 1}
-    projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
-    primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
-    effectPrefabs:
-    - {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
-    isMythic: 0
-    summonable: 0
-    canMerge: 0
-    showStarUI: 0
-    recipeMaterials:
-    - diceType: 0
-      star: 2
-      count: 1
-    - diceType: 3
-      star: 2
-      count: 1
-    - diceType: 2
-      star: 2
-      count: 1
-    baseAttack: 1
-    levelUpAttackIncrease: 0
-    dicePipAttackFactor: 0.1
-    baseCooldown: 4
-    baseGoldCost: 170
-    goldCostPerLevel: 70
-    baseScrollCost: 12
-    scrollCostPerLevel: 3
-    milestones:
-    - level: 9
-      description: "\uCD94\uAC00 \uCFE8\uD0C0\uC784 \uAC10\uC18C +1\uCD08"
