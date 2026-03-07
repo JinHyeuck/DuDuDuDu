@@ -25,6 +25,8 @@ namespace OJ
         private int _defenseDownAmount;
         private float _paralyzedUntilTime;
         private Coroutine _defenseDownRoutine;
+        private Coroutine _attackRoutine;
+        private Wall _attackWall;
         private Coroutine _pullRoutine;
         private float _pendingPullDistance;
         private float _pullUntilTime;
@@ -54,6 +56,8 @@ namespace OJ
             _defenseDownRoutine = null;
             _defenseDownAmount = 0;
             _paralyzedUntilTime = -1f;
+            _attackRoutine = null;
+            _attackWall = null;
             _pullRoutine = null;
             _pendingPullDistance = 0f;
             _pullUntilTime = -1f;
@@ -111,9 +115,18 @@ namespace OJ
         {
             if (col.CompareTag("Wall") && !isAttacking)
             {
-                isAttacking = true;
-                StartCoroutine(AttackWall(col.GetComponent<Wall>()));
+                StartAttack(col.GetComponent<Wall>());
             }
+        }
+
+        void OnTriggerExit2D(Collider2D col)
+        {
+            if (!isAttacking || col == null || !col.CompareTag("Wall"))
+                return;
+
+            Wall wall = col.GetComponent<Wall>();
+            if (wall == null || wall == _attackWall)
+                StopAttack();
         }
 
         public void ApplySlow()
@@ -226,6 +239,12 @@ namespace OJ
         {
             while (wall != null && wall.CurrentHp > 0)
             {
+                if (!IsTouchingWall(wall))
+                {
+                    StopAttack();
+                    yield break;
+                }
+
                 if (IsParalyzed())
                 {
                     yield return null;
@@ -241,6 +260,8 @@ namespace OJ
 
                 yield return new WaitForSeconds(attackInterval);
             }
+
+            StopAttack();
         }
 
         IEnumerator CoApplyDefenseDown(float duration)
@@ -279,6 +300,42 @@ namespace OJ
         private bool IsParalyzed()
         {
             return Time.time < _paralyzedUntilTime;
+        }
+
+        private void StartAttack(Wall wall)
+        {
+            if (wall == null || isAttacking)
+                return;
+
+            isAttacking = true;
+            _attackWall = wall;
+            _attackRoutine = StartCoroutine(AttackWall(wall));
+        }
+
+        private void StopAttack()
+        {
+            if (_attackRoutine != null)
+            {
+                StopCoroutine(_attackRoutine);
+                _attackRoutine = null;
+            }
+
+            _attackWall = null;
+            isAttacking = false;
+        }
+
+        private bool IsTouchingWall(Wall wall)
+        {
+            if (wall == null)
+                return false;
+
+            Collider2D myCollider = GetComponent<Collider2D>();
+            Collider2D wallCollider = wall.GetComponent<Collider2D>();
+            if (myCollider != null && wallCollider != null)
+                return myCollider.IsTouching(wallCollider);
+
+            // Fallback when colliders are missing.
+            return Vector2.Distance(transform.position, wall.transform.position) <= 1.0f;
         }
 
         public void SetHp(int hp)
