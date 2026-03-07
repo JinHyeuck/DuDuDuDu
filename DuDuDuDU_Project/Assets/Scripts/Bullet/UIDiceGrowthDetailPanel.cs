@@ -40,28 +40,28 @@ namespace OJ
         private DiceType currentDiceType = DiceType.Normal;
         private System.Action onChanged;
 
-        private void Awake()
+        protected override void OnLoad()
         {
             if (upgradeButton != null)
                 upgradeButton.onClick.AddListener(OnClickUpgrade);
         }
 
-        private void OnEnable()
+        protected override void OnUnload()
+        {
+            if (upgradeButton != null)
+                upgradeButton.onClick.RemoveListener(OnClickUpgrade);
+        }
+
+        protected override void OnEnter()
         {
             if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged += OnDiceLevelChanged;
         }
 
-        private void OnDisable()
+        protected override void OnExit()
         {
             if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
-        }
-
-        private void OnDestroy()
-        {
-            if (upgradeButton != null)
-                upgradeButton.onClick.RemoveListener(OnClickUpgrade);
         }
 
         public void Open(DiceType diceType, System.Action changedCallback)

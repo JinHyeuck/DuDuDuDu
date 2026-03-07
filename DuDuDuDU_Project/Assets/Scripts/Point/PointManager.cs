@@ -162,6 +162,16 @@ namespace OJ
                     return PointType.MythicScroll;
                 case DiceType.KingMixed:
                     return PointType.MythicScroll;
+                case DiceType.Tornado:
+                    return PointType.NormalScroll;
+                case DiceType.Paralysis:
+                    return PointType.ThunderScroll;
+                case DiceType.ArmorBreak:
+                    return PointType.FireScroll;
+                case DiceType.Wind:
+                    return PointType.IceScroll;
+                case DiceType.Time:
+                    return PointType.NormalScroll;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(diceType), diceType, "Unsupported dice type.");
             }

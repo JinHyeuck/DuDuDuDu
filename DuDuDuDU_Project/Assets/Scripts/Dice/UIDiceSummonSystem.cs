@@ -25,7 +25,12 @@ namespace OJ
             DiceType.Fire,
             DiceType.Ice,
             DiceType.Poison,
-            DiceType.Thunder
+            DiceType.Thunder,
+            DiceType.Tornado,
+            DiceType.Paralysis,
+            DiceType.ArmorBreak,
+            DiceType.Wind,
+            DiceType.Time
         };
 
         private void Awake()

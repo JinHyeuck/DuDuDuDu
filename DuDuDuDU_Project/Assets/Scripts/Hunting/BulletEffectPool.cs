@@ -36,9 +36,11 @@ namespace OJ
         {
             effectpool.Clear();
 
-            for (int dicetype = DiceType.Normal.Enum32ToInt(); dicetype < DiceType.Max.Enum32ToInt(); ++dicetype)
+            foreach (DiceType diceType in System.Enum.GetValues(typeof(DiceType)))
             {
-                DiceType diceType = dicetype.IntToEnum32<DiceType>();
+                if (diceType == DiceType.Max)
+                    continue;
+
                 if (effectpool.ContainsKey(diceType) == false)
                     effectpool.Add(diceType, new Dictionary<EffectID, Queue<BulletEffect>>());
 

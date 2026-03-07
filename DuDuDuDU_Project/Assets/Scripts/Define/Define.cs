@@ -14,17 +14,24 @@ namespace OJ
     public enum DiceType : int
     {
         Normal = 0,
-        Fire = 1,
-        Ice = 2,
-        Thunder = 3,
-        Poison = 4,
+        Fire,
+        Ice,
+        Thunder,
+        Poison,
 
-        KingNormal = 5,
-        KingFire = 6,
-        KingIce = 7,
-        KingThunder = 8,
-        KingPoison = 9,
-        KingMixed = 10,
+        Tornado = 100,
+        Paralysis,
+        ArmorBreak,
+        Wind,
+        Time,
+
+        KingNormal = 200,
+        KingFire,
+        KingIc,
+        KingIce = KingIc,
+        KingThunder,
+        KingPoison,
+        KingMixed,
 
         Max,
     }

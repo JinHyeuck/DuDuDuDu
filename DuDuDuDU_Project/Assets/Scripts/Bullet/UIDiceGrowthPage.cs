@@ -41,9 +41,11 @@ namespace OJ
             if (itemPrefab == null || listRoot == null || items.Count > 0)
                 return;
 
-            for (int i = DiceType.Normal.Enum32ToInt(); i < DiceType.Max.Enum32ToInt(); i++)
+            foreach (DiceType diceType in System.Enum.GetValues(typeof(DiceType)))
             {
-                DiceType diceType = i.IntToEnum32<DiceType>();
+                if (diceType == DiceType.Max)
+                    continue;
+
                 UIDiceGrowthItem item = Instantiate(itemPrefab, listRoot);
                 item.Bind(diceType, OnClickItem);
                 items.Add(item);
