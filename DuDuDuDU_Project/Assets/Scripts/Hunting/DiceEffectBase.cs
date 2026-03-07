@@ -16,6 +16,11 @@ namespace OJ
         {
         }
 
+        public virtual bool TryCastWithoutTarget(AttackContent attackContent, int shotDicePip)
+        {
+            return false;
+        }
+
         protected void PlayEffectAt(DiceType diceType, Vector3 position, EffectID effectId = EffectID.S)
         {
             BulletEffect effect = BulletEffectPool.Instance.GetBullet(diceType, effectId);
@@ -24,6 +29,15 @@ namespace OJ
 
             effect.transform.position = position;
             effect.PlayEffect();
+        }
+
+        protected void PlayLineEffect(DiceType diceType, Vector3 startPos, Vector3 endPos, EffectID effectId = EffectID.S)
+        {
+            BulletEffect effect = BulletEffectPool.Instance.GetBullet(diceType, effectId);
+            if (effect == null)
+                return;
+
+            effect.PlayLineEffect(startPos, endPos);
         }
     }
 }

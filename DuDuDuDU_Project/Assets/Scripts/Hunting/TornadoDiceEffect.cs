@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,16 +30,26 @@ namespace OJ
                 target);
 
             Vector2 center = target.transform.position;
+            float pullDuration = attackContent.TornadoPullDuration;
             for (int i = 0; i < around.Count; i++)
             {
                 Monster monster = around[i];
                 if (monster == null || monster.gameObject.activeInHierarchy == false)
                     continue;
 
-                monster.PullTowards(center, pullDistance);
+                monster.AddSmoothPull(center, pullDistance, pullDuration);
             }
 
-            PlayEffectAt(DiceType, target.transform.position);
+            PlayEffectAt(DiceType, center);
+            attackContent.StartCoroutine(CoPlayExtraEffect(center, Mathf.Min(0.2f, pullDuration * 0.5f)));
+        }
+
+        private IEnumerator CoPlayExtraEffect(Vector2 center, float delay)
+        {
+            if (delay > 0.0001f)
+                yield return new WaitForSeconds(delay);
+
+            PlayEffectAt(DiceType, center);
         }
     }
 }

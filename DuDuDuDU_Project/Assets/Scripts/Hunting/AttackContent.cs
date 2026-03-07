@@ -13,9 +13,13 @@ namespace OJ
         private List<Monster> hitmonsters = new List<Monster>();
         private readonly Dictionary<DiceType, DiceEffectBase> _diceEffects = new Dictionary<DiceType, DiceEffectBase>();
 
-        [Header("Cheat")]
-        public DiceType cheatDiceType = DiceType.Max;
-        public int cheatDiceDamage = 0;
+        [Header("Tornado Tuning")]
+        [SerializeField, Min(0.05f)] private float tornadoPullDuration = 0.5f;
+
+        public float TornadoPullDuration => tornadoPullDuration;
+        private bool _hasWindRangeGizmo;
+        private Vector3 _windRangeGizmoCenter;
+        private Vector3 _windRangeGizmoSize;
 
         private void Awake()
         {
@@ -77,6 +81,25 @@ namespace OJ
             return _diceEffects.TryGetValue(DiceType.Normal, out DiceEffectBase normalEffect) ? normalEffect : null;
         }
 
+        public bool TryCastNoTarget(DiceType diceType, int shotDicePip)
+        {
+            DiceEffectBase diceEffect = GetDiceEffect(diceType);
+            if (diceEffect == null)
+                return false;
+
+            return diceEffect.TryCastWithoutTarget(this, shotDicePip);
+        }
+
+        public void SetWindRangeGizmo(float minX, float maxX, float centerY, float bandHalfHeight)
+        {
+            _hasWindRangeGizmo = true;
+            _windRangeGizmoCenter = new Vector3((minX + maxX) * 0.5f, centerY, 0f);
+            _windRangeGizmoSize = new Vector3(
+                Mathf.Max(0.1f, maxX - minX),
+                Mathf.Max(0.1f, bandHalfHeight * 2f),
+                0f);
+        }
+
         public void HitMonster(Monster target, DiceType diceType, int damage)
         {
             int appliedDamage = target.TakeDamage(damage);
@@ -95,7 +118,7 @@ namespace OJ
             if (rootTarget == null)
                 return;
 
-            DiceType attackType = cheatDiceType != DiceType.Max ? cheatDiceType : diceType;
+            DiceType attackType = diceType;
             DiceEffectBase diceEffect = GetDiceEffect(attackType);
 
             hitmonsters.Clear();
@@ -105,8 +128,6 @@ namespace OJ
             int myDicePip = Mathf.Max(1, shotDicePip);
             int diceLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(attackType) : 1;
             int damage = DiceMetaDataProvider.CalculateDamage(attackType, myDicePip, diceLevel);
-            if (cheatDiceDamage > 0)
-                damage = cheatDiceDamage;
 
             for (int i = 0; i < hitmonsters.Count; ++i)
             {
@@ -323,6 +344,17 @@ namespace OJ
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawWireSphere(drawGizmoPos, drawGizmoRadius);
+
+            if (_hasWindRangeGizmo)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireCube(_windRangeGizmoCenter, _windRangeGizmoSize);
+
+                float halfWidth = _windRangeGizmoSize.x * 0.5f;
+                Gizmos.DrawLine(
+                    new Vector3(_windRangeGizmoCenter.x - halfWidth, _windRangeGizmoCenter.y, 0f),
+                    new Vector3(_windRangeGizmoCenter.x + halfWidth, _windRangeGizmoCenter.y, 0f));
+            }
         }
     }
 }

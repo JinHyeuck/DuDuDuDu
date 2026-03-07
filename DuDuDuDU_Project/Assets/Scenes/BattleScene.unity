@@ -2554,6 +2554,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b99b7549a353acb4f9c503379e37345e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  tornadoPullDuration: 0.5
   cheatDiceType: 100
   cheatDiceDamage: 0
   drawGizmoPos: {x: 0, y: 0, z: 0}
@@ -2986,7 +2987,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 89, y: -69.70001}
+  m_AnchoredPosition: {x: 89, y: -69.69995}
   m_SizeDelta: {x: 114, y: 96}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &771216595
@@ -7048,7 +7049,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: 0.17}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}

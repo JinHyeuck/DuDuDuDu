@@ -25,6 +25,10 @@ namespace OJ
         private int _defenseDownAmount;
         private float _paralyzedUntilTime;
         private Coroutine _defenseDownRoutine;
+        private Coroutine _pullRoutine;
+        private float _pendingPullDistance;
+        private float _pullUntilTime;
+        private Vector2 _pullCenter;
 
         public void OnSpawn()
         {
@@ -50,6 +54,9 @@ namespace OJ
             _defenseDownRoutine = null;
             _defenseDownAmount = 0;
             _paralyzedUntilTime = -1f;
+            _pullRoutine = null;
+            _pendingPullDistance = 0f;
+            _pullUntilTime = -1f;
             RecalculateDefense();
 
             MonsterManager.Instance?.UnregisterMonster(this, false);
@@ -175,6 +182,23 @@ namespace OJ
             transform.position += (Vector3)(direction.normalized * Mathf.Max(0f, distance));
         }
 
+        public void AddSmoothPull(Vector2 center, float distance, float duration)
+        {
+            if (!IsAlive)
+                return;
+
+            float addDistance = Mathf.Max(0f, distance);
+            if (addDistance <= 0.0001f)
+                return;
+
+            _pullCenter = center;
+            _pendingPullDistance += addDistance;
+            _pullUntilTime = Mathf.Max(_pullUntilTime, Time.time + Mathf.Max(0.01f, duration));
+
+            if (_pullRoutine == null)
+                _pullRoutine = StartCoroutine(CoSmoothPull());
+        }
+
         IEnumerator PlayPoison()
         {
             while (_hp > 0)
@@ -231,6 +255,25 @@ namespace OJ
         private void RecalculateDefense()
         {
             defense = _baseDefense - _defenseDownAmount;
+        }
+
+        private IEnumerator CoSmoothPull()
+        {
+            while (IsAlive && _pendingPullDistance > 0.0001f)
+            {
+                float remainTime = Mathf.Max(0.01f, _pullUntilTime - Time.time);
+                float step = _pendingPullDistance * (Time.deltaTime / remainTime);
+                step = Mathf.Min(step, _pendingPullDistance);
+                if (step > 0f)
+                    PullTowards(_pullCenter, step);
+
+                _pendingPullDistance -= step;
+                yield return null;
+            }
+
+            _pendingPullDistance = 0f;
+            _pullUntilTime = -1f;
+            _pullRoutine = null;
         }
 
         private bool IsParalyzed()

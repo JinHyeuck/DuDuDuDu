@@ -11,6 +11,7 @@ namespace OJ
         public CharacterAnimation bowAnimation;
         public Transform bowTransform;
 
+        public DiceType CheatDiceType = DiceType.Max;
 
         public Transform firePoint;
         public float fireRate = 0.5f;
@@ -226,6 +227,10 @@ namespace OJ
                 return false;
 
             DiceType diceType = sourceDice.Type;
+            if(CheatDiceType != DiceType.Max)
+            {
+                diceType = CheatDiceType;
+            }
             int diceStar = sourceDice.Star;
 
             if (diceType == DiceType.Time)
@@ -233,6 +238,17 @@ namespace OJ
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Time) : 1;
                 float reduce = 2f + (level >= 9 ? 1f : 0f) + Mathf.Max(0, level - 1) * 0.05f;
                 ReduceCooldownForOtherDice(reduce, sourceDice);
+                characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                return true;
+            }
+
+            if (diceType == DiceType.Wind)
+            {
+                bool casted = AttackContent.Instance != null && AttackContent.Instance.TryCastNoTarget(diceType, diceStar);
+                if (!casted)
+                    return false;
+
                 characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
                 bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
                 return true;
