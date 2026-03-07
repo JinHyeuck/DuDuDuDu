@@ -14,17 +14,23 @@ namespace OJ
     public enum DiceType : int
     {
         Normal = 0,
-        Fire = 1,
-        Ice = 2,
-        Thunder = 3,
-        Poison = 4,
+        Fire,
+        Ice,
+        Thunder,
+        Poison,
 
-        KingNormal = 5,
-        KingFire = 6,
-        KingIce = 7,
-        KingThunder = 8,
-        KingPoison = 9,
-        KingMixed = 10,
+        Tornado = 100,
+        Paralysis,
+        ArmorBreak,
+        Wind,
+        Time,
+
+        KingNormal = 200,
+        KingFire,
+        KingIce,
+        KingThunder,
+        KingPoison,
+        KingMixed,
 
         Max,
     }
@@ -69,19 +75,61 @@ namespace OJ
         Gold = 0,
         Dia,
         Stamina,
-        NormalScroll,
+        NormalScroll = 100,
         FireScroll,
         IceScroll,
         PoisonScroll,
         ThunderScroll,
         MythicScroll,
+        WeaponScroll = 200,
+        HelmetScroll,
+        ArmorScroll,
+        RingScroll,
+        ShoesScroll,
+        NecklaceScroll,
 
         Max
     }
 
+    public enum Rarity
+    {
+        Uncommon = 0,
+        Common,
+        Normal,
+        Rare,
+        Epic,
+        Mythic,
+
+    }
+
+    public enum EquipmentType
+    {
+        Weapon,
+        Helmet,
+        Armor,
+        Ring,
+        Shoes,
+        Necklace,
+    }
+
+    public enum GemStatType
+    {
+        AttackPercent = 0,
+        AttackFlat,
+        CooldownReducePercent,
+        FirstNWavesDamageFlat,
+        FireExplosionRangePercent,
+        WellHpOnKill,
+        FinalDamagePercent,
+        FireExplosionTargetCountFlat,
+        ThunderChainCountFlat,
+        GoldOnKill,
+    }
+
     public static class Define
     {
-
+        public const int MaxEquipmentSlot = 8;
+        public static readonly int[] EquipmentSlotUnlockLevels = { 1, 10, 20, 30, 40, 50, 60, 70 };
     }
 
 }

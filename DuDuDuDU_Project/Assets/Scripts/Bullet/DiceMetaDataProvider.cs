@@ -175,6 +175,11 @@ namespace OJ
         {
             return new List<DiceType>
             {
+                DiceType.Tornado,
+                DiceType.Paralysis,
+                DiceType.ArmorBreak,
+                DiceType.Wind,
+                DiceType.Time,
                 DiceType.KingNormal,
                 DiceType.KingFire,
                 DiceType.KingIce,
@@ -200,6 +205,16 @@ namespace OJ
                     return DiceType.Thunder;
                 case DiceType.KingMixed:
                     return DiceType.Normal;
+                case DiceType.Tornado:
+                    return DiceType.Normal;
+                case DiceType.Paralysis:
+                    return DiceType.Thunder;
+                case DiceType.ArmorBreak:
+                    return DiceType.Fire;
+                case DiceType.Wind:
+                    return DiceType.Ice;
+                case DiceType.Time:
+                    return DiceType.Normal;
                 default:
                     return diceType;
             }
@@ -215,7 +230,27 @@ namespace OJ
             int level = Mathf.Max(1, bulletLevel);
 
             float attackBase = meta.baseAttack + (level * meta.levelUpAttackIncrease);
+            if (EquipmentManager.Instance != null)
+                attackBase += EquipmentManager.Instance.GetTotalEquipmentAttack();
+
             float scaled = attackBase * (pips * Mathf.Max(0.01f, meta.dicePipAttackFactor));
+
+            if (EquipmentManager.Instance != null)
+            {
+                float attackPercent = EquipmentManager.Instance.GetAttackPercentBonus(diceType);
+                int attackFlat = EquipmentManager.Instance.GetAttackFlatBonus(diceType);
+
+                int currentWave = 0;
+                if (GameManager.Instance != null)
+                    currentWave = GameManager.Instance.CurrentWaveIndex;
+                int earlyWaveFlat = EquipmentManager.Instance.GetFirstNWavesDamageFlatBonus(diceType, currentWave);
+                float finalDamagePercent = EquipmentManager.Instance.GetFinalDamagePercentBonus(diceType);
+
+                scaled *= (1f + attackPercent);
+                scaled += attackFlat + earlyWaveFlat;
+                scaled *= (1f + finalDamagePercent);
+            }
+
             return Mathf.Max(1, Mathf.RoundToInt(scaled));
         }
 
@@ -232,7 +267,15 @@ namespace OJ
         {
             float baseCooldown = Mathf.Clamp(GetBaseCooldown(diceType), 0.1f, 10f);
             int star = Mathf.Max(1, diceStar);
-            return baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
+            float cooldown = baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
+
+            if (EquipmentManager.Instance != null)
+            {
+                float reducePercent = EquipmentManager.Instance.GetCooldownReductionPercent(diceType);
+                cooldown *= Mathf.Max(0.05f, 1f - reducePercent);
+            }
+
+            return cooldown;
         }
 
         private static void EnsureDefaults()
@@ -242,34 +285,54 @@ namespace OJ
 
             defaults = new Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta>
             {
-                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "균형형 단일 공격 탄환", 12, 3, 1.20f, 120, 50, 8, 2, 2.4f, new []{
+                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "단일 타격형. 적중 시 기본 이펙트, 안정적인 1대1 화력.", 12, 3, 1.20f, 120, 50, 8, 2, 2.4f, new []{
                     (6, "다이스 눈금당 추가 공격력 +30%"),
                     (13, "대미지 2배")
                 }) },
-                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "폭발형 범위 공격 탄환", 10, 4, 1.10f, 140, 60, 10, 2, 3.1f, new []{
+                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "폭발 범위형. 타격 지점 주변 최대 10명 추가 타격.", 10, 4, 1.10f, 140, 60, 10, 2, 3.1f, new []{
                     (3, "범위 50% 증가")
                 }) },
-                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "감속/제어 특화 탄환", 9, 3, 1.00f, 130, 55, 9, 2, 3.8f, new []{
+                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "감속 제어형. 적중 시 감속 부여.", 9, 3, 1.00f, 130, 55, 9, 2, 3.8f, new []{
                     (8, "일정 확률로 1초 빙결")
                 }) },
-                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "지속 피해/약화 탄환", 8, 2, 0.95f, 125, 50, 9, 2, 3.4f, new []{
+                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "지속 피해형. 적중 시 중독 부여.", 8, 2, 0.95f, 125, 50, 9, 2, 3.4f, new []{
                     (9, "타격 시 적 방어력 20% 감소")
                 }) },
-                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "연쇄 타격 특화 탄환", 11, 3, 1.15f, 150, 65, 11, 2, 2.7f, new []{
+                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "연쇄 타격형. 기본 2명(장비 보너스 적용)에게 체인 공격.", 11, 3, 1.15f, 150, 65, 11, 2, 2.7f, new []{
                     (5, "추가 대상 1명 탐색 후 연쇄 타격")
                 }) },
-                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "신화 단일 공격 다이스", 45, 9, 1.35f, 3.0f,
-                    (DiceType.Normal, 1, 1), (DiceType.Normal, 2, 1), (DiceType.Normal, 3, 1), (DiceType.Normal, 4, 1), (DiceType.Normal, 5, 1)) },
-                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "신화 범위 공격 다이스", 48, 10, 1.30f, 3.4f,
-                    (DiceType.Fire, 2, 2), (DiceType.Fire, 3, 2)) },
-                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "신화 감속 제어 다이스", 42, 8, 1.25f, 3.6f,
-                    (DiceType.Ice, 1, 1), (DiceType.Ice, 2, 1), (DiceType.Ice, 3, 1), (DiceType.Ice, 4, 1), (DiceType.Ice, 5, 1)) },
-                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "신화 지속 피해 다이스", 40, 8, 1.20f, 3.3f,
-                    (DiceType.Poison, 1, 2), (DiceType.Poison, 2, 2), (DiceType.Poison, 4, 1)) },
-                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "신화 연쇄 타격 다이스", 50, 10, 1.35f, 3.1f,
-                    (DiceType.Thunder, 3, 1), (DiceType.Thunder, 4, 2), (DiceType.Thunder, 5, 1)) },
-                { DiceType.KingMixed, CreateMythicDefault(DiceType.KingMixed, "King Mixed", "모든 속성의 정수", 60, 12, 1.40f, 3.8f,
-                    (DiceType.Normal, 5, 1), (DiceType.Fire, 5, 1), (DiceType.Ice, 5, 1), (DiceType.Poison, 5, 1), (DiceType.Thunder, 5, 1)) }
+                { DiceType.Tornado, CreateDefault(DiceType.Tornado, "Tornado Dice", "회오리형. 적중 지점 주변 적을 중심으로 끌어당김.", 9, 3, 1.05f, 145, 62, 10, 2, 3.0f, new []{
+                    (7, "끌어당김 강도 증가")
+                }, new [] { ElementType.Normal, ElementType.Dark, ElementType.Water },
+                    false, false, false, (DiceType.Normal, 2, 1), (DiceType.Ice, 1, 2), (DiceType.Poison, 1, 1)) },
+                { DiceType.Paralysis, CreateDefault(DiceType.Paralysis, "Paralysis Dice", "제어형. 적중 대상을 잠시 마비시킴.", 8, 2, 1.00f, 140, 58, 10, 2, 3.5f, new []{
+                    (6, "마비 지속시간 증가")
+                }, new [] { ElementType.Dark, ElementType.Water },
+                    false, false, false, (DiceType.Thunder, 2, 1), (DiceType.Poison, 1, 1), (DiceType.Ice, 1, 1)) },
+                { DiceType.ArmorBreak, CreateDefault(DiceType.ArmorBreak, "Armor Break Dice", "약화형. 적중 대상 방어력을 일정 시간 감소.", 10, 3, 1.05f, 150, 64, 11, 2, 3.2f, new []{
+                    (8, "방어력 감소량 증가")
+                }, new [] { ElementType.Dark, ElementType.Fire },
+                    false, false, false, (DiceType.Fire, 2, 1), (DiceType.Poison, 2, 1)) },
+                { DiceType.Wind, CreateDefault(DiceType.Wind, "Wind Dice", "관통형 바람. 전방 박스 범위 적을 밀어냄.", 7, 2, 0.95f, 135, 56, 9, 2, 2.9f, new []{
+                    (5, "바람 지속시간 증가")
+                }, new [] { ElementType.Water, ElementType.Light },
+                    false, false, false, (DiceType.Ice, 2, 1), (DiceType.Thunder, 1, 1), (DiceType.Normal, 1, 1)) },
+                { DiceType.Time, CreateDefault(DiceType.Time, "Time Dice", "지원형. 공격 대신 다른 다이스 쿨타임 감소.", 1, 0, 0.10f, 170, 70, 12, 3, 4.0f, new []{
+                    (9, "추가 쿨타임 감소 +1초")
+                }, new [] { ElementType.Light, ElementType.Normal },
+                    false, false, false, (DiceType.Normal, 2, 1), (DiceType.Thunder, 2, 1), (DiceType.Ice, 2, 1)) },
+                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "강화 단일형. 주변 3명 추가 타격(반경 1.3).", 52, 10, 1.38f, 3.0f,
+                    (DiceType.Normal, 4, 1), (DiceType.Normal, 5, 1), (DiceType.Tornado, 1, 2)) },
+                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "강화 폭발형. 범위 1.6, 최대 14명(+보너스+2) 추가 타격.", 55, 11, 1.34f, 3.3f,
+                    (DiceType.Fire, 4, 1), (DiceType.Fire, 5, 1), (DiceType.ArmorBreak, 1, 2)) },
+                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "강화 제어형. 주변 3명 추가 타격, 감속 2중첩.", 50, 10, 1.30f, 3.5f,
+                    (DiceType.Ice, 4, 1), (DiceType.Ice, 5, 1), (DiceType.Wind, 1, 2), (DiceType.Paralysis, 1, 2)) },
+                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "강화 중독형. 주변 2명 추가 타격, 중독+감속 동시 부여.", 49, 10, 1.28f, 3.3f,
+                    (DiceType.Poison, 4, 1), (DiceType.Poison, 5, 1), (DiceType.ArmorBreak, 1, 2), (DiceType.Paralysis, 1, 1)) },
+                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "강화 연쇄형. 기본 체인 대상 +2.", 58, 12, 1.38f, 3.0f,
+                    (DiceType.Thunder, 4, 1), (DiceType.Thunder, 5, 1), (DiceType.Paralysis, 1, 3), (DiceType.Time, 1, 2)) },
+                { DiceType.KingMixed, CreateMythicDefault(DiceType.KingMixed, "King Mixed", "복합 원소형. 체인+범위 확산 타격, 적중 시 감속+중독, 5속성 이펙트 동시 발동.", 68, 14, 1.45f, 3.6f,
+                    (DiceType.KingNormal, 1, 1), (DiceType.KingFire, 1, 1), (DiceType.KingIce, 1, 1), (DiceType.KingPoison, 1, 1), (DiceType.KingThunder, 1, 1)) }
             };
         }
 
@@ -285,13 +348,22 @@ namespace OJ
             int baseScrollCost,
             int scrollCostPerLevel,
             float baseCooldown,
-            (int level, string desc)[] milestones)
+            (int level, string desc)[] milestones,
+            ElementType[] elementTypes = null,
+            bool summonable = true,
+            bool canMerge = true,
+            bool showStarUI = true,
+            params (DiceType type, int star, int count)[] recipe)
         {
             var meta = new DiceMetaDataDatabase.DiceMeta
             {
                 diceType = diceType,
+                elementType = elementTypes ?? new ElementType[0],
                 displayName = displayName,
                 description = description,
+                summonable = summonable,
+                canMerge = canMerge,
+                showStarUI = showStarUI,
                 baseAttack = baseAttack,
                 levelUpAttackIncrease = levelUpAttackIncrease,
                 dicePipAttackFactor = dicePipAttackFactor,
@@ -309,6 +381,19 @@ namespace OJ
                     level = milestones[i].level,
                     description = milestones[i].desc
                 });
+            }
+
+            if (recipe != null)
+            {
+                for (int i = 0; i < recipe.Length; i++)
+                {
+                    meta.recipeMaterials.Add(new DiceMetaDataDatabase.DiceRecipeMaterial
+                    {
+                        diceType = recipe[i].type,
+                        star = Mathf.Max(1, recipe[i].star),
+                        count = Mathf.Max(1, recipe[i].count)
+                    });
+                }
             }
 
             return meta;

@@ -11,10 +11,15 @@ namespace OJ
         private Dictionary<int, Collider2D[]> _recvColliderPools = new Dictionary<int, Collider2D[]>();
         private List<Monster> _skillHitReceivers = new List<Monster>();
         private List<Monster> hitmonsters = new List<Monster>();
+        private readonly Dictionary<DiceType, DiceEffectBase> _diceEffects = new Dictionary<DiceType, DiceEffectBase>();
 
-        [Header("Cheat")]
-        public DiceType cheatDiceType = DiceType.Max;
-        public int cheatDiceDamage = 0;
+        [Header("Tornado Tuning")]
+        [SerializeField, Min(0.05f)] private float tornadoPullDuration = 0.5f;
+
+        public float TornadoPullDuration => tornadoPullDuration;
+        private bool _hasWindRangeGizmo;
+        private Vector3 _windRangeGizmoCenter;
+        private Vector3 _windRangeGizmoSize;
 
         private void Awake()
         {
@@ -25,6 +30,7 @@ namespace OJ
             }
 
             Instance = this;
+            InitializeDiceEffects();
         }
 
         private void OnDestroy()
@@ -33,15 +39,78 @@ namespace OJ
                 Instance = null;
         }
 
-        private void HitMonster(Monster target, DiceType diceType, int damage)
+        private void InitializeDiceEffects()
         {
-            target.TakeDamage(damage);
+            _diceEffects.Clear();
+
+            RegisterDiceEffect(new NormalDiceEffect());
+            RegisterDiceEffect(new FireDiceEffect());
+            RegisterDiceEffect(new IceDiceEffect());
+            RegisterDiceEffect(new ThunderDiceEffect());
+            RegisterDiceEffect(new PoisonDiceEffect());
+            RegisterDiceEffect(new KingNormalDiceEffect());
+            RegisterDiceEffect(new KingFireDiceEffect());
+            RegisterDiceEffect(new KingIceDiceEffect());
+            RegisterDiceEffect(new KingThunderDiceEffect());
+            RegisterDiceEffect(new KingPoisonDiceEffect());
+            RegisterDiceEffect(new KingMixedDiceEffect());
+            RegisterDiceEffect(new TornadoDiceEffect());
+            RegisterDiceEffect(new ParalysisDiceEffect());
+            RegisterDiceEffect(new ArmorBreakDiceEffect());
+            RegisterDiceEffect(new WindDiceEffect());
+            RegisterDiceEffect(new TimeDiceEffect());
+        }
+
+        private void RegisterDiceEffect(DiceEffectBase diceEffect)
+        {
+            if (diceEffect == null)
+                return;
+
+            _diceEffects[diceEffect.DiceType] = diceEffect;
+        }
+
+        private DiceEffectBase GetDiceEffect(DiceType diceType)
+        {
+            if (_diceEffects.TryGetValue(diceType, out DiceEffectBase diceEffect))
+                return diceEffect;
+
+            DiceType baseType = DiceMetaDataProvider.GetBaseElementType(diceType);
+            if (_diceEffects.TryGetValue(baseType, out DiceEffectBase baseEffect))
+                return baseEffect;
+
+            return _diceEffects.TryGetValue(DiceType.Normal, out DiceEffectBase normalEffect) ? normalEffect : null;
+        }
+
+        public bool TryCastNoTarget(DiceType diceType, int shotDicePip)
+        {
+            DiceEffectBase diceEffect = GetDiceEffect(diceType);
+            if (diceEffect == null)
+                return false;
+
+            return diceEffect.TryCastWithoutTarget(this, shotDicePip);
+        }
+
+        public void SetWindRangeGizmo(float minX, float maxX, float centerY, float bandHalfHeight)
+        {
+            _hasWindRangeGizmo = true;
+            _windRangeGizmoCenter = new Vector3((minX + maxX) * 0.5f, centerY, 0f);
+            _windRangeGizmoSize = new Vector3(
+                Mathf.Max(0.1f, maxX - minX),
+                Mathf.Max(0.1f, bandHalfHeight * 2f),
+                0f);
+        }
+
+        public void HitMonster(Monster target, DiceType diceType, int damage)
+        {
+            int appliedDamage = target.TakeDamage(damage);
+            if (appliedDamage <= 0)
+                return;
 
             GameObject dtObj = DamageTextPool.Instance.GetDamageText();
             dtObj.transform.position = target.transform.position;
             dtObj.transform.ResetLocalZ();
             Color typeColor = DiceMetaDataProvider.GetColor(diceType);
-            dtObj.GetComponent<DamageText>().SetText(damage, typeColor);
+            dtObj.GetComponent<DamageText>().SetText(appliedDamage, typeColor);
         }
 
         public void PlayHit(Monster rootTarget, DiceType diceType, int shotDicePip)
@@ -49,83 +118,16 @@ namespace OJ
             if (rootTarget == null)
                 return;
 
-            DiceType attackType = cheatDiceType != DiceType.Max ? cheatDiceType : diceType;
-            attackType = DiceMetaDataProvider.GetBaseElementType(attackType);
+            DiceType attackType = diceType;
+            DiceEffectBase diceEffect = GetDiceEffect(attackType);
 
             hitmonsters.Clear();
             hitmonsters.Add(rootTarget);
-
-            if (attackType == DiceType.Thunder)
-            {
-                Dictionary<Monster, List<Monster>> sunderTarget = GetNPerTarget_NoGlobalDup(
-                    MonsterManager.Instance.activeMonsters,
-                    hitmonsters,
-                    2);
-
-                foreach (var pair in sunderTarget)
-                {
-                    BulletEffect originEffect = BulletEffectPool.Instance.GetBullet(attackType);
-                    if (originEffect != null)
-                    {
-                        originEffect.transform.position = pair.Key.transform.position;
-                        originEffect.PlayEffect();
-                    }
-
-                    for (int i = 0; i < pair.Value.Count; ++i)
-                    {
-                        Monster chained = pair.Value[i];
-
-                        BulletEffect chain = BulletEffectPool.Instance.GetBullet(attackType, EffectID.C1);
-                        if (chain != null)
-                            chain.PlayLineEffect(pair.Key.transform.position, chained.transform.position);
-
-                        BulletEffect impact = BulletEffectPool.Instance.GetBullet(attackType);
-                        if (impact != null)
-                        {
-                            impact.transform.position = chained.transform.position;
-                            impact.PlayEffect();
-                        }
-
-                        hitmonsters.Add(chained);
-                    }
-                }
-            }
-            else if (attackType == DiceType.Fire)
-            {
-                List<Monster> firetargets = new List<Monster>();
-
-                for (int i = 0; i < hitmonsters.Count; ++i)
-                {
-                    Monster target = hitmonsters[i];
-                    if (target == null)
-                        continue;
-
-                    List<Monster> monsters = GetRedHitTarget(
-                        target.transform.position,
-                        IFFType.IFF_Friend,
-                        1,
-                        10,
-                        target);
-
-                    BulletEffect bulletEffect = BulletEffectPool.Instance.GetBullet(attackType);
-                    if (bulletEffect != null)
-                    {
-                        bulletEffect.transform.position = target.transform.position;
-                        bulletEffect.PlayEffect();
-                    }
-
-                    for (int hitIdx = 0; hitIdx < monsters.Count; ++hitIdx)
-                        firetargets.Add(monsters[hitIdx]);
-                }
-
-                hitmonsters.AddRange(firetargets);
-            }
+            diceEffect?.BuildTargets(this, rootTarget, hitmonsters);
 
             int myDicePip = Mathf.Max(1, shotDicePip);
             int diceLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(attackType) : 1;
             int damage = DiceMetaDataProvider.CalculateDamage(attackType, myDicePip, diceLevel);
-            if (cheatDiceDamage > 0)
-                damage = cheatDiceDamage;
 
             for (int i = 0; i < hitmonsters.Count; ++i)
             {
@@ -133,43 +135,10 @@ namespace OJ
                 if (target == null || target.gameObject.activeInHierarchy == false)
                     continue;
 
-                HitMonster(target, attackType, damage);
+                if (diceEffect == null || diceEffect.ShouldApplyDamage)
+                    HitMonster(target, attackType, damage);
 
-                if (attackType == DiceType.Poison)
-                {
-                    if (target.gameObject.activeInHierarchy == false)
-                        continue;
-
-                    target.ApplyPoison();
-                    BulletEffect effect = BulletEffectPool.Instance.GetBullet(attackType);
-                    if (effect != null)
-                    {
-                        effect.transform.position = target.transform.position;
-                        effect.PlayEffect();
-                    }
-                }
-                else if (attackType == DiceType.Normal)
-                {
-                    BulletEffect effect = BulletEffectPool.Instance.GetBullet(attackType);
-                    if (effect != null)
-                    {
-                        effect.transform.position = target.transform.position;
-                        effect.PlayEffect();
-                    }
-                }
-                else if (attackType == DiceType.Ice)
-                {
-                    if (target.gameObject.activeInHierarchy == false)
-                        continue;
-
-                    target.ApplySlow();
-                    BulletEffect effect = BulletEffectPool.Instance.GetBullet(attackType);
-                    if (effect != null)
-                    {
-                        effect.transform.position = target.transform.position;
-                        effect.PlayEffect();
-                    }
-                }
+                diceEffect?.ApplyOnHit(this, target);
             }
         }
 
@@ -180,7 +149,10 @@ namespace OJ
 
         public int GetThunderTargetCount()
         {
-            return 2;
+            int count = 2;
+            if (EquipmentManager.Instance != null)
+                count += EquipmentManager.Instance.GetThunderChainExtraCount(DiceType.Thunder);
+            return Mathf.Max(0, count);
         }
 
         public void ShowTrail(Transform start, Transform end)
@@ -310,12 +282,79 @@ namespace OJ
             return _skillHitReceivers;
         }
 
+        public List<Monster> GetMonstersInOrientedBox(
+            Vector2 origin,
+            Vector2 direction,
+            float halfLength,
+            float halfWidth,
+            int maxTargets,
+            Monster forceInclude = null)
+        {
+            List<Monster> results = new List<Monster>();
+
+            if (MonsterManager.Instance == null || MonsterManager.Instance.activeMonsters == null)
+                return results;
+
+            Vector2 dir = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.down;
+            Vector2 side = new Vector2(-dir.y, dir.x);
+            float minForward = -halfLength;
+            float maxForward = halfLength;
+            float width = Mathf.Max(0.01f, halfWidth);
+
+            for (int i = 0; i < MonsterManager.Instance.activeMonsters.Count; i++)
+            {
+                Monster monster = MonsterManager.Instance.activeMonsters[i];
+                if (monster == null || monster.gameObject.activeInHierarchy == false)
+                    continue;
+
+                Vector2 delta = (Vector2)monster.transform.position - origin;
+                float forward = Vector2.Dot(delta, dir);
+                if (forward < minForward || forward > maxForward)
+                    continue;
+
+                float lateral = Mathf.Abs(Vector2.Dot(delta, side));
+                if (lateral > width)
+                    continue;
+
+                results.Add(monster);
+                if (maxTargets > 0 && results.Count >= maxTargets)
+                    break;
+            }
+
+            if (forceInclude != null
+                && forceInclude.gameObject.activeInHierarchy
+                && results.Contains(forceInclude) == false)
+            {
+                if (maxTargets <= 0 || results.Count < maxTargets)
+                {
+                    results.Add(forceInclude);
+                }
+                else if (results.Count > 0)
+                {
+                    results[results.Count - 1] = forceInclude;
+                }
+            }
+
+            return results;
+        }
+
         public Vector3 drawGizmoPos;
         public float drawGizmoRadius;
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawWireSphere(drawGizmoPos, drawGizmoRadius);
+
+            if (_hasWindRangeGizmo)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireCube(_windRangeGizmoCenter, _windRangeGizmoSize);
+
+                float halfWidth = _windRangeGizmoSize.x * 0.5f;
+                Gizmos.DrawLine(
+                    new Vector3(_windRangeGizmoCenter.x - halfWidth, _windRangeGizmoCenter.y, 0f),
+                    new Vector3(_windRangeGizmoCenter.x + halfWidth, _windRangeGizmoCenter.y, 0f));
+            }
         }
     }
 }

@@ -4,37 +4,12 @@ using UnityEngine;
 
 namespace OJ
 {
-    public class DiceLevelManager : MonoBehaviour
+    public class DiceLevelManager : MonoSingleton<DiceLevelManager>
     {
-        public static DiceLevelManager Instance { get; private set; }
-
         private const string SaveKeyPrefix = "OJ.Bullet.Level.";
         private readonly Dictionary<DiceType, int> levels = new Dictionary<DiceType, int>();
 
         public event Action<DiceType, int> OnDiceLevelChanged;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Bootstrap()
-        {
-            if (Instance != null)
-                return;
-
-            var go = new GameObject(nameof(DiceLevelManager));
-            go.AddComponent<DiceLevelManager>();
-        }
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            LoadAll();
-        }
 
         private void OnApplicationPause(bool pauseStatus)
         {

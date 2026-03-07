@@ -13,17 +13,29 @@ namespace OJ
         public Color Color; 
     }
 
+    [Serializable]
+    public class RarityResource
+    {
+        public Rarity Rarity;
+        public Color Color; 
+    }
+
     public class StaticResource : MonoSingleton<StaticResource>
     {
         public PointMetadataDatabase PointMetadataDatabase;
-        [FormerlySerializedAs("BulletMetaDataDatabase")]
         public DiceMetaDataDatabase DiceMetaDataDatabase;
+        public GemDefinitionDatabase GemDefinitionDatabase;
         public List<ElementResource> ElementResources;
+        
+        public List<RarityResource> RarityResources;
 
         private Dictionary<ElementType, ElementResource> elementResourceMap = new Dictionary<ElementType, ElementResource>();
+        private Dictionary<Rarity, RarityResource> rarityResourceMap = new Dictionary<Rarity, RarityResource>();
+
         protected override void Init()
         {
             BuildElementResourceMap();
+            BuildRarityResourceMap();
         }
 
         private void BuildElementResourceMap()
@@ -35,11 +47,30 @@ namespace OJ
             }
         }
 
+        private void BuildRarityResourceMap()
+        {
+            rarityResourceMap.Clear();
+            foreach (var rarityResource in RarityResources)
+            {
+                rarityResourceMap[rarityResource.Rarity] = rarityResource;
+            }
+        }
+
         public ElementResource GetElementResource(ElementType elementType)
         {
             if (elementResourceMap.TryGetValue(elementType, out ElementResource elementResource))
             {
                 return elementResource;
+            }
+
+            return null;
+        }
+
+        public RarityResource GetRarityResource(Rarity rarity)
+        {
+            if (rarityResourceMap.TryGetValue(rarity, out RarityResource rarityResource))
+            {
+                return rarityResource;
             }
 
             return null;

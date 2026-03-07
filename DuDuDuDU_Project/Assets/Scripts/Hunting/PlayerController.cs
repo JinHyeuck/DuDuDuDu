@@ -11,6 +11,7 @@ namespace OJ
         public CharacterAnimation bowAnimation;
         public Transform bowTransform;
 
+        public DiceType CheatDiceType = DiceType.Max;
 
         public Transform firePoint;
         public float fireRate = 0.5f;
@@ -19,6 +20,7 @@ namespace OJ
 
         private readonly Dictionary<UIDice, float> diceNextReadyTime = new Dictionary<UIDice, float>();
         private readonly List<UIDice> removeCooldownBuffer = new List<UIDice>();
+        private readonly List<UIDice> cooldownAdjustBuffer = new List<UIDice>();
         private bool wasWaveState = false;
 
         private void Awake()
@@ -69,7 +71,7 @@ namespace OJ
             if (!TryGetReadyDice(out UIDice selectedDice))
                 return;
 
-            if (!ShootAtClosest(selectedDice.Type, selectedDice.Star))
+            if (!ShootAtClosest(selectedDice))
                 return;
 
             shotindex = selectedDice.SlotIndex;
@@ -192,10 +194,69 @@ namespace OJ
             wasWaveState = false;
         }
 
-        bool ShootAtClosest(DiceType diceType, int diceStar)
+        public void ReduceCooldownForOtherDice(float seconds, UIDice sourceDice = null)
         {
+            if (seconds <= 0f)
+                return;
+
+            cooldownAdjustBuffer.Clear();
+            foreach (var pair in diceNextReadyTime)
+            {
+                if (pair.Key == null)
+                    continue;
+
+                if (sourceDice != null && pair.Key == sourceDice)
+                    continue;
+
+                cooldownAdjustBuffer.Add(pair.Key);
+            }
+
+            for (int i = 0; i < cooldownAdjustBuffer.Count; i++)
+            {
+                UIDice dice = cooldownAdjustBuffer[i];
+                if (!diceNextReadyTime.TryGetValue(dice, out float endTime))
+                    continue;
+
+                diceNextReadyTime[dice] = Mathf.Max(Time.time, endTime - seconds);
+            }
+        }
+
+        bool ShootAtClosest(UIDice sourceDice)
+        {
+            if (sourceDice == null)
+                return false;
+
+            DiceType diceType = sourceDice.Type;
+            if(CheatDiceType != DiceType.Max)
+            {
+                diceType = CheatDiceType;
+            }
+            int diceStar = sourceDice.Star;
+
+            if (diceType == DiceType.Time)
+            {
+                int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Time) : 1;
+                float reduce = 2f + (level >= 9 ? 1f : 0f) + Mathf.Max(0, level - 1) * 0.05f;
+                ReduceCooldownForOtherDice(reduce, sourceDice);
+                characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                return true;
+            }
+
+            if (diceType == DiceType.Wind)
+            {
+                bool casted = AttackContent.Instance != null && AttackContent.Instance.TryCastNoTarget(diceType, diceStar);
+                if (!casted)
+                    return false;
+
+                characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                return true;
+            }
+
             Monster target = MonsterManager.Instance.GetClosestMonster(firePoint.position);
-            if (target == null) return false;
+            if (target == null)
+                return false;
 
             Vector2 dir = (target.transform.position - firePoint.position).normalized;
 

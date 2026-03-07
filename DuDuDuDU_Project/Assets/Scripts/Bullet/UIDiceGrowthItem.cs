@@ -43,8 +43,8 @@ namespace OJ
             var meta = DiceMetaDataProvider.GetMeta(diceType);
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
 
-            if (bgImage != null)
-                bgImage.color = DiceMetaDataProvider.GetColor(diceType);
+            // if (bgImage != null)
+            //     bgImage.color = DiceMetaDataProvider.GetColor(diceType);
 
             if (iconImage != null)
                 iconImage.sprite = DiceMetaDataProvider.GetIcon(diceType);

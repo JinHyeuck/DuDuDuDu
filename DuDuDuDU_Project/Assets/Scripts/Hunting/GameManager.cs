@@ -18,7 +18,10 @@ namespace OJ
 
         public int WaveMonsterCount = 20;
         public int WaveMonsterDeadCount = 0;
+        public int CurrentWaveIndex { get; private set; } = 0;
 
+        [Header("Craft")]
+        [SerializeField] private UIDiceCraftProgressDialog craftProgressDialog;
         public Button PlayUI;
         public Button Pause;
         public Button Speed;
@@ -110,7 +113,7 @@ namespace OJ
             PlayUI?.gameObject.SetActive(state == InGameState.Setting);
             Pause?.gameObject.SetActive(state == InGameState.Wave);
             Speed?.gameObject.SetActive(state == InGameState.Wave);
-
+            craftProgressDialog?.SetActive(state == InGameState.Setting);
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
 
@@ -118,6 +121,7 @@ namespace OJ
             if (state == InGameState.Wave)
             {
                 isPause = false;
+                CurrentWaveIndex++;
                 SetRemainMonster(0);
                 MonsterSpawner.Instance.PlayWave();
                 Time.timeScale = timeSpeed;
