@@ -19,7 +19,12 @@ namespace OJ
             }
 
             if (starText != null)
-                starText.SetText($"{star}★");
+            {
+                bool showStarUI = DiceMetaDataProvider.ShowStarUI(diceType);
+                starText.gameObject.SetActive(showStarUI);
+                if (showStarUI)
+                    starText.SetText($"{star}★");
+            }
 
             if (stateText != null)
             {

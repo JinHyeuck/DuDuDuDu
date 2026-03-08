@@ -111,8 +111,12 @@ namespace OJ
                 else
                     readyCount++;
 
-                lineBuilder.Append(req.star);
-                lineBuilder.Append("★ ");
+                bool showStarUI = DiceMetaDataProvider.ShowStarUI(req.diceType);
+                if (showStarUI)
+                {
+                    lineBuilder.Append(req.star);
+                    lineBuilder.Append("★ ");
+                }
                 lineBuilder.Append(req.diceType);
                 lineBuilder.Append(" x");
                 lineBuilder.Append(req.count);
@@ -167,7 +171,11 @@ namespace OJ
             if (materialCountTexts != null && index < materialCountTexts.Length && materialCountTexts[index] != null)
             {
                 materialCountTexts[index].gameObject.SetActive(true);
-                materialCountTexts[index].SetText("{0}★ x{1}", req.star, req.count);
+                bool showStarUI = DiceMetaDataProvider.ShowStarUI(req.diceType);
+                if (showStarUI)
+                    materialCountTexts[index].SetText("{0}★ x{1}", req.star, req.count);
+                else
+                    materialCountTexts[index].SetText("x{0}", req.count);
             }
 
             if (materialStateTexts != null && index < materialStateTexts.Length && materialStateTexts[index] != null)

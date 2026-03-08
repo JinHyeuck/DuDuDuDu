@@ -97,6 +97,11 @@ namespace OJ
             Refresh();
         }
 
+        public void SetSlotIndex(int slotIndex)
+        {
+            SlotIndex = slotIndex;
+        }
+
         private float _hideEffectTime = 0.0f;
 
         public void PlayLevelUpEffect()
@@ -201,6 +206,16 @@ namespace OJ
                 {
                     bool merged = MergeSystem.Instance.TryMerge(this, targetDice);
                     if (merged)
+                        return;
+
+                    if (UIBoard.Instance != null && UIBoard.Instance.TrySwapDice(this, targetDice))
+                        return;
+                }
+
+                if (UIBoard.Instance != null)
+                {
+                    int slotIndex = UIBoard.Instance.GetSlotIndexFromObject(hitObj);
+                    if (slotIndex >= 0 && UIBoard.Instance.TryMoveDiceToSlot(this, slotIndex))
                         return;
                 }
             }
