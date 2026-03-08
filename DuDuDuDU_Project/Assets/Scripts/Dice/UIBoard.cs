@@ -136,7 +136,12 @@ namespace OJ
                 return false;
 
             if (fromSlotIndex == toSlotIndex)
+            {
+                dice.transform.SetParent(slots[toSlotIndex].transform);
+                dice.transform.localPosition = Vector3.zero;
+                dice.transform.localScale = Vector3.one;
                 return true;
+            }
 
             if (diceMap[toSlotIndex] != null)
                 return false;
