@@ -23,7 +23,7 @@ namespace OJ
                 bool showStarUI = DiceMetaDataProvider.ShowStarUI(diceType);
                 starText.gameObject.SetActive(showStarUI);
                 if (showStarUI)
-                    starText.SetText($"{star}★");
+                    starText.SetText($"x{star}");
             }
 
             if (stateText != null)

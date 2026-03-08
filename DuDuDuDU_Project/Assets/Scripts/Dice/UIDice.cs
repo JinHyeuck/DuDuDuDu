@@ -15,6 +15,7 @@ namespace OJ
         public Image ShootEffectImage;
         public Image CooldownFill;
         public TMP_Text CooldownText;
+        public Image StarImage;
         public TMP_Text StarText;
         public TMP_Text TypeText;
         public Animator animator;
@@ -66,7 +67,7 @@ namespace OJ
             {
                 StarText.gameObject.SetActive(showStarUI);
                 if (showStarUI)
-                    StarText.SetText("Lv.{0}", Star);
+                    StarText.SetText("x{0}", Star);
             }
 
             DiceType diceType = Type;
