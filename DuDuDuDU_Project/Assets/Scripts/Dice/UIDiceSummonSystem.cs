@@ -58,6 +58,13 @@ namespace OJ
             UpdateSPUI();
         }
 
+        public void SetStageStartSp(int startSp, int startSummonCost = 10)
+        {
+            currentSP = Mathf.Max(0, startSp);
+            summonCost = Mathf.Max(1, startSummonCost);
+            UpdateSPUI();
+        }
+
         private void UpdateSPUI()
         {
             spText.text = $"{summonCost} / {currentSP}";
@@ -65,6 +72,9 @@ namespace OJ
 
         public void AddSP(int addsp)
         {
+            if (addsp <= 0)
+                return;
+
             currentSP += addsp;
             UpdateSPUI();
         }

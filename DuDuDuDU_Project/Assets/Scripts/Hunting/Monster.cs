@@ -31,6 +31,12 @@ namespace OJ
         private float _pendingPullDistance;
         private float _pullUntilTime;
         private Vector2 _pullCenter;
+        private Vector3 _defaultLocalScale;
+
+        private void Awake()
+        {
+            _defaultLocalScale = transform.localScale;
+        }
 
         public void OnSpawn()
         {
@@ -101,7 +107,6 @@ namespace OJ
                 {
                     CharacterState = CharacterState.Dead;
                     StopAllCoroutines();
-                    UIDiceSummonSystem.Instance?.AddSP(10);
                     EquipmentManager.Instance?.OnMonsterKilled();
                     MonsterManager.Instance.UnregisterMonster(this, true);
                     MonsterSpawner.Instance.PoolMonster(this);
@@ -341,6 +346,19 @@ namespace OJ
         public void SetHp(int hp)
         {
             _hp = hp;
+        }
+
+        public void SetCombatStats(int hp, int baseDefenseValue, float scaleMultiplier = 1f)
+        {
+            _hp = Mathf.Max(1, hp);
+            _baseDefense = Mathf.Max(0, baseDefenseValue);
+            _defenseDownAmount = 0;
+            RecalculateDefense();
+
+            if (_defaultLocalScale == Vector3.zero)
+                _defaultLocalScale = Vector3.one;
+
+            transform.localScale = _defaultLocalScale * Mathf.Max(0.1f, scaleMultiplier);
         }
     }
 }

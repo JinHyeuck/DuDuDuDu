@@ -11,15 +11,19 @@ namespace OJ
 
         private Dictionary<int, Queue<Monster>> monsterPools = new Dictionary<int, Queue<Monster>>();
         private List<int> monsterIdList = new List<int>();
+        private Dictionary<int, Queue<Monster>> bossMonsterPools = new Dictionary<int, Queue<Monster>>();
+        private List<int> bossMonsterIdList = new List<int>();
 
         public List<Monster> monsterPrefab;
+        public List<Monster> bossMonsterPrefab;
         public float spawnInterval = 2f;
         public float spawnXRange = 7f;
         public float spawnY = 5f;
 
         private float timer = 0f;
 
-        private int SpawnCount = 0;
+        private int regularSpawnCount = 0;
+        private bool bossSpawnedInWave = false;
 
         void Awake()
         {
@@ -40,29 +44,14 @@ namespace OJ
 
         private void Start()
         {
-            for (int i = 0; i < monsterPrefab.Count; ++i)
-            {
-                Monster monster = monsterPrefab[i];
-
-                if (monsterPools.ContainsKey(monster.MonsterID) == true)
-                    continue;
-
-                monsterPools.Add(monster.MonsterID, new Queue<Monster>());
-
-                monsterIdList.Add(monster.MonsterID);
-
-                for (int pools = 0; pools < poolSize; pools++)
-                {
-                    GameObject obj = Instantiate(monster.gameObject);
-                    obj.SetActive(false);
-                    monsterPools[monster.MonsterID].Enqueue(obj.GetComponent<Monster>());
-                }
-            }
+            InitializePools(monsterPrefab, monsterPools, monsterIdList);
+            InitializePools(bossMonsterPrefab, bossMonsterPools, bossMonsterIdList);
         }
 
         public void PlayWave()
         {
-            SpawnCount = 0;
+            regularSpawnCount = 0;
+            bossSpawnedInWave = false;
             timer = 0;
         }
 
@@ -71,13 +60,13 @@ namespace OJ
             if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Wave)
                 return;
 
-            if (GameManager.Instance.WaveMonsterCount <= SpawnCount)
+            if (IsWaveSpawnCompleted())
                 return;
 
             timer += Time.deltaTime;
             if (timer >= spawnInterval)
             {
-                SpawnMonster();
+                SpawnNext();
                 timer = 0f;
             }
         }
@@ -99,27 +88,136 @@ namespace OJ
             return obj.GetComponent<Monster>();
         }
 
-        public void PoolMonster(Monster monster)
+        public Monster GetBossMonster()
         {
-            monster.gameObject.SetActive(false);
-            monsterPools[monster.MonsterID].Enqueue(monster);
+            if (bossMonsterIdList.Count == 0)
+                return GetMonster();
+
+            int monsterIdx = bossMonsterIdList[Random.Range(0, bossMonsterIdList.Count)];
+            Queue<Monster> pool = bossMonsterPools[monsterIdx];
+
+            if (pool.Count > 0)
+            {
+                Monster bossMonster = pool.Dequeue();
+                bossMonster.gameObject.SetActive(true);
+                return bossMonster;
+            }
+
+            GameObject obj = Instantiate(bossMonsterPrefab.Find(x => x.MonsterID == monsterIdx).gameObject);
+            return obj.GetComponent<Monster>();
         }
 
-        int hp = 1;
-        void SpawnMonster()
+        public void PoolMonster(Monster monster)
+        {
+            if (monster == null)
+                return;
+
+            monster.gameObject.SetActive(false);
+
+            if (bossMonsterPools.TryGetValue(monster.MonsterID, out Queue<Monster> bossPool)
+                && ((monster is BossMonster) || !monsterPools.ContainsKey(monster.MonsterID)))
+            {
+                bossPool.Enqueue(monster);
+                return;
+            }
+
+            if (monsterPools.TryGetValue(monster.MonsterID, out Queue<Monster> pool))
+                pool.Enqueue(monster);
+        }
+
+        private void SpawnNext()
+        {
+            if (ShouldSpawnBossNow())
+            {
+                SpawnBossMonster();
+                return;
+            }
+
+            if (regularSpawnCount < GetRegularSpawnTarget())
+                SpawnRegularMonster();
+        }
+
+        private void SpawnRegularMonster()
         {
             Vector2 spawnPos = new Vector2(Random.Range(-spawnXRange, spawnXRange), spawnY);
 
-            //GameObject clone = Instantiate(monsterPrefab.gameObject, spawnPos, Quaternion.identity);
-            //clone.gameObject.SetActive(true);
             Monster monster = GetMonster();
             monster.OnSpawn();
             monster.transform.position = spawnPos;
             monster.transform.rotation = Quaternion.identity;
-            monster.SetHp(hp);
-            hp++;
+            int monsterHp = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveMonsterHp() : 1;
+            int monsterDefense = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveMonsterDefense() : 0;
+            monster.SetCombatStats(monsterHp, monsterDefense);
 
-            SpawnCount++;
+            regularSpawnCount++;
+        }
+
+        private void SpawnBossMonster()
+        {
+            Vector2 spawnPos = new Vector2(Random.Range(-spawnXRange, spawnXRange), spawnY);
+            Monster monster = GetBossMonster();
+            monster.OnSpawn();
+            monster.transform.position = spawnPos;
+            monster.transform.rotation = Quaternion.identity;
+            int monsterHp = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveBossHp() : 1;
+            int monsterDefense = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveBossDefense() : 0;
+            float monsterScale = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveBossScale() : 1.45f;
+            monster.SetCombatStats(monsterHp, monsterDefense, monsterScale);
+            bossSpawnedInWave = true;
+        }
+
+        private void InitializePools(List<Monster> prefabs, Dictionary<int, Queue<Monster>> pools, List<int> idList)
+        {
+            if (prefabs == null)
+                return;
+
+            for (int i = 0; i < prefabs.Count; ++i)
+            {
+                Monster monster = prefabs[i];
+                if (monster == null || pools.ContainsKey(monster.MonsterID))
+                    continue;
+
+                pools.Add(monster.MonsterID, new Queue<Monster>());
+                idList.Add(monster.MonsterID);
+
+                for (int j = 0; j < poolSize; j++)
+                {
+                    GameObject obj = Instantiate(monster.gameObject);
+                    obj.SetActive(false);
+                    pools[monster.MonsterID].Enqueue(obj.GetComponent<Monster>());
+                }
+            }
+        }
+
+        private bool IsWaveSpawnCompleted()
+        {
+            int regularTarget = GetRegularSpawnTarget();
+            return regularSpawnCount >= regularTarget && (!IsBossWave() || bossSpawnedInWave);
+        }
+
+        private bool ShouldSpawnBossNow()
+        {
+            if (!IsBossWave() || bossSpawnedInWave)
+                return false;
+
+            int threshold = GameManager.Instance != null && GameManager.Instance.CurrentStageData != null
+                ? GameManager.Instance.CurrentStageData.GetBossSpawnThreshold()
+                : Mathf.Max(1, Mathf.CeilToInt(GetRegularSpawnTarget() * 0.5f));
+
+            return regularSpawnCount >= threshold;
+        }
+
+        private bool IsBossWave()
+        {
+            return GameManager.Instance != null && GameManager.Instance.IsBossWave();
+        }
+
+        private int GetRegularSpawnTarget()
+        {
+            if (GameManager.Instance == null || GameManager.Instance.CurrentStageData == null)
+                return 0;
+
+            return Mathf.Max(1, GameManager.Instance.CurrentStageData.monstersPerWave);
         }
 
         // Backward-compatible wrappers (remove after call sites are fully migrated).
