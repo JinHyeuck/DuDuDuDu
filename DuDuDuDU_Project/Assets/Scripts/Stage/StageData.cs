@@ -77,9 +77,9 @@ namespace OJ
 
             float stageOffset = Mathf.Max(0, stageIndex - 1);
             float defenseValue = 4f + (stageOffset * 1.35f) + (Mathf.Pow(stageOffset, 1.12f) * 0.65f);
-            if (totalWaves == 5)
+            if (totalWaves == 10)
                 defenseValue *= 1.12f;
-            else if (totalWaves == 10)
+            else if (totalWaves == 20)
                 defenseValue *= 0.96f;
 
             return Mathf.Max(0, Mathf.RoundToInt(defenseValue));

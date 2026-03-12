@@ -5,6 +5,9 @@ namespace OJ
 {
     public static class DiceMetaDataProvider
     {
+        private const float GlobalDamageBalanceMultiplier = 0.5f;
+        private const float KingDiceDamageMultiplier = 2f;
+
         private const float CooldownBalanceMultiplier = 2f;
         private static DiceMetaDataDatabase database;
         private static Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta> defaults;
@@ -41,6 +44,12 @@ namespace OJ
             var meta = GetMeta(diceType);
             if (meta == null)
                 return (0, 0);
+
+            if (meta.baseGoldCost <= 0 && meta.goldCostPerLevel <= 0 && meta.baseScrollCost <= 0 && meta.scrollCostPerLevel <= 0)
+            {
+                if (TryGetFallbackUpgradeCost(diceType, currentLevel, out var fallbackCost))
+                    return fallbackCost;
+            }
 
             int level = Mathf.Max(1, currentLevel);
             int gold = Mathf.Max(0, meta.baseGoldCost + (level - 1) * meta.goldCostPerLevel);
@@ -233,7 +242,9 @@ namespace OJ
             if (EquipmentManager.Instance != null)
                 attackBase += EquipmentManager.Instance.GetTotalEquipmentAttack();
 
-            float scaled = attackBase * (pips * Mathf.Max(0.01f, meta.dicePipAttackFactor));
+            float scaled = attackBase * (pips * Mathf.Max(0.01f, meta.dicePipAttackFactor)) * GlobalDamageBalanceMultiplier;
+            if (IsKingDice(diceType))
+                scaled *= KingDiceDamageMultiplier;
 
             if (EquipmentManager.Instance != null)
             {
@@ -252,6 +263,58 @@ namespace OJ
             }
 
             return Mathf.Max(1, Mathf.RoundToInt(scaled));
+        }
+
+        private static bool IsKingDice(DiceType diceType)
+        {
+            switch (diceType)
+            {
+                case DiceType.KingNormal:
+                case DiceType.KingFire:
+                case DiceType.KingIce:
+                case DiceType.KingThunder:
+                case DiceType.KingPoison:
+                case DiceType.KingMixed:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryGetFallbackUpgradeCost(DiceType diceType, int currentLevel, out (int goldCost, int scrollCost) cost)
+        {
+            switch (diceType)
+            {
+                case DiceType.KingNormal:
+                    cost = BuildUpgradeCost(currentLevel, 260, 90, 15, 3);
+                    return true;
+                case DiceType.KingFire:
+                    cost = BuildUpgradeCost(currentLevel, 270, 92, 16, 3);
+                    return true;
+                case DiceType.KingIce:
+                    cost = BuildUpgradeCost(currentLevel, 255, 88, 15, 3);
+                    return true;
+                case DiceType.KingThunder:
+                    cost = BuildUpgradeCost(currentLevel, 280, 96, 16, 3);
+                    return true;
+                case DiceType.KingPoison:
+                    cost = BuildUpgradeCost(currentLevel, 250, 86, 15, 3);
+                    return true;
+                case DiceType.KingMixed:
+                    cost = BuildUpgradeCost(currentLevel, 340, 120, 24, 4);
+                    return true;
+                default:
+                    cost = (0, 0);
+                    return false;
+            }
+        }
+
+        private static (int goldCost, int scrollCost) BuildUpgradeCost(int currentLevel, int baseGold, int goldPerLevel, int baseScroll, int scrollPerLevel)
+        {
+            int level = Mathf.Max(1, currentLevel);
+            int gold = Mathf.Max(0, baseGold + (level - 1) * goldPerLevel);
+            int scroll = Mathf.Max(0, baseScroll + (level - 1) * scrollPerLevel);
+            return (gold, scroll);
         }
 
         public static float GetBaseCooldown(DiceType diceType)
