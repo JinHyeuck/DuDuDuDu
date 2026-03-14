@@ -8,6 +8,8 @@ namespace OJ
 {
     public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
+        private const float DoubleTapThreshold = 0.35f;
+
         public Image BGImage;
         public Image Icon;
         public Transform ShootEffectTrans;
@@ -28,6 +30,7 @@ namespace OJ
         private Vector3 originalPos;
         private CanvasGroup canvasGroup;
         private Canvas canvas;
+        private float lastPointerClickTime = -10f;
 
         public void Init(DiceType type, int star, int slotIndex)
         {
@@ -230,8 +233,15 @@ namespace OJ
             if (eventData.button != PointerEventData.InputButton.Left)
                 return;
 
-            if (eventData.clickCount < 2)
+            bool isDoubleClick = eventData.clickCount >= 2;
+            bool isDoubleTap = Time.unscaledTime - lastPointerClickTime <= DoubleTapThreshold;
+
+            lastPointerClickTime = Time.unscaledTime;
+
+            if (!isDoubleClick && !isDoubleTap)
                 return;
+
+            lastPointerClickTime = -10f;
 
             TryAutoMergeSameDice();
         }

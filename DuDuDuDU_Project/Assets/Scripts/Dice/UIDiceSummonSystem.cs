@@ -112,6 +112,7 @@ namespace OJ
                 return;
 
             currentSP -= summonCost;
+            int spentCost = summonCost;
             summonsSinceLastCostIncrease++;
             if (summonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
             {
@@ -124,6 +125,7 @@ namespace OJ
             int star = 1;
             DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
+            RunHistoryManager.Instance?.RecordSummon(type, star, GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : 0, spentCost, currentSP);
         }
 
         private int GetRandomEmptySlot()
