@@ -5,6 +5,9 @@ namespace OJ
 {
     public static class DiceMetaDataProvider
     {
+        private const float GlobalDamageBalanceMultiplier = 0.5f;
+        private const float KingDiceDamageMultiplier = 2f;
+
         private const float CooldownBalanceMultiplier = 2f;
         private static DiceMetaDataDatabase database;
         private static Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta> defaults;
@@ -41,6 +44,12 @@ namespace OJ
             var meta = GetMeta(diceType);
             if (meta == null)
                 return (0, 0);
+
+            if (meta.baseGoldCost <= 0 && meta.goldCostPerLevel <= 0 && meta.baseScrollCost <= 0 && meta.scrollCostPerLevel <= 0)
+            {
+                if (TryGetFallbackUpgradeCost(diceType, currentLevel, out var fallbackCost))
+                    return fallbackCost;
+            }
 
             int level = Mathf.Max(1, currentLevel);
             int gold = Mathf.Max(0, meta.baseGoldCost + (level - 1) * meta.goldCostPerLevel);
@@ -233,7 +242,9 @@ namespace OJ
             if (EquipmentManager.Instance != null)
                 attackBase += EquipmentManager.Instance.GetTotalEquipmentAttack();
 
-            float scaled = attackBase * (pips * Mathf.Max(0.01f, meta.dicePipAttackFactor));
+            float scaled = attackBase * (pips * Mathf.Max(0.01f, meta.dicePipAttackFactor)) * GlobalDamageBalanceMultiplier;
+            if (IsKingDice(diceType))
+                scaled *= KingDiceDamageMultiplier;
 
             if (EquipmentManager.Instance != null)
             {
@@ -252,6 +263,58 @@ namespace OJ
             }
 
             return Mathf.Max(1, Mathf.RoundToInt(scaled));
+        }
+
+        private static bool IsKingDice(DiceType diceType)
+        {
+            switch (diceType)
+            {
+                case DiceType.KingNormal:
+                case DiceType.KingFire:
+                case DiceType.KingIce:
+                case DiceType.KingThunder:
+                case DiceType.KingPoison:
+                case DiceType.KingMixed:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryGetFallbackUpgradeCost(DiceType diceType, int currentLevel, out (int goldCost, int scrollCost) cost)
+        {
+            switch (diceType)
+            {
+                case DiceType.KingNormal:
+                    cost = BuildUpgradeCost(currentLevel, 260, 90, 15, 3);
+                    return true;
+                case DiceType.KingFire:
+                    cost = BuildUpgradeCost(currentLevel, 270, 92, 16, 3);
+                    return true;
+                case DiceType.KingIce:
+                    cost = BuildUpgradeCost(currentLevel, 255, 88, 15, 3);
+                    return true;
+                case DiceType.KingThunder:
+                    cost = BuildUpgradeCost(currentLevel, 280, 96, 16, 3);
+                    return true;
+                case DiceType.KingPoison:
+                    cost = BuildUpgradeCost(currentLevel, 250, 86, 15, 3);
+                    return true;
+                case DiceType.KingMixed:
+                    cost = BuildUpgradeCost(currentLevel, 340, 120, 24, 4);
+                    return true;
+                default:
+                    cost = (0, 0);
+                    return false;
+            }
+        }
+
+        private static (int goldCost, int scrollCost) BuildUpgradeCost(int currentLevel, int baseGold, int goldPerLevel, int baseScroll, int scrollPerLevel)
+        {
+            int level = Mathf.Max(1, currentLevel);
+            int gold = Mathf.Max(0, baseGold + (level - 1) * goldPerLevel);
+            int scroll = Mathf.Max(0, baseScroll + (level - 1) * scrollPerLevel);
+            return (gold, scroll);
         }
 
         public static float GetBaseCooldown(DiceType diceType)
@@ -321,17 +384,17 @@ namespace OJ
                     (9, "추가 쿨타임 감소 +1초")
                 }, new [] { ElementType.Light, ElementType.Normal },
                     false, false, false, (DiceType.Normal, 2, 1), (DiceType.Thunder, 2, 1), (DiceType.Ice, 2, 1)) },
-                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "강화 단일형. 주변 3명 추가 타격(반경 1.3).", 52, 10, 1.38f, 3.0f,
-                    (DiceType.Normal, 4, 1), (DiceType.Normal, 5, 1), (DiceType.Tornado, 1, 2)) },
-                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "강화 폭발형. 범위 1.6, 최대 14명(+보너스+2) 추가 타격.", 55, 11, 1.34f, 3.3f,
-                    (DiceType.Fire, 4, 1), (DiceType.Fire, 5, 1), (DiceType.ArmorBreak, 1, 2)) },
-                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "강화 제어형. 주변 3명 추가 타격, 감속 2중첩.", 50, 10, 1.30f, 3.5f,
-                    (DiceType.Ice, 4, 1), (DiceType.Ice, 5, 1), (DiceType.Wind, 1, 2), (DiceType.Paralysis, 1, 2)) },
-                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "강화 중독형. 주변 2명 추가 타격, 중독+감속 동시 부여.", 49, 10, 1.28f, 3.3f,
-                    (DiceType.Poison, 4, 1), (DiceType.Poison, 5, 1), (DiceType.ArmorBreak, 1, 2), (DiceType.Paralysis, 1, 1)) },
-                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "강화 연쇄형. 기본 체인 대상 +2.", 58, 12, 1.38f, 3.0f,
-                    (DiceType.Thunder, 4, 1), (DiceType.Thunder, 5, 1), (DiceType.Paralysis, 1, 3), (DiceType.Time, 1, 2)) },
-                { DiceType.KingMixed, CreateMythicDefault(DiceType.KingMixed, "King Mixed", "복합 원소형. 체인+범위 확산 타격, 적중 시 감속+중독, 5속성 이펙트 동시 발동.", 68, 14, 1.45f, 3.6f,
+                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "강화 단일형. 주변 3명 추가 타격(반경 1.3).", 104, 20, 1.38f, 3.0f,
+                    (DiceType.Normal, 3, 1), (DiceType.Normal, 4, 1), (DiceType.Tornado, 1, 2)) },
+                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "강화 폭발형. 범위 1.6, 최대 14명(+보너스+2) 추가 타격.", 110, 22, 1.34f, 3.3f,
+                    (DiceType.Fire, 3, 1), (DiceType.Fire, 4, 1), (DiceType.ArmorBreak, 1, 2)) },
+                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "강화 제어형. 주변 3명 추가 타격, 감속 2중첩.", 100, 20, 1.30f, 3.5f,
+                    (DiceType.Ice, 3, 1), (DiceType.Ice, 4, 1), (DiceType.Wind, 1, 2), (DiceType.Paralysis, 1, 2)) },
+                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "강화 중독형. 주변 2명 추가 타격, 중독+감속 동시 부여.", 98, 20, 1.28f, 3.3f,
+                    (DiceType.Poison, 3, 1), (DiceType.Poison, 4, 1), (DiceType.ArmorBreak, 1, 2), (DiceType.Paralysis, 1, 1)) },
+                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "강화 연쇄형. 기본 체인 대상 +2.", 116, 24, 1.38f, 3.0f,
+                    (DiceType.Thunder, 3, 1), (DiceType.Thunder, 4, 1), (DiceType.Paralysis, 1, 3), (DiceType.Time, 1, 2)) },
+                { DiceType.KingMixed, CreateMythicDefault(DiceType.KingMixed, "King Mixed", "복합 원소형. 체인+범위 확산 타격, 적중 시 감속+중독, 5속성 이펙트 동시 발동.", 136, 28, 1.45f, 3.6f,
                     (DiceType.KingNormal, 1, 1), (DiceType.KingFire, 1, 1), (DiceType.KingIce, 1, 1), (DiceType.KingPoison, 1, 1), (DiceType.KingThunder, 1, 1)) }
             };
         }

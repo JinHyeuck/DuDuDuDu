@@ -25,6 +25,7 @@ namespace OJ
         public PointMetadataDatabase PointMetadataDatabase;
         public DiceMetaDataDatabase DiceMetaDataDatabase;
         public GemDefinitionDatabase GemDefinitionDatabase;
+        public StageDatabase StageDatabase;
         public List<ElementResource> ElementResources;
         
         public List<RarityResource> RarityResources;

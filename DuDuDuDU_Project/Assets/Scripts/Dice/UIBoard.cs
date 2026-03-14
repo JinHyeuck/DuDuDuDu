@@ -100,5 +100,91 @@ namespace OJ
         }
 
         public UIDice GetDice(int slotIndex) => diceMap[slotIndex];
+
+        public int GetSlotIndexFromObject(GameObject hitObj)
+        {
+            if (hitObj == null)
+                return -1;
+
+            Transform hitTransform = hitObj.transform;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i] == null)
+                    continue;
+
+                Transform slotTransform = slots[i].transform;
+                if (hitTransform == slotTransform || hitTransform.IsChildOf(slotTransform))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        public bool TryMoveDiceToSlot(UIDice dice, int toSlotIndex)
+        {
+            if (dice == null || diceMap == null)
+                return false;
+
+            if (toSlotIndex < 0 || toSlotIndex >= diceMap.Length)
+                return false;
+
+            int fromSlotIndex = dice.SlotIndex;
+            if (fromSlotIndex < 0 || fromSlotIndex >= diceMap.Length)
+                return false;
+
+            if (diceMap[fromSlotIndex] != dice)
+                return false;
+
+            if (fromSlotIndex == toSlotIndex)
+            {
+                dice.transform.SetParent(slots[toSlotIndex].transform);
+                dice.transform.localPosition = Vector3.zero;
+                dice.transform.localScale = Vector3.one;
+                return true;
+            }
+
+            if (diceMap[toSlotIndex] != null)
+                return false;
+
+            diceMap[fromSlotIndex] = null;
+            diceMap[toSlotIndex] = dice;
+            dice.SetSlotIndex(toSlotIndex);
+
+            dice.transform.SetParent(slots[toSlotIndex].transform);
+            dice.transform.localPosition = Vector3.zero;
+            dice.transform.localScale = Vector3.one;
+            return true;
+        }
+
+        public bool TrySwapDice(UIDice a, UIDice b)
+        {
+            if (a == null || b == null || a == b || diceMap == null)
+                return false;
+
+            int aIndex = a.SlotIndex;
+            int bIndex = b.SlotIndex;
+
+            if (aIndex < 0 || aIndex >= diceMap.Length || bIndex < 0 || bIndex >= diceMap.Length)
+                return false;
+
+            if (diceMap[aIndex] != a || diceMap[bIndex] != b)
+                return false;
+
+            diceMap[aIndex] = b;
+            diceMap[bIndex] = a;
+
+            a.SetSlotIndex(bIndex);
+            b.SetSlotIndex(aIndex);
+
+            a.transform.SetParent(slots[bIndex].transform);
+            a.transform.localPosition = Vector3.zero;
+            a.transform.localScale = Vector3.one;
+
+            b.transform.SetParent(slots[aIndex].transform);
+            b.transform.localPosition = Vector3.zero;
+            b.transform.localScale = Vector3.one;
+
+            return true;
+        }
     }
 }

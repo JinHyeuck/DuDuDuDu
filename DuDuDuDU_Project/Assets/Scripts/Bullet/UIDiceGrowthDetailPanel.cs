@@ -107,10 +107,10 @@ namespace OJ
             if (levelUpGainText != null) levelUpGainText.SetText("+{0}", meta != null ? meta.levelUpAttackIncrease : 0);
             if (pipFactorText != null) pipFactorText.SetText(string.Format("x{0:0.##}", meta != null ? meta.dicePipAttackFactor : 1f));
 
-            if (goldCostText != null) goldCostText.SetText("{0}/{1}", PointManager.Instance.Get(PointType.Gold), cost.goldCost);
+            if (goldCostText != null) goldCostText.SetText("{0}/{1}", cost.goldCost, PointManager.Instance.Get(PointType.Gold));
 
             PointType scrollType = PointManager.ToScrollType(currentDiceType);
-            if (scrollCostText != null) scrollCostText.SetText("{0}/{1}", PointManager.Instance.Get(scrollType), cost.scrollCost);
+            if (scrollCostText != null) scrollCostText.SetText("{0}/{1}", cost.scrollCost, PointManager.Instance.Get(scrollType));
 
             PointMetadataDatabase db = StaticResource.Instance.PointMetadataDatabase;
             PointMetadataDatabase.PointMetadata metadata = db != null ? db.Get(scrollType) : null;

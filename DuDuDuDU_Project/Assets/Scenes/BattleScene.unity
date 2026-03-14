@@ -2464,6 +2464,7 @@ MonoBehaviour:
   Pause: {fileID: 771216595}
   Speed: {fileID: 135732721}
   SpeedText: {fileID: 759398507}
+  WaveText: {fileID: 1561517420}
   RemainMonster: {fileID: 726671726}
   RemainMonsterGauge: {fileID: 1219950596}
   RemainMonsterGauge_Width: 705
@@ -2484,6 +2485,8 @@ MonoBehaviour:
   monsterPrefab:
   - {fileID: 881306225255906131, guid: 895d3cbeb928a6b489b0eae20ce20daf, type: 3}
   - {fileID: 8880202767979408004, guid: 511ed168af2e49244be1b02c8420405a, type: 3}
+  bossMonsterPrefab:
+  - {fileID: 0}
   spawnInterval: 1
   spawnXRange: 2.5
   spawnY: 5
@@ -2555,8 +2558,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tornadoPullDuration: 0.5
-  cheatDiceType: 100
-  cheatDiceDamage: 0
   drawGizmoPos: {x: 0, y: 0, z: 0}
   drawGizmoRadius: 0
 --- !u!1 &741470147
@@ -2811,7 +2812,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -551.16}
-  m_SizeDelta: {x: 833.5, y: 535.4}
+  m_SizeDelta: {x: 1108.9, y: 535.4}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &764558801
 MonoBehaviour:
@@ -2834,9 +2835,9 @@ MonoBehaviour:
   m_StartCorner: 0
   m_StartAxis: 0
   m_CellSize: {x: 140, y: 140}
-  m_Spacing: {x: 7, y: 7}
+  m_Spacing: {x: 5, y: 5}
   m_Constraint: 1
-  m_ConstraintCount: 5
+  m_ConstraintCount: 7
 --- !u!114 &764558803
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2852,7 +2853,7 @@ MonoBehaviour:
   grid: {fileID: 764558801}
   slotPrefab: {fileID: 4039397222886186115, guid: b6492aeb42d647d4c987237c9476f108, type: 3}
   dicePrefab: {fileID: 403657436340985947, guid: a299c7ab2fc4ba94e9ca687c7d256c56, type: 3}
-  rows: 5
+  rows: 7
   cols: 3
   diceMap: []
   ShotIndex: 0
@@ -4858,8 +4859,9 @@ MonoBehaviour:
   characterAnimation: {fileID: 1190512295}
   bowAnimation: {fileID: 2114003083}
   bowTransform: {fileID: 1657337177}
+  CheatDiceType: 206
   firePoint: {fileID: 3120974}
-  fireRate: 0.3
+  fireRate: 0.6
 --- !u!114 &1190512295
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -264,10 +264,6 @@ namespace OJ
             if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
                 return false;
 
-            int slotIndex = GetFirstEmptySlot();
-            if (slotIndex < 0)
-                return false;
-
             IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe = DiceMetaDataProvider.GetRecipeMaterials(mythicType);
             if (recipe == null || recipe.Count == 0)
                 return false;
@@ -315,9 +311,16 @@ namespace OJ
                 if (dice == null)
                     continue;
 
+                if (dice.SlotIndex >= 0 && dice.SlotIndex < map.Length && map[dice.SlotIndex] == dice)
+                    map[dice.SlotIndex] = null;
+
                 DiceTypeStarManager.Instance.OnDiceRemove(dice.Type, dice.Star);
                 Destroy(dice.gameObject);
             }
+
+            int slotIndex = GetFirstEmptySlot();
+            if (slotIndex < 0)
+                return false;
 
             const int mythicStar = 1;
             DiceTypeStarManager.Instance.OnDiceSpawn(mythicType, mythicStar);

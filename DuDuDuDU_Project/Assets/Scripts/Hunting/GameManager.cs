@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace OJ
 {
@@ -19,6 +20,7 @@ namespace OJ
         public int WaveMonsterCount = 20;
         public int WaveMonsterDeadCount = 0;
         public int CurrentWaveIndex { get; private set; } = 0;
+        public StageData CurrentStageData { get; private set; }
 
         [Header("Craft")]
         [SerializeField] private UIDiceCraftProgressDialog craftProgressDialog;
@@ -26,6 +28,7 @@ namespace OJ
         public Button Pause;
         public Button Speed;
         public TMP_Text SpeedText;
+        public TMP_Text WaveText;
         public TMP_Text RemainMonster;
         public RectTransform RemainMonsterGauge;
         public float RemainMonsterGauge_Width = 705.0f;
@@ -61,7 +64,7 @@ namespace OJ
 
         private void Start()
         {
-            wall.SetInit(WallHp);
+            InitializeStage();
             ChangeState(InGameState.Setting);
         }
 
@@ -116,12 +119,15 @@ namespace OJ
             craftProgressDialog?.SetActive(state == InGameState.Setting);
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
+            WaveText?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
 
 
             if (state == InGameState.Wave)
             {
                 isPause = false;
                 CurrentWaveIndex++;
+                WaveMonsterCount = GetWaveTargetCount();
+                UpdateWaveText();
                 SetRemainMonster(0);
                 MonsterSpawner.Instance.PlayWave();
                 Time.timeScale = timeSpeed;
@@ -132,6 +138,7 @@ namespace OJ
             {
                 isPause = false;
                 Time.timeScale = 1;
+                UpdateWaveText();
             }
         }
 
@@ -143,7 +150,7 @@ namespace OJ
 
             if (WaveMonsterDeadCount >= WaveMonsterCount)
             {
-                ChangeState(InGameState.Setting);
+                HandleWaveCompleted();
                 return;
             }
 
@@ -168,6 +175,136 @@ namespace OJ
             if (isGameOver) return;
             isGameOver = true;
             Debug.Log("Game Over!");
+            StartCoroutine(CoReturnToLobby());
+        }
+
+        public int GetCurrentWaveMonsterHp()
+        {
+            if (CurrentStageData == null)
+                return 1;
+
+            return CurrentStageData.GetMonsterHpForWave(CurrentWaveIndex);
+        }
+
+        public int GetCurrentWaveMonsterDefense()
+        {
+            if (CurrentStageData == null)
+                return 0;
+
+            return CurrentStageData.GetMonsterDefenseForWave(CurrentWaveIndex);
+        }
+
+        public int GetCurrentWaveBossHp()
+        {
+            if (CurrentStageData == null)
+                return 1;
+
+            return CurrentStageData.GetBossHpForWave(CurrentWaveIndex);
+        }
+
+        public int GetCurrentWaveBossDefense()
+        {
+            if (CurrentStageData == null)
+                return 0;
+
+            return CurrentStageData.GetBossDefenseForWave(CurrentWaveIndex);
+        }
+
+        public float GetCurrentWaveBossScale()
+        {
+            if (CurrentStageData == null)
+                return 1f;
+
+            return CurrentStageData.bossScaleMultiplier;
+        }
+
+        public bool IsBossWave()
+        {
+            return CurrentStageData != null && CurrentWaveIndex >= CurrentStageData.totalWaves;
+        }
+
+        private void InitializeStage()
+        {
+            CurrentStageData = StageProgressManager.Instance != null
+                ? StageProgressManager.Instance.GetSelectedStage()
+                : StageDatabaseProvider.GetStage(1);
+
+            if (CurrentStageData == null)
+            {
+                CurrentStageData = new StageData();
+            }
+
+            WallHp = CurrentStageData.wallHp;
+            WaveMonsterCount = CurrentStageData.monstersPerWave;
+            CurrentWaveIndex = 0;
+            WaveMonsterDeadCount = 0;
+            isGameOver = false;
+
+            wall.SetInit(WallHp);
+            UIDiceSummonSystem.Instance?.SetStageStartSp(CurrentStageData.initialSP);
+            UpdateWaveText();
+        }
+
+        private int GetWaveTargetCount()
+        {
+            if (CurrentStageData == null)
+                return WaveMonsterCount;
+
+            int targetCount = CurrentStageData.monstersPerWave;
+            if (IsBossWave())
+                targetCount += 1;
+
+            return Mathf.Max(1, targetCount);
+        }
+
+        private void HandleWaveCompleted()
+        {
+            if (CurrentStageData != null)
+                UIDiceSummonSystem.Instance?.AddSP(CurrentStageData.waveClearSP);
+
+            if (CurrentStageData != null && CurrentWaveIndex >= CurrentStageData.totalWaves)
+            {
+                ClearStage();
+                return;
+            }
+
+            ChangeState(InGameState.Setting);
+        }
+
+        private void UpdateWaveText()
+        {
+            if (WaveText == null)
+                return;
+
+            int totalWaves = CurrentStageData != null ? Mathf.Max(1, CurrentStageData.totalWaves) : 1;
+            int currentWave = Mathf.Clamp(CurrentWaveIndex, 0, totalWaves);
+            WaveText.SetText("Wave {0}/{1}", currentWave, totalWaves);
+        }
+
+        private void ClearStage()
+        {
+            if (isGameOver)
+                return;
+
+            isGameOver = true;
+            inGameState = InGameState.None;
+
+            int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
+            StageClearGrade clearGrade = StageRewardCalculator.GetClearGrade(wall.CurrentHp, wall.TotalHp);
+
+            List<StageRewardEntry> normalRewards = StageRewardCalculator.BuildNormalClearRewards(stageIndex);
+            StageRewardCalculator.GrantRewards(normalRewards);
+
+            StageRewardTierFlags newFlags = StageProgressManager.Instance != null
+                ? StageProgressManager.Instance.RecordStageClear(stageIndex, clearGrade)
+                : StageRewardCalculator.GetRewardFlagsForGrade(clearGrade);
+
+            List<StageRewardEntry> bonusRewards = StageRewardCalculator.BuildBonusRewards(stageIndex, newFlags);
+            StageRewardCalculator.GrantRewards(bonusRewards);
+
+            Debug.Log(
+                $"Stage {stageIndex} Clear ({clearGrade}) | Normal: {StageRewardCalculator.BuildRewardSummary(normalRewards)} | Bonus: {StageRewardCalculator.BuildRewardSummary(bonusRewards)}");
+
             StartCoroutine(CoReturnToLobby());
         }
 

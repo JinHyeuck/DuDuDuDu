@@ -7,7 +7,7 @@ namespace OJ
     {
         public static MergeSystem Instance;
 
-        public const int MaxStar = 5;
+        public const int MaxStar = 4;
 
         private void Awake()
         {
@@ -36,7 +36,7 @@ namespace OJ
             if (!DiceMetaDataProvider.CanMerge(from.Type) || !DiceMetaDataProvider.CanMerge(to.Type))
                 return false;
 
-            // No merge beyond 5-star. Composite/multi-attribute dice is removed.
+            // No merge beyond max star. Composite/multi-attribute dice is removed.
             if (to.Star >= MaxStar || from.Star >= MaxStar)
                 return false;
 

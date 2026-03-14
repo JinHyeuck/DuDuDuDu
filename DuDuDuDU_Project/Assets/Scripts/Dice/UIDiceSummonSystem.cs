@@ -18,6 +18,9 @@ namespace OJ
         public int currentSP = 100;
         public int summonCost = 10;
 
+        [SerializeField] private int summonsPerCostIncrease = 2;
+        private int summonsSinceLastCostIncrease = 0;
+
         [Header("Dice Settings")]
         public List<DiceType> deckTypes = new()
         {
@@ -58,6 +61,14 @@ namespace OJ
             UpdateSPUI();
         }
 
+        public void SetStageStartSp(int startSp, int startSummonCost = 10)
+        {
+            currentSP = Mathf.Max(0, startSp);
+            summonCost = Mathf.Max(1, startSummonCost);
+            summonsSinceLastCostIncrease = 0;
+            UpdateSPUI();
+        }
+
         private void UpdateSPUI()
         {
             spText.text = $"{summonCost} / {currentSP}";
@@ -65,6 +76,9 @@ namespace OJ
 
         public void AddSP(int addsp)
         {
+            if (addsp <= 0)
+                return;
+
             currentSP += addsp;
             UpdateSPUI();
         }
@@ -98,7 +112,12 @@ namespace OJ
                 return;
 
             currentSP -= summonCost;
-            summonCost++;
+            summonsSinceLastCostIncrease++;
+            if (summonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
+            {
+                summonCost++;
+                summonsSinceLastCostIncrease = 0;
+            }
             UpdateSPUI();
 
             DiceType type = summonable[Random.Range(0, summonable.Count)];
