@@ -133,6 +133,11 @@ namespace OJ
                 Time.timeScale = timeSpeed;
                 WaveMonsterDeadCount = 0;
                 SetSpeedText();
+                RunHistoryManager.Instance?.RecordWaveStart(
+                    CurrentWaveIndex,
+                    wall != null ? wall.CurrentHp : 0,
+                    GetCurrentWaveMonsterHp(),
+                    GetCurrentWaveMonsterDefense());
             }
             else
             {
@@ -174,6 +179,10 @@ namespace OJ
         {
             if (isGameOver) return;
             isGameOver = true;
+            RunHistoryManager.Instance?.EndRun(
+                RunResultType.Fail,
+                CurrentWaveIndex,
+                wall != null ? wall.CurrentHp : 0);
             Debug.Log("Game Over!");
             StartCoroutine(CoReturnToLobby());
         }
@@ -242,6 +251,7 @@ namespace OJ
 
             wall.SetInit(WallHp);
             UIDiceSummonSystem.Instance?.SetStageStartSp(CurrentStageData.initialSP);
+            RunHistoryManager.Instance?.StartRun(CurrentStageData, WallHp);
             UpdateWaveText();
         }
 
@@ -261,6 +271,11 @@ namespace OJ
         {
             if (CurrentStageData != null)
                 UIDiceSummonSystem.Instance?.AddSP(CurrentStageData.waveClearSP);
+
+            RunHistoryManager.Instance?.RecordWaveComplete(
+                CurrentWaveIndex,
+                wall != null ? wall.CurrentHp : 0,
+                UIDiceSummonSystem.Instance != null ? UIDiceSummonSystem.Instance.currentSP : 0);
 
             if (CurrentStageData != null && CurrentWaveIndex >= CurrentStageData.totalWaves)
             {
@@ -304,6 +319,11 @@ namespace OJ
 
             Debug.Log(
                 $"Stage {stageIndex} Clear ({clearGrade}) | Normal: {StageRewardCalculator.BuildRewardSummary(normalRewards)} | Bonus: {StageRewardCalculator.BuildRewardSummary(bonusRewards)}");
+
+            RunHistoryManager.Instance?.EndRun(
+                RunResultType.Clear,
+                CurrentWaveIndex,
+                wall != null ? wall.CurrentHp : 0);
 
             StartCoroutine(CoReturnToLobby());
         }

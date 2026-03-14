@@ -325,6 +325,7 @@ namespace OJ
             const int mythicStar = 1;
             DiceTypeStarManager.Instance.OnDiceSpawn(mythicType, mythicStar);
             UIBoard.Instance.SpawnDice(mythicType, mythicStar, slotIndex);
+            RunHistoryManager.Instance?.RecordCraft(mythicType, GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : 0);
             return true;
         }
 

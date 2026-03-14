@@ -101,11 +101,11 @@ namespace OJ
             switch (totalWaves)
             {
                 case 10:
-                    return 150;
+                    return 117;
                 case 15:
-                    return 128;
+                    return 100;
                 case 20:
-                    return 108;
+                    return 84;
                 default:
                     return Mathf.Max(90, Mathf.RoundToInt((105 - (totalWaves * 4)) * 1.5f));
             }
@@ -116,11 +116,11 @@ namespace OJ
             switch (totalWaves)
             {
                 case 10:
-                    return 162;
+                    return 103;
                 case 15:
-                    return 126;
+                    return 80;
                 case 20:
-                    return 117;
+                    return 74;
                 default:
                     return Mathf.Max(72, (20 - totalWaves) * 9);
             }
