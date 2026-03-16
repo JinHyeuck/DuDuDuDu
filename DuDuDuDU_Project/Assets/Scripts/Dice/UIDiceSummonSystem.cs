@@ -71,7 +71,8 @@ namespace OJ
 
         private void UpdateSPUI()
         {
-            spText.text = $"{summonCost} / {currentSP}";
+            spText.text = $"{currentSP} / {summonCost}";
+            spText.color = currentSP >= summonCost ? Color.white : Color.red;
         }
 
         public void AddSP(int addsp)

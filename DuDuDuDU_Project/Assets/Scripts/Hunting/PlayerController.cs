@@ -84,6 +84,17 @@ namespace OJ
         {
         }
 
+        public float GetFireCycleProgress01()
+        {
+            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Wave)
+                return 0f;
+
+            if (fireRate <= 0f)
+                return 1f;
+
+            return Mathf.Clamp01(timer / fireRate);
+        }
+
         private bool TryGetReadyDice(out UIDice selectedDice)
         {
             selectedDice = null;
