@@ -160,11 +160,9 @@ namespace OJ
                     return PointType.MythicScroll;
                 case DiceType.KingThunder:
                     return PointType.MythicScroll;
-                case DiceType.KingMixed:
-                    return PointType.MythicScroll;
                 case DiceType.Tornado:
                     return PointType.MythicScroll;
-                case DiceType.Paralysis:
+                case DiceType.Stun:
                     return PointType.MythicScroll;
                 case DiceType.ArmorBreak:
                     return PointType.MythicScroll;

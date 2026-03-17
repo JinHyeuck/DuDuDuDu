@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,11 +16,10 @@ namespace OJ
         [Header("Stats")]
         [SerializeField] private TMP_Text damageText;
         [SerializeField] private TMP_Text levelUpGainText;
-        [SerializeField] private TMP_Text pipFactorText;
         [SerializeField] private TMP_Text descText;
 
         [Header("Milestones")]
-        [SerializeField] private TMP_Text milestoneText;
+        [SerializeField] private UIMilestoneElement milestoneElementPrefab;
 
         [Header("Craft Recipe")]
         [SerializeField] private GameObject recipeSectionRoot;
@@ -37,6 +35,7 @@ namespace OJ
         [SerializeField] private Button upgradeButton;
 
         private readonly List<UIDiceCraftMaterialStatusItem> recipeItems = new List<UIDiceCraftMaterialStatusItem>();
+        private readonly List<UIMilestoneElement> milestoneElements = new List<UIMilestoneElement>();
         private DiceType currentDiceType = DiceType.Normal;
         private System.Action onChanged;
 
@@ -76,8 +75,7 @@ namespace OJ
         {
             var meta = DiceMetaDataProvider.GetMeta(currentDiceType);
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(currentDiceType) : 1;
-            int samplePip = Mathf.Max(1, DiceTypeStarManager.Instance != null ? DiceTypeStarManager.Instance.GetTypeStars(currentDiceType) : 1);
-            int damage = DiceMetaDataProvider.CalculateDamage(currentDiceType, samplePip, level);
+            int damage = meta != null ? meta.baseAttack + (level * meta.levelUpAttackIncrease) : 0;
             var cost = DiceLevelManager.Instance != null
                 ? DiceLevelManager.Instance.GetNextUpgradeCost(currentDiceType)
                 : DiceMetaDataProvider.GetUpgradeCost(currentDiceType, level);
@@ -105,7 +103,6 @@ namespace OJ
             if (damageText != null) damageText.SetText("{0}", damage);
             if (descText != null) descText.SetText(meta != null ? meta.description : string.Empty);
             if (levelUpGainText != null) levelUpGainText.SetText("+{0}", meta != null ? meta.levelUpAttackIncrease : 0);
-            if (pipFactorText != null) pipFactorText.SetText(string.Format("x{0:0.##}", meta != null ? meta.dicePipAttackFactor : 1f));
 
             if (goldCostText != null) goldCostText.SetText("{0}/{1}", cost.goldCost, PointManager.Instance.Get(PointType.Gold));
 
@@ -115,7 +112,7 @@ namespace OJ
             PointMetadataDatabase db = StaticResource.Instance.PointMetadataDatabase;
             PointMetadataDatabase.PointMetadata metadata = db != null ? db.Get(scrollType) : null;
             if (scrollIcon != null) scrollIcon.sprite = metadata != null ? metadata.icon : null;
-            if (milestoneText != null) milestoneText.SetText(BuildMilestoneText(meta, level));
+            RefreshMilestoneRows(meta, level);
 
             RefreshRecipeSection();
         }
@@ -197,26 +194,47 @@ namespace OJ
             }
         }
 
-        private static string BuildMilestoneText(DiceMetaDataDatabase.DiceMeta meta, int currentLevel)
+        private void RefreshMilestoneRows(DiceMetaDataDatabase.DiceMeta meta, int currentLevel)
         {
-            if (meta == null || meta.milestones == null || meta.milestones.Count == 0)
-                return "특수 효과 없음";
-
-            StringBuilder sb = new StringBuilder(256);
-            for (int i = 0; i < meta.milestones.Count; i++)
+            int count = meta != null && meta.milestones != null ? meta.milestones.Count : 0;
+            for (int i = 0; i < count; i++)
             {
-                var m = meta.milestones[i];
-                bool unlocked = currentLevel >= m.level;
-                sb.Append(unlocked ? "[활성] " : "[잠금] ");
-                sb.Append("Lv.");
-                sb.Append(m.level);
-                sb.Append(" - ");
-                sb.Append(m.description);
-                if (i < meta.milestones.Count - 1)
-                    sb.Append('\n');
+                UIMilestoneElement row = GetOrCreateMilestoneElement(i);
+                if (row == null)
+                    continue;
+
+                bool unlocked = currentLevel >= meta.milestones[i].level;
+                row.gameObject.SetActive(true);
+                row.Bind(meta.milestones[i].level, meta.milestones[i].description, unlocked);
+                RectTransform rowRect = row.transform as RectTransform;
+                if (rowRect != null)
+                {
+                    rowRect.anchorMin = new Vector2(0.06f, 0.46f);
+                    rowRect.anchorMax = new Vector2(0.94f, 0.46f);
+                    rowRect.pivot = new Vector2(0.5f, 1f);
+                    rowRect.anchoredPosition = new Vector2(0f, -(i * 62f));
+                    rowRect.sizeDelta = new Vector2(0f, 54f);
+                }
             }
 
-            return sb.ToString();
+            for (int i = count; i < milestoneElements.Count; i++)
+            {
+                if (milestoneElements[i] != null)
+                    milestoneElements[i].gameObject.SetActive(false);
+            }
+        }
+
+        private UIMilestoneElement GetOrCreateMilestoneElement(int index)
+        {
+            if (index < milestoneElements.Count && milestoneElements[index] != null)
+                return milestoneElements[index];
+
+            if (milestoneElementPrefab == null || dialogView == null)
+                return null;
+
+            UIMilestoneElement created = Instantiate(milestoneElementPrefab, dialogView.transform);
+            milestoneElements.Add(created);
+            return created;
         }
     }
 }

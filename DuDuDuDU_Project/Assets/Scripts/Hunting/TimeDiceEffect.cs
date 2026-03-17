@@ -4,7 +4,6 @@ namespace OJ
 {
     public class TimeDiceEffect : DiceEffectBase
     {
-        private const float CooldownReduceSeconds = 2f;
         private int _lastCastFrame = -1;
 
         public override DiceType DiceType => DiceType.Time;
@@ -17,8 +16,9 @@ namespace OJ
 
             _lastCastFrame = Time.frameCount;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            float reduce = CooldownReduceSeconds + (level >= 9 ? 1f : 0f) + Mathf.Max(0, level - 1) * 0.05f;
-            PlayerController.Instance?.ReduceCooldownForOtherDice(reduce);
+            float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(level);
+            int targetCount = DiceMetaDataProvider.GetTimeTargetCount(level);
+            PlayerController.Instance?.ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount);
 
             if (target != null)
                 PlayEffectAt(DiceType, target.transform.position);

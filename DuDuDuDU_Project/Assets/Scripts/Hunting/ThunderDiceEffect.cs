@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace OJ
 {
@@ -11,7 +12,7 @@ namespace OJ
             if (attackContent == null || hitMonsters == null)
                 return;
 
-            int thunderTargets = attackContent.GetThunderTargetCount();
+            int thunderTargets = attackContent.GetThunderTargetCount(DiceType);
             Dictionary<Monster, List<Monster>> chainedByTarget = attackContent.GetNPerTarget_NoGlobalDup(
                 MonsterManager.Instance.activeMonsters,
                 hitMonsters,
@@ -33,6 +34,29 @@ namespace OJ
                     hitMonsters.Add(chained);
                 }
             }
+        }
+
+        public override void ApplyOnHit(AttackContent attackContent, Monster target)
+        {
+            if (attackContent == null || target == null || target.gameObject.activeInHierarchy == false)
+                return;
+
+            if (attackContent.CurrentDiceLevel < 12)
+                return;
+
+            List<Monster> nearby = attackContent.GetRedHitTarget(
+                target.transform.position,
+                IFFType.IFF_Friend,
+                1.2f,
+                1,
+                target);
+
+            if (nearby.Count <= 0 || nearby[0] == null)
+                return;
+
+            int splashDamage = Mathf.Max(1, Mathf.RoundToInt(attackContent.CurrentDamage * 0.5f));
+            attackContent.HitMonster(nearby[0], DiceType, splashDamage);
+            PlayEffectAt(DiceType, nearby[0].transform.position);
         }
     }
 }

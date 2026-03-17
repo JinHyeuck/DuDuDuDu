@@ -26,6 +26,9 @@ namespace OJ
 
         public void TakeDamage(int dmg)
         {
+            if (PointCheatController.IsWallInvincible)
+                return;
+
             CurrentHp -= dmg;
             if (CurrentHp < 0)
                 CurrentHp = 0;

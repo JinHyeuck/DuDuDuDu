@@ -43,7 +43,6 @@ namespace OJ
             [Header("Damage")]
             public int baseAttack;
             public int levelUpAttackIncrease;
-            public float dicePipAttackFactor;
 
             [Header("Combat")]
             public float baseCooldown = 3f;

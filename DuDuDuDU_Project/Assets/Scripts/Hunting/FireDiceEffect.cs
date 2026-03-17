@@ -14,6 +14,9 @@ namespace OJ
             List<Monster> fireTargets = new List<Monster>();
             float explosionRange = 1f;
             int fireHitTargetCount = 10;
+            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
+
+            explosionRange *= DiceMetaDataProvider.GetFireExplosionRangeMultiplier(level);
 
             if (EquipmentManager.Instance != null)
             {
@@ -38,6 +41,12 @@ namespace OJ
 
                 for (int hitIdx = 0; hitIdx < monsters.Count; ++hitIdx)
                     fireTargets.Add(monsters[hitIdx]);
+
+                if (level >= 6 && UnityEngine.Random.value <= 0.2f)
+                {
+                    for (int hitIdx = 0; hitIdx < monsters.Count; ++hitIdx)
+                        fireTargets.Add(monsters[hitIdx]);
+                }
             }
 
             hitMonsters.AddRange(fireTargets);

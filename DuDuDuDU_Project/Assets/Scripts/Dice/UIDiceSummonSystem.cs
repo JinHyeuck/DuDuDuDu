@@ -30,7 +30,7 @@ namespace OJ
             DiceType.Poison,
             DiceType.Thunder,
             DiceType.Tornado,
-            DiceType.Paralysis,
+            DiceType.Stun,
             DiceType.ArmorBreak,
             DiceType.Wind,
             DiceType.Time

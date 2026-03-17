@@ -37,8 +37,12 @@ namespace OJ
             if (target == null || target.gameObject.activeInHierarchy == false)
                 return;
 
-            target.ApplySlow();
-            target.ApplySlow();
+            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
+            float duration = DiceMetaDataProvider.GetSlowDuration(DiceType, level);
+            target.ApplySlow(duration);
+            target.ApplySlow(duration);
+            if (level >= 9)
+                target.ApplyStun(1f);
             PlayEffectAt(DiceType, target.transform.position);
         }
     }

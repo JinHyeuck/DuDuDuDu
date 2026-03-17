@@ -18,7 +18,7 @@ namespace OJ
                 return;
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            float pullRange = PullRange + (level >= 7 ? 0.3f : 0f);
+            float pullRange = PullRange * (level >= 3 ? 1.1f : 1f);
             int maxTargets = MaxTargets + Mathf.Max(0, level / 8);
             float pullDistance = PullDistancePerHit + Mathf.Max(0, level - 1) * 0.02f;
 
@@ -30,7 +30,7 @@ namespace OJ
                 target);
 
             Vector2 center = target.transform.position;
-            float pullDuration = attackContent.TornadoPullDuration;
+            float pullDuration = level >= 6 ? 2f : attackContent.TornadoPullDuration;
             for (int i = 0; i < around.Count; i++)
             {
                 Monster monster = around[i];

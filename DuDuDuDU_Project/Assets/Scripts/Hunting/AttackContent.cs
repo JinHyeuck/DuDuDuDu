@@ -12,11 +12,19 @@ namespace OJ
         private List<Monster> _skillHitReceivers = new List<Monster>();
         private List<Monster> hitmonsters = new List<Monster>();
         private readonly Dictionary<DiceType, DiceEffectBase> _diceEffects = new Dictionary<DiceType, DiceEffectBase>();
+        private int _currentDamage;
+        private int _currentDiceLevel;
+        private int _currentShotDicePip;
+        private DiceType _currentAttackType = DiceType.Max;
 
         [Header("Tornado Tuning")]
         [SerializeField, Min(0.05f)] private float tornadoPullDuration = 0.5f;
 
         public float TornadoPullDuration => tornadoPullDuration;
+        public int CurrentDamage => _currentDamage;
+        public int CurrentDiceLevel => _currentDiceLevel;
+        public int CurrentShotDicePip => _currentShotDicePip;
+        public DiceType CurrentAttackType => _currentAttackType;
         private bool _hasWindRangeGizmo;
         private Vector3 _windRangeGizmoCenter;
         private Vector3 _windRangeGizmoSize;
@@ -53,9 +61,8 @@ namespace OJ
             RegisterDiceEffect(new KingIceDiceEffect());
             RegisterDiceEffect(new KingThunderDiceEffect());
             RegisterDiceEffect(new KingPoisonDiceEffect());
-            RegisterDiceEffect(new KingMixedDiceEffect());
             RegisterDiceEffect(new TornadoDiceEffect());
-            RegisterDiceEffect(new ParalysisDiceEffect());
+            RegisterDiceEffect(new StunDiceEffect());
             RegisterDiceEffect(new ArmorBreakDiceEffect());
             RegisterDiceEffect(new WindDiceEffect());
             RegisterDiceEffect(new TimeDiceEffect());
@@ -128,6 +135,19 @@ namespace OJ
             int myDicePip = Mathf.Max(1, shotDicePip);
             int diceLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(attackType) : 1;
             int damage = DiceMetaDataProvider.CalculateDamage(attackType, myDicePip, diceLevel);
+            float critChance = DiceMetaDataProvider.GetGlobalCriticalChancePercent();
+            if (critChance > 0f && Random.value * 100f <= critChance)
+                damage = Mathf.RoundToInt(damage * DiceMetaDataProvider.GetGlobalCriticalDamageMultiplier());
+            if (attackType == DiceType.Normal && diceLevel >= 12 && Random.value <= 0.2f)
+                damage *= 2;
+
+            if (attackType == DiceType.Normal && diceLevel >= 9 && Random.value <= 0.2f)
+                UIDiceSummonSystem.Instance?.AddSP(5);
+
+            _currentDamage = damage;
+            _currentDiceLevel = diceLevel;
+            _currentShotDicePip = myDicePip;
+            _currentAttackType = attackType;
 
             for (int i = 0; i < hitmonsters.Count; ++i)
             {
@@ -140,6 +160,11 @@ namespace OJ
 
                 diceEffect?.ApplyOnHit(this, target);
             }
+
+            _currentDamage = 0;
+            _currentDiceLevel = 1;
+            _currentShotDicePip = 1;
+            _currentAttackType = DiceType.Max;
         }
 
         public IEnumerator HitColorEffect(Monster target, DiceType elementType)
@@ -147,9 +172,10 @@ namespace OJ
             yield return null;
         }
 
-        public int GetThunderTargetCount()
+        public int GetThunderTargetCount(DiceType diceType)
         {
-            int count = 2;
+            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
+            int count = DiceMetaDataProvider.GetThunderTargetCount(level);
             if (EquipmentManager.Instance != null)
                 count += EquipmentManager.Instance.GetThunderChainExtraCount(DiceType.Thunder);
             return Mathf.Max(0, count);

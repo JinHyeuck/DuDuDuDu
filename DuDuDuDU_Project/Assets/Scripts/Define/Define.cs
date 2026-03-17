@@ -20,7 +20,7 @@ namespace OJ
         Poison,
 
         Tornado = 100,
-        Paralysis,
+        Stun,
         ArmorBreak,
         Wind,
         Time,
@@ -30,7 +30,6 @@ namespace OJ
         KingIce,
         KingThunder,
         KingPoison,
-        KingMixed,
 
         Max,
     }

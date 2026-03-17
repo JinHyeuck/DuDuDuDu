@@ -205,9 +205,9 @@ namespace OJ
             wasWaveState = false;
         }
 
-        public void ReduceCooldownForOtherDice(float seconds, UIDice sourceDice = null)
+        public void ReduceRemainingCooldownPercentForOtherDice(float percent, int targetCount, UIDice sourceDice = null)
         {
-            if (seconds <= 0f)
+            if (percent <= 0f || targetCount <= 0)
                 return;
 
             cooldownAdjustBuffer.Clear();
@@ -219,16 +219,30 @@ namespace OJ
                 if (sourceDice != null && pair.Key == sourceDice)
                     continue;
 
+                float remaining = GetDiceCooldownRemaining(pair.Key);
+                if (remaining <= 0.0001f)
+                    continue;
+
                 cooldownAdjustBuffer.Add(pair.Key);
             }
 
-            for (int i = 0; i < cooldownAdjustBuffer.Count; i++)
+            for (int i = cooldownAdjustBuffer.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (cooldownAdjustBuffer[i], cooldownAdjustBuffer[j]) = (cooldownAdjustBuffer[j], cooldownAdjustBuffer[i]);
+            }
+
+            int applyCount = Mathf.Min(targetCount, cooldownAdjustBuffer.Count);
+            float ratio = Mathf.Clamp01(percent * 0.01f);
+            for (int i = 0; i < applyCount; i++)
             {
                 UIDice dice = cooldownAdjustBuffer[i];
                 if (!diceNextReadyTime.TryGetValue(dice, out float endTime))
                     continue;
 
-                diceNextReadyTime[dice] = Mathf.Max(Time.time, endTime - seconds);
+                float remaining = Mathf.Max(0f, endTime - Time.time);
+                float reduceAmount = remaining * ratio;
+                diceNextReadyTime[dice] = Mathf.Max(Time.time, endTime - reduceAmount);
             }
         }
 
@@ -238,7 +252,7 @@ namespace OJ
                 return false;
 
             DiceType diceType = sourceDice.Type;
-            if(CheatDiceType != DiceType.Max)
+            if (System.Enum.IsDefined(typeof(DiceType), CheatDiceType) && CheatDiceType != DiceType.Max)
             {
                 diceType = CheatDiceType;
             }
@@ -247,8 +261,9 @@ namespace OJ
             if (diceType == DiceType.Time)
             {
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Time) : 1;
-                float reduce = 2f + (level >= 9 ? 1f : 0f) + Mathf.Max(0, level - 1) * 0.05f;
-                ReduceCooldownForOtherDice(reduce, sourceDice);
+                float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(level);
+                int targetCount = DiceMetaDataProvider.GetTimeTargetCount(level);
+                ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount, sourceDice);
                 characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
                 bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
                 return true;

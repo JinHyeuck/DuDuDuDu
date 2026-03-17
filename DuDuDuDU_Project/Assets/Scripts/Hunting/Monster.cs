@@ -23,8 +23,19 @@ namespace OJ
         private readonly WaitForSeconds poisonDelay = new WaitForSeconds(0.5f);
         private int _baseDefense;
         private int _defenseDownAmount;
-        private float _paralyzedUntilTime;
+        private float _stunnedUntilTime;
+        private float _slowUntilTime;
+        private float _poisonUntilTime;
+        private float _poisonDamageMultiplier = 1f;
+        private int _poisonDamageTakenBonusPercent;
+        private int _stunDamageTakenBonusPercent;
+        private float _stunDamageTakenBonusUntil;
+        private int _armorBreakDamageTakenBonusPercent;
+        private float _armorBreakDamageTakenBonusUntil;
+        private int _thunderDamageTakenBonusPercent;
+        private float _thunderDamageTakenBonusUntil;
         private Coroutine _defenseDownRoutine;
+        private Coroutine _poisonRoutine;
         private Coroutine _attackRoutine;
         private Wall _attackWall;
         private Coroutine _pullRoutine;
@@ -45,7 +56,17 @@ namespace OJ
 
             _baseDefense = defense;
             _defenseDownAmount = 0;
-            _paralyzedUntilTime = -1f;
+            _stunnedUntilTime = -1f;
+            _slowUntilTime = -1f;
+            _poisonUntilTime = -1f;
+            _poisonDamageMultiplier = 1f;
+            _poisonDamageTakenBonusPercent = 0;
+            _stunDamageTakenBonusPercent = 0;
+            _stunDamageTakenBonusUntil = -1f;
+            _armorBreakDamageTakenBonusPercent = 0;
+            _armorBreakDamageTakenBonusUntil = -1f;
+            _thunderDamageTakenBonusPercent = 0;
+            _thunderDamageTakenBonusUntil = -1f;
             RecalculateDefense();
 
             MonsterManager.Instance.RegisterMonster(this);
@@ -61,12 +82,24 @@ namespace OJ
 
             _defenseDownRoutine = null;
             _defenseDownAmount = 0;
-            _paralyzedUntilTime = -1f;
+            _stunnedUntilTime = -1f;
+            _slowUntilTime = -1f;
+            _poisonUntilTime = -1f;
+            _poisonDamageMultiplier = 1f;
+            _poisonDamageTakenBonusPercent = 0;
+            _stunDamageTakenBonusPercent = 0;
+            _stunDamageTakenBonusUntil = -1f;
+            _armorBreakDamageTakenBonusPercent = 0;
+            _armorBreakDamageTakenBonusUntil = -1f;
+            _thunderDamageTakenBonusPercent = 0;
+            _thunderDamageTakenBonusUntil = -1f;
             _attackRoutine = null;
             _attackWall = null;
             _pullRoutine = null;
+            _poisonRoutine = null;
             _pendingPullDistance = 0f;
             _pullUntilTime = -1f;
+            ApplyMoveSpeed = moveSpeed;
             RecalculateDefense();
 
             MonsterManager.Instance?.UnregisterMonster(this, false);
@@ -74,7 +107,9 @@ namespace OJ
 
         void Update()
         {
-            if (IsParalyzed())
+            UpdateTimedStates();
+
+            if (IsStunned())
                 return;
 
             if (!isAttacking)
@@ -98,7 +133,15 @@ namespace OJ
             float damageMultiplier = armor >= 0f
                 ? 100f / (100f + armor)
                 : 2f - (100f / (100f - armor));
-            int appliedDamage = Mathf.CeilToInt(dmg * damageMultiplier);
+            CleanupExpiredDamageBonuses();
+            int stateBonusPercent = 0;
+            if (IsSlowed() && DiceMetaDataProvider.HasKingIceDamageBonus())
+                stateBonusPercent += 15;
+            if (IsPoisoned() && DiceMetaDataProvider.HasKingPoisonDamageBonus())
+                stateBonusPercent += 15;
+
+            float incomingDamageMultiplier = 1f + (_poisonDamageTakenBonusPercent + _stunDamageTakenBonusPercent + _armorBreakDamageTakenBonusPercent + _thunderDamageTakenBonusPercent + stateBonusPercent) * 0.01f;
+            int appliedDamage = Mathf.CeilToInt(dmg * damageMultiplier * incomingDamageMultiplier);
 
             _hp -= appliedDamage;
             if (_hp <= 0)
@@ -134,37 +177,67 @@ namespace OJ
                 StopAttack();
         }
 
-        public void ApplySlow()
+        public void ApplySlow(float duration = 2f, float multiplier = 0.8f)
         {
             if (!IsAlive)
                 return;
 
-            ApplyMoveSpeed *= 0.8f;
+            _slowUntilTime = Mathf.Max(_slowUntilTime, Time.time + Mathf.Max(0.1f, duration));
+            ApplyMoveSpeed = Mathf.Max(moveSpeed * 0.2f, ApplyMoveSpeed * Mathf.Clamp(multiplier, 0.1f, 1f));
         }
 
-        public void ApplyPoison()
+        public void ApplyPoison(float duration = 4f, float damageMultiplier = 1f)
         {
             if (!IsAlive)
                 return;
 
-            StartCoroutine(PlayPoison());
+            _poisonUntilTime = Mathf.Max(_poisonUntilTime, Time.time + Mathf.Max(0.1f, duration));
+            _poisonDamageMultiplier = Mathf.Max(_poisonDamageMultiplier, Mathf.Max(0.1f, damageMultiplier));
+
+            if (_poisonRoutine == null)
+                _poisonRoutine = StartCoroutine(PlayPoison());
         }
 
-        public void ApplyParalysis(float duration)
+        public void ApplyStun(float duration)
         {
             if (!IsAlive)
                 return;
 
             float validDuration = Mathf.Max(0.1f, duration);
-            _paralyzedUntilTime = Mathf.Max(_paralyzedUntilTime, Time.time + validDuration);
+            _stunnedUntilTime = Mathf.Max(_stunnedUntilTime, Time.time + validDuration);
         }
 
-        public void ApplyDefenseDown(float duration, int amount)
+        public void ApplyPoisonDamageTakenBonus(int percent)
+        {
+            _poisonDamageTakenBonusPercent = Mathf.Max(_poisonDamageTakenBonusPercent, Mathf.Max(0, percent));
+            _poisonUntilTime = Mathf.Max(_poisonUntilTime, Time.time + 4f);
+        }
+
+        public void ApplyStunDamageTakenBonus(int percent, float duration)
+        {
+            _stunDamageTakenBonusPercent = Mathf.Max(_stunDamageTakenBonusPercent, Mathf.Max(0, percent));
+            _stunDamageTakenBonusUntil = Mathf.Max(_stunDamageTakenBonusUntil, Time.time + Mathf.Max(0.1f, duration));
+        }
+
+        public void ApplyArmorBreakDamageTakenBonus(int percent, float duration)
+        {
+            _armorBreakDamageTakenBonusPercent = Mathf.Max(_armorBreakDamageTakenBonusPercent, Mathf.Max(0, percent));
+            _armorBreakDamageTakenBonusUntil = Mathf.Max(_armorBreakDamageTakenBonusUntil, Time.time + Mathf.Max(0.1f, duration));
+        }
+
+        public void ApplyThunderDamageTakenBonus(int percent, float duration)
+        {
+            _thunderDamageTakenBonusPercent = Mathf.Max(_thunderDamageTakenBonusPercent, Mathf.Max(0, percent));
+            _thunderDamageTakenBonusUntil = Mathf.Max(_thunderDamageTakenBonusUntil, Time.time + Mathf.Max(0.1f, duration));
+        }
+
+        public void ApplyDefenseDown(float duration, int percent)
         {
             if (!IsAlive)
                 return;
 
-            int validAmount = Mathf.Max(0, amount);
+            int validPercent = Mathf.Max(0, percent);
+            int validAmount = Mathf.RoundToInt(_baseDefense * (validPercent * 0.01f));
             if (validAmount <= 0)
                 return;
 
@@ -219,9 +292,9 @@ namespace OJ
 
         IEnumerator PlayPoison()
         {
-            while (_hp > 0)
+            while (_hp > 0 && Time.time < _poisonUntilTime)
             {
-                int intdamage = _hp * 10 / 100;
+                int intdamage = Mathf.CeilToInt((_hp * 0.1f) * _poisonDamageMultiplier);
                 if (intdamage <= 0)
                     intdamage = 1;
 
@@ -238,6 +311,10 @@ namespace OJ
 
                 yield return poisonDelay;
             }
+
+            _poisonDamageMultiplier = 1f;
+            _poisonDamageTakenBonusPercent = 0;
+            _poisonRoutine = null;
         }
 
         IEnumerator AttackWall(Wall wall)
@@ -250,7 +327,7 @@ namespace OJ
                     yield break;
                 }
 
-                if (IsParalyzed())
+                if (IsStunned())
                 {
                     yield return null;
                     continue;
@@ -302,9 +379,49 @@ namespace OJ
             _pullRoutine = null;
         }
 
-        private bool IsParalyzed()
+        private bool IsStunned()
         {
-            return Time.time < _paralyzedUntilTime;
+            return Time.time < _stunnedUntilTime;
+        }
+
+        public bool IsSlowed()
+        {
+            return Time.time < _slowUntilTime;
+        }
+
+        public bool IsPoisoned()
+        {
+            return Time.time < _poisonUntilTime;
+        }
+
+        private void CleanupExpiredDamageBonuses()
+        {
+            if (Time.time >= _poisonUntilTime)
+                _poisonDamageTakenBonusPercent = 0;
+
+            if (Time.time >= _stunDamageTakenBonusUntil)
+            {
+                _stunDamageTakenBonusPercent = 0;
+                _stunDamageTakenBonusUntil = -1f;
+            }
+
+            if (Time.time >= _armorBreakDamageTakenBonusUntil)
+            {
+                _armorBreakDamageTakenBonusPercent = 0;
+                _armorBreakDamageTakenBonusUntil = -1f;
+            }
+
+            if (Time.time >= _thunderDamageTakenBonusUntil)
+            {
+                _thunderDamageTakenBonusPercent = 0;
+                _thunderDamageTakenBonusUntil = -1f;
+            }
+        }
+
+        private void UpdateTimedStates()
+        {
+            if (Time.time >= _slowUntilTime && ApplyMoveSpeed != moveSpeed)
+                ApplyMoveSpeed = moveSpeed;
         }
 
         private void StartAttack(Wall wall)

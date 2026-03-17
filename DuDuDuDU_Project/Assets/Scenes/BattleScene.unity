@@ -732,7 +732,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &271422093
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5164,7 +5164,7 @@ MonoBehaviour:
   characterAnimation: {fileID: 1190512295}
   bowAnimation: {fileID: 2114003083}
   bowTransform: {fileID: 1657337177}
-  CheatDiceType: 206
+  CheatDiceType: 205
   firePoint: {fileID: 3120974}
   fireRate: 0.6
 --- !u!114 &1190512295
@@ -7534,6 +7534,7 @@ GameObject:
   - component: {fileID: 1877710217}
   - component: {fileID: 1877710219}
   - component: {fileID: 1877710220}
+  - component: {fileID: 1877710221}
   m_Layer: 0
   m_Name: MergySystem
   m_TagString: Untagged
@@ -7599,6 +7600,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69af0d0cf4e2b604eac03ee94f81f414, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1877710221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1877710216}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae3777b49f8e48a7af90ca3a2e77af61, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  summonSystem: {fileID: 1877710219}
+  targetDiceType: 203
+  targetStar: 1
+  allowDuringWave: 1
+  requiredTapCount: 5
+  tapResetSeconds: 1.5
+  minNormalizedX: 0.8
+  minNormalizedY: 0.8
 --- !u!1 &1893967182
 GameObject:
   m_ObjectHideFlags: 0

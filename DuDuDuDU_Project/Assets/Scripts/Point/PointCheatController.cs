@@ -5,6 +5,10 @@ namespace OJ
 {
     public class PointCheatController : MonoBehaviour
     {
+        public static bool IsWallInvincible { get; private set; }
+        public static DiceType DebugSummonDiceType { get; private set; } = DiceType.KingThunder;
+        public static int DebugSummonStar { get; private set; } = 1;
+
         [SerializeField] private KeyCode toggleKey = KeyCode.BackQuote;
         [SerializeField] private bool startVisible = false;
         [Header("Window Size")]
@@ -20,6 +24,10 @@ namespace OJ
         private int selectedIndex;
         private string amountInput = "100";
         private string setValueInput = "0";
+        private string monsterHpInput = "1000";
+        private bool wallInvincible;
+        private int debugDiceIndex;
+        private int debugDiceStar = 1;
         private Rect windowRect = new Rect(20, 20, 360, 280);
         private int tapCount;
         private float firstTapTime;
@@ -51,6 +59,7 @@ namespace OJ
         private void Awake()
         {
             visible = startVisible;
+            SyncDebugSummonSelection();
             EnsureInputBlocker();
             SetInputBlockerVisible(visible);
         }
@@ -115,11 +124,54 @@ namespace OJ
                 SetValue();
 
             GUILayout.Space(lineGap);
+            DrawDebugSummonSection();
+
+            GUILayout.Space(lineGap);
+            DrawMonsterHpSection();
+
+            GUILayout.Space(lineGap);
+            bool nextWallInvincible = GUILayout.Toggle(wallInvincible, "Wall Invincible", buttonStyle, GUILayout.Height(buttonHeight));
+            if (nextWallInvincible != wallInvincible)
+            {
+                wallInvincible = nextWallInvincible;
+                IsWallInvincible = wallInvincible;
+            }
+
+            GUILayout.Space(lineGap);
             if (GUILayout.Button("Close", buttonStyle, GUILayout.Height(buttonHeight)))
                 visible = false;
 
             GUILayout.EndVertical();
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        }
+
+        private void DrawDebugSummonSection()
+        {
+            GUILayout.Label("Debug Summon Dice", labelStyle, GUILayout.Height(titleHeight));
+            string[] diceNames = GetSelectableDiceTypeNames();
+            debugDiceIndex = Mathf.Clamp(debugDiceIndex, 0, diceNames.Length - 1);
+            debugDiceIndex = GUILayout.SelectionGrid(debugDiceIndex, diceNames, 3, buttonStyle, GUILayout.Height(buttonHeight * 4.4f));
+            DebugSummonDiceType = GetSelectableDiceTypes()[debugDiceIndex];
+
+            GUILayout.Space(lineGap * 0.5f);
+            GUILayout.Label("Debug Summon Star", labelStyle, GUILayout.Height(titleHeight));
+            debugDiceStar = Mathf.Clamp(debugDiceStar, 1, 7);
+            string[] starNames = { "1", "2", "3", "4", "5", "6", "7" };
+            debugDiceStar = GUILayout.SelectionGrid(debugDiceStar - 1, starNames, 7, buttonStyle, GUILayout.Height(buttonHeight)) + 1;
+            DebugSummonStar = debugDiceStar;
+
+            GUILayout.Space(lineGap * 0.5f);
+            if (GUILayout.Button("Summon Selected Dice", buttonStyle, GUILayout.Height(buttonHeight)))
+                SummonSelectedDice();
+        }
+
+        private void DrawMonsterHpSection()
+        {
+            GUILayout.Label("Monster HP", labelStyle, GUILayout.Height(titleHeight));
+            monsterHpInput = GUILayout.TextField(monsterHpInput, 16, textFieldStyle, GUILayout.Height(textFieldHeight));
+
+            if (GUILayout.Button("Set Active Monsters HP", buttonStyle, GUILayout.Height(buttonHeight)))
+                SetActiveMonstersHp();
         }
 
         private void ProcessTopLeftMultiTap()
@@ -342,6 +394,134 @@ namespace OJ
             for (int i = 0; i < types.Length; i++)
                 names[i] = types[i].ToString();
             return names;
+        }
+
+        private void SyncDebugSummonSelection()
+        {
+            DiceType[] diceTypes = GetSelectableDiceTypes();
+            debugDiceIndex = 0;
+            for (int i = 0; i < diceTypes.Length; i++)
+            {
+                if (diceTypes[i] != DebugSummonDiceType)
+                    continue;
+
+                debugDiceIndex = i;
+                break;
+            }
+
+            debugDiceStar = Mathf.Clamp(DebugSummonStar, 1, 7);
+        }
+
+        private static DiceType[] GetSelectableDiceTypes()
+        {
+            var all = (DiceType[])System.Enum.GetValues(typeof(DiceType));
+            int count = 0;
+
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] == DiceType.Max)
+                    continue;
+                count++;
+            }
+
+            DiceType[] result = new DiceType[count];
+            int idx = 0;
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] == DiceType.Max)
+                    continue;
+                result[idx++] = all[i];
+            }
+
+            return result;
+        }
+
+        private static string[] GetSelectableDiceTypeNames()
+        {
+            DiceType[] diceTypes = GetSelectableDiceTypes();
+            string[] names = new string[diceTypes.Length];
+            for (int i = 0; i < diceTypes.Length; i++)
+                names[i] = diceTypes[i].ToString();
+            return names;
+        }
+
+        private void SummonSelectedDice()
+        {
+            if (UIBoard.Instance == null || DiceTypeStarManager.Instance == null)
+                return;
+
+            int slotIndex = GetRandomEmptySlot();
+            if (slotIndex < 0)
+            {
+                Debug.Log("[PointCheat] 빈 슬롯이 없습니다.");
+                return;
+            }
+
+            DiceType summonType = DebugSummonDiceType;
+            int summonStar = Mathf.Clamp(DebugSummonStar, 1, 7);
+
+            DiceTypeStarManager.Instance.OnDiceSpawn(summonType, summonStar);
+            UIBoard.Instance.SpawnDice(summonType, summonStar, slotIndex);
+            RunHistoryManager.Instance?.RecordSummon(
+                summonType,
+                summonStar,
+                GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : 0,
+                0,
+                UIDiceSummonSystem.Instance != null ? UIDiceSummonSystem.Instance.currentSP : 0);
+        }
+
+        private int GetRandomEmptySlot()
+        {
+            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+                return -1;
+
+            int total = UIBoard.Instance.rows * UIBoard.Instance.cols;
+            int emptyCount = 0;
+
+            for (int i = 0; i < total; i++)
+            {
+                if (UIBoard.Instance.GetDice(i) == null)
+                    emptyCount++;
+            }
+
+            if (emptyCount == 0)
+                return -1;
+
+            int pickIndex = Random.Range(0, emptyCount);
+            for (int i = 0; i < total; i++)
+            {
+                if (UIBoard.Instance.GetDice(i) != null)
+                    continue;
+
+                if (pickIndex == 0)
+                    return i;
+
+                pickIndex--;
+            }
+
+            return -1;
+        }
+
+        private void SetActiveMonstersHp()
+        {
+            if (MonsterManager.Instance == null)
+                return;
+
+            if (!int.TryParse(monsterHpInput, out int hp))
+                return;
+
+            hp = Mathf.Max(1, hp);
+
+            for (int i = 0; i < MonsterManager.Instance.activeMonsters.Count; i++)
+            {
+                Monster monster = MonsterManager.Instance.activeMonsters[i];
+                if (monster == null || monster.gameObject.activeInHierarchy == false)
+                    continue;
+
+                monster.SetHp(hp);
+            }
+
+            Debug.Log($"[PointCheat] Set active monsters HP to {hp}.");
         }
     }
 }

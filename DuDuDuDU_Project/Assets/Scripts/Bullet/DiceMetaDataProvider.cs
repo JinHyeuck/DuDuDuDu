@@ -11,6 +11,7 @@ namespace OJ
         private const float CooldownBalanceMultiplier = 2f;
         private static DiceMetaDataDatabase database;
         private static Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta> defaults;
+        private static readonly Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta> mergedMetaCache = new Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta>();
 
         public static DiceMetaDataDatabase Database
         {
@@ -31,11 +32,23 @@ namespace OJ
 
         public static DiceMetaDataDatabase.DiceMeta GetMeta(DiceType diceType)
         {
-            if (Database != null && Database.TryGet(diceType, out var meta))
-                return meta;
-
             EnsureDefaults();
             defaults.TryGetValue(diceType, out var fallback);
+
+            if (Database != null && Database.TryGet(diceType, out var meta))
+            {
+                if (fallback == null)
+                    return meta;
+
+                if (!mergedMetaCache.TryGetValue(diceType, out var merged))
+                {
+                    merged = MergeMeta(meta, fallback);
+                    mergedMetaCache[diceType] = merged;
+                }
+
+                return merged;
+            }
+
             return fallback;
         }
 
@@ -185,7 +198,7 @@ namespace OJ
             return new List<DiceType>
             {
                 DiceType.Tornado,
-                DiceType.Paralysis,
+                DiceType.Stun,
                 DiceType.ArmorBreak,
                 DiceType.Wind,
                 DiceType.Time,
@@ -193,8 +206,7 @@ namespace OJ
                 DiceType.KingFire,
                 DiceType.KingIce,
                 DiceType.KingPoison,
-                DiceType.KingThunder,
-                DiceType.KingMixed
+                DiceType.KingThunder
             };
         }
 
@@ -212,11 +224,9 @@ namespace OJ
                     return DiceType.Poison;
                 case DiceType.KingThunder:
                     return DiceType.Thunder;
-                case DiceType.KingMixed:
-                    return DiceType.Normal;
                 case DiceType.Tornado:
                     return DiceType.Normal;
-                case DiceType.Paralysis:
+                case DiceType.Stun:
                     return DiceType.Thunder;
                 case DiceType.ArmorBreak:
                     return DiceType.Fire;
@@ -242,7 +252,9 @@ namespace OJ
             if (EquipmentManager.Instance != null)
                 attackBase += EquipmentManager.Instance.GetTotalEquipmentAttack();
 
-            float scaled = attackBase * (pips * Mathf.Max(0.01f, meta.dicePipAttackFactor)) * GlobalDamageBalanceMultiplier;
+            float scaled = attackBase * pips * GlobalDamageBalanceMultiplier;
+            scaled *= GetLevelDamageMultiplier(diceType, level);
+            scaled *= GetKingSynergyDamageMultiplier(diceType);
             if (IsKingDice(diceType))
                 scaled *= KingDiceDamageMultiplier;
 
@@ -274,7 +286,6 @@ namespace OJ
                 case DiceType.KingIce:
                 case DiceType.KingThunder:
                 case DiceType.KingPoison:
-                case DiceType.KingMixed:
                     return true;
                 default:
                     return false;
@@ -299,9 +310,6 @@ namespace OJ
                     return true;
                 case DiceType.KingPoison:
                     cost = BuildUpgradeCost(currentLevel, 250, 86, 15, 3);
-                    return true;
-                case DiceType.KingMixed:
-                    cost = BuildUpgradeCost(currentLevel, 340, 120, 24, 4);
                     return true;
                 default:
                     cost = (0, 0);
@@ -331,6 +339,8 @@ namespace OJ
             float baseCooldown = Mathf.Clamp(GetBaseCooldown(diceType), 0.1f, 10f);
             int star = Mathf.Max(1, diceStar);
             float cooldown = baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
+            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
+            cooldown *= GetLevelCooldownMultiplier(diceType, level);
 
             if (EquipmentManager.Instance != null)
             {
@@ -341,6 +351,208 @@ namespace OJ
             return cooldown;
         }
 
+        public static float GetLevelDamageMultiplier(DiceType diceType, int level)
+        {
+            float multiplier = 1f;
+            if (level >= 3)
+            {
+                switch (diceType)
+                {
+                    case DiceType.Normal:
+                    case DiceType.Thunder:
+                    case DiceType.Fire:
+                    case DiceType.Ice:
+                    case DiceType.Poison:
+                    case DiceType.Stun:
+                    case DiceType.ArmorBreak:
+                        multiplier *= 1.1f;
+                        break;
+                    case DiceType.Tornado:
+                        break;
+                    case DiceType.KingNormal:
+                        multiplier *= 1.3f;
+                        break;
+                    case DiceType.KingFire:
+                    case DiceType.KingIce:
+                    case DiceType.KingPoison:
+                        multiplier *= 1.2f;
+                        break;
+                    case DiceType.KingThunder:
+                        break;
+                }
+            }
+
+            if (diceType == DiceType.Tornado && level >= 12)
+                multiplier *= 1.3f;
+            if (diceType == DiceType.KingFire && level >= 12)
+                multiplier *= 1.3f;
+
+            return multiplier;
+        }
+
+        public static float GetLevelCooldownMultiplier(DiceType diceType, int level)
+        {
+            float multiplier = 1f;
+            switch (diceType)
+            {
+                case DiceType.Normal:
+                    if (level >= 6) multiplier *= 0.9f;
+                    break;
+                case DiceType.Thunder:
+                    if (level >= 9) multiplier *= 0.9f;
+                    break;
+                case DiceType.Fire:
+                    if (level >= 12) multiplier *= 0.8f;
+                    break;
+                case DiceType.Ice:
+                    if (level >= 12) multiplier *= 0.8f;
+                    break;
+                case DiceType.Tornado:
+                    if (level >= 9) multiplier *= 0.8f;
+                    break;
+                case DiceType.Stun:
+                    if (level >= 9) multiplier *= 0.9f;
+                    break;
+                case DiceType.ArmorBreak:
+                    if (level >= 9) multiplier *= 0.8f;
+                    break;
+                case DiceType.Time:
+                    if (level >= 9) multiplier *= 0.9f;
+                    break;
+            }
+
+            return multiplier;
+        }
+
+        public static int GetThunderTargetCount(int level)
+        {
+            int count = 2;
+            if (level >= 6)
+                count += 1;
+            return count;
+        }
+
+        public static float GetFireExplosionRangeMultiplier(int level)
+        {
+            float multiplier = level >= 9 ? 1.1f : 1f;
+            int kingFireLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.KingFire) : 1;
+            if (kingFireLevel >= 6)
+                multiplier *= 1.2f;
+            return multiplier;
+        }
+
+        public static float GetWindPushChancePercent(int level)
+        {
+            float chance = 40f + Mathf.Max(1, level) * 1f;
+            if (level >= 9)
+                chance += 10f;
+            return chance;
+        }
+
+        public static int GetWindTargetCount(int level)
+        {
+            return level >= 12 ? 3 : 2;
+        }
+
+        public static float GetWindDistanceMultiplier(int level)
+        {
+            return level >= 3 ? 1.1f : 1f;
+        }
+
+        public static float GetTimeCooldownReducePercent(int level)
+        {
+            float percent = 10f + Mathf.Max(1, level) * 1f;
+            if (level >= 3)
+                percent += 5f;
+            if (level >= 12)
+                percent += 10f;
+            return percent;
+        }
+
+        public static int GetTimeTargetCount(int level)
+        {
+            return level >= 6 ? 3 : 2;
+        }
+
+        public static float GetStunChancePercent(int level)
+        {
+            return level >= 6 ? 50f : 40f;
+        }
+
+        public static int GetArmorBreakPercent(int level)
+        {
+            return level >= 6 ? 40 : 30;
+        }
+
+        public static float GetGlobalCriticalChancePercent()
+        {
+            int kingNormalLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.KingNormal) : 1;
+            return kingNormalLevel >= 9 ? 10f : 0f;
+        }
+
+        public static float GetGlobalCriticalDamageMultiplier()
+        {
+            int kingNormalLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.KingNormal) : 1;
+            return kingNormalLevel >= 12 ? 2.2f : 2f;
+        }
+
+        public static float GetKingSynergyDamageMultiplier(DiceType diceType)
+        {
+            switch (diceType)
+            {
+                case DiceType.Normal:
+                    return GetKingLevel(DiceType.KingNormal) >= 6 ? 1.2f : 1f;
+                case DiceType.Thunder:
+                    return GetKingLevel(DiceType.KingThunder) >= 6 ? 1.2f : 1f;
+                case DiceType.Fire:
+                    return 1f;
+                case DiceType.Ice:
+                    return 1f;
+                case DiceType.Poison:
+                    return 1f;
+                default:
+                    return 1f;
+            }
+        }
+
+        public static float GetPoisonDamageMultiplier(DiceType diceType, int level)
+        {
+            float multiplier = level >= 6 ? 1.5f : 1f;
+            if (diceType == DiceType.Poison && GetKingLevel(DiceType.KingPoison) >= 6)
+                multiplier *= 1.5f;
+            return multiplier;
+        }
+
+        public static float GetSlowDuration(DiceType diceType, int level)
+        {
+            float duration = 2f;
+            if (diceType == DiceType.Ice && level >= 9)
+                duration *= 1.5f;
+            if (diceType == DiceType.KingIce)
+                duration *= GetKingLevel(DiceType.KingIce) >= 6 ? 1.5f : 1f;
+            return duration;
+        }
+
+        public static float GetPoisonDuration(DiceType diceType)
+        {
+            return 4f;
+        }
+
+        public static bool HasKingIceDamageBonus()
+        {
+            return GetKingLevel(DiceType.KingIce) >= 12;
+        }
+
+        public static bool HasKingPoisonDamageBonus()
+        {
+            return GetKingLevel(DiceType.KingPoison) >= 12;
+        }
+
+        private static int GetKingLevel(DiceType diceType)
+        {
+            return DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
+        }
+
         private static void EnsureDefaults()
         {
             if (defaults != null)
@@ -348,55 +560,161 @@ namespace OJ
 
             defaults = new Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta>
             {
-                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "단일 타격형. 적중 시 기본 이펙트, 안정적인 1대1 화력.", 12, 3, 1.20f, 120, 50, 8, 2, 2.4f, new []{
-                    (6, "다이스 눈금당 추가 공격력 +30%"),
-                    (13, "대미지 2배")
+                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "적 1명에게 12 + (레벨 x 3) 대미지를 줍니다.", 12, 3, 120, 50, 8, 2, 2.4f, new []{
+                    (3, "최종 대미지 10% 증가"),
+                    (6, "쿨타임 10% 감소"),
+                    (9, "공격 시 20% 확률로 SP +5"),
+                    (12, "공격 시 20% 확률로 대미지 2배")
                 }) },
-                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "폭발 범위형. 타격 지점 주변 최대 10명 추가 타격.", 10, 4, 1.10f, 140, 60, 10, 2, 3.1f, new []{
-                    (3, "범위 50% 증가")
+                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "적 1명에게 10 + (레벨 x 4) 대미지를 주고 주변 적에게 폭발 피해를 줍니다.", 10, 4, 140, 60, 10, 2, 3.1f, new []{
+                    (3, "최종 대미지 10% 증가"),
+                    (6, "공격 시 20% 확률로 한 번 더 폭발"),
+                    (9, "폭발 범위 10% 증가"),
+                    (12, "쿨타임 20% 감소")
                 }) },
-                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "감속 제어형. 적중 시 감속 부여.", 9, 3, 1.00f, 130, 55, 9, 2, 3.8f, new []{
-                    (8, "일정 확률로 1초 빙결")
+                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "적 1명에게 9 + (레벨 x 3) 대미지를 주고 둔화를 부여합니다.", 9, 3, 130, 55, 9, 2, 3.8f, new []{
+                    (3, "최종 대미지 10% 증가"),
+                    (6, "공격 시 30% 확률로 범위 피해"),
+                    (9, "둔화 지속시간 50% 증가"),
+                    (12, "쿨타임 20% 감소")
                 }) },
-                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "지속 피해형. 적중 시 중독 부여.", 8, 2, 0.95f, 125, 50, 9, 2, 3.4f, new []{
-                    (9, "타격 시 적 방어력 20% 감소")
+                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "적 1명에게 8 + (레벨 x 2) 대미지를 주고 중독을 부여합니다.", 8, 2, 125, 50, 9, 2, 3.4f, new []{
+                    (3, "최종 대미지 10% 증가"),
+                    (6, "중독 피해량 50% 증가"),
+                    (9, "공격 시 40% 확률로 범위 피해"),
+                    (12, "중독된 적이 받는 피해 10% 증가")
                 }) },
-                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "연쇄 타격형. 기본 2명(장비 보너스 적용)에게 체인 공격.", 11, 3, 1.15f, 150, 65, 11, 2, 2.7f, new []{
-                    (5, "추가 대상 1명 탐색 후 연쇄 타격")
+                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "적 2명에게 11 + (레벨 x 3) 대미지를 줍니다.", 11, 3, 150, 65, 11, 2, 2.7f, new []{
+                    (3, "최종 대미지 10% 증가"),
+                    (6, "공격 대상 +1"),
+                    (9, "쿨타임 10% 감소"),
+                    (12, "공격한 적 주변 1명에게 50% 추가 번개 피해")
                 }) },
-                { DiceType.Tornado, CreateDefault(DiceType.Tornado, "Tornado Dice", "회오리형. 적중 지점 주변 적을 중심으로 끌어당김.", 9, 3, 1.05f, 145, 62, 10, 2, 3.0f, new []{
-                    (7, "끌어당김 강도 증가")
+                { DiceType.Tornado, CreateDefault(DiceType.Tornado, "Tornado Dice", "적 1명에게 9 + (레벨 x 3) 대미지를 주고 주변 적을 끌어당깁니다.", 9, 3, 145, 62, 10, 2, 3.0f, new []{
+                    (3, "범위 10% 증가"),
+                    (6, "적을 2초 동안 흡입"),
+                    (9, "쿨타임 20% 감소"),
+                    (12, "최종 대미지 30% 증가")
                 }, new [] { ElementType.Normal, ElementType.Dark, ElementType.Water },
                     false, false, false, (DiceType.Normal, 2, 1), (DiceType.Ice, 1, 2), (DiceType.Poison, 1, 1)) },
-                { DiceType.Paralysis, CreateDefault(DiceType.Paralysis, "Paralysis Dice", "제어형. 적중 대상을 잠시 마비시킴.", 8, 2, 1.00f, 140, 58, 10, 2, 3.5f, new []{
-                    (6, "마비 지속시간 증가")
+                { DiceType.Stun, CreateDefault(DiceType.Stun, "Stun Dice", "적 1명에게 8 + (레벨 x 2) 대미지를 주고 40% 확률로 스턴시킵니다.", 8, 2, 140, 58, 10, 2, 3.5f, new []{
+                    (3, "최종 대미지 10% 증가"),
+                    (6, "스턴 확률 10% 증가"),
+                    (9, "쿨타임 10% 감소"),
+                    (12, "스턴된 적이 받는 피해 20% 증가")
                 }, new [] { ElementType.Dark, ElementType.Water },
                     false, false, false, (DiceType.Thunder, 2, 1), (DiceType.Poison, 1, 1), (DiceType.Ice, 1, 1)) },
-                { DiceType.ArmorBreak, CreateDefault(DiceType.ArmorBreak, "Armor Break Dice", "약화형. 적중 대상 방어력을 일정 시간 감소.", 10, 3, 1.05f, 150, 64, 11, 2, 3.2f, new []{
-                    (8, "방어력 감소량 증가")
+                { DiceType.ArmorBreak, CreateDefault(DiceType.ArmorBreak, "Armor Break Dice", "적 1명에게 10 + (레벨 x 3) 대미지를 주고 방어력을 30% 감소시킵니다.", 10, 3, 150, 64, 11, 2, 3.2f, new []{
+                    (3, "최종 대미지 10% 증가"),
+                    (6, "방어력 감소 10% 증가"),
+                    (9, "쿨타임 20% 감소"),
+                    (12, "방깎 상태 적이 받는 피해 10% 증가")
                 }, new [] { ElementType.Dark, ElementType.Fire },
                     false, false, false, (DiceType.Fire, 2, 1), (DiceType.Poison, 2, 1)) },
-                { DiceType.Wind, CreateDefault(DiceType.Wind, "Wind Dice", "관통형 바람. 전방 박스 범위 적을 밀어냄.", 7, 2, 0.95f, 135, 56, 9, 2, 2.9f, new []{
-                    (5, "바람 지속시간 증가")
+                { DiceType.Wind, CreateDefault(DiceType.Wind, "Wind Dice", "적 2명을 40 + (레벨 x 1)% 확률로 밀어냅니다. 대미지는 없습니다.", 0, 0, 135, 56, 9, 2, 2.9f, new []{
+                    (3, "밀어내는 거리 10% 증가"),
+                    (6, "밀리는 적이 받는 피해 10% 증가"),
+                    (9, "밀어내기 확률 10% 추가 증가"),
+                    (12, "밀어내는 대상 +1")
                 }, new [] { ElementType.Water, ElementType.Light },
                     false, false, false, (DiceType.Ice, 2, 1), (DiceType.Thunder, 1, 1), (DiceType.Normal, 1, 1)) },
-                { DiceType.Time, CreateDefault(DiceType.Time, "Time Dice", "지원형. 공격 대신 다른 다이스 쿨타임 감소.", 1, 0, 0.10f, 170, 70, 12, 3, 4.0f, new []{
-                    (9, "추가 쿨타임 감소 +1초")
+                { DiceType.Time, CreateDefault(DiceType.Time, "Time Dice", "다른 무작위 다이스 2개의 남은 쿨타임을 10 + (레벨 x 1)% 감소시킵니다. 대미지는 없습니다.", 0, 0, 170, 70, 12, 3, 4.0f, new []{
+                    (3, "쿨타임 감소량 5% 추가 증가"),
+                    (6, "대상 +1"),
+                    (9, "자신의 쿨타임 10% 감소"),
+                    (12, "쿨타임 감소량 10% 추가 증가")
                 }, new [] { ElementType.Light, ElementType.Normal },
                     false, false, false, (DiceType.Normal, 2, 1), (DiceType.Thunder, 2, 1), (DiceType.Ice, 2, 1)) },
-                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "강화 단일형. 주변 3명 추가 타격(반경 1.3).", 104, 20, 1.38f, 3.0f,
+                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "적 1명에게 104 + (레벨 x 20) 대미지를 주고 주변 적을 추가 타격합니다.", 104, 20, 3.0f, new []{
+                    (3, "최종 대미지 30% 증가"),
+                    (6, "NormalDice 최종 대미지 20% 증가"),
+                    (9, "모든 다이스 크리티컬 확률 10% 증가"),
+                    (12, "모든 다이스 크리티컬 대미지 20% 증가")
+                },
                     (DiceType.Normal, 4, 1), (DiceType.Tornado, 1, 1)) },
-                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "강화 폭발형. 범위 1.6, 최대 14명(+보너스+2) 추가 타격.", 110, 22, 1.34f, 3.3f,
+                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "적 1명에게 110 + (레벨 x 22) 대미지를 주고 강화 폭발을 일으킵니다.", 110, 22, 3.3f, new []{
+                    (3, "최종 대미지 20% 증가"),
+                    (6, "FireDice 폭발 범위 20% 증가"),
+                    (9, "폭발이 30% 확률로 한 번 더 발생"),
+                    (12, "폭발 피해 30% 증가")
+                },
                     (DiceType.Fire, 4, 1), (DiceType.ArmorBreak, 1, 1)) },
-                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "강화 제어형. 주변 3명 추가 타격, 감속 2중첩.", 100, 20, 1.30f, 3.5f,
+                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "적 1명에게 100 + (레벨 x 20) 대미지를 주고 강한 둔화를 부여합니다.", 100, 20, 3.5f, new []{
+                    (3, "최종 대미지 20% 증가"),
+                    (6, "IceDice 둔화 지속시간 50% 증가"),
+                    (9, "공격 시 빙결 부여"),
+                    (12, "둔화된 적이 받는 피해 15% 증가")
+                },
                     (DiceType.Ice, 4, 1), (DiceType.Wind, 1, 1)) },
-                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "강화 중독형. 주변 2명 추가 타격, 중독+감속 동시 부여.", 98, 20, 1.28f, 3.3f,
-                    (DiceType.Poison, 4, 1), (DiceType.Paralysis, 1, 1)) },
-                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "강화 연쇄형. 기본 체인 대상 +2.", 116, 24, 1.38f, 3.0f,
-                    (DiceType.Thunder, 4, 1), (DiceType.Time, 1, 1)) },
-                { DiceType.KingMixed, CreateMythicDefault(DiceType.KingMixed, "King Mixed", "복합 원소형. 체인+범위 확산 타격, 적중 시 감속+중독, 5속성 이펙트 동시 발동.", 136, 28, 1.45f, 3.6f,
-                    (DiceType.KingNormal, 1, 1), (DiceType.KingFire, 1, 1), (DiceType.KingIce, 1, 1), (DiceType.KingPoison, 1, 1), (DiceType.KingThunder, 1, 1)) }
+                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "적 1명에게 98 + (레벨 x 20) 대미지를 주고 중독과 둔화를 부여합니다.", 98, 20, 3.3f, new []{
+                    (3, "최종 대미지 20% 증가"),
+                    (6, "PoisonDice 중독 피해량 50% 증가"),
+                    (9, "중독이 주변 적 1명에게 30% 확률로 전이"),
+                    (12, "중독된 적이 받는 피해 15% 증가")
+                },
+                    (DiceType.Poison, 4, 1), (DiceType.Stun, 1, 1)) },
+                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "적 4명에게 116 + (레벨 x 24) 대미지를 주는 강화 번개 공격을 합니다.", 116, 24, 3.0f, new []{
+                    (3, "공격 대상 +2"),
+                    (6, "ThunderDice 최종 대미지 20% 증가"),
+                    (9, "30% 확률로 추가 1명에게 50% 피해"),
+                    (12, "맞은 적이 받는 피해 15% 증가")
+                },
+                    (DiceType.Thunder, 4, 1), (DiceType.Time, 1, 1)) }
             };
+        }
+
+        private static DiceMetaDataDatabase.DiceMeta MergeMeta(
+            DiceMetaDataDatabase.DiceMeta assetMeta,
+            DiceMetaDataDatabase.DiceMeta fallback)
+        {
+            var merged = new DiceMetaDataDatabase.DiceMeta
+            {
+                diceType = fallback.diceType,
+                elementType = fallback.elementType,
+                displayName = fallback.displayName,
+                description = fallback.description,
+                icon = assetMeta.icon,
+                color = assetMeta.color,
+                projectileSprite = assetMeta.projectileSprite,
+                primaryEffect = assetMeta.primaryEffect,
+                effectPrefabs = assetMeta.effectPrefabs,
+                isMythic = fallback.isMythic,
+                summonable = fallback.summonable,
+                canMerge = fallback.canMerge,
+                showStarUI = fallback.showStarUI,
+                recipeMaterials = new List<DiceMetaDataDatabase.DiceRecipeMaterial>(),
+                baseAttack = fallback.baseAttack,
+                levelUpAttackIncrease = fallback.levelUpAttackIncrease,
+                baseCooldown = fallback.baseCooldown,
+                baseGoldCost = fallback.baseGoldCost,
+                goldCostPerLevel = fallback.goldCostPerLevel,
+                baseScrollCost = fallback.baseScrollCost,
+                scrollCostPerLevel = fallback.scrollCostPerLevel,
+                milestones = new List<DiceMetaDataDatabase.DiceLevelMilestone>()
+            };
+
+            for (int i = 0; i < fallback.recipeMaterials.Count; i++)
+            {
+                var recipe = fallback.recipeMaterials[i];
+                merged.recipeMaterials.Add(new DiceMetaDataDatabase.DiceRecipeMaterial
+                {
+                    diceType = recipe.diceType,
+                    star = recipe.star,
+                    count = recipe.count
+                });
+            }
+
+            for (int i = 0; i < fallback.milestones.Count; i++)
+            {
+                var milestone = fallback.milestones[i];
+                merged.milestones.Add(new DiceMetaDataDatabase.DiceLevelMilestone
+                {
+                    level = milestone.level,
+                    description = milestone.description
+                });
+            }
+
+            return merged;
         }
 
         private static DiceMetaDataDatabase.DiceMeta CreateDefault(
@@ -405,7 +723,6 @@ namespace OJ
             string description,
             int baseAttack,
             int levelUpAttackIncrease,
-            float dicePipAttackFactor,
             int baseGoldCost,
             int goldCostPerLevel,
             int baseScrollCost,
@@ -429,7 +746,6 @@ namespace OJ
                 showStarUI = showStarUI,
                 baseAttack = baseAttack,
                 levelUpAttackIncrease = levelUpAttackIncrease,
-                dicePipAttackFactor = dicePipAttackFactor,
                 baseGoldCost = baseGoldCost,
                 goldCostPerLevel = goldCostPerLevel,
                 baseScrollCost = baseScrollCost,
@@ -468,8 +784,8 @@ namespace OJ
             string description,
             int baseAttack,
             int levelUpAttackIncrease,
-            float dicePipAttackFactor,
             float baseCooldown,
+            (int level, string desc)[] milestones,
             params (DiceType type, int star, int count)[] recipe)
         {
             var meta = new DiceMetaDataDatabase.DiceMeta
@@ -479,7 +795,6 @@ namespace OJ
                 description = description,
                 baseAttack = baseAttack,
                 levelUpAttackIncrease = levelUpAttackIncrease,
-                dicePipAttackFactor = dicePipAttackFactor,
                 baseGoldCost = 0,
                 goldCostPerLevel = 0,
                 baseScrollCost = 0,
@@ -490,6 +805,15 @@ namespace OJ
                 canMerge = false,
                 showStarUI = false
             };
+
+            for (int i = 0; i < milestones.Length; i++)
+            {
+                meta.milestones.Add(new DiceMetaDataDatabase.DiceLevelMilestone
+                {
+                    level = milestones[i].level,
+                    description = milestones[i].desc
+                });
+            }
 
             for (int i = 0; i < recipe.Length; i++)
             {
