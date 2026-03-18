@@ -4,6 +4,8 @@ namespace OJ
 {
     public class Bullet : MonoBehaviour
     {
+        private const float HitSweepRadius = 0.12f;
+
         public SpriteRenderer bulletImage;
 
         public float speed = 8f;
@@ -11,6 +13,7 @@ namespace OJ
         private DiceType _diceType = DiceType.Normal;
         private int _diceStar = 1;
         private bool _hasImpacted;
+        private readonly RaycastHit2D[] _hitBuffer = new RaycastHit2D[8];
 
         public void SetBulletStat(DiceType diceType, int diceStar)
         {
@@ -34,7 +37,14 @@ namespace OJ
 
         void Update()
         {
-            transform.Translate(Vector2.up * speed * Time.deltaTime);
+            Vector2 startPos = transform.position;
+            float moveDistance = speed * Time.deltaTime;
+            Vector2 endPos = startPos + (moveDir.normalized * moveDistance);
+
+            if (TrySweepHit(startPos, endPos))
+                return;
+
+            transform.position = endPos;
 
             if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
                 BulletPool.Instance.PoolBullet(this);
@@ -48,12 +58,66 @@ namespace OJ
             if (col.CompareTag("Monster"))
             {
                 Monster monster = col.GetComponent<Monster>();
-                _hasImpacted = true;
-
-                AttackContent.Instance.PlayHit(monster, _diceType, _diceStar);
-
-                BulletPool.Instance.PoolBullet(this);
+                Impact(monster);
             }
+        }
+
+        private bool TrySweepHit(Vector2 startPos, Vector2 endPos)
+        {
+            if (_hasImpacted)
+                return true;
+
+            Vector2 direction = endPos - startPos;
+            float distance = direction.magnitude;
+            if (distance <= 0.0001f)
+                return false;
+
+            int hitCount = Physics2D.CircleCastNonAlloc(
+                startPos,
+                HitSweepRadius,
+                direction.normalized,
+                _hitBuffer,
+                distance,
+                Physics2D.AllLayers);
+
+            if (hitCount <= 0)
+                return false;
+
+            float nearestDistance = float.MaxValue;
+            Monster nearestMonster = null;
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider2D collider = _hitBuffer[i].collider;
+                if (collider == null || !collider.CompareTag("Monster"))
+                    continue;
+
+                Monster monster = collider.GetComponent<Monster>();
+                if (monster == null || !monster.gameObject.activeInHierarchy)
+                    continue;
+
+                if (_hitBuffer[i].distance < nearestDistance)
+                {
+                    nearestDistance = _hitBuffer[i].distance;
+                    nearestMonster = monster;
+                }
+            }
+
+            if (nearestMonster == null)
+                return false;
+
+            transform.position = nearestMonster.transform.position;
+            Impact(nearestMonster);
+            return true;
+        }
+
+        private void Impact(Monster monster)
+        {
+            if (_hasImpacted || monster == null)
+                return;
+
+            _hasImpacted = true;
+            AttackContent.Instance.PlayHit(monster, _diceType, _diceStar);
+            BulletPool.Instance.PoolBullet(this);
         }
 
         private void OnDisable()
