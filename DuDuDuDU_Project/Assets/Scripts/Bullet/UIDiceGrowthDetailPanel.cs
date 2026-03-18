@@ -101,7 +101,7 @@ namespace OJ
             if (nameText != null) nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : currentDiceType.ToString());
             if (levelText != null) levelText.SetText("Lv. {0}", level);
             if (damageText != null) damageText.SetText("{0}", damage);
-            if (descText != null) descText.SetText(meta != null ? meta.description : string.Empty);
+            if (descText != null) descText.SetText(BuildDescriptionText(meta, level));
             if (levelUpGainText != null) levelUpGainText.SetText("+{0}", meta != null ? meta.levelUpAttackIncrease : 0);
 
             if (goldCostText != null) goldCostText.SetText("{0}/{1}", cost.goldCost, PointManager.Instance.Get(PointType.Gold));
@@ -235,6 +235,21 @@ namespace OJ
             UIMilestoneElement created = Instantiate(milestoneElementPrefab, dialogView.transform);
             milestoneElements.Add(created);
             return created;
+        }
+
+        private string BuildDescriptionText(DiceMetaDataDatabase.DiceMeta meta, int level)
+        {
+            if (meta == null)
+                return string.Empty;
+
+            if (currentDiceType == DiceType.Poison || currentDiceType == DiceType.KingPoison)
+            {
+                float poisonMultiplier = DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType.Poison, level);
+                float poisonDuration = DiceMetaDataProvider.GetPoisonDuration(DiceType.Poison);
+                return $"{meta.description}\n중독: 0.5초마다 현재 체력의 10% x {poisonMultiplier:0.##} 피해 ({poisonDuration:0.#}초)";
+            }
+
+            return meta.description;
         }
     }
 }

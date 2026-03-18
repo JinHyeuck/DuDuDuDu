@@ -36,6 +36,11 @@ namespace OJ
                     continue;
 
                 attackContent.HitMonster(splashTarget, DiceType, attackContent.CurrentDamage);
+                splashTarget.ApplyPoison(
+                    DiceMetaDataProvider.GetPoisonDuration(DiceType),
+                    DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level));
+                if (level >= 12)
+                    splashTarget.ApplyPoisonDamageTakenBonus(10);
             }
         }
     }

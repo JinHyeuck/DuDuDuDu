@@ -84,7 +84,10 @@ namespace OJ
         {
             EquipmentUpgradeRule rule = GetRule(equipmentType);
             int level = GetLevel(equipmentType);
-            return Mathf.Max(0, rule.baseAttack + (level * rule.attackPerLevel));
+            if (level <= 1)
+                return 0;
+
+            return Mathf.Max(0, rule.baseAttack + ((level - 1) * rule.attackPerLevel));
         }
 
         public int GetTotalEquipmentAttack()

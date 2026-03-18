@@ -49,12 +49,13 @@ namespace OJ
                 IFFType.IFF_Friend,
                 1.2f,
                 1,
-                target);
+                null);
 
-            if (nearby.Count <= 0 || nearby[0] == null)
+            if (nearby.Count <= 0 || nearby[0] == null || nearby[0] == target)
                 return;
 
             int splashDamage = Mathf.Max(1, Mathf.RoundToInt(attackContent.CurrentDamage * 0.5f));
+            PlayLineEffect(DiceType, target.transform.position, nearby[0].transform.position, EffectID.C1);
             attackContent.HitMonster(nearby[0], DiceType, splashDamage);
             PlayEffectAt(DiceType, nearby[0].transform.position);
         }

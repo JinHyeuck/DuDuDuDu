@@ -26,7 +26,13 @@ namespace OJ
                     target);
 
                 for (int n = 0; n < nearby.Count; n++)
-                    poisonTargets.Add(nearby[n]);
+                {
+                    Monster splashTarget = nearby[n];
+                    if (splashTarget == null || splashTarget == target)
+                        continue;
+
+                    poisonTargets.Add(splashTarget);
+                }
             }
 
             hitMonsters.AddRange(poisonTargets);

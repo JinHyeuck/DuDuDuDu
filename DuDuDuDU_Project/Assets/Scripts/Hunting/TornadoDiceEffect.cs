@@ -8,7 +8,7 @@ namespace OJ
     {
         private const float PullRange = 1.8f;
         private const int MaxTargets = 10;
-        private const float PullDistancePerHit = 0.55f;
+        private const float PullDistancePerHit = 1.2f;
 
         public override DiceType DiceType => DiceType.Tornado;
 

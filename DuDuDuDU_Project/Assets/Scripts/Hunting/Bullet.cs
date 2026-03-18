@@ -10,10 +10,12 @@ namespace OJ
         private Vector2 moveDir;
         private DiceType _diceType = DiceType.Normal;
         private int _diceStar = 1;
+        private bool _hasImpacted;
 
         public void SetBulletStat(DiceType diceType, int diceStar)
         {
             _diceType = diceType;
+            _hasImpacted = false;
 
             Sprite sprite = DiceMetaDataProvider.GetProjectileSprite(_diceType);
 
@@ -40,14 +42,23 @@ namespace OJ
 
         void OnTriggerEnter2D(Collider2D col)
         {
+            if (_hasImpacted)
+                return;
+
             if (col.CompareTag("Monster"))
             {
                 Monster monster = col.GetComponent<Monster>();
+                _hasImpacted = true;
 
                 AttackContent.Instance.PlayHit(monster, _diceType, _diceStar);
 
                 BulletPool.Instance.PoolBullet(this);
             }
+        }
+
+        private void OnDisable()
+        {
+            _hasImpacted = false;
         }
     }
 

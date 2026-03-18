@@ -20,15 +20,7 @@ namespace OJ
             float chancePercent = DiceMetaDataProvider.GetWindPushChancePercent(level);
             float distance = BasePushDistance * DiceMetaDataProvider.GetWindDistanceMultiplier(level);
 
-            List<Monster> candidates = new List<Monster>();
-            for (int i = 0; i < MonsterManager.Instance.activeMonsters.Count; i++)
-            {
-                Monster monster = MonsterManager.Instance.activeMonsters[i];
-                if (monster == null || monster.gameObject.activeInHierarchy == false)
-                    continue;
-
-                candidates.Add(monster);
-            }
+            List<Monster> candidates = GetWallFrontTargets(attackContent, targetCount * 3);
 
             if (candidates.Count == 0)
                 return false;
@@ -43,11 +35,43 @@ namespace OJ
                     continue;
 
                 monster.PushBy(Vector2.up, distance);
+                if (level >= 6)
+                    monster.ApplyWindDamageTakenBonus(10, 3f);
                 PlayEffectAt(DiceType, monster.transform.position);
                 pushedAny = true;
             }
 
             return pushedAny;
+        }
+
+        private List<Monster> GetWallFrontTargets(AttackContent attackContent, int maxTargets)
+        {
+            Wall wall = GameManager.Instance != null ? GameManager.Instance.wall : null;
+            if (wall == null)
+            {
+                List<Monster> fallback = new List<Monster>();
+                for (int i = 0; i < MonsterManager.Instance.activeMonsters.Count; i++)
+                {
+                    Monster monster = MonsterManager.Instance.activeMonsters[i];
+                    if (monster == null || monster.gameObject.activeInHierarchy == false)
+                        continue;
+
+                    fallback.Add(monster);
+                }
+
+                return fallback;
+            }
+
+            Vector2 origin = wall.transform.position + Vector3.up * 1.25f;
+            List<Monster> targets = attackContent.GetMonstersInOrientedBox(
+                origin,
+                Vector2.up,
+                2.5f,
+                4.5f,
+                maxTargets,
+                null);
+
+            return targets;
         }
 
         private static void Shuffle<T>(List<T> list)

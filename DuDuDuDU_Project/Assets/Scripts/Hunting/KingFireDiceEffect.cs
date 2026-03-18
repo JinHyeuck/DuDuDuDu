@@ -38,12 +38,24 @@ namespace OJ
                 PlayEffectAt(DiceType, target.transform.position);
 
                 for (int hitIdx = 0; hitIdx < monsters.Count; ++hitIdx)
-                    fireTargets.Add(monsters[hitIdx]);
+                {
+                    Monster splashTarget = monsters[hitIdx];
+                    if (splashTarget == null || splashTarget == target)
+                        continue;
+
+                    fireTargets.Add(splashTarget);
+                }
 
                 if (level >= 9 && UnityEngine.Random.value <= 0.3f)
                 {
                     for (int hitIdx = 0; hitIdx < monsters.Count; ++hitIdx)
-                        fireTargets.Add(monsters[hitIdx]);
+                    {
+                        Monster splashTarget = monsters[hitIdx];
+                        if (splashTarget == null || splashTarget == target)
+                            continue;
+
+                        fireTargets.Add(splashTarget);
+                    }
                 }
             }
 

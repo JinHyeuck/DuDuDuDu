@@ -34,6 +34,8 @@ namespace OJ
         private float _armorBreakDamageTakenBonusUntil;
         private int _thunderDamageTakenBonusPercent;
         private float _thunderDamageTakenBonusUntil;
+        private int _windDamageTakenBonusPercent;
+        private float _windDamageTakenBonusUntil;
         private Coroutine _defenseDownRoutine;
         private Coroutine _poisonRoutine;
         private Coroutine _attackRoutine;
@@ -67,6 +69,8 @@ namespace OJ
             _armorBreakDamageTakenBonusUntil = -1f;
             _thunderDamageTakenBonusPercent = 0;
             _thunderDamageTakenBonusUntil = -1f;
+            _windDamageTakenBonusPercent = 0;
+            _windDamageTakenBonusUntil = -1f;
             RecalculateDefense();
 
             MonsterManager.Instance.RegisterMonster(this);
@@ -93,6 +97,8 @@ namespace OJ
             _armorBreakDamageTakenBonusUntil = -1f;
             _thunderDamageTakenBonusPercent = 0;
             _thunderDamageTakenBonusUntil = -1f;
+            _windDamageTakenBonusPercent = 0;
+            _windDamageTakenBonusUntil = -1f;
             _attackRoutine = null;
             _attackWall = null;
             _pullRoutine = null;
@@ -110,6 +116,9 @@ namespace OJ
             UpdateTimedStates();
 
             if (IsStunned())
+                return;
+
+            if (IsBeingPulled())
                 return;
 
             if (!isAttacking)
@@ -140,7 +149,7 @@ namespace OJ
             if (IsPoisoned() && DiceMetaDataProvider.HasKingPoisonDamageBonus())
                 stateBonusPercent += 15;
 
-            float incomingDamageMultiplier = 1f + (_poisonDamageTakenBonusPercent + _stunDamageTakenBonusPercent + _armorBreakDamageTakenBonusPercent + _thunderDamageTakenBonusPercent + stateBonusPercent) * 0.01f;
+            float incomingDamageMultiplier = 1f + (_poisonDamageTakenBonusPercent + _stunDamageTakenBonusPercent + _armorBreakDamageTakenBonusPercent + _thunderDamageTakenBonusPercent + _windDamageTakenBonusPercent + stateBonusPercent) * 0.01f;
             int appliedDamage = Mathf.CeilToInt(dmg * damageMultiplier * incomingDamageMultiplier);
 
             _hp -= appliedDamage;
@@ -229,6 +238,12 @@ namespace OJ
         {
             _thunderDamageTakenBonusPercent = Mathf.Max(_thunderDamageTakenBonusPercent, Mathf.Max(0, percent));
             _thunderDamageTakenBonusUntil = Mathf.Max(_thunderDamageTakenBonusUntil, Time.time + Mathf.Max(0.1f, duration));
+        }
+
+        public void ApplyWindDamageTakenBonus(int percent, float duration)
+        {
+            _windDamageTakenBonusPercent = Mathf.Max(_windDamageTakenBonusPercent, Mathf.Max(0, percent));
+            _windDamageTakenBonusUntil = Mathf.Max(_windDamageTakenBonusUntil, Time.time + Mathf.Max(0.1f, duration));
         }
 
         public void ApplyDefenseDown(float duration, int percent)
@@ -416,6 +431,17 @@ namespace OJ
                 _thunderDamageTakenBonusPercent = 0;
                 _thunderDamageTakenBonusUntil = -1f;
             }
+
+            if (Time.time >= _windDamageTakenBonusUntil)
+            {
+                _windDamageTakenBonusPercent = 0;
+                _windDamageTakenBonusUntil = -1f;
+            }
+        }
+
+        private bool IsBeingPulled()
+        {
+            return _pullRoutine != null && Time.time < _pullUntilTime;
         }
 
         private void UpdateTimedStates()

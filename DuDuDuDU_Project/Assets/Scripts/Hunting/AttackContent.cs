@@ -16,6 +16,7 @@ namespace OJ
         private int _currentDiceLevel;
         private int _currentShotDicePip;
         private DiceType _currentAttackType = DiceType.Max;
+        private Monster _currentRootTarget;
 
         [Header("Tornado Tuning")]
         [SerializeField, Min(0.05f)] private float tornadoPullDuration = 0.5f;
@@ -25,6 +26,7 @@ namespace OJ
         public int CurrentDiceLevel => _currentDiceLevel;
         public int CurrentShotDicePip => _currentShotDicePip;
         public DiceType CurrentAttackType => _currentAttackType;
+        public Monster CurrentRootTarget => _currentRootTarget;
         private bool _hasWindRangeGizmo;
         private Vector3 _windRangeGizmoCenter;
         private Vector3 _windRangeGizmoSize;
@@ -148,6 +150,7 @@ namespace OJ
             _currentDiceLevel = diceLevel;
             _currentShotDicePip = myDicePip;
             _currentAttackType = attackType;
+            _currentRootTarget = rootTarget;
 
             for (int i = 0; i < hitmonsters.Count; ++i)
             {
@@ -165,6 +168,7 @@ namespace OJ
             _currentDiceLevel = 1;
             _currentShotDicePip = 1;
             _currentAttackType = DiceType.Max;
+            _currentRootTarget = null;
         }
 
         public IEnumerator HitColorEffect(Monster target, DiceType elementType)
