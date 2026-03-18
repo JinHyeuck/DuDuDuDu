@@ -16,7 +16,7 @@ namespace OJ
         public Transform firePoint;
         public float fireRate = 0.5f;
         private float timer = 0f;
-        private int shotindex = 0;
+        private int shotindex = -1;
 
         private readonly Dictionary<UIDice, float> diceNextReadyTime = new Dictionary<UIDice, float>();
         private readonly List<UIDice> removeCooldownBuffer = new List<UIDice>();
@@ -68,16 +68,8 @@ namespace OJ
 
             CleanupCooldownMap();
 
-            if (!TryGetReadyDice(out UIDice selectedDice))
+            if (!TryShootReadyDice())
                 return;
-
-            if (!ShootAtClosest(selectedDice))
-                return;
-
-            shotindex = selectedDice.SlotIndex;
-            SetDiceNextCooldown(selectedDice);
-            selectedDice.PlayLevelUpEffect();
-            timer = 0f;
         }
 
         public void RefreshDice()
@@ -127,6 +119,40 @@ namespace OJ
             }
 
             return selectedDice != null;
+        }
+
+        private bool TryShootReadyDice()
+        {
+            UIDice[] map = UIBoard.Instance.diceMap;
+            int total = map.Length;
+            if (total <= 0)
+                return false;
+
+            float now = Time.time;
+            int start = (shotindex + 1 + total) % total;
+
+            for (int offset = 0; offset < total; offset++)
+            {
+                int idx = (start + offset) % total;
+                UIDice dice = map[idx];
+                if (dice == null)
+                    continue;
+
+                float readyTime = GetNextReadyTime(dice);
+                if (readyTime > now)
+                    continue;
+
+                if (!ShootAtClosest(dice))
+                    continue;
+
+                shotindex = dice.SlotIndex;
+                SetDiceNextCooldown(dice);
+                dice.PlayLevelUpEffect();
+                timer = 0f;
+                return true;
+            }
+
+            return false;
         }
 
         private void SetDiceNextCooldown(UIDice dice)
@@ -201,6 +227,7 @@ namespace OJ
         private void ResetAllDiceCooldowns()
         {
             timer = 0f;
+            shotindex = -1;
             diceNextReadyTime.Clear();
             wasWaveState = false;
         }
