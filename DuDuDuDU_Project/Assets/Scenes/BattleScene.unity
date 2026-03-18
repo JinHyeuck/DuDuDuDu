@@ -2637,10 +2637,12 @@ MonoBehaviour:
   - {fileID: 881306225255906131, guid: 895d3cbeb928a6b489b0eae20ce20daf, type: 3}
   - {fileID: 8880202767979408004, guid: 511ed168af2e49244be1b02c8420405a, type: 3}
   bossMonsterPrefab:
-  - {fileID: 0}
+  - {fileID: 270838610663628727, guid: 38119e1080cdc40edb33a111d9588a5f, type: 3}
   spawnInterval: 1
   spawnXRange: 2.5
   spawnY: 5
+  useCameraBoundsForSpawnX: 1
+  spawnHorizontalPadding: 0.35
 --- !u!114 &726713903
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -75,6 +75,9 @@ namespace OJ
 
         public void OnClick_Pause()
         {
+            StartCoroutine(CoReturnToLobby());
+            return;
+
             if (isPause == false)
             {
                 Time.timeScale = 0;

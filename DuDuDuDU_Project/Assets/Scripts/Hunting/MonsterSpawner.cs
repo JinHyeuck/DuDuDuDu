@@ -19,8 +19,11 @@ namespace OJ
         public float spawnInterval = 2f;
         public float spawnXRange = 7f;
         public float spawnY = 5f;
+        [SerializeField] private bool useCameraBoundsForSpawnX = true;
+        [SerializeField] private float spawnHorizontalPadding = 0.35f;
 
         private float timer = 0f;
+        private Camera spawnCamera;
 
         private int regularSpawnCount = 0;
         private bool bossSpawnedInWave = false;
@@ -44,6 +47,7 @@ namespace OJ
 
         private void Start()
         {
+            CacheSpawnCamera();
             InitializePools(monsterPrefab, monsterPools, monsterIdList);
             InitializePools(bossMonsterPrefab, bossMonsterPools, bossMonsterIdList);
         }
@@ -139,7 +143,7 @@ namespace OJ
 
         private void SpawnRegularMonster()
         {
-            Vector2 spawnPos = new Vector2(Random.Range(-spawnXRange, spawnXRange), spawnY);
+            Vector2 spawnPos = GetSpawnPosition();
 
             Monster monster = GetMonster();
             monster.OnSpawn();
@@ -154,7 +158,7 @@ namespace OJ
 
         private void SpawnBossMonster()
         {
-            Vector2 spawnPos = new Vector2(Random.Range(-spawnXRange, spawnXRange), spawnY);
+            Vector2 spawnPos = GetSpawnPosition();
             Monster monster = GetBossMonster();
             monster.OnSpawn();
             monster.transform.position = spawnPos;
@@ -218,6 +222,65 @@ namespace OJ
                 return 0;
 
             return Mathf.Max(1, GameManager.Instance.CurrentStageData.monstersPerWave);
+        }
+
+        private Vector2 GetSpawnPosition()
+        {
+            float minX = -spawnXRange;
+            float maxX = spawnXRange;
+
+            if (TryGetVisibleSpawnBounds(out float visibleMinX, out float visibleMaxX))
+            {
+                minX = visibleMinX;
+                maxX = visibleMaxX;
+            }
+
+            if (minX > maxX)
+            {
+                float centerX = (minX + maxX) * 0.5f;
+                minX = centerX;
+                maxX = centerX;
+            }
+
+            return new Vector2(Random.Range(minX, maxX), spawnY);
+        }
+
+        private bool TryGetVisibleSpawnBounds(out float minX, out float maxX)
+        {
+            minX = -spawnXRange;
+            maxX = spawnXRange;
+
+            if (!useCameraBoundsForSpawnX)
+                return false;
+
+            CacheSpawnCamera();
+            if (spawnCamera == null)
+                return false;
+
+            Vector3 leftEdge = spawnCamera.ViewportToWorldPoint(new Vector3(0f, 0.5f, GetCameraDepth()));
+            Vector3 rightEdge = spawnCamera.ViewportToWorldPoint(new Vector3(1f, 0.5f, GetCameraDepth()));
+            minX = leftEdge.x + spawnHorizontalPadding;
+            maxX = rightEdge.x - spawnHorizontalPadding;
+            return true;
+        }
+
+        private void CacheSpawnCamera()
+        {
+            if (spawnCamera != null)
+                return;
+
+            spawnCamera = Camera.main;
+        }
+
+        private float GetCameraDepth()
+        {
+            if (spawnCamera == null)
+                return 0f;
+
+            if (spawnCamera.orthographic)
+                return 0f;
+
+            return Mathf.Abs(transform.position.z - spawnCamera.transform.position.z);
         }
 
         // Backward-compatible wrappers (remove after call sites are fully migrated).
