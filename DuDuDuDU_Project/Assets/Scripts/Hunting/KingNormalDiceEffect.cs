@@ -23,10 +23,16 @@ namespace OJ
                     IFFType.IFF_Friend,
                     1.3f,
                     3,
-                    target);
+                    null);
 
                 for (int n = 0; n < nearby.Count; n++)
-                    bonusTargets.Add(nearby[n]);
+                {
+                    Monster splashTarget = nearby[n];
+                    if (splashTarget == null || splashTarget == target)
+                        continue;
+
+                    bonusTargets.Add(splashTarget);
+                }
             }
 
             hitMonsters.AddRange(bonusTargets);

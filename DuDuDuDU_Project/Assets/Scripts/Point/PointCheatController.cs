@@ -13,7 +13,7 @@ namespace OJ
         [SerializeField] private bool startVisible = false;
         [Header("Window Size")]
         [SerializeField, Range(0.3f, 0.95f)] private float windowWidthRatio = 0.75f;
-        [SerializeField, Range(0.3f, 0.95f)] private float windowHeightRatio = 0.67f;
+        [SerializeField, Range(0.3f, 0.95f)] private float windowHeightRatio = 0.78f;
         [Header("Mobile Trigger")]
         [SerializeField] private int tapsToToggle = 5;
         [SerializeField] private float multiTapWindow = 1.2f;
@@ -28,7 +28,7 @@ namespace OJ
         private bool wallInvincible;
         private int debugDiceIndex;
         private int debugDiceStar = 1;
-        private Rect windowRect = new Rect(20, 20, 360, 280);
+        private Rect windowRect = new Rect(20, 20, 360, 420);
         private int tapCount;
         private float firstTapTime;
         private Vector2 lastScreenSize;
@@ -235,7 +235,7 @@ namespace OJ
             lastScreenSize = currentScreen;
 
             float width = Mathf.Max(360f, Screen.width * Mathf.Clamp01(windowWidthRatio));
-            float height = Mathf.Max(280f, Screen.height * Mathf.Clamp01(windowHeightRatio));
+            float height = Mathf.Max(420f, Screen.height * Mathf.Clamp01(windowHeightRatio));
             float x = Mathf.Max(10f, (Screen.width - width) * 0.5f);
             float y = Mathf.Max(10f, (Screen.height - height) * 0.5f);
 

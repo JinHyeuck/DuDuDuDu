@@ -435,8 +435,8 @@ namespace OJ
         public static float GetFireExplosionRangeMultiplier(int level)
         {
             float multiplier = level >= 9 ? 1.1f : 1f;
-            int kingFireLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.KingFire) : 1;
-            if (kingFireLevel >= 6)
+            int kingFireLevel = GetKingLevel(DiceType.KingFire);
+            if (IsKingSummoned(DiceType.KingFire) && kingFireLevel >= 6)
                 multiplier *= 1.2f;
             return multiplier;
         }
@@ -486,13 +486,19 @@ namespace OJ
 
         public static float GetGlobalCriticalChancePercent()
         {
-            int kingNormalLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.KingNormal) : 1;
+            if (!IsKingSummoned(DiceType.KingNormal))
+                return 0f;
+
+            int kingNormalLevel = GetKingLevel(DiceType.KingNormal);
             return kingNormalLevel >= 9 ? 10f : 0f;
         }
 
         public static float GetGlobalCriticalDamageMultiplier()
         {
-            int kingNormalLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.KingNormal) : 1;
+            if (!IsKingSummoned(DiceType.KingNormal))
+                return 2f;
+
+            int kingNormalLevel = GetKingLevel(DiceType.KingNormal);
             return kingNormalLevel >= 12 ? 2.2f : 2f;
         }
 
@@ -501,9 +507,9 @@ namespace OJ
             switch (diceType)
             {
                 case DiceType.Normal:
-                    return GetKingLevel(DiceType.KingNormal) >= 6 ? 1.2f : 1f;
+                    return IsKingSummoned(DiceType.KingNormal) && GetKingLevel(DiceType.KingNormal) >= 6 ? 1.2f : 1f;
                 case DiceType.Thunder:
-                    return GetKingLevel(DiceType.KingThunder) >= 6 ? 1.2f : 1f;
+                    return IsKingSummoned(DiceType.KingThunder) && GetKingLevel(DiceType.KingThunder) >= 6 ? 1.2f : 1f;
                 case DiceType.Fire:
                     return 1f;
                 case DiceType.Ice:
@@ -518,7 +524,7 @@ namespace OJ
         public static float GetPoisonDamageMultiplier(DiceType diceType, int level)
         {
             float multiplier = level >= 6 ? 1.5f : 1f;
-            if (diceType == DiceType.Poison && GetKingLevel(DiceType.KingPoison) >= 6)
+            if (diceType == DiceType.Poison && IsKingSummoned(DiceType.KingPoison) && GetKingLevel(DiceType.KingPoison) >= 6)
                 multiplier *= 1.5f;
             return multiplier;
         }
@@ -529,7 +535,7 @@ namespace OJ
             if (diceType == DiceType.Ice && level >= 9)
                 duration *= 1.5f;
             if (diceType == DiceType.KingIce)
-                duration *= GetKingLevel(DiceType.KingIce) >= 6 ? 1.5f : 1f;
+                duration *= IsKingSummoned(DiceType.KingIce) && GetKingLevel(DiceType.KingIce) >= 6 ? 1.5f : 1f;
             return duration;
         }
 
@@ -540,17 +546,22 @@ namespace OJ
 
         public static bool HasKingIceDamageBonus()
         {
-            return GetKingLevel(DiceType.KingIce) >= 12;
+            return IsKingSummoned(DiceType.KingIce) && GetKingLevel(DiceType.KingIce) >= 12;
         }
 
         public static bool HasKingPoisonDamageBonus()
         {
-            return GetKingLevel(DiceType.KingPoison) >= 12;
+            return IsKingSummoned(DiceType.KingPoison) && GetKingLevel(DiceType.KingPoison) >= 12;
         }
 
         private static int GetKingLevel(DiceType diceType)
         {
             return DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
+        }
+
+        private static bool IsKingSummoned(DiceType diceType)
+        {
+            return DiceTypeStarManager.Instance != null && DiceTypeStarManager.Instance.GetTypeCount(diceType) > 0;
         }
 
         private static void EnsureDefaults()
@@ -584,9 +595,9 @@ namespace OJ
                     (9, "공격 시 40% 확률로 범위 피해"),
                     (12, "중독된 적이 받는 피해 10% 증가")
                 }) },
-                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "적 2명에게 11 + (레벨 x 3) 대미지를 줍니다.", 11, 3, 150, 65, 11, 2, 2.7f, new []{
+                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "적 1명에게 11 + (레벨 x 3) 대미지를 주고 최대 2명에게 번개가 전이됩니다.", 11, 3, 150, 65, 11, 2, 2.7f, new []{
                     (3, "최종 대미지 10% 증가"),
-                    (6, "공격 대상 +1"),
+                    (6, "전이 대상 +1"),
                     (9, "쿨타임 10% 감소"),
                     (12, "공격한 적 주변 1명에게 50% 추가 번개 피해")
                 }) },
@@ -627,16 +638,16 @@ namespace OJ
                     false, false, false, (DiceType.Normal, 2, 1), (DiceType.Thunder, 2, 1), (DiceType.Ice, 2, 1)) },
                 { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "적 1명에게 104 + (레벨 x 20) 대미지를 주고 주변 적을 추가 타격합니다.", 104, 20, 3.0f, new []{
                     (3, "최종 대미지 30% 증가"),
-                    (6, "NormalDice 최종 대미지 20% 증가"),
-                    (9, "모든 다이스 크리티컬 확률 10% 증가"),
-                    (12, "모든 다이스 크리티컬 대미지 20% 증가")
+                    (6, "소환 중인 동안 NormalDice 최종 대미지 20% 증가"),
+                    (9, "소환 중인 동안 모든 다이스 크리티컬 확률 10% 증가"),
+                    (12, "소환 중인 동안 모든 다이스 크리티컬 대미지 20% 증가")
                 },
                     (DiceType.Normal, 4, 1), (DiceType.Tornado, 1, 1)) },
                 { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "적 1명에게 110 + (레벨 x 22) 대미지를 주고 강화 폭발을 일으킵니다.", 110, 22, 3.3f, new []{
                     (3, "최종 대미지 20% 증가"),
-                    (6, "FireDice 폭발 범위 20% 증가"),
+                    (6, "소환 중인 동안 FireDice 폭발 범위 20% 증가"),
                     (9, "폭발이 30% 확률로 한 번 더 발생"),
-                    (12, "폭발 피해 30% 증가")
+                    (12, "폭발 최종 피해 30% 증가")
                 },
                     (DiceType.Fire, 4, 1), (DiceType.ArmorBreak, 1, 1)) },
                 { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "적 1명에게 100 + (레벨 x 20) 대미지를 주고 강한 둔화를 부여합니다.", 100, 20, 3.5f, new []{
@@ -648,14 +659,14 @@ namespace OJ
                     (DiceType.Ice, 4, 1), (DiceType.Wind, 1, 1)) },
                 { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "적 1명에게 98 + (레벨 x 20) 대미지를 주고 중독과 둔화를 부여합니다.", 98, 20, 3.3f, new []{
                     (3, "최종 대미지 20% 증가"),
-                    (6, "PoisonDice 중독 피해량 50% 증가"),
-                    (9, "중독이 주변 적 1명에게 30% 확률로 전이"),
+                    (6, "소환 중인 동안 PoisonDice 중독 피해량 50% 증가"),
+                    (9, "중독 적용 시 30% 확률로 주변 적 1명에게 전이"),
                     (12, "중독된 적이 받는 피해 15% 증가")
                 },
                     (DiceType.Poison, 4, 1), (DiceType.Stun, 1, 1)) },
-                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "적 4명에게 116 + (레벨 x 24) 대미지를 주는 강화 번개 공격을 합니다.", 116, 24, 3.0f, new []{
-                    (3, "공격 대상 +2"),
-                    (6, "ThunderDice 최종 대미지 20% 증가"),
+                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "적 1명에게 116 + (레벨 x 24) 대미지를 주고 최대 4명에게 번개가 전이됩니다.", 116, 24, 3.0f, new []{
+                    (3, "전이 대상 +2"),
+                    (6, "소환 중인 동안 ThunderDice 최종 대미지 20% 증가"),
                     (9, "30% 확률로 추가 1명에게 50% 피해"),
                     (12, "맞은 적이 받는 피해 15% 증가")
                 },

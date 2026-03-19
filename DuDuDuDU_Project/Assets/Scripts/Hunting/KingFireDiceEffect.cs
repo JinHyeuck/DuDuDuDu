@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace OJ
 {
@@ -11,7 +13,6 @@ namespace OJ
             if (attackContent == null || hitMonsters == null)
                 return;
 
-            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             List<Monster> fireTargets = new List<Monster>();
             float explosionRange = 1.6f;
             int fireHitTargetCount = 14;
@@ -46,20 +47,58 @@ namespace OJ
                     fireTargets.Add(splashTarget);
                 }
 
-                if (level >= 9 && UnityEngine.Random.value <= 0.3f)
-                {
-                    for (int hitIdx = 0; hitIdx < monsters.Count; ++hitIdx)
-                    {
-                        Monster splashTarget = monsters[hitIdx];
-                        if (splashTarget == null || splashTarget == target)
-                            continue;
-
-                        fireTargets.Add(splashTarget);
-                    }
-                }
             }
 
             hitMonsters.AddRange(fireTargets);
+        }
+
+        public override void ApplyOnHit(AttackContent attackContent, Monster target)
+        {
+            if (attackContent == null || target == null || target.gameObject.activeInHierarchy == false)
+                return;
+
+            if (target != attackContent.CurrentRootTarget)
+                return;
+
+            int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
+            if (level < 9 || Random.value > 0.3f)
+                return;
+
+            attackContent.StartCoroutine(CoDelayedExplosion(attackContent, target.transform.position, attackContent.CurrentDamage));
+        }
+
+        private IEnumerator CoDelayedExplosion(AttackContent attackContent, Vector3 center, int damage)
+        {
+            yield return new WaitForSeconds(0.5f);
+
+            if (attackContent == null)
+                yield break;
+
+            float explosionRange = 1.6f;
+            int fireHitTargetCount = 14;
+            if (EquipmentManager.Instance != null)
+            {
+                explosionRange *= (1f + EquipmentManager.Instance.GetFireExplosionRangeBonus(DiceType));
+                fireHitTargetCount += EquipmentManager.Instance.GetFireExplosionExtraTargetCount(DiceType) + 2;
+            }
+
+            List<Monster> monsters = attackContent.GetRedHitTarget(
+                center,
+                IFFType.IFF_Friend,
+                explosionRange,
+                fireHitTargetCount,
+                null);
+
+            PlayEffectAt(DiceType, center);
+
+            for (int i = 0; i < monsters.Count; i++)
+            {
+                Monster splashTarget = monsters[i];
+                if (splashTarget == null || splashTarget.gameObject.activeInHierarchy == false)
+                    continue;
+
+                attackContent.HitMonster(splashTarget, DiceType, damage);
+            }
         }
     }
 }

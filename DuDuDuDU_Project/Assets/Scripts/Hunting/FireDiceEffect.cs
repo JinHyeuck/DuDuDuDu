@@ -71,7 +71,7 @@ namespace OJ
 
         private IEnumerator CoDelayedExplosion(AttackContent attackContent, Vector3 center, int damage, int level)
         {
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(0.5f);
 
             if (attackContent == null)
                 yield break;
