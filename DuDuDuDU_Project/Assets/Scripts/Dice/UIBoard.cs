@@ -12,6 +12,7 @@ namespace OJ
         public GridLayoutGroup grid;
         public GameObject slotPrefab;
         public UIDice dicePrefab;
+        [SerializeField] private UIBattleDiceDetailPanel battleDiceDetailPanel;
         public int rows = 6;
         public int cols = 4;
 
@@ -93,6 +94,28 @@ namespace OJ
                 Highlight(selectedDice, false);
                 selectedDice = null;
             }
+        }
+
+        public void OpenBattleDiceDetail(UIDice dice)
+        {
+            if (dice == null)
+                return;
+
+            if (battleDiceDetailPanel == null)
+            {
+                UIBattleDiceDetailPanel[] panels = Resources.FindObjectsOfTypeAll<UIBattleDiceDetailPanel>();
+                for (int i = 0; i < panels.Length; i++)
+                {
+                    if (panels[i] != null && panels[i].gameObject.scene.IsValid())
+                    {
+                        battleDiceDetailPanel = panels[i];
+                        break;
+                    }
+                }
+            }
+
+            if (battleDiceDetailPanel != null)
+                battleDiceDetailPanel.Open(dice);
         }
 
         private void Highlight(UIDice dice, bool on)

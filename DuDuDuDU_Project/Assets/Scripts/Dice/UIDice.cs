@@ -233,17 +233,23 @@ namespace OJ
             if (eventData.button != PointerEventData.InputButton.Left)
                 return;
 
+            if (GameManager.Instance != null && GameManager.Instance.inGameState == InGameState.Wave)
+            {
+                UIBoard.Instance?.OpenBattleDiceDetail(this);
+                return;
+            }
+
             bool isDoubleClick = eventData.clickCount >= 2;
             bool isDoubleTap = Time.unscaledTime - lastPointerClickTime <= DoubleTapThreshold;
 
-            lastPointerClickTime = Time.unscaledTime;
-
-            if (!isDoubleClick && !isDoubleTap)
+            if (isDoubleClick || isDoubleTap)
+            {
+                lastPointerClickTime = -10f;
+                TryAutoMergeSameDice();
                 return;
+            }
 
-            lastPointerClickTime = -10f;
-
-            TryAutoMergeSameDice();
+            lastPointerClickTime = Time.unscaledTime;
         }
 
         private void TryAutoMergeSameDice()
