@@ -25,6 +25,7 @@ namespace OJ
         [Header("Craft")]
         [SerializeField] private UIDiceCraftProgressDialog craftProgressDialog;
         public Button PlayUI;
+        public Image PlayUI_Field;
         public Button Pause;
         public Button Speed;
         public TMP_Text SpeedText;
@@ -117,6 +118,7 @@ namespace OJ
             inGameState = state;
 
             PlayUI?.gameObject.SetActive(state == InGameState.Setting);
+            PlayUI_Field?.gameObject.SetActive(state == InGameState.Setting);
             Pause?.gameObject.SetActive(state == InGameState.Wave);
             Speed?.gameObject.SetActive(state == InGameState.Wave);
             craftProgressDialog?.SetActive(state == InGameState.Setting);

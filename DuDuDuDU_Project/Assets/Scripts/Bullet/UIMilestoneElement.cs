@@ -10,11 +10,14 @@ namespace OJ
         [SerializeField] private Image lockImage;
         [SerializeField] private TMP_Text levelText;
         [SerializeField] private TMP_Text descText;
+        [SerializeField] private Color unlockedColor;
+        [SerializeField] private Color lockedColor;
+        
 
         public void Bind(int level, string description, bool unlocked)
         {
             if (backgroundImage != null)
-                backgroundImage.color = unlocked ? new Color(0.56f, 0.30f, 0.70f, 0.95f) : new Color(0.18f, 0.18f, 0.26f, 0.95f);
+                backgroundImage.color = unlocked ? unlockedColor : lockedColor;
 
             if (levelText != null)
             {
