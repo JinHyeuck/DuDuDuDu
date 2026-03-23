@@ -14,11 +14,11 @@ namespace OJ
         [SerializeField] private TMP_Text levelText;
 
         [Header("Stats")]
-        [SerializeField] private TMP_Text damageText;
-        [SerializeField] private TMP_Text levelUpGainText;
+        [SerializeField] private TMP_Text coolTimeText;
         [SerializeField] private TMP_Text descText;
 
         [Header("Milestones")]
+        [SerializeField] private Transform milestoneListRoot;
         [SerializeField] private UIMilestoneElement milestoneElementPrefab;
 
         [Header("Craft Recipe")]
@@ -75,7 +75,7 @@ namespace OJ
         {
             var meta = DiceMetaDataProvider.GetMeta(currentDiceType);
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(currentDiceType) : 1;
-            int damage = meta != null ? meta.baseAttack + (level * meta.levelUpAttackIncrease) : 0;
+            float cooldown = DiceMetaDataProvider.GetCooldown(currentDiceType, 1);
             var cost = DiceLevelManager.Instance != null
                 ? DiceLevelManager.Instance.GetNextUpgradeCost(currentDiceType)
                 : DiceMetaDataProvider.GetUpgradeCost(currentDiceType, level);
@@ -100,9 +100,8 @@ namespace OJ
 
             if (nameText != null) nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : currentDiceType.ToString());
             if (levelText != null) levelText.SetText("Lv. {0}", level);
-            if (damageText != null) damageText.SetText("{0}", damage);
+            if (coolTimeText != null) coolTimeText.SetText("{0:0.0}", cooldown);
             if (descText != null) descText.SetText(BuildDescriptionText(meta, level));
-            if (levelUpGainText != null) levelUpGainText.SetText("+{0}", meta != null ? meta.levelUpAttackIncrease : 0);
 
             if (goldCostText != null) goldCostText.SetText("{0}/{1}", cost.goldCost, PointManager.Instance.Get(PointType.Gold));
 
@@ -229,10 +228,10 @@ namespace OJ
             if (index < milestoneElements.Count && milestoneElements[index] != null)
                 return milestoneElements[index];
 
-            if (milestoneElementPrefab == null || dialogView == null)
+            if (milestoneElementPrefab == null || milestoneListRoot == null)
                 return null;
 
-            UIMilestoneElement created = Instantiate(milestoneElementPrefab, dialogView.transform);
+            UIMilestoneElement created = Instantiate(milestoneElementPrefab, milestoneListRoot);
             milestoneElements.Add(created);
             return created;
         }

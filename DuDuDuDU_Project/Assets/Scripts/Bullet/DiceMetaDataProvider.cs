@@ -681,7 +681,9 @@ namespace OJ
             var merged = new DiceMetaDataDatabase.DiceMeta
             {
                 diceType = fallback.diceType,
-                elementType = fallback.elementType,
+                elementType = assetMeta.elementType != null && assetMeta.elementType.Length > 0
+                    ? assetMeta.elementType
+                    : fallback.elementType,
                 displayName = fallback.displayName,
                 description = fallback.description,
                 icon = assetMeta.icon,
