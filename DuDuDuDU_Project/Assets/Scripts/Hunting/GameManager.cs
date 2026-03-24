@@ -254,6 +254,7 @@ namespace OJ
             WaveMonsterDeadCount = 0;
             isGameOver = false;
 
+            ElementUpgradeManager.Instance?.ResetRunState();
             wall.SetInit(WallHp);
             UIDiceSummonSystem.Instance?.SetStageStartSp(CurrentStageData.initialSP);
             RunHistoryManager.Instance?.StartRun(CurrentStageData, WallHp);
@@ -274,6 +275,8 @@ namespace OJ
 
         private void HandleWaveCompleted()
         {
+            PointManager.Instance?.Add(PointType.Coin, 1);
+
             if (CurrentStageData != null)
                 UIDiceSummonSystem.Instance?.AddSP(CurrentStageData.waveClearSP);
 

@@ -21,7 +21,7 @@ namespace OJ
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             int targetCount = DiceMetaDataProvider.GetWindTargetCount(level);
-            float chancePercent = DiceMetaDataProvider.GetWindPushChancePercent(level);
+            float chancePercent = DiceMetaDataProvider.GetWindPushChancePercent(DiceType, level);
             float distance = BasePushDistance * DiceMetaDataProvider.GetWindDistanceMultiplier(level);
 
             Vector2 areaCenter = GetWallFrontAreaCenter(wall);

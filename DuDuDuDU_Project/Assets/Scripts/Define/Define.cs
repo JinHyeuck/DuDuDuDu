@@ -74,6 +74,7 @@ namespace OJ
         Gold = 0,
         Dia,
         Stamina,
+        Coin,
         NormalScroll = 100,
         FireScroll,
         IceScroll,

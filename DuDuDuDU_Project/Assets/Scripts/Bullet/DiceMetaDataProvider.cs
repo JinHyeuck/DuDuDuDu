@@ -274,6 +274,9 @@ namespace OJ
                 scaled *= (1f + finalDamagePercent);
             }
 
+            if (ElementUpgradeManager.Instance != null)
+                scaled *= ElementUpgradeManager.Instance.GetTotalBonusMultiplier(diceType);
+
             return Mathf.Max(1, Mathf.RoundToInt(scaled));
         }
 
@@ -449,6 +452,15 @@ namespace OJ
             return chance;
         }
 
+        public static float GetWindPushChancePercent(DiceType diceType, int level)
+        {
+            float chance = GetWindPushChancePercent(level);
+            if (ElementUpgradeManager.Instance != null)
+                chance *= ElementUpgradeManager.Instance.GetTotalBonusMultiplier(diceType);
+
+            return chance;
+        }
+
         public static int GetWindTargetCount(int level)
         {
             return level >= 12 ? 3 : 2;
@@ -466,6 +478,15 @@ namespace OJ
                 percent += 5f;
             if (level >= 12)
                 percent += 10f;
+            return percent;
+        }
+
+        public static float GetTimeCooldownReducePercent(DiceType diceType, int level)
+        {
+            float percent = GetTimeCooldownReducePercent(level);
+            if (ElementUpgradeManager.Instance != null)
+                percent *= ElementUpgradeManager.Instance.GetTotalBonusMultiplier(diceType);
+
             return percent;
         }
 

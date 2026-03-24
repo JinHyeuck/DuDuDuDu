@@ -16,7 +16,7 @@ namespace OJ
 
             _lastCastFrame = Time.frameCount;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(level);
+            float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(DiceType, level);
             int targetCount = DiceMetaDataProvider.GetTimeTargetCount(level);
             PlayerController.Instance?.ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount);
 

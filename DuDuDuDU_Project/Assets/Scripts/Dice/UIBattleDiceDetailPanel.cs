@@ -284,7 +284,7 @@ namespace OJ
                     builder.AppendLine();
                     builder.AppendFormat(
                         "밀쳐내기: {0:0.#}% 확률, 최대 {1}명",
-                        DiceMetaDataProvider.GetWindPushChancePercent(level),
+                        DiceMetaDataProvider.GetWindPushChancePercent(currentDiceType, level),
                         DiceMetaDataProvider.GetWindTargetCount(level));
                     if (followUpDamage > 0)
                     {
@@ -296,7 +296,7 @@ namespace OJ
                     builder.AppendLine();
                     builder.AppendFormat(
                         "쿨타임 감소: 남은 쿨타임 {0:0.#}% 감소, 랜덤 {1}개",
-                        DiceMetaDataProvider.GetTimeCooldownReducePercent(level),
+                        DiceMetaDataProvider.GetTimeCooldownReducePercent(currentDiceType, level),
                         DiceMetaDataProvider.GetTimeTargetCount(level));
                     break;
             }

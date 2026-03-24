@@ -288,7 +288,7 @@ namespace OJ
             if (diceType == DiceType.Time)
             {
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Time) : 1;
-                float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(level);
+                float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(DiceType.Time, level);
                 int targetCount = DiceMetaDataProvider.GetTimeTargetCount(level);
                 ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount, sourceDice);
                 characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
