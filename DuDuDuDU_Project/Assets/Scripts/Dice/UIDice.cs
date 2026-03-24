@@ -31,6 +31,7 @@ namespace OJ
         private CanvasGroup canvasGroup;
         private Canvas canvas;
         private float lastPointerClickTime = -10f;
+        private int clickSequence;
 
         public void Init(DiceType type, int star, int slotIndex)
         {
@@ -233,7 +234,9 @@ namespace OJ
             if (eventData.button != PointerEventData.InputButton.Left)
                 return;
 
-            if (GameManager.Instance != null && GameManager.Instance.inGameState == InGameState.Wave)
+            InGameState state = GameManager.Instance != null ? GameManager.Instance.inGameState : InGameState.None;
+
+            if (state == InGameState.Wave)
             {
                 UIBoard.Instance?.OpenBattleDiceDetail(this);
                 return;
@@ -244,12 +247,16 @@ namespace OJ
 
             if (isDoubleClick || isDoubleTap)
             {
+                clickSequence++;
                 lastPointerClickTime = -10f;
                 TryAutoMergeSameDice();
                 return;
             }
 
             lastPointerClickTime = Time.unscaledTime;
+
+            if (state == InGameState.Setting)
+                HandleSingleClick(++clickSequence).Forget();
         }
 
         private void TryAutoMergeSameDice()
@@ -288,6 +295,22 @@ namespace OJ
 
             if (target != null)
                 MergeSystem.Instance.TryMerge(this, target);
+        }
+
+        private async UniTaskVoid HandleSingleClick(int sequence)
+        {
+            await UniTask.Delay(
+                Mathf.RoundToInt(DoubleTapThreshold * 1000f),
+                DelayType.UnscaledDeltaTime,
+                PlayerLoopTiming.Update);
+
+            if (sequence != clickSequence)
+                return;
+
+            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Setting)
+                return;
+
+            UIBoard.Instance?.OpenBattleDiceDetail(this);
         }
 
         #endregion

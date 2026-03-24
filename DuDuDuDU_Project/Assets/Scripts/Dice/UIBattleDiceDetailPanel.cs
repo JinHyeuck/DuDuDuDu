@@ -44,7 +44,14 @@ namespace OJ
             if (!isEnter)
                 return;
 
-            if (currentDice == null || GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Wave)
+            if (currentDice == null || GameManager.Instance == null)
+            {
+                Exit();
+                return;
+            }
+
+            InGameState state = GameManager.Instance.inGameState;
+            if (state != InGameState.Wave && state != InGameState.Setting)
             {
                 Exit();
                 return;
@@ -174,7 +181,6 @@ namespace OJ
             if (meta.baseAttack > 0)
             {
                 builder.AppendFormat("{0} 기준 피해: {1}", monster.Label, directDamage);
-                builder.AppendFormat(" (방어력 {0})", monster.Defense);
 
                 if (followUpDamage > directDamage)
                 {
@@ -422,6 +428,14 @@ namespace OJ
         {
             if (GameManager.Instance == null)
                 return new BattleMonsterSnapshot("몬스터", 1, 0);
+
+            if (GameManager.Instance.inGameState == InGameState.Setting)
+            {
+                return new BattleMonsterSnapshot(
+                    "다음 웨이브 몬스터",
+                    GameManager.Instance.GetCurrentWaveMonsterHp(),
+                    GameManager.Instance.GetCurrentWaveMonsterDefense());
+            }
 
             bool isBoss = GameManager.Instance.IsBossWave();
             return isBoss
