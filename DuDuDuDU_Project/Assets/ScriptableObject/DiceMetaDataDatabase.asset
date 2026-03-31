@@ -16,7 +16,8 @@ MonoBehaviour:
   - diceType: 0
     elementType: 00000000
     displayName: Normal Dice
-    description: "적 1명에게 12 + (레벨 x 3) 대미지를 줍니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 12 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
+      \uC90D\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
@@ -46,17 +47,20 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "최종 대미지 10% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "쿨타임 10% 감소"
+      description: "\uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
     - level: 9
-      description: "공격 시 20% 확률로 SP +5"
+      description: "\uACF5\uACA9 \uC2DC 20% \uD655\uB960\uB85C SP +5"
     - level: 12
-      description: "공격 시 20% 확률로 대미지 2배"
+      description: "\uACF5\uACA9 \uC2DC 20% \uD655\uB960\uB85C \uB300\uBBF8\uC9C0
+        2\uBC30"
   - diceType: 1
     elementType: 01000000
     displayName: Fire Dice
-    description: "적 1명에게 10 + (레벨 x 4) 대미지를 주고 주변 적에게 폭발 피해를 줍니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 10 + (\uB808\uBCA8 x 4) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uC8FC\uBCC0 \uC801\uC5D0\uAC8C \uD3ED\uBC1C \uD53C\uD574\uB97C
+      \uC90D\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
@@ -86,17 +90,19 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "최종 대미지 10% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "공격 시 20% 확률로 한 번 더 폭발"
+      description: "\uACF5\uACA9 \uC2DC 20% \uD655\uB960\uB85C \uD55C \uBC88 \uB354
+        \uD3ED\uBC1C"
     - level: 9
-      description: "폭발 범위 10% 증가"
+      description: "\uD3ED\uBC1C \uBC94\uC704 10% \uC99D\uAC00"
     - level: 12
-      description: "쿨타임 20% 감소"
+      description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
   - diceType: 2
     elementType: 02000000
     displayName: Ice Dice
-    description: "적 1명에게 9 + (레벨 x 3) 대미지를 주고 둔화를 부여합니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 9 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uB454\uD654\uB97C \uBD80\uC5EC\uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
@@ -123,17 +129,18 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "최종 대미지 10% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "공격 시 30% 확률로 범위 피해"
+      description: "\uACF5\uACA9 \uC2DC 30% \uD655\uB960\uB85C \uBC94\uC704 \uD53C\uD574"
     - level: 9
-      description: "둔화 지속시간 50% 증가"
+      description: "\uB454\uD654 \uC9C0\uC18D\uC2DC\uAC04 50% \uC99D\uAC00"
     - level: 12
-      description: "쿨타임 20% 감소"
+      description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
   - diceType: 3
     elementType: 03000000
     displayName: Thunder Dice
-    description: "적 2명에게 11 + (레벨 x 3) 대미지를 줍니다."
+    description: "\uC801 2\uBA85\uC5D0\uAC8C 11 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
+      \uC90D\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
     color: {r: 1, g: 0.8745098, b: 0, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
@@ -164,17 +171,19 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "최종 대미지 10% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "공격 대상 +1"
+      description: "\uACF5\uACA9 \uB300\uC0C1 +1"
     - level: 9
-      description: "쿨타임 10% 감소"
+      description: "\uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
     - level: 12
-      description: "공격한 적 주변 1명에게 50% 추가 번개 피해"
+      description: "\uACF5\uACA9\uD55C \uC801 \uC8FC\uBCC0 1\uBA85\uC5D0\uAC8C 50%
+        \uCD94\uAC00 \uBC88\uAC1C \uD53C\uD574"
   - diceType: 4
     elementType: 04000000
     displayName: Poison Dice
-    description: "적 1명에게 8 + (레벨 x 2) 대미지를 주고 중독을 부여합니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 8 + (\uB808\uBCA8 x 2) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uC911\uB3C5\uC744 \uBD80\uC5EC\uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
     color: {r: 0, g: 0.75686276, b: 0.03137255, a: 1}
     projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
@@ -204,23 +213,27 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "최종 대미지 10% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "중독 피해량 50% 증가"
+      description: "\uC911\uB3C5 \uD53C\uD574\uB7C9 50% \uC99D\uAC00"
     - level: 9
-      description: "공격 시 40% 확률로 범위 피해"
+      description: "\uACF5\uACA9 \uC2DC 40% \uD655\uB960\uB85C \uBC94\uC704 \uD53C\uD574"
     - level: 12
-      description: "중독된 적이 받는 피해 10% 증가"
+      description: "\uC911\uB3C5\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 10%
+        \uC99D\uAC00"
   - diceType: 100
     elementType: 000000000400000002000000
     displayName: Tornado Dice
-    description: "적 1명에게 9 + (레벨 x 3) 대미지를 주고 주변 적을 끌어당깁니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 9 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uC8FC\uBCC0 \uC801\uC744 \uB04C\uC5B4\uB2F9\uAE41\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: fce5978a8e2e642d1b9d797008f38bf2, type: 3}
     color: {r: 0.68, g: 0.78, b: 0.96, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 6035269022472480307, guid: cbcdcea8a9a9a48618e1bea16ddf022e, type: 3}
     effectPrefabs:
     - {fileID: 6035269022472480307, guid: cbcdcea8a9a9a48618e1bea16ddf022e, type: 3}
+    - {fileID: 6035269022472480307, guid: f3a91068af69c46878951bff4ba723f5, type: 3}
+    - {fileID: 6035269022472480307, guid: 92627d2bd02c44812897f388e3fad2c5, type: 3}
     isMythic: 0
     summonable: 0
     canMerge: 0
@@ -244,17 +257,18 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "범위 10% 증가"
+      description: "\uBC94\uC704 10% \uC99D\uAC00"
     - level: 6
-      description: "적을 2초 동안 흡입"
+      description: "\uC801\uC744 2\uCD08 \uB3D9\uC548 \uD761\uC785"
     - level: 9
-      description: "쿨타임 20% 감소"
+      description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
     - level: 12
-      description: "최종 대미지 30% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 30% \uC99D\uAC00"
   - diceType: 101
     elementType: 0400000002000000
     displayName: Stun Dice
-    description: "적 1명에게 8 + (레벨 x 2) 대미지를 주고 40% 확률로 스턴시킵니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 8 + (\uB808\uBCA8 x 2) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 40% \uD655\uB960\uB85C \uC2A4\uD134\uC2DC\uD0B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: f4ae75e80a9d34a74a31484109b782da, type: 3}
     color: {r: 0.62, g: 0.51, b: 0.97, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
@@ -285,17 +299,19 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "최종 대미지 10% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "스턴 확률 10% 증가"
+      description: "\uC2A4\uD134 \uD655\uB960 10% \uC99D\uAC00"
     - level: 9
-      description: "쿨타임 10% 감소"
+      description: "\uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
     - level: 12
-      description: "스턴된 적이 받는 피해 20% 증가"
+      description: "\uC2A4\uD134\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 20%
+        \uC99D\uAC00"
   - diceType: 102
     elementType: 0400000001000000
     displayName: Armor Break Dice
-    description: "적 1명에게 10 + (레벨 x 3) 대미지를 주고 방어력을 30% 감소시킵니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 10 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uBC29\uC5B4\uB825\uC744 30% \uAC10\uC18C\uC2DC\uD0B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: b2cf1c4783c3f418fabea07364adc7f8, type: 3}
     color: {r: 0.93, g: 0.26, b: 0.18, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
@@ -322,17 +338,19 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "최종 대미지 10% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "방어력 감소 10% 증가"
+      description: "\uBC29\uC5B4\uB825 \uAC10\uC18C 10% \uC99D\uAC00"
     - level: 9
-      description: "쿨타임 20% 감소"
+      description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
     - level: 12
-      description: "방깎 상태 적이 받는 피해 10% 증가"
+      description: "\uBC29\uAE4E \uC0C1\uD0DC \uC801\uC774 \uBC1B\uB294 \uD53C\uD574
+        10% \uC99D\uAC00"
   - diceType: 103
     elementType: 0200000003000000
     displayName: Wind Dice
-    description: "적 2명을 40 + (레벨 x 1)% 확률로 밀어냅니다. 대미지는 없습니다."
+    description: "\uC801 2\uBA85\uC744 40 + (\uB808\uBCA8 x 1)% \uD655\uB960\uB85C
+      \uBC00\uC5B4\uB0C5\uB2C8\uB2E4. \uB300\uBBF8\uC9C0\uB294 \uC5C6\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8409b8d4e7b75425c98a50fd4cef60b8, type: 3}
     color: {r: 0.56, g: 0.93, b: 0.9, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
@@ -362,17 +380,20 @@ MonoBehaviour:
     scrollCostPerLevel: 2
     milestones:
     - level: 3
-      description: "밀어내는 거리 10% 증가"
+      description: "\uBC00\uC5B4\uB0B4\uB294 \uAC70\uB9AC 10% \uC99D\uAC00"
     - level: 6
-      description: "밀리는 적이 받는 피해 10% 증가"
+      description: "\uBC00\uB9AC\uB294 \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 10%
+        \uC99D\uAC00"
     - level: 9
-      description: "밀어내기 확률 10% 추가 증가"
+      description: "\uBC00\uC5B4\uB0B4\uAE30 \uD655\uB960 10% \uCD94\uAC00 \uC99D\uAC00"
     - level: 12
-      description: "밀어내는 대상 +1"
+      description: "\uBC00\uC5B4\uB0B4\uB294 \uB300\uC0C1 +1"
   - diceType: 104
     elementType: 0300000000000000
     displayName: Time Dice
-    description: "다른 무작위 다이스 2개의 남은 쿨타임을 10 + (레벨 x 1)% 감소시킵니다. 대미지는 없습니다."
+    description: "\uB2E4\uB978 \uBB34\uC791\uC704 \uB2E4\uC774\uC2A4 2\uAC1C\uC758
+      \uB0A8\uC740 \uCFE8\uD0C0\uC784\uC744 10 + (\uB808\uBCA8 x 1)% \uAC10\uC18C\uC2DC\uD0B5\uB2C8\uB2E4.
+      \uB300\uBBF8\uC9C0\uB294 \uC5C6\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: eb3cbc299964142c0848fca7f35b4097, type: 3}
     color: {r: 1, g: 0.84, b: 0.48, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
@@ -402,17 +423,18 @@ MonoBehaviour:
     scrollCostPerLevel: 3
     milestones:
     - level: 3
-      description: "쿨타임 감소량 5% 추가 증가"
+      description: "\uCFE8\uD0C0\uC784 \uAC10\uC18C\uB7C9 5% \uCD94\uAC00 \uC99D\uAC00"
     - level: 6
-      description: "대상 +1"
+      description: "\uB300\uC0C1 +1"
     - level: 9
-      description: "자신의 쿨타임 10% 감소"
+      description: "\uC790\uC2E0\uC758 \uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
     - level: 12
-      description: "쿨타임 감소량 10% 추가 증가"
+      description: "\uCFE8\uD0C0\uC784 \uAC10\uC18C\uB7C9 10% \uCD94\uAC00 \uC99D\uAC00"
   - diceType: 200
     elementType: 00000000
     displayName: King Normal
-    description: "적 1명에게 104 + (레벨 x 20) 대미지를 주고 주변 적을 추가 타격합니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 104 + (\uB808\uBCA8 x 20) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uC8FC\uBCC0 \uC801\uC744 \uCD94\uAC00 \uD0C0\uACA9\uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: e0417207cd18f4a47abbfee0c73b95ef, type: 3}
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
@@ -439,17 +461,20 @@ MonoBehaviour:
     scrollCostPerLevel: 3
     milestones:
     - level: 3
-      description: "최종 대미지 30% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 30% \uC99D\uAC00"
     - level: 6
-      description: "NormalDice 최종 대미지 20% 증가"
+      description: "NormalDice \uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 9
-      description: "모든 다이스 크리티컬 확률 10% 증가"
+      description: "\uBAA8\uB4E0 \uB2E4\uC774\uC2A4 \uD06C\uB9AC\uD2F0\uCEEC \uD655\uB960
+        10% \uC99D\uAC00"
     - level: 12
-      description: "모든 다이스 크리티컬 대미지 20% 증가"
+      description: "\uBAA8\uB4E0 \uB2E4\uC774\uC2A4 \uD06C\uB9AC\uD2F0\uCEEC \uB300\uBBF8\uC9C0
+        20% \uC99D\uAC00"
   - diceType: 201
     elementType: 01000000
     displayName: King Fire
-    description: "적 1명에게 110 + (레벨 x 22) 대미지를 주고 강화 폭발을 일으킵니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 110 + (\uB808\uBCA8 x 22) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uAC15\uD654 \uD3ED\uBC1C\uC744 \uC77C\uC73C\uD0B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8a5316ab16cef479ea73b9eba37c0f7c, type: 3}
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
@@ -476,17 +501,19 @@ MonoBehaviour:
     scrollCostPerLevel: 3
     milestones:
     - level: 3
-      description: "최종 대미지 20% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 6
-      description: "FireDice 폭발 범위 20% 증가"
+      description: "FireDice \uD3ED\uBC1C \uBC94\uC704 20% \uC99D\uAC00"
     - level: 9
-      description: "폭발이 30% 확률로 한 번 더 발생"
+      description: "\uD3ED\uBC1C\uC774 30% \uD655\uB960\uB85C \uD55C \uBC88 \uB354
+        \uBC1C\uC0DD"
     - level: 12
-      description: "폭발 피해 30% 증가"
+      description: "\uD3ED\uBC1C \uD53C\uD574 30% \uC99D\uAC00"
   - diceType: 202
     elementType: 02000000
     displayName: King Ice
-    description: "적 1명에게 100 + (레벨 x 20) 대미지를 주고 강한 둔화를 부여합니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 100 + (\uB808\uBCA8 x 20) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uAC15\uD55C \uB454\uD654\uB97C \uBD80\uC5EC\uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: f2c17ecc362ac4189bce91d992af2c63, type: 3}
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
@@ -513,17 +540,19 @@ MonoBehaviour:
     scrollCostPerLevel: 3
     milestones:
     - level: 3
-      description: "최종 대미지 20% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 6
-      description: "IceDice 둔화 지속시간 50% 증가"
+      description: "IceDice \uB454\uD654 \uC9C0\uC18D\uC2DC\uAC04 50% \uC99D\uAC00"
     - level: 9
-      description: "공격 시 빙결 부여"
+      description: "\uACF5\uACA9 \uC2DC \uBE59\uACB0 \uBD80\uC5EC"
     - level: 12
-      description: "둔화된 적이 받는 피해 15% 증가"
+      description: "\uB454\uD654\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 15%
+        \uC99D\uAC00"
   - diceType: 203
     elementType: 03000000
     displayName: King Thunder
-    description: "적 4명에게 116 + (레벨 x 24) 대미지를 주는 강화 번개 공격을 합니다."
+    description: "\uC801 4\uBA85\uC5D0\uAC8C 116 + (\uB808\uBCA8 x 24) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uB294 \uAC15\uD654 \uBC88\uAC1C \uACF5\uACA9\uC744 \uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 7379251cca103456b90508362193a5f4, type: 3}
     color: {r: 1, g: 0.8745099, b: 0, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
@@ -551,17 +580,18 @@ MonoBehaviour:
     scrollCostPerLevel: 3
     milestones:
     - level: 3
-      description: "공격 대상 +2"
+      description: "\uACF5\uACA9 \uB300\uC0C1 +2"
     - level: 6
-      description: "ThunderDice 최종 대미지 20% 증가"
+      description: "ThunderDice \uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 9
-      description: "30% 확률로 추가 1명에게 50% 피해"
+      description: "30% \uD655\uB960\uB85C \uCD94\uAC00 1\uBA85\uC5D0\uAC8C 50% \uD53C\uD574"
     - level: 12
-      description: "맞은 적이 받는 피해 15% 증가"
+      description: "\uB9DE\uC740 \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 15% \uC99D\uAC00"
   - diceType: 204
     elementType: 04000000
     displayName: King Poison
-    description: "적 1명에게 98 + (레벨 x 20) 대미지를 주고 중독과 둔화를 부여합니다."
+    description: "\uC801 1\uBA85\uC5D0\uAC8C 98 + (\uB808\uBCA8 x 20) \uB300\uBBF8\uC9C0\uB97C
+      \uC8FC\uACE0 \uC911\uB3C5\uACFC \uB454\uD654\uB97C \uBD80\uC5EC\uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 5f060361b8d6a405f896c7747aadb085, type: 3}
     color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
     projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
@@ -588,10 +618,12 @@ MonoBehaviour:
     scrollCostPerLevel: 3
     milestones:
     - level: 3
-      description: "최종 대미지 20% 증가"
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 6
-      description: "PoisonDice 중독 피해량 50% 증가"
+      description: "PoisonDice \uC911\uB3C5 \uD53C\uD574\uB7C9 50% \uC99D\uAC00"
     - level: 9
-      description: "중독이 주변 적 1명에게 30% 확률로 전이"
+      description: "\uC911\uB3C5\uC774 \uC8FC\uBCC0 \uC801 1\uBA85\uC5D0\uAC8C 30%
+        \uD655\uB960\uB85C \uC804\uC774"
     - level: 12
-      description: "중독된 적이 받는 피해 15% 증가"
+      description: "\uC911\uB3C5\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 15%
+        \uC99D\uAC00"

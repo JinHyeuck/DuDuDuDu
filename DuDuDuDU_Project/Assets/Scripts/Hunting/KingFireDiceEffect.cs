@@ -54,17 +54,18 @@ namespace OJ
 
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
         {
-            if (attackContent == null || target == null || target.gameObject.activeInHierarchy == false)
+            if (attackContent == null || target == null)
                 return;
 
             if (target != attackContent.CurrentRootTarget)
                 return;
 
+            Vector3 center = target.transform.position;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             if (level < 9 || Random.value > 0.3f)
                 return;
 
-            attackContent.StartCoroutine(CoDelayedExplosion(attackContent, target.transform.position, attackContent.CurrentDamage));
+            attackContent.StartCoroutine(CoDelayedExplosion(attackContent, center, attackContent.CurrentDamage));
         }
 
         private IEnumerator CoDelayedExplosion(AttackContent attackContent, Vector3 center, int damage)

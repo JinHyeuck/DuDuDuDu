@@ -38,14 +38,15 @@ namespace OJ
 
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
         {
-            if (attackContent == null || target == null || target.gameObject.activeInHierarchy == false)
+            if (attackContent == null || target == null)
                 return;
 
             if (attackContent.CurrentDiceLevel < 12)
                 return;
 
+            Vector3 center = target.transform.position;
             List<Monster> nearby = attackContent.GetRedHitTarget(
-                target.transform.position,
+                center,
                 IFFType.IFF_Friend,
                 1.2f,
                 1,
@@ -55,7 +56,7 @@ namespace OJ
                 return;
 
             int splashDamage = Mathf.Max(1, Mathf.RoundToInt(attackContent.CurrentDamage * 0.5f));
-            PlayLineEffect(DiceType, target.transform.position, nearby[0].transform.position, EffectID.C1);
+            PlayLineEffect(DiceType, center, nearby[0].transform.position, EffectID.C1);
             attackContent.HitMonster(nearby[0], DiceType, splashDamage);
             PlayEffectAt(DiceType, nearby[0].transform.position);
         }

@@ -14,12 +14,16 @@ namespace OJ
         private List<Sprite> spriteEffect;
 
         [SerializeField]
+        private bool PlayLoop = false;
+
+        [SerializeField]
         private SpriteRenderer m_spriteRenderer;
 
 
         private bool m_isPlay = false;
 
         public float FrameTime = 0.2f;
+        public float Duration => (spriteEffect != null ? spriteEffect.Count : 0) * Mathf.Max(0.0001f, FrameTime);
 
         private int aniIndex = 0;
         private float nextFrameTime = 0;
@@ -68,6 +72,12 @@ namespace OJ
             {
                 if (spriteEffect.Count <= aniIndex)
                 {
+                    if(PlayLoop == true)
+                    {
+                        aniIndex = 0;
+                        return;
+                    }
+                    
                     ReleaseObj();
                     return;
                 }

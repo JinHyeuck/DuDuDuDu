@@ -41,17 +41,18 @@ namespace OJ
 
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
         {
-            if (attackContent == null || target == null || target.gameObject.activeInHierarchy == false)
+            if (attackContent == null || target == null)
                 return;
 
+            Vector3 center = target.transform.position;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            if (level >= 12)
+            if (level >= 12 && target.gameObject.activeInHierarchy)
                 target.ApplyThunderDamageTakenBonus(15, 5f);
 
             if (level >= 9 && UnityEngine.Random.value <= 0.3f)
             {
                 List<Monster> nearby = attackContent.GetRedHitTarget(
-                    target.transform.position,
+                    center,
                     IFFType.IFF_Friend,
                     1.2f,
                     1,
@@ -59,7 +60,7 @@ namespace OJ
 
                 if (nearby.Count > 0 && nearby[0] != null && nearby[0] != target)
                 {
-                    PlayLineEffect(DiceType, target.transform.position, nearby[0].transform.position, EffectID.C1);
+                    PlayLineEffect(DiceType, center, nearby[0].transform.position, EffectID.C1);
                     attackContent.HitMonster(nearby[0], DiceType, Mathf.Max(1, Mathf.RoundToInt(attackContent.CurrentDamage * 0.5f)));
                 }
             }

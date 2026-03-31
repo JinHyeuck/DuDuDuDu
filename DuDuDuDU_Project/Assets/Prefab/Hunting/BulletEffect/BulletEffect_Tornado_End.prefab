@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 812728589144278855}
   - component: {fileID: 6035269022472480307}
   m_Layer: 16
-  m_Name: BulletEffect_Tornado
+  m_Name: BulletEffect_Tornado_End
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -77,7 +77,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 32
-  m_Sprite: {fileID: 21300000, guid: c86b014f1a41cf945b0873504dcaa368, type: 3}
+  m_Sprite: {fileID: 21300000, guid: dc0349b311aff4cff96ca4ddf9aa7499, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -101,13 +101,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   myDiceType: 100
-  myEffectType: 0
+  myEffectType: 2
   spriteEffect:
-  - {fileID: 21300000, guid: c86b014f1a41cf945b0873504dcaa368, type: 3}
-  - {fileID: 21300000, guid: 2d528f7a87f196e4da2d27c651db1292, type: 3}
-  - {fileID: 21300000, guid: 790fb181d0cae704cbcc890c243bcb05, type: 3}
-  - {fileID: 21300000, guid: 496138272a1e7a544864f64f571ddae5, type: 3}
-  - {fileID: 21300000, guid: 307f98e2f77ccda408594f00ee5d219a, type: 3}
-  - {fileID: 21300000, guid: 3f57b5f33004ff54fb9707c258148f1c, type: 3}
+  - {fileID: 21300000, guid: dc0349b311aff4cff96ca4ddf9aa7499, type: 3}
+  - {fileID: 21300000, guid: cdf6a5c75bd4a4431ad76438ff4b5396, type: 3}
+  - {fileID: 21300000, guid: c57e3f3c02bc246658bc2e28b3c5f29c, type: 3}
+  PlayLoop: 0
   m_spriteRenderer: {fileID: 812728589144278855}
-  FrameTime: 0.05
+  FrameTime: 0.1

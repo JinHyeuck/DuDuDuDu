@@ -6,8 +6,9 @@ using TMPro;
 
 namespace OJ
 {
-    public class ElementUpgradeManager : MonoSingleton<ElementUpgradeManager>
+    public class ElementUpgradeManager : MonoBehaviour
     {
+        public static ElementUpgradeManager Instance;
         [SerializeField] private Button ElementUpgrade;
         [SerializeField] private Image coinIconImage;
         [SerializeField] private TMP_Text coinAmountText;
@@ -17,18 +18,27 @@ namespace OJ
 
         public event Action<ElementType, int> OnElementLevelChanged;
 
-        protected override void Init()
+        void Awake()
         {
-            base.Init();
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+
             ResetAll(false);
             BindUI();
             RefreshCoinUI();
         }
 
-        protected override void Release()
+        private void OnDestroy()
         {
             UnbindUI();
-            base.Release();
+
+            if (Instance == this)
+                Instance = null;
         }
 
         public int GetLevel(ElementType elementType)
