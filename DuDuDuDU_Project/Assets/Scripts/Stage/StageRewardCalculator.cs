@@ -67,16 +67,48 @@ namespace OJ
 
         public static List<StageRewardEntry> BuildNormalClearRewards(int stageIndex)
         {
-            int chapterBonus = GetChapterBonus(stageIndex);
             var rewards = new List<StageRewardEntry>
             {
-                new StageRewardEntry(PointType.Gold, 150 + chapterBonus),
+                new StageRewardEntry(PointType.Gold, GetGuaranteedNormalGold(stageIndex)),
             };
 
             AddDistinctRewards(rewards, ElementScrollTypes, new[] { 20, 40 });
             rewards.Add(new StageRewardEntry(PointType.MythicScroll, Random.Range(5, 11)));
             AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 3 });
             return rewards;
+        }
+
+        public static int GetGuaranteedNormalGold(int stageIndex)
+        {
+            return 150 + GetChapterBonus(stageIndex);
+        }
+
+        public static int GetAccumulatedGuaranteedGold(int stageIndex, int clearedWaves, int totalWaves)
+        {
+            int safeTotalWaves = Mathf.Max(1, totalWaves);
+            int safeClearedWaves = Mathf.Clamp(clearedWaves, 0, safeTotalWaves);
+            float ratio = (float)safeClearedWaves / safeTotalWaves;
+            return Mathf.FloorToInt(GetGuaranteedNormalGold(stageIndex) * ratio);
+        }
+
+        public static List<StageRewardEntry> ScaleRewards(IReadOnlyList<StageRewardEntry> rewards, float multiplier)
+        {
+            var scaledRewards = new List<StageRewardEntry>();
+            if (rewards == null || rewards.Count == 0)
+                return scaledRewards;
+
+            float clampedMultiplier = Mathf.Clamp01(multiplier);
+            for (int i = 0; i < rewards.Count; i++)
+            {
+                StageRewardEntry reward = rewards[i];
+                int scaledAmount = Mathf.FloorToInt(reward.Amount * clampedMultiplier);
+                if (scaledAmount <= 0)
+                    continue;
+
+                scaledRewards.Add(new StageRewardEntry(reward.PointType, scaledAmount));
+            }
+
+            return scaledRewards;
         }
 
         public static List<StageRewardEntry> BuildBonusRewards(int stageIndex, StageRewardTierFlags rewardFlags)

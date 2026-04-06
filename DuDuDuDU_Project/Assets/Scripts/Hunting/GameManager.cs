@@ -24,6 +24,8 @@ namespace OJ
 
         [Header("Craft")]
         [SerializeField] private UIDiceCraftProgressDialog craftProgressDialog;
+        [Header("Reward Preview")]
+        [SerializeField] private UIWaveRewardPreviewDialog waveRewardPreviewDialog;
         public Button PlayUI;
         public Image PlayUI_Field;
         public Button Pause;
@@ -184,11 +186,24 @@ namespace OJ
         {
             if (isGameOver) return;
             isGameOver = true;
+            inGameState = InGameState.None;
+
+            int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
+            int totalWaves = CurrentStageData != null ? Mathf.Max(1, CurrentStageData.totalWaves) : 1;
+            int clearedWaves = Mathf.Clamp(CurrentWaveIndex - 1, 0, totalWaves);
+            float rewardRatio = (float)clearedWaves / totalWaves;
+
+            List<StageRewardEntry> partialRewards = StageRewardCalculator.ScaleRewards(
+                StageRewardCalculator.BuildNormalClearRewards(stageIndex),
+                rewardRatio);
+            StageRewardCalculator.GrantRewards(partialRewards);
+
             RunHistoryManager.Instance?.EndRun(
                 RunResultType.Fail,
                 CurrentWaveIndex,
                 wall != null ? wall.CurrentHp : 0);
-            Debug.Log("Game Over!");
+            Debug.Log(
+                $"Stage {stageIndex} Failed | Cleared Waves: {clearedWaves}/{totalWaves} | Ratio: {rewardRatio:0.##} | Partial Normal: {StageRewardCalculator.BuildRewardSummary(partialRewards)}");
             StartCoroutine(CoReturnToLobby());
         }
 
@@ -278,7 +293,10 @@ namespace OJ
             PointManager.Instance?.Add(PointType.Coin, 1);
 
             if (CurrentStageData != null)
+            {
                 UIDiceSummonSystem.Instance?.AddSP(CurrentStageData.waveClearSP);
+                ShowWaveRewardPreview();
+            }
 
             RunHistoryManager.Instance?.RecordWaveComplete(
                 CurrentWaveIndex,
@@ -292,6 +310,28 @@ namespace OJ
             }
 
             ChangeState(InGameState.Setting);
+        }
+
+        private void ShowWaveRewardPreview()
+        {
+            if (waveRewardPreviewDialog == null || CurrentStageData == null)
+                return;
+
+            int totalWaves = Mathf.Max(1, CurrentStageData.totalWaves);
+            int currentAccumulatedGold = StageRewardCalculator.GetAccumulatedGuaranteedGold(
+                CurrentStageData.stageIndex,
+                CurrentWaveIndex,
+                totalWaves);
+            int previousAccumulatedGold = StageRewardCalculator.GetAccumulatedGuaranteedGold(
+                CurrentStageData.stageIndex,
+                CurrentWaveIndex - 1,
+                totalWaves);
+            int gainedGold = currentAccumulatedGold - previousAccumulatedGold;
+
+            waveRewardPreviewDialog.ShowGoldGain(
+                gainedGold,
+                currentAccumulatedGold,
+                StageRewardCalculator.GetGuaranteedNormalGold(CurrentStageData.stageIndex));
         }
 
         private void UpdateWaveText()
