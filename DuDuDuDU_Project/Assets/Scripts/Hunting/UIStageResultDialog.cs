@@ -1,37 +1,49 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
+using Object = UnityEngine.Object;
 
 namespace OJ
 {
     public class UIStageResultDialog : IDialog
     {
-        private const string WinSpritePath = "Art/Layout/Reward_Win";
-        private const string FailSpritePath = "Art/Layout/Reward_Failed";
-
-        [Serializable]
-        private sealed class RewardSlot
-        {
-            public RectTransform Root;
-            public Image Icon;
-            public TMP_Text AmountText;
-        }
-
         [Header("State")]
         [SerializeField] private RectTransform rootRect;
-        [SerializeField] private Image dimmedBackgroundImage;
         [SerializeField] private List<TMP_Text> stageLabelText;
         [SerializeField] private TMP_Text mainValueText;
         [SerializeField] private TMP_Text bestStageLabelText;
         [SerializeField] private TMP_Text bestStageValueText;
         [SerializeField] private RectTransform rewardRoot;
-        [SerializeField] private List<RewardSlot> rewardSlots = new List<RewardSlot>();
+        [SerializeField] private UIRewardElement rewardElementTemplate;
 
         private Action closeAction;
         [SerializeField] private Transform winSprite;
         [SerializeField] private Transform failSprite;
+        private readonly List<UIRewardElement> rewardElements = new List<UIRewardElement>();
+
+        protected override void OnLoad()
+        {
+            if (rewardRoot == null && rewardElementTemplate != null)
+                rewardRoot = rewardElementTemplate.transform.parent as RectTransform;
+
+            bool hasSceneTemplate = rewardElementTemplate != null && rewardElementTemplate.gameObject.scene.IsValid();
+
+            if (hasSceneTemplate)
+                rewardElementTemplate.gameObject.SetActive(false);
+
+            if (rewardRoot != null)
+            {
+                for (int i = 0; i < rewardRoot.childCount; i++)
+                {
+                    Transform child = rewardRoot.GetChild(i);
+                    if (hasSceneTemplate && child == rewardElementTemplate.transform)
+                        continue;
+
+                    child.gameObject.SetActive(false);
+                }
+            }
+        }
 
         protected override void OnExit()
         {
@@ -76,23 +88,53 @@ namespace OJ
         {
             List<StageRewardEntry> mergedRewards = MergeRewards(rewards);
 
-            for (int i = 0; i < rewardSlots.Count; i++)
+            Debug.Log(BuildRewardLog(mergedRewards));
+
+            EnsureRewardElements(mergedRewards.Count);
+
+            for (int i = 0; i < rewardElements.Count; i++)
             {
-                RewardSlot slot = rewardSlots[i];
-                if (slot == null || slot.Root == null)
+                UIRewardElement rewardElement = rewardElements[i];
+                if (rewardElement == null)
                     continue;
 
                 bool shouldShow = i < mergedRewards.Count;
-                slot.Root.gameObject.SetActive(shouldShow);
+                rewardElement.gameObject.SetActive(shouldShow);
                 if (!shouldShow)
                     continue;
 
                 StageRewardEntry reward = mergedRewards[i];
-                if (slot.AmountText != null)
-                    slot.AmountText.SetText("{0:N0}", reward.Amount);
+                rewardElement.Bind(GetPointIcon(reward.PointType), reward.Amount);
+            }
+        }
 
-                if (slot.Icon != null)
-                    slot.Icon.sprite = GetPointIcon(reward.PointType);
+        private string BuildRewardLog(IReadOnlyList<StageRewardEntry> rewards)
+        {
+            if (rewards == null || rewards.Count == 0)
+                return "[UIStageResultDialog] Result rewards: none";
+
+            var parts = new List<string>(rewards.Count);
+            for (int i = 0; i < rewards.Count; i++)
+            {
+                StageRewardEntry reward = rewards[i];
+                Sprite icon = GetPointIcon(reward.PointType);
+                string iconName = icon != null ? icon.name : "null";
+                parts.Add($"{reward.PointType}:{reward.Amount} (icon:{iconName})");
+            }
+
+            return $"[UIStageResultDialog] Result rewards: {string.Join(", ", parts)}";
+        }
+
+        private void EnsureRewardElements(int count)
+        {
+            if (rewardElementTemplate == null || rewardRoot == null)
+                return;
+
+            while (rewardElements.Count < count)
+            {
+                UIRewardElement rewardElement = Object.Instantiate(rewardElementTemplate, rewardRoot);
+                rewardElement.gameObject.SetActive(true);
+                rewardElements.Add(rewardElement);
             }
         }
 

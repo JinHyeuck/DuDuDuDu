@@ -22,6 +22,7 @@ namespace OJ
         private CanvasGroup canvasGroup;
         private Coroutine playRoutine;
         private Vector2 shownPosition;
+        private bool hasShownPosition;
 
         protected override void OnLoad()
         {
@@ -45,7 +46,12 @@ namespace OJ
             //     detailText.SetText("클리어 시 누적 골드 {0}/{1}", accumulatedGold, totalGold);
 
             if (playRoutine != null)
+            {
                 StopCoroutine(playRoutine);
+                playRoutine = null;
+            }
+
+            ApplyHiddenState();
 
             Enter();
             playRoutine = StartCoroutine(CoPlay());
@@ -53,6 +59,12 @@ namespace OJ
 
         protected override void OnExit()
         {
+            if (playRoutine != null)
+            {
+                StopCoroutine(playRoutine);
+                playRoutine = null;
+            }
+
             ApplyHiddenState();
         }
 
@@ -68,8 +80,11 @@ namespace OJ
                     canvasGroup = dialogView.AddComponent<CanvasGroup>();
             }
 
-            if (panelRect != null)
+            if (panelRect != null && hasShownPosition == false)
+            {
                 shownPosition = panelRect.anchoredPosition;
+                hasShownPosition = true;
+            }
         }
 
         private void RefreshGoldIcon()
