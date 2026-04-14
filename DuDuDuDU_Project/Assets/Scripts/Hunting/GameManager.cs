@@ -26,6 +26,8 @@ namespace OJ
         [SerializeField] private UIDiceCraftProgressDialog craftProgressDialog;
         [Header("Reward Preview")]
         [SerializeField] private UIWaveRewardPreviewDialog waveRewardPreviewDialog;
+        [Header("Result")]
+        [SerializeField] private UIStageResultDialog stageResultDialog;
         public Button PlayUI;
         public Image PlayUI_Field;
         public Button Pause;
@@ -204,7 +206,7 @@ namespace OJ
                 wall != null ? wall.CurrentHp : 0);
             Debug.Log(
                 $"Stage {stageIndex} Failed | Cleared Waves: {clearedWaves}/{totalWaves} | Ratio: {rewardRatio:0.##} | Partial Normal: {StageRewardCalculator.BuildRewardSummary(partialRewards)}");
-            StartCoroutine(CoReturnToLobby());
+            ShowStageResult(false, stageIndex, clearedWaves, partialRewards);
         }
 
         public int GetCurrentWaveMonsterHp()
@@ -373,7 +375,10 @@ namespace OJ
                 CurrentWaveIndex,
                 wall != null ? wall.CurrentHp : 0);
 
-            StartCoroutine(CoReturnToLobby());
+            var resultRewards = new List<StageRewardEntry>(normalRewards.Count + bonusRewards.Count);
+            resultRewards.AddRange(normalRewards);
+            resultRewards.AddRange(bonusRewards);
+            ShowStageResult(true, stageIndex, CurrentWaveIndex, resultRewards);
         }
 
         private IEnumerator CoReturnToLobby()
@@ -381,6 +386,29 @@ namespace OJ
             inGameState = InGameState.None;
             yield return new WaitForSecondsRealtime(returnToLobbyDelay);
             SceneFlowManager.LoadLobby();
+        }
+
+        private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<StageRewardEntry> rewards)
+        {
+            if (stageResultDialog == null)
+            {
+                StartCoroutine(CoReturnToLobby());
+                return;
+            }
+
+            waveRewardPreviewDialog?.Exit();
+
+            int bestStageIndex = StageProgressManager.Instance != null
+                ? StageProgressManager.Instance.GetHighestUnlockedStageIndex()
+                : stageIndex;
+
+            stageResultDialog.Open(
+                isWin,
+                stageIndex,
+                reachedWaveCount,
+                bestStageIndex,
+                rewards,
+                SceneFlowManager.LoadLobby);
         }
 
         public void OnApplicationQuit()
