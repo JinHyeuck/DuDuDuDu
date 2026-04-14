@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
-using UnityEditor.iOS.Xcode;
 using System;
 using System.IO;
 using System.Linq;
@@ -14,6 +13,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 
 #if UNITY_IOS
+    using UnityEditor.iOS.Xcode;
     using UnityEditor.Callbacks;
     using AppleAuth.Editor;
     using UnityEditor.iOS.Xcode;
@@ -163,6 +163,7 @@ public static class Unity3dBuilder
     [PostProcessBuild]
     public static void OnPostProcessBuild(BuildTarget target, string buildPath)
     {
+#if UNITY_IOS
         if (target == BuildTarget.iOS)
         {
             var projectPath = PBXProject.GetPBXProjectPath(buildPath);
@@ -196,5 +197,6 @@ public static class Unity3dBuilder
             }
             File.WriteAllText(plistPath, plist.WriteToString());
         }
+#endif
     }
 }
