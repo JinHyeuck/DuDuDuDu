@@ -34,7 +34,12 @@ namespace OJ
 
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
         {
-            if (target == null || target.gameObject.activeInHierarchy == false)
+            if (target == null)
+                return;
+
+            PlayEffectAt(DiceType, target.transform.position);
+
+            if (target.gameObject.activeInHierarchy == false)
                 return;
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
@@ -43,7 +48,6 @@ namespace OJ
             target.ApplySlow(duration);
             if (level >= 9)
                 target.ApplyStun(1f);
-            PlayEffectAt(DiceType, target.transform.position);
         }
     }
 }
