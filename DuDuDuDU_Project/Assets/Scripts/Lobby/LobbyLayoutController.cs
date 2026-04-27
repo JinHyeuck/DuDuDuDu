@@ -38,6 +38,8 @@ namespace OJ
 
         private void Awake()
         {
+            ResolvePanelsIfNeeded();
+
             if (enterStageButton != null) enterStageButton.onClick.AddListener(OnClickEnterStage);
             if (previousStageButton != null) previousStageButton.onClick.AddListener(OnClickPreviousStage);
             if (nextStageButton != null) nextStageButton.onClick.AddListener(OnClickNextStage);
@@ -53,6 +55,7 @@ namespace OJ
 
         private void OnEnable()
         {
+            ResolvePanelsIfNeeded();
             selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetSelectedStageIndex() : 1;
             ShowTab(defaultTab);
             RefreshStageUI();
@@ -100,6 +103,8 @@ namespace OJ
 
         public void ShowTab(LobbyTab tab)
         {
+            ResolvePanelsIfNeeded();
+
             if (shopPanel != null) shopPanel.SetActive(tab == LobbyTab.Shop);
             if (equipmentPanel != null) equipmentPanel.SetActive(tab == LobbyTab.Equipment);
             if (bulletPanel != null) bulletPanel.SetActive(tab == LobbyTab.Bullet);
@@ -157,6 +162,14 @@ namespace OJ
                 int maxStage = Mathf.Max(highestUnlockedStage, selectedStageIndex);
                 nextStageButton.interactable = selectedStageIndex < Mathf.Min(StageDatabaseProvider.GetDatabase().StageCount, maxStage + 1);
             }
+        }
+
+        private void ResolvePanelsIfNeeded()
+        {
+            if (equipmentPanel == null)
+                equipmentPanel = GetComponentInChildren<UIEquipmentPage>(true);
+            if (bulletPanel == null)
+                bulletPanel = GetComponentInChildren<UIDiceGrowthPage>(true);
         }
     }
 }

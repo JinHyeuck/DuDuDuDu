@@ -27,25 +27,41 @@ namespace OJ
         private int slotIndex;
         private string selectedGemId;
         private System.Action onChanged;
+        private bool buttonsBound;
 
         protected override void OnLoad()
         {
-            if (equipButton != null)
-                equipButton.onClick.AddListener(OnClickEquip);
-            if (unequipButton != null)
-                unequipButton.onClick.AddListener(OnClickUnequip);
-            if (closeButton != null)
-                closeButton.onClick.AddListener(Exit);
+            TryBindButtons();
         }
 
         protected override void OnUnload()
         {
-            if (equipButton != null)
+            if (buttonsBound && equipButton != null)
                 equipButton.onClick.RemoveListener(OnClickEquip);
-            if (unequipButton != null)
+            if (buttonsBound && unequipButton != null)
                 unequipButton.onClick.RemoveListener(OnClickUnequip);
-            if (closeButton != null)
+            if (buttonsBound && closeButton != null)
                 closeButton.onClick.RemoveListener(Exit);
+        }
+
+        public void ConfigureRuntime(
+            TMP_Text runtimeTitleText,
+            TMP_Text runtimeSelectedGemDescText,
+            Transform runtimeListRoot,
+            UIGemInventoryItem runtimeGemItemPrefab,
+            Button runtimeEquipButton,
+            Button runtimeUnequipButton,
+            Button runtimeCloseButton)
+        {
+            titleText = runtimeTitleText;
+            selectedGemDescText = runtimeSelectedGemDescText;
+            listRoot = runtimeListRoot;
+            gemItemPrefab = runtimeGemItemPrefab;
+            equipButton = runtimeEquipButton;
+            unequipButton = runtimeUnequipButton;
+            closeButton = runtimeCloseButton;
+
+            TryBindButtons();
         }
 
         public void Open(EquipmentType type, int slot, System.Action changedCallback)
@@ -62,7 +78,7 @@ namespace OJ
         public void Refresh()
         {
             if (titleText != null)
-                titleText.SetText($"{GetEquipmentName(equipmentType)} 슬롯 {slotIndex + 1} 보석");
+                titleText.SetText($"{UIEquipmentText.GetEquipmentName(equipmentType)} 슬롯 {slotIndex + 1} 보석");
 
             BuildGemList();
             RefreshGemList();
@@ -91,6 +107,7 @@ namespace OJ
                     break;
 
                 UIGemInventoryItem created = Instantiate(gemItemPrefab, listRoot);
+                created.gameObject.SetActive(true);
                 items.Add(created);
             }
         }
@@ -125,7 +142,7 @@ namespace OJ
 
             if (string.IsNullOrEmpty(selectedGemId))
             {
-                selectedGemDescText.SetText("장착할 보석을 선택하세요.");
+                selectedGemDescText.SetText("장착할 보석을 선택해 주세요.");
                 return;
             }
 
@@ -169,18 +186,19 @@ namespace OJ
             }
         }
 
-        private static string GetEquipmentName(EquipmentType type)
+        private void TryBindButtons()
         {
-            switch (type)
-            {
-                case EquipmentType.Weapon: return "무기";
-                case EquipmentType.Helmet: return "모자";
-                case EquipmentType.Armor: return "갑옷";
-                case EquipmentType.Ring: return "반지";
-                case EquipmentType.Shoes: return "신발";
-                case EquipmentType.Necklace: return "목걸이";
-                default: return type.ToString();
-            }
+            if (buttonsBound)
+                return;
+
+            if (equipButton != null)
+                equipButton.onClick.AddListener(OnClickEquip);
+            if (unequipButton != null)
+                unequipButton.onClick.AddListener(OnClickUnequip);
+            if (closeButton != null)
+                closeButton.onClick.AddListener(Exit);
+
+            buttonsBound = equipButton != null || unequipButton != null || closeButton != null;
         }
     }
 }

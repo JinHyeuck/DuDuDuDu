@@ -15,17 +15,35 @@ namespace OJ
 
         private string gemId;
         private System.Action<string> clickCallback;
+        private bool isClickBound;
 
         private void Awake()
         {
-            if (clickButton != null)
-                clickButton.onClick.AddListener(OnClick);
+            TryBindClick();
         }
 
         private void OnDestroy()
         {
-            if (clickButton != null)
+            if (isClickBound && clickButton != null)
                 clickButton.onClick.RemoveListener(OnClick);
+        }
+
+        public void ConfigureRuntime(
+            Button runtimeClickButton,
+            TMP_Text runtimeNameText,
+            TMP_Text runtimeRarityText,
+            TMP_Text runtimeCountText,
+            TMP_Text runtimeDescText,
+            Image runtimeSelectedFrame)
+        {
+            clickButton = runtimeClickButton;
+            nameText = runtimeNameText;
+            rarityText = runtimeRarityText;
+            countText = runtimeCountText;
+            descText = runtimeDescText;
+            selectedFrame = runtimeSelectedFrame;
+
+            TryBindClick();
         }
 
         public void Bind(string id, System.Action<string> onClick)
@@ -62,6 +80,15 @@ namespace OJ
         private void OnClick()
         {
             clickCallback?.Invoke(gemId);
+        }
+
+        private void TryBindClick()
+        {
+            if (isClickBound || clickButton == null)
+                return;
+
+            clickButton.onClick.AddListener(OnClick);
+            isClickBound = true;
         }
     }
 }

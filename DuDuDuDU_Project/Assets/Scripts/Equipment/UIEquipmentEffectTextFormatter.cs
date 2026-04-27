@@ -34,13 +34,13 @@ namespace OJ
                 case GemStatType.AttackFlat:
                     return $"{target}공격력 +{effect.flatValue}";
                 case GemStatType.CooldownReducePercent:
-                    return $"{target}쿨타임 -{effect.percentValue * 100f:0.#}%";
+                    return $"{target}쿨다운 -{effect.percentValue * 100f:0.#}%";
                 case GemStatType.FirstNWavesDamageFlat:
                     return $"처음 {effect.intParam}웨이브 피해 +{effect.flatValue}";
                 case GemStatType.FireExplosionRangePercent:
                     return $"화염 범위 +{effect.percentValue * 100f:0.#}%";
                 case GemStatType.WellHpOnKill:
-                    return $"적 처치 시 Well HP +{effect.flatValue}";
+                    return $"처치 시 Well HP +{effect.flatValue}";
                 case GemStatType.FinalDamagePercent:
                     return $"{target}최종 피해 +{effect.percentValue * 100f:0.#}%";
                 case GemStatType.FireExplosionTargetCountFlat:
@@ -48,7 +48,7 @@ namespace OJ
                 case GemStatType.ThunderChainCountFlat:
                     return $"번개 체인 수 +{effect.flatValue}";
                 case GemStatType.GoldOnKill:
-                    return $"적 처치 시 골드 +{effect.flatValue}";
+                    return $"처치 시 골드 +{effect.flatValue}";
                 default:
                     return effect.statType.ToString();
             }

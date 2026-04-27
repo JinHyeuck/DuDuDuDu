@@ -11,21 +11,28 @@ namespace OJ
         [SerializeField] private Button confirmButton;
 
         private System.Action confirmAction;
+        private bool buttonsBound;
 
         protected override void OnLoad()
         {
-            if (cancelButton != null)
-                cancelButton.onClick.AddListener(OnClickCancel);
-            if (confirmButton != null)
-                confirmButton.onClick.AddListener(OnClickConfirm);
+            TryBindButtons();
         }
 
         protected override void OnUnload()
         {
-            if (cancelButton != null)
+            if (buttonsBound && cancelButton != null)
                 cancelButton.onClick.RemoveListener(OnClickCancel);
-            if (confirmButton != null)
+            if (buttonsBound && confirmButton != null)
                 confirmButton.onClick.RemoveListener(OnClickConfirm);
+        }
+
+        public void ConfigureRuntime(TMP_Text runtimeMessageText, Button runtimeCancelButton, Button runtimeConfirmButton)
+        {
+            messageText = runtimeMessageText;
+            cancelButton = runtimeCancelButton;
+            confirmButton = runtimeConfirmButton;
+
+            TryBindButtons();
         }
 
         public void Open(string message, System.Action onConfirm)
@@ -48,6 +55,19 @@ namespace OJ
             confirmAction = null;
             Exit();
             callback?.Invoke();
+        }
+
+        private void TryBindButtons()
+        {
+            if (buttonsBound)
+                return;
+
+            if (cancelButton != null)
+                cancelButton.onClick.AddListener(OnClickCancel);
+            if (confirmButton != null)
+                confirmButton.onClick.AddListener(OnClickConfirm);
+
+            buttonsBound = cancelButton != null || confirmButton != null;
         }
     }
 }

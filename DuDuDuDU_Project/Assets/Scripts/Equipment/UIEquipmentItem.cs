@@ -1,7 +1,7 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 namespace OJ
 {
@@ -39,17 +39,39 @@ namespace OJ
 
         private EquipmentType equipmentType;
         private System.Action<EquipmentType> clickCallback;
+        private bool isClickBound;
 
         private void Awake()
         {
-            if (clickButton != null)
-                clickButton.onClick.AddListener(OnClick);
+            TryBindClick();
         }
 
         private void OnDestroy()
         {
-            if (clickButton != null)
+            if (isClickBound && clickButton != null)
                 clickButton.onClick.RemoveListener(OnClick);
+        }
+
+        public void ConfigureRuntime(
+            Button runtimeClickButton,
+            TMP_Text runtimeNameText,
+            TMP_Text runtimeLevelText,
+            TMP_Text runtimeAttackText,
+            Image runtimeSelectedFrame,
+            List<Image> runtimeSlotStateImages,
+            Sprite runtimeUnlockedSlotSprite,
+            Sprite runtimeLockedSlotSprite)
+        {
+            clickButton = runtimeClickButton;
+            nameText = runtimeNameText;
+            levelText = runtimeLevelText;
+            attackText = runtimeAttackText;
+            selectedFrame = runtimeSelectedFrame;
+            slotStateImages = runtimeSlotStateImages;
+            unlockedSlotSprite = runtimeUnlockedSlotSprite;
+            lockedSlotSprite = runtimeLockedSlotSprite;
+
+            TryBindClick();
         }
 
         public void Bind(EquipmentType type, System.Action<EquipmentType> onClick)
@@ -65,7 +87,7 @@ namespace OJ
             IReadOnlyList<EquipmentSlotVisualState> slotStates)
         {
             if (nameText != null)
-                nameText.SetText(GetDisplayName(equipmentType));
+                nameText.SetText(UIEquipmentText.GetEquipmentName(equipmentType));
             if (levelText != null)
                 levelText.SetText("Lv.{0}", level);
             if (attackText != null)
@@ -79,20 +101,6 @@ namespace OJ
         private void OnClick()
         {
             clickCallback?.Invoke(equipmentType);
-        }
-
-        private static string GetDisplayName(EquipmentType type)
-        {
-            switch (type)
-            {
-                case EquipmentType.Weapon: return "무기";
-                case EquipmentType.Helmet: return "모자";
-                case EquipmentType.Armor: return "갑옷";
-                case EquipmentType.Ring: return "반지";
-                case EquipmentType.Shoes: return "신발";
-                case EquipmentType.Necklace: return "목걸이";
-                default: return type.ToString();
-            }
         }
 
         private void RefreshSlotVisual(IReadOnlyList<EquipmentSlotVisualState> slotStates)
@@ -134,6 +142,15 @@ namespace OJ
                 case EquipmentSlotVisualState.Mythic: return mythicColor;
                 default: return emptyColor;
             }
+        }
+
+        private void TryBindClick()
+        {
+            if (isClickBound || clickButton == null)
+                return;
+
+            clickButton.onClick.AddListener(OnClick);
+            isClickBound = true;
         }
     }
 }

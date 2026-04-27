@@ -33,25 +33,51 @@ namespace OJ
 
         private EquipmentType equipmentType;
         private System.Action onChanged;
+        private bool buttonsBound;
 
         protected override void OnLoad()
         {
-            if (levelUpButton != null)
-                levelUpButton.onClick.AddListener(OnClickLevelUp);
-            if (levelUpAllButton != null)
-                levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
-            if (closeButton != null)
-                closeButton.onClick.AddListener(Exit);
+            TryBindButtons();
         }
 
         protected override void OnUnload()
         {
-            if (levelUpButton != null)
+            if (buttonsBound && levelUpButton != null)
                 levelUpButton.onClick.RemoveListener(OnClickLevelUp);
-            if (levelUpAllButton != null)
+            if (buttonsBound && levelUpAllButton != null)
                 levelUpAllButton.onClick.RemoveListener(OnClickLevelUpAll);
-            if (closeButton != null)
+            if (buttonsBound && closeButton != null)
                 closeButton.onClick.RemoveListener(Exit);
+        }
+
+        public void ConfigureRuntime(
+            TMP_Text runtimeTitleText,
+            TMP_Text runtimeAttackText,
+            TMP_Text runtimeLevelText,
+            Transform runtimeSlotRoot,
+            UIEquipmentGemSlotItem runtimeSlotItemPrefab,
+            TMP_Text runtimeGoldCostText,
+            TMP_Text runtimeScrollCostText,
+            Button runtimeLevelUpButton,
+            Button runtimeLevelUpAllButton,
+            Button runtimeCloseButton,
+            UIEquipmentGemSelectDialog runtimeGemSelectDialog,
+            UIEquipmentConfirmDialog runtimeConfirmDialog)
+        {
+            titleText = runtimeTitleText;
+            attackText = runtimeAttackText;
+            levelText = runtimeLevelText;
+            slotRoot = runtimeSlotRoot;
+            slotItemPrefab = runtimeSlotItemPrefab;
+            goldCostText = runtimeGoldCostText;
+            scrollCostText = runtimeScrollCostText;
+            levelUpButton = runtimeLevelUpButton;
+            levelUpAllButton = runtimeLevelUpAllButton;
+            closeButton = runtimeCloseButton;
+            gemSelectDialog = runtimeGemSelectDialog;
+            confirmDialog = runtimeConfirmDialog;
+
+            TryBindButtons();
         }
 
         public void Open(EquipmentType type, System.Action changedCallback)
@@ -73,17 +99,17 @@ namespace OJ
             (int goldCost, int scrollCost) = EquipmentManager.Instance.GetNextUpgradeCost(equipmentType);
 
             if (titleText != null)
-                titleText.SetText(GetEquipmentName(equipmentType));
+                titleText.SetText(UIEquipmentText.GetEquipmentName(equipmentType));
             if (attackText != null)
-                attackText.SetText("공격력: {0}", attack);
+                attackText.SetText("공격력 {0}", attack);
             if (levelText != null)
-                levelText.SetText("레벨: {0}", level);
+                levelText.SetText("레벨 {0}", level);
             if (goldCostText != null)
-                goldCostText.SetText("{0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0, goldCost);
+                goldCostText.SetText("Gold {0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0, goldCost);
 
             PointType scrollType = PointManager.ToEquipmentScrollType(equipmentType);
             if (scrollCostText != null)
-                scrollCostText.SetText("{0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(scrollType) : 0, scrollCost);
+                scrollCostText.SetText("Scroll {0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(scrollType) : 0, scrollCost);
 
             BuildSlotIfNeeded();
             RefreshSlots();
@@ -98,6 +124,7 @@ namespace OJ
             {
                 int newIndex = slotItems.Count;
                 UIEquipmentGemSlotItem item = Instantiate(slotItemPrefab, slotRoot);
+                item.gameObject.SetActive(true);
                 item.Bind(newIndex, OnClickSlot);
                 slotItems.Add(item);
             }
@@ -159,7 +186,7 @@ namespace OJ
                 return;
             }
 
-            confirmDialog.Open("장비 도면과 골드를 소모해 가능한 만큼 강화하시겠습니까?", DoLevelUpAll);
+            confirmDialog.Open(UIEquipmentText.GetLevelUpAllConfirmMessage(), DoLevelUpAll);
         }
 
         private void DoLevelUpAll()
@@ -175,18 +202,19 @@ namespace OJ
             }
         }
 
-        private static string GetEquipmentName(EquipmentType type)
+        private void TryBindButtons()
         {
-            switch (type)
-            {
-                case EquipmentType.Weapon: return "무기";
-                case EquipmentType.Helmet: return "모자";
-                case EquipmentType.Armor: return "갑옷";
-                case EquipmentType.Ring: return "반지";
-                case EquipmentType.Shoes: return "신발";
-                case EquipmentType.Necklace: return "목걸이";
-                default: return type.ToString();
-            }
+            if (buttonsBound)
+                return;
+
+            if (levelUpButton != null)
+                levelUpButton.onClick.AddListener(OnClickLevelUp);
+            if (levelUpAllButton != null)
+                levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
+            if (closeButton != null)
+                closeButton.onClick.AddListener(Exit);
+
+            buttonsBound = levelUpButton != null || levelUpAllButton != null || closeButton != null;
         }
     }
 }

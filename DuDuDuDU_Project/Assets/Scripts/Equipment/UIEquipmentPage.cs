@@ -35,29 +35,26 @@ namespace OJ
         private readonly List<EquipmentType> equipmentTypes = new List<EquipmentType>();
 
         private EquipmentType selectedEquipmentType = EquipmentType.Weapon;
+        private bool buttonsBound;
 
         protected override void OnLoad()
         {
-            if (openDetailButton != null)
-                openDetailButton.onClick.AddListener(OpenDetailDialog);
-            if (levelUpAllButton != null)
-                levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
-            if (removeAllGemButton != null)
-                removeAllGemButton.onClick.AddListener(OnClickRemoveAllGems);
+            TryBindButtons();
         }
 
         protected override void OnUnload()
         {
-            if (openDetailButton != null)
+            if (buttonsBound && openDetailButton != null)
                 openDetailButton.onClick.RemoveListener(OpenDetailDialog);
-            if (levelUpAllButton != null)
+            if (buttonsBound && levelUpAllButton != null)
                 levelUpAllButton.onClick.RemoveListener(OnClickLevelUpAll);
-            if (removeAllGemButton != null)
+            if (buttonsBound && removeAllGemButton != null)
                 removeAllGemButton.onClick.RemoveListener(OnClickRemoveAllGems);
         }
 
         protected override void OnEnter()
         {
+            EnsureRuntimeUI();
             Subscribe();
             BuildIfNeeded();
             RefreshAll();
@@ -68,12 +65,57 @@ namespace OJ
             Unsubscribe();
         }
 
+        public void ConfigureRuntime(
+            TMP_Text runtimeTotalAttackText,
+            Transform runtimeEquipmentListRoot,
+            UIEquipmentItem runtimeEquipmentItemPrefab,
+            Transform runtimeGemInventoryRoot,
+            UIGemInventoryItem runtimeGemInventoryItemPrefab,
+            Button runtimeOpenDetailButton,
+            Button runtimeLevelUpAllButton,
+            Button runtimeRemoveAllGemButton,
+            UIEquipmentDetailDialog runtimeDetailDialog,
+            UIEquipmentConfirmDialog runtimeConfirmDialog)
+        {
+            totalAttackText = runtimeTotalAttackText;
+            equipmentListRoot = runtimeEquipmentListRoot;
+            equipmentItemPrefab = runtimeEquipmentItemPrefab;
+            gemInventoryRoot = runtimeGemInventoryRoot;
+            gemInventoryItemPrefab = runtimeGemInventoryItemPrefab;
+            openDetailButton = runtimeOpenDetailButton;
+            levelUpAllButton = runtimeLevelUpAllButton;
+            removeAllGemButton = runtimeRemoveAllGemButton;
+            detailDialog = runtimeDetailDialog;
+            confirmDialog = runtimeConfirmDialog;
+
+            TryBindButtons();
+        }
+
         public void RefreshAll()
         {
             RefreshSummary();
             RefreshEquipmentList();
             RefreshGemInventory();
             NotifyChanged();
+        }
+
+        private void EnsureRuntimeUI()
+        {
+            if (totalAttackText != null &&
+                equipmentListRoot != null &&
+                equipmentItemPrefab != null &&
+                gemInventoryRoot != null &&
+                gemInventoryItemPrefab != null &&
+                openDetailButton != null &&
+                levelUpAllButton != null &&
+                removeAllGemButton != null &&
+                detailDialog != null &&
+                confirmDialog != null)
+            {
+                return;
+            }
+
+            UIEquipmentRuntimeBuilder.Build(this);
         }
 
         private void BuildIfNeeded()
@@ -89,6 +131,7 @@ namespace OJ
                 while (equipmentItems.Count < equipmentTypes.Count)
                 {
                     UIEquipmentItem item = Instantiate(equipmentItemPrefab, equipmentListRoot);
+                    item.gameObject.SetActive(true);
                     equipmentItems.Add(item);
                 }
 
@@ -111,6 +154,7 @@ namespace OJ
                 while (gemInventoryItems.Count < gemDefinitions.Count)
                 {
                     UIGemInventoryItem item = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
+                    item.gameObject.SetActive(true);
                     gemInventoryItems.Add(item);
                 }
             }
@@ -121,7 +165,7 @@ namespace OJ
             if (totalAttackText == null || EquipmentManager.Instance == null)
                 return;
 
-            totalAttackText.SetText("{0}", EquipmentManager.Instance.GetTotalEquipmentAttack());
+            totalAttackText.SetText("총 장비 공격력 {0}", EquipmentManager.Instance.GetTotalEquipmentAttack());
         }
 
         private void RefreshEquipmentList()
@@ -139,11 +183,7 @@ namespace OJ
                 int attack = EquipmentManager.Instance.GetEquipmentAttack(equipmentType);
                 bool selected = selectedEquipmentType == equipmentType;
                 List<EquipmentSlotVisualState> slotStates = BuildSlotStates(equipmentType);
-                equipmentItems[i].Refresh(
-                    level,
-                    attack,
-                    selected,
-                    slotStates);
+                equipmentItems[i].Refresh(level, attack, selected, slotStates);
             }
         }
 
@@ -263,7 +303,7 @@ namespace OJ
                 return;
             }
 
-            confirmDialog.Open("장비 도면과 골드를 소모해 가능한 만큼 강화하시겠습니까?", DoLevelUpAll);
+            confirmDialog.Open(UIEquipmentText.GetLevelUpAllConfirmMessage(), DoLevelUpAll);
         }
 
         private void DoLevelUpAll()
@@ -342,6 +382,21 @@ namespace OJ
         private void NotifyChanged()
         {
             OnDataChanged?.Invoke();
+        }
+
+        private void TryBindButtons()
+        {
+            if (buttonsBound)
+                return;
+
+            if (openDetailButton != null)
+                openDetailButton.onClick.AddListener(OpenDetailDialog);
+            if (levelUpAllButton != null)
+                levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
+            if (removeAllGemButton != null)
+                removeAllGemButton.onClick.AddListener(OnClickRemoveAllGems);
+
+            buttonsBound = openDetailButton != null || levelUpAllButton != null || removeAllGemButton != null;
         }
     }
 }
