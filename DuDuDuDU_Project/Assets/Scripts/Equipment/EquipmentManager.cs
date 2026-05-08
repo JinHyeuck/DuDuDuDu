@@ -471,7 +471,7 @@ namespace OJ
             }
         }
 
-        private void AddGem(string gemId, int amount)
+        public void AddGem(string gemId, int amount)
         {
             if (string.IsNullOrEmpty(gemId) || amount == 0)
                 return;
@@ -479,6 +479,9 @@ namespace OJ
             int current = GetGemCount(gemId);
             int next = Mathf.Max(0, current + amount);
             gemInventory[gemId] = next;
+
+            SaveAll();
+            OnGemChanged?.Invoke();
         }
 
         private float SumPercent(GemStatType statType, DiceType diceType)

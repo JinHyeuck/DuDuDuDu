@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 namespace OJ
 {
@@ -28,6 +29,9 @@ namespace OJ
         private bool wallInvincible;
         private int debugDiceIndex;
         private int debugDiceStar = 1;
+        private int selectedGemIndex;
+        private string gemAmountInput = "1";
+        private Vector2 scrollPos;
         private Rect windowRect = new Rect(20, 20, 360, 420);
         private int tapCount;
         private float firstTapTime;
@@ -99,6 +103,7 @@ namespace OJ
         {
             EnsureGuiStyles();
 
+            scrollPos = GUILayout.BeginScrollView(scrollPos);
             GUILayout.BeginVertical();
 
             GUILayout.Label("Point Type", labelStyle, GUILayout.Height(titleHeight));
@@ -130,6 +135,9 @@ namespace OJ
             DrawMonsterHpSection();
 
             GUILayout.Space(lineGap);
+            DrawGemCheatSection();
+
+            GUILayout.Space(lineGap);
             bool nextWallInvincible = GUILayout.Toggle(wallInvincible, "Wall Invincible", buttonStyle, GUILayout.Height(buttonHeight));
             if (nextWallInvincible != wallInvincible)
             {
@@ -142,6 +150,7 @@ namespace OJ
                 visible = false;
 
             GUILayout.EndVertical();
+            GUILayout.EndScrollView();
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
         }
 
@@ -172,6 +181,50 @@ namespace OJ
 
             if (GUILayout.Button("Set Active Monsters HP", buttonStyle, GUILayout.Height(buttonHeight)))
                 SetActiveMonstersHp();
+        }
+
+        private void DrawGemCheatSection()
+        {
+            if (EquipmentManager.Instance == null)
+                return;
+
+            GUILayout.Label("Gem Cheat", labelStyle, GUILayout.Height(titleHeight));
+            var gems = EquipmentManager.Instance.GetGemDefinitions();
+            if (gems == null || gems.Count == 0)
+            {
+                GUILayout.Label("No gems found in database.", labelStyle);
+                return;
+            }
+
+            string[] gemNames = new string[gems.Count];
+            for (int i = 0; i < gems.Count; i++)
+                gemNames[i] = $"{gems[i].displayName} ({gems[i].rarity})";
+
+            selectedGemIndex = Mathf.Clamp(selectedGemIndex, 0, gemNames.Length - 1);
+            selectedGemIndex = GUILayout.SelectionGrid(selectedGemIndex, gemNames, 2, buttonStyle, GUILayout.Height(buttonHeight * (gems.Count / 2f + 1)));
+
+            GUILayout.Space(lineGap * 0.5f);
+            GUILayout.Label("Gem Amount", labelStyle, GUILayout.Height(titleHeight));
+            gemAmountInput = GUILayout.TextField(gemAmountInput, 16, textFieldStyle, GUILayout.Height(textFieldHeight));
+
+            if (GUILayout.Button("Add Selected Gem", buttonStyle, GUILayout.Height(buttonHeight)))
+                AddSelectedGem();
+        }
+
+        private void AddSelectedGem()
+        {
+            if (EquipmentManager.Instance == null)
+                return;
+
+            var gems = EquipmentManager.Instance.GetGemDefinitions();
+            if (selectedGemIndex < 0 || selectedGemIndex >= gems.Count)
+                return;
+
+            if (!int.TryParse(gemAmountInput, out int amount) || amount <= 0)
+                return;
+
+            EquipmentManager.Instance.AddGem(gems[selectedGemIndex].gemId, amount);
+            Debug.Log($"[PointCheat] Added {amount} of {gems[selectedGemIndex].displayName}.");
         }
 
         private void ProcessTopLeftMultiTap()
