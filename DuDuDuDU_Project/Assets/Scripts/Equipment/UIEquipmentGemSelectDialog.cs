@@ -91,6 +91,7 @@ namespace OJ
             if (EquipmentManager.Instance == null)
                 return;
 
+            string equippedGemId = EquipmentManager.Instance.GetEquippedGemId(equipmentType, slotIndex);
             IReadOnlyList<GemDefinition> all = EquipmentManager.Instance.GetGemDefinitions();
             for (int i = 0; i < all.Count; i++)
             {
@@ -98,7 +99,12 @@ namespace OJ
                 if (gem == null || gem.equipableType != equipmentType)
                     continue;
 
-                filteredGems.Add(gem);
+                int count = EquipmentManager.Instance.GetGemCount(gem.gemId);
+                // Show if we have it, OR if it's the one currently in this slot
+                if (count > 0 || gem.gemId == equippedGemId)
+                {
+                    filteredGems.Add(gem);
+                }
             }
 
             while (items.Count < filteredGems.Count)

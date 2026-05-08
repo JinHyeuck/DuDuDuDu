@@ -23,7 +23,6 @@ namespace OJ
         [Header("Buttons")]
         [SerializeField] private Button levelUpButton;
         [SerializeField] private Button levelUpAllButton;
-        [SerializeField] private Button closeButton;
 
         [Header("Sub Dialog")]
         [SerializeField] private UIEquipmentGemSelectDialog gemSelectDialog;
@@ -46,8 +45,6 @@ namespace OJ
                 levelUpButton.onClick.RemoveListener(OnClickLevelUp);
             if (buttonsBound && levelUpAllButton != null)
                 levelUpAllButton.onClick.RemoveListener(OnClickLevelUpAll);
-            if (buttonsBound && closeButton != null)
-                closeButton.onClick.RemoveListener(Exit);
         }
 
         public void ConfigureRuntime(
@@ -73,7 +70,6 @@ namespace OJ
             scrollCostText = runtimeScrollCostText;
             levelUpButton = runtimeLevelUpButton;
             levelUpAllButton = runtimeLevelUpAllButton;
-            closeButton = runtimeCloseButton;
             gemSelectDialog = runtimeGemSelectDialog;
             confirmDialog = runtimeConfirmDialog;
 
@@ -211,10 +207,8 @@ namespace OJ
                 levelUpButton.onClick.AddListener(OnClickLevelUp);
             if (levelUpAllButton != null)
                 levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
-            if (closeButton != null)
-                closeButton.onClick.AddListener(Exit);
 
-            buttonsBound = levelUpButton != null || levelUpAllButton != null || closeButton != null;
+            buttonsBound = levelUpButton != null || levelUpAllButton != null;
         }
     }
 }

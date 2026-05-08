@@ -12,6 +12,7 @@ namespace OJ
         [SerializeField] private TMP_Text totalAttackText;
 
         [Header("Equipment List")]
+        [SerializeField] private List<UIEquipmentItem> manualEquipmentItems = new List<UIEquipmentItem>();
         [SerializeField] private Transform equipmentListRoot;
         [SerializeField] private UIEquipmentItem equipmentItemPrefab;
 
@@ -20,13 +21,14 @@ namespace OJ
         [SerializeField] private UIGemInventoryItem gemInventoryItemPrefab;
 
         [Header("Buttons")]
-        [SerializeField] private Button openDetailButton;
         [SerializeField] private Button levelUpAllButton;
-        [SerializeField] private Button removeAllGemButton;
+        [SerializeField] private Button unEquipAllGemButton;
+        [SerializeField] private Button mergeAllButton;
 
         [Header("Dialogs")]
         [SerializeField] private UIEquipmentDetailDialog detailDialog;
         [SerializeField] private UIEquipmentConfirmDialog confirmDialog;
+        [SerializeField] private LobbyLayoutController lobbyLayoutController;
 
         public event Action OnDataChanged;
 
@@ -45,12 +47,12 @@ namespace OJ
 
         protected override void OnUnload()
         {
-            if (buttonsBound && openDetailButton != null)
-                openDetailButton.onClick.RemoveListener(OpenDetailDialog);
             if (buttonsBound && levelUpAllButton != null)
                 levelUpAllButton.onClick.RemoveListener(OnClickLevelUpAll);
-            if (buttonsBound && removeAllGemButton != null)
-                removeAllGemButton.onClick.RemoveListener(OnClickRemoveAllGems);
+            if (buttonsBound && unEquipAllGemButton != null)
+                unEquipAllGemButton.onClick.RemoveListener(OnClickUnEquipAllGems);
+            if (buttonsBound && mergeAllButton != null)
+                mergeAllButton.onClick.RemoveListener(OnClickMergeAll);
         }
 
         protected override void OnEnter()
@@ -66,30 +68,9 @@ namespace OJ
             Unsubscribe();
         }
 
-        public void ConfigureRuntime(
-            TMP_Text runtimeTotalAttackText,
-            Transform runtimeEquipmentListRoot,
-            UIEquipmentItem runtimeEquipmentItemPrefab,
-            Transform runtimeGemInventoryRoot,
-            UIGemInventoryItem runtimeGemInventoryItemPrefab,
-            Button runtimeOpenDetailButton,
-            Button runtimeLevelUpAllButton,
-            Button runtimeRemoveAllGemButton,
-            UIEquipmentDetailDialog runtimeDetailDialog,
-            UIEquipmentConfirmDialog runtimeConfirmDialog)
+        public override void BackKeyCall()
         {
-            totalAttackText = runtimeTotalAttackText;
-            equipmentListRoot = runtimeEquipmentListRoot;
-            equipmentItemPrefab = runtimeEquipmentItemPrefab;
-            gemInventoryRoot = runtimeGemInventoryRoot;
-            gemInventoryItemPrefab = runtimeGemInventoryItemPrefab;
-            openDetailButton = runtimeOpenDetailButton;
-            levelUpAllButton = runtimeLevelUpAllButton;
-            removeAllGemButton = runtimeRemoveAllGemButton;
-            detailDialog = runtimeDetailDialog;
-            confirmDialog = runtimeConfirmDialog;
-
-            TryBindButtons();
+            lobbyLayoutController?.ShowTab(LobbyTab.Home);
         }
 
         public void RefreshAll()
@@ -103,13 +84,9 @@ namespace OJ
         private void ValidateSceneReferences()
         {
             if (totalAttackText != null &&
-                equipmentListRoot != null &&
-                equipmentItemPrefab != null &&
+                (manualEquipmentItems.Count > 0 || equipmentListRoot != null) &&
                 gemInventoryRoot != null &&
                 gemInventoryItemPrefab != null &&
-                openDetailButton != null &&
-                levelUpAllButton != null &&
-                removeAllGemButton != null &&
                 detailDialog != null &&
                 confirmDialog != null)
             {
@@ -129,6 +106,28 @@ namespace OJ
             {
                 foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
                     equipmentTypes.Add(equipmentType);
+            }
+
+            if (manualEquipmentItems != null && manualEquipmentItems.Count > 0)
+            {
+                if (equipmentItems.Count == 0)
+                {
+                    equipmentItems.AddRange(manualEquipmentItems);
+                }
+
+                for (int i = 0; i < equipmentItems.Count; i++)
+                {
+                    if (i < equipmentTypes.Count)
+                    {
+                        equipmentItems[i].gameObject.SetActive(true);
+                        equipmentItems[i].Bind(equipmentTypes[i], OnClickEquipmentItem);
+                    }
+                    else
+                    {
+                        equipmentItems[i].gameObject.SetActive(false);
+                    }
+                }
+                return;
             }
 
             if (equipmentItemPrefab != null && equipmentListRoot != null)
@@ -255,20 +254,36 @@ namespace OJ
                 return;
 
             IReadOnlyList<GemDefinition> gemDefinitions = EquipmentManager.Instance.GetGemDefinitions();
-            for (int i = 0; i < gemInventoryItems.Count; i++)
-            {
-                if (i >= gemDefinitions.Count)
-                {
-                    gemInventoryItems[i].gameObject.SetActive(false);
-                    continue;
-                }
+            int itemIndex = 0;
 
+            for (int i = 0; i < gemDefinitions.Count; i++)
+            {
                 GemDefinition definition = gemDefinitions[i];
                 int count = EquipmentManager.Instance.GetGemCount(definition.gemId);
 
-                gemInventoryItems[i].gameObject.SetActive(true);
-                gemInventoryItems[i].Bind(definition.gemId, OnClickGemInventoryItem);
-                gemInventoryItems[i].Refresh(definition, count, false, true);
+                if (count <= 0)
+                    continue;
+
+                while (gemInventoryItems.Count <= itemIndex)
+                {
+                    if (gemInventoryItemPrefab == null || gemInventoryRoot == null)
+                        break;
+                    UIGemInventoryItem newItem = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
+                    gemInventoryItems.Add(newItem);
+                }
+
+                if (itemIndex < gemInventoryItems.Count)
+                {
+                    gemInventoryItems[itemIndex].gameObject.SetActive(true);
+                    gemInventoryItems[itemIndex].Bind(definition.gemId, OnClickGemInventoryItem);
+                    gemInventoryItems[itemIndex].Refresh(definition, count, false, true);
+                    itemIndex++;
+                }
+            }
+
+            for (int i = itemIndex; i < gemInventoryItems.Count; i++)
+            {
+                gemInventoryItems[i].gameObject.SetActive(false);
             }
         }
 
@@ -276,6 +291,7 @@ namespace OJ
         {
             selectedEquipmentType = equipmentType;
             RefreshEquipmentList();
+            OpenDetailDialog();
         }
 
         private void OnClickGemInventoryItem(string gemId)
@@ -321,7 +337,7 @@ namespace OJ
                 RefreshAll();
         }
 
-        private void OnClickRemoveAllGems()
+        private void OnClickUnEquipAllGems()
         {
             if (EquipmentManager.Instance == null)
                 return;
@@ -338,6 +354,15 @@ namespace OJ
 
             if (changed)
                 RefreshAll();
+        }
+
+        private void OnClickMergeAll()
+        {
+            if (EquipmentManager.Instance == null)
+                return;
+
+            // TODO: Implement TryMergeAllGems in EquipmentManager
+            RefreshAll();
         }
 
         private void Subscribe()
@@ -394,14 +419,14 @@ namespace OJ
             if (buttonsBound)
                 return;
 
-            if (openDetailButton != null)
-                openDetailButton.onClick.AddListener(OpenDetailDialog);
             if (levelUpAllButton != null)
                 levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
-            if (removeAllGemButton != null)
-                removeAllGemButton.onClick.AddListener(OnClickRemoveAllGems);
+            if (unEquipAllGemButton != null)
+                unEquipAllGemButton.onClick.AddListener(OnClickUnEquipAllGems);
+            if (mergeAllButton != null)
+                mergeAllButton.onClick.AddListener(OnClickMergeAll);
 
-            buttonsBound = openDetailButton != null || levelUpAllButton != null || removeAllGemButton != null;
+            buttonsBound = levelUpAllButton != null || unEquipAllGemButton != null || mergeAllButton != null;
         }
     }
 }

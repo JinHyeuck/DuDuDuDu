@@ -68,7 +68,10 @@ namespace OJ
             }
 
             if (countText != null)
+            {
                 countText.SetText("x{0}", count);
+                countText.gameObject.SetActive(count > 0);
+            }
 
             if (selectedFrame != null)
                 selectedFrame.enabled = selected;
