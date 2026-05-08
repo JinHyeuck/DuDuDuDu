@@ -36,6 +36,7 @@ namespace OJ
 
         private EquipmentType selectedEquipmentType = EquipmentType.Weapon;
         private bool buttonsBound;
+        private bool missingReferenceWarned;
 
         protected override void OnLoad()
         {
@@ -54,7 +55,7 @@ namespace OJ
 
         protected override void OnEnter()
         {
-            EnsureRuntimeUI();
+            ValidateSceneReferences();
             Subscribe();
             BuildIfNeeded();
             RefreshAll();
@@ -99,7 +100,7 @@ namespace OJ
             NotifyChanged();
         }
 
-        private void EnsureRuntimeUI()
+        private void ValidateSceneReferences()
         {
             if (totalAttackText != null &&
                 equipmentListRoot != null &&
@@ -115,7 +116,11 @@ namespace OJ
                 return;
             }
 
-            UIEquipmentRuntimeBuilder.Build(this);
+            if (missingReferenceWarned)
+                return;
+
+            missingReferenceWarned = true;
+            Debug.LogWarning("UIEquipmentPage: Scene UI references are missing. Assign the equipment UI fields in the Inspector.");
         }
 
         private void BuildIfNeeded()

@@ -152,16 +152,23 @@ namespace OJ
             _currentAttackType = attackType;
             _currentRootTarget = rootTarget;
 
-            for (int i = 0; i < hitmonsters.Count; ++i)
+            if (attackType == DiceType.KingNormal && diceEffect is KingNormalDiceEffect kingNormalEffect)
             {
-                Monster target = hitmonsters[i];
-                if (target == null || target.gameObject.activeInHierarchy == false)
-                    continue;
+                PlayKingNormalMultiHit(rootTarget, attackType, damage, kingNormalEffect);
+            }
+            else
+            {
+                for (int i = 0; i < hitmonsters.Count; ++i)
+                {
+                    Monster target = hitmonsters[i];
+                    if (target == null || target.gameObject.activeInHierarchy == false)
+                        continue;
 
-                if (diceEffect == null || diceEffect.ShouldApplyDamage)
-                    HitMonster(target, attackType, damage);
+                    if (diceEffect == null || diceEffect.ShouldApplyDamage)
+                        HitMonster(target, attackType, damage);
 
-                diceEffect?.ApplyOnHit(this, target);
+                    diceEffect?.ApplyOnHit(this, target);
+                }
             }
 
             _currentDamage = 0;
@@ -169,6 +176,46 @@ namespace OJ
             _currentShotDicePip = 1;
             _currentAttackType = DiceType.Max;
             _currentRootTarget = null;
+        }
+
+        private void PlayKingNormalMultiHit(Monster rootTarget, DiceType attackType, int totalDamage, KingNormalDiceEffect diceEffect)
+        {
+            int firstHitDamage = Mathf.Max(1, Mathf.RoundToInt(totalDamage * 0.7f));
+            int followUpDamage = Mathf.Max(1, Mathf.RoundToInt(totalDamage * 0.1f));
+            Vector3 areaCenter = rootTarget.transform.position;
+            List<Monster> fixedTargets = new List<Monster>(hitmonsters);
+
+            diceEffect.PlayImpactEffect(areaCenter);
+            ApplyKingNormalHit(attackType, firstHitDamage, diceEffect, fixedTargets);
+
+            if (KingNormalDiceEffect.TotalHitCount > 1)
+                StartCoroutine(PlayKingNormalFollowUpHits(attackType, followUpDamage, diceEffect, fixedTargets));
+        }
+
+        private IEnumerator PlayKingNormalFollowUpHits(DiceType attackType, int damage, KingNormalDiceEffect diceEffect, List<Monster> fixedTargets)
+        {
+            WaitForSeconds delay = new WaitForSeconds(KingNormalDiceEffect.MultiHitInterval);
+
+            for (int i = 1; i < KingNormalDiceEffect.TotalHitCount; i++)
+            {
+                yield return delay;
+                ApplyKingNormalHit(attackType, damage, diceEffect, fixedTargets);
+            }
+        }
+
+        private void ApplyKingNormalHit(DiceType attackType, int damage, KingNormalDiceEffect diceEffect, List<Monster> fixedTargets)
+        {
+            if (diceEffect == null || fixedTargets == null)
+                return;
+
+            for (int i = 0; i < fixedTargets.Count; i++)
+            {
+                Monster target = fixedTargets[i];
+                if (target == null || target.gameObject.activeInHierarchy == false)
+                    continue;
+
+                HitMonster(target, attackType, damage);
+            }
         }
 
         public IEnumerator HitColorEffect(Monster target, DiceType elementType)

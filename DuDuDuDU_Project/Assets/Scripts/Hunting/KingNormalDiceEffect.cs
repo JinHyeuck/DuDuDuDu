@@ -4,46 +4,47 @@ namespace OJ
 {
     public class KingNormalDiceEffect : DiceEffectBase
     {
+        public const float SplashRadius = 1.3f;
+        public const int AdditionalTargetCount = 3;
+        public const int TotalHitCount = 4;
+        public const float MultiHitInterval = 0.1f;
+
         public override DiceType DiceType => DiceType.KingNormal;
 
         public override void BuildTargets(AttackContent attackContent, Monster rootTarget, List<Monster> hitMonsters)
         {
-            if (attackContent == null || hitMonsters == null)
+            if (attackContent == null || hitMonsters == null || rootTarget == null)
                 return;
 
-            List<Monster> bonusTargets = new List<Monster>();
-            for (int i = 0; i < hitMonsters.Count; i++)
+            hitMonsters.Clear();
+            hitMonsters.Add(rootTarget);
+
+            List<Monster> nearby = attackContent.GetRedHitTarget(
+                rootTarget.transform.position,
+                IFFType.IFF_Friend,
+                SplashRadius,
+                AdditionalTargetCount,
+                null);
+
+            HashSet<Monster> uniqueTargets = new HashSet<Monster>(hitMonsters);
+            for (int i = 0; i < nearby.Count; i++)
             {
-                Monster target = hitMonsters[i];
-                if (target == null)
+                Monster splashTarget = nearby[i];
+                if (splashTarget == null)
                     continue;
 
-                List<Monster> nearby = attackContent.GetRedHitTarget(
-                    target.transform.position,
-                    IFFType.IFF_Friend,
-                    1.3f,
-                    3,
-                    null);
-
-                for (int n = 0; n < nearby.Count; n++)
-                {
-                    Monster splashTarget = nearby[n];
-                    if (splashTarget == null || splashTarget == target)
-                        continue;
-
-                    bonusTargets.Add(splashTarget);
-                }
+                if (uniqueTargets.Add(splashTarget))
+                    hitMonsters.Add(splashTarget);
             }
-
-            hitMonsters.AddRange(bonusTargets);
         }
 
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
         {
-            if (target == null)
-                return;
+        }
 
-            PlayEffectAt(DiceType, target.transform.position);
+        public void PlayImpactEffect(UnityEngine.Vector3 position)
+        {
+            PlayEffectAt(DiceType, position);
         }
     }
 }

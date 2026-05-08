@@ -657,7 +657,7 @@ namespace OJ
                     (12, "쿨타임 감소량 10% 추가 증가")
                 }, new [] { ElementType.Light, ElementType.Normal },
                     false, false, false, (DiceType.Normal, 2, 1), (DiceType.Thunder, 2, 1), (DiceType.Ice, 2, 1)) },
-                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "적 1명에게 104 + (레벨 x 20) 대미지를 주고 주변 적을 추가 타격합니다.", 104, 20, 3.0f, new []{
+                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "적 1명과 주변 적에게 첫 타 70%, 이후 0.2초 간격으로 10%씩 3연타를 가합니다.", 104, 20, 3.0f, new []{
                     (3, "최종 대미지 30% 증가"),
                     (6, "소환 중인 동안 NormalDice 최종 대미지 20% 증가"),
                     (9, "소환 중인 동안 모든 다이스 크리티컬 확률 10% 증가"),
