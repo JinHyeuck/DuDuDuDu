@@ -305,6 +305,9 @@ namespace OJ
                 wall != null ? wall.CurrentHp : 0,
                 UIDiceSummonSystem.Instance != null ? UIDiceSummonSystem.Instance.currentSP : 0);
 
+            if (CurrentStageData != null)
+                StageProgressManager.Instance?.RecordClearedWave(CurrentStageData.stageIndex, CurrentWaveIndex);
+
             if (CurrentStageData != null && CurrentWaveIndex >= CurrentStageData.totalWaves)
             {
                 ClearStage();

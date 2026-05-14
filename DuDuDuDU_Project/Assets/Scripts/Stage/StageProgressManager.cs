@@ -20,11 +20,14 @@ namespace OJ
             public int stageIndex;
             public int claimedRewardFlags;
             public int bestClearGrade;
+            public int bestClearedWave;
         }
 
         public static StageProgressManager Instance { get; private set; }
 
         private const string SaveKey = "OJ.Stage.Progress";
+
+        public event Action OnProgressChanged;
 
         private readonly Dictionary<int, StageRecord> stageRecords = new Dictionary<int, StageRecord>();
 
@@ -107,6 +110,45 @@ namespace OJ
             return (StageRewardTierFlags)record.claimedRewardFlags;
         }
 
+        public int GetBestClearedWave(int stageIndex)
+        {
+            if (!stageRecords.TryGetValue(stageIndex, out StageRecord record))
+                return GetHighestUnlockedStageIndex() > stageIndex ? GetTotalWaves(stageIndex) : 0;
+
+            if (record.bestClearGrade > (int)StageClearGrade.None)
+                return Mathf.Max(record.bestClearedWave, GetTotalWaves(stageIndex));
+
+            return Mathf.Max(0, record.bestClearedWave);
+        }
+
+        public bool HasClearedWave(int stageIndex, int waveIndex)
+        {
+            if (stageIndex < 1)
+                return false;
+
+            int requiredWave = ClampWaveIndex(stageIndex, waveIndex);
+            if (GetHighestUnlockedStageIndex() > stageIndex)
+                return true;
+
+            return GetBestClearedWave(stageIndex) >= requiredWave;
+        }
+
+        public bool RecordClearedWave(int stageIndex, int clearedWaveIndex)
+        {
+            if (stageIndex < 1 || clearedWaveIndex < 1)
+                return false;
+
+            StageRecord record = GetOrCreateRecord(stageIndex);
+            int clampedWave = ClampWaveIndex(stageIndex, clearedWaveIndex);
+            if (record.bestClearedWave >= clampedWave)
+                return false;
+
+            record.bestClearedWave = clampedWave;
+            Save();
+            OnProgressChanged?.Invoke();
+            return true;
+        }
+
         public StageRewardTierFlags RecordStageClear(int stageIndex, StageClearGrade clearGrade)
         {
             if (stageIndex < 1)
@@ -119,11 +161,13 @@ namespace OJ
 
             record.claimedRewardFlags = (int)(previousFlags | achievedFlags);
             record.bestClearGrade = Mathf.Max(record.bestClearGrade, (int)clearGrade);
+            record.bestClearedWave = Mathf.Max(record.bestClearedWave, GetTotalWaves(stageIndex));
 
             if (clearGrade != StageClearGrade.None)
                 saveData.highestUnlockedStageIndex = Mathf.Max(saveData.highestUnlockedStageIndex, Mathf.Min(GetMaxStageIndex(), stageIndex + 1));
 
             Save();
+            OnProgressChanged?.Invoke();
             return newlyClaimedFlags;
         }
 
@@ -137,6 +181,7 @@ namespace OJ
                 stageIndex = stageIndex,
                 claimedRewardFlags = 0,
                 bestClearGrade = 0,
+                bestClearedWave = 0,
             };
 
             stageRecords.Add(stageIndex, record);
@@ -179,6 +224,17 @@ namespace OJ
         private static int GetMaxStageIndex()
         {
             return Mathf.Max(1, StageDatabaseProvider.GetDatabase().StageCount);
+        }
+
+        private static int GetTotalWaves(int stageIndex)
+        {
+            StageData stageData = StageDatabaseProvider.GetStage(stageIndex);
+            return stageData != null ? Mathf.Max(1, stageData.totalWaves) : 1;
+        }
+
+        private static int ClampWaveIndex(int stageIndex, int waveIndex)
+        {
+            return Mathf.Clamp(Mathf.Max(1, waveIndex), 1, GetTotalWaves(stageIndex));
         }
     }
 }

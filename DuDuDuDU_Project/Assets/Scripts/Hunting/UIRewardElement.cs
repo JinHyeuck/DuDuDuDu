@@ -11,11 +11,21 @@ namespace OJ
 
         public void Bind(Sprite iconSprite, int amount)
         {
+            Bind(iconSprite, amount, "{0:#,##0}");
+        }
+
+        public void Bind(Sprite iconSprite, int amount, string amountFormat)
+        {
             if (iconImage != null)
                 iconImage.sprite = iconSprite;
 
             if (amountText != null)
-                amountText.SetText(amount.ToString("#,##0"));
+            {
+                if (string.IsNullOrEmpty(amountFormat))
+                    amountText.SetText("{0:#,##0}", amount);
+                else
+                    amountText.SetText(amountFormat, amount);
+            }
         }
     }
 }
