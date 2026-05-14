@@ -8,7 +8,13 @@ namespace OJ
 
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
         {
-            if (target == null || target.gameObject.activeInHierarchy == false)
+            if (target == null)
+                return;
+
+            var impactPosition = target.transform.position;
+            PlayEffectAt(DiceType, impactPosition);
+
+            if (target.gameObject.activeInHierarchy == false)
                 return;
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
@@ -17,13 +23,12 @@ namespace OJ
                 DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level));
             if (level >= 12)
                 target.ApplyPoisonDamageTakenBonus(10);
-            PlayEffectAt(DiceType, target.transform.position);
 
             if (level < 9 || UnityEngine.Random.value > 0.4f)
                 return;
 
             List<Monster> around = attackContent.GetRedHitTarget(
-                target.transform.position,
+                impactPosition,
                 IFFType.IFF_Friend,
                 1.1f,
                 -1,
