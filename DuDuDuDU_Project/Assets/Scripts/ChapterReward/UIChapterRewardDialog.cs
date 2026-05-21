@@ -8,14 +8,9 @@ namespace OJ
 {
     public class UIChapterRewardDialog : IDialog
     {
-        [Header("Header")]
-        [SerializeField] private TMP_Text titleText;
-        [SerializeField] private TMP_Text requirementText;
-
         [Header("Milestones")]
-        [SerializeField] private RectTransform milestoneRoot;
+        [SerializeField] private RectTransform[] milestoneSlots;
         [SerializeField] private UIChapterRewardMilestoneItem milestoneTemplate;
-        [SerializeField] private int visibleMilestoneCount = 3;
 
         [Header("Reward Detail")]
         [SerializeField] private RectTransform rewardRoot;
@@ -27,48 +22,29 @@ namespace OJ
         [SerializeField] private Button nextButton;
         [SerializeField] private Button claimButton;
 
-        [Header("Claim Result")]
-        [SerializeField] private GameObject claimResultOverlay;
-        [SerializeField] private TMP_Text claimResultText;
-        [SerializeField] private RectTransform claimResultRewardRoot;
-        [SerializeField] private UIRewardElement claimResultRewardTemplate;
-        [SerializeField] private Button claimResultCloseButton;
+        [Header("Reward Result")]
+        [SerializeField] private UIRewardResultDialog rewardResultDialog;
 
         private readonly List<UIChapterRewardMilestoneItem> milestoneItems = new List<UIChapterRewardMilestoneItem>();
         private readonly List<UIRewardElement> rewardElements = new List<UIRewardElement>();
-        private readonly List<UIRewardElement> claimResultRewardElements = new List<UIRewardElement>();
 
         private int selectedIndex = -1;
-        private bool closeResultShouldAdvance;
 
         protected override void OnLoad()
         {
             base.OnLoad();
 
-            if (titleText != null)
-                titleText.SetText("챕터 보상");
-
-            if (milestoneRoot == null && milestoneTemplate != null)
-                milestoneRoot = milestoneTemplate.transform.parent as RectTransform;
             if (rewardRoot == null && rewardElementTemplate != null)
                 rewardRoot = rewardElementTemplate.transform.parent as RectTransform;
-            if (claimResultRewardRoot == null && claimResultRewardTemplate != null)
-                claimResultRewardRoot = claimResultRewardTemplate.transform.parent as RectTransform;
 
             if (milestoneTemplate != null)
                 milestoneTemplate.gameObject.SetActive(false);
             if (rewardElementTemplate != null)
                 rewardElementTemplate.gameObject.SetActive(false);
-            if (claimResultRewardTemplate != null)
-                claimResultRewardTemplate.gameObject.SetActive(false);
 
             if (previousButton != null) previousButton.onClick.AddListener(SelectPrevious);
             if (nextButton != null) nextButton.onClick.AddListener(SelectNext);
             if (claimButton != null) claimButton.onClick.AddListener(ClaimSelected);
-            if (claimResultCloseButton != null) claimResultCloseButton.onClick.AddListener(CloseClaimResult);
-
-            if (claimResultOverlay != null)
-                claimResultOverlay.SetActive(false);
         }
 
         protected override void OnDestroy()
@@ -76,7 +52,6 @@ namespace OJ
             if (previousButton != null) previousButton.onClick.RemoveListener(SelectPrevious);
             if (nextButton != null) nextButton.onClick.RemoveListener(SelectNext);
             if (claimButton != null) claimButton.onClick.RemoveListener(ClaimSelected);
-            if (claimResultCloseButton != null) claimResultCloseButton.onClick.RemoveListener(CloseClaimResult);
 
             if (ChapterRewardManager.Instance != null)
                 ChapterRewardManager.Instance.OnChanged -= Refresh;
@@ -92,9 +67,6 @@ namespace OJ
                 ChapterRewardManager.Instance.OnChanged += Refresh;
 
             selectedIndex = ChapterRewardManager.Instance != null ? ChapterRewardManager.Instance.GetFocusIndex() : -1;
-            if (claimResultOverlay != null)
-                claimResultOverlay.SetActive(false);
-
             Refresh();
         }
 
@@ -161,10 +133,21 @@ namespace OJ
                 selectedIndex = manager != null ? manager.GetFocusIndex() : 0;
             selectedIndex = Mathf.Clamp(selectedIndex, 0, totalCount - 1);
 
-            EnsureMilestoneItems(Mathf.Max(1, visibleMilestoneCount));
+            EnsureMilestoneItems();
+            RefreshMilestoneSlots(manager, milestones, totalCount);
 
-            int visibleCount = Mathf.Min(Mathf.Max(1, visibleMilestoneCount), totalCount);
-            int firstVisibleIndex = Mathf.Clamp(selectedIndex - (visibleCount / 2), 0, Mathf.Max(0, totalCount - visibleCount));
+            ChapterRewardMilestone selectedMilestone = milestones[selectedIndex];
+            ChapterRewardState selectedState = manager != null ? manager.GetState(selectedMilestone) : ChapterRewardState.Locked;
+            RefreshSelectedDetail(selectedMilestone, selectedState, totalCount);
+        }
+
+        private void RefreshMilestoneSlots(
+            ChapterRewardManager manager,
+            IReadOnlyList<ChapterRewardMilestone> milestones,
+            int totalCount)
+        {
+            int slotCount = GetMilestoneSlotCount();
+            int centerSlotIndex = slotCount / 2;
 
             for (int i = 0; i < milestoneItems.Count; i++)
             {
@@ -172,30 +155,29 @@ namespace OJ
                 if (item == null)
                     continue;
 
-                bool shouldShow = i < visibleCount;
-                item.gameObject.SetActive(shouldShow);
-                if (!shouldShow)
-                    continue;
+                item.gameObject.SetActive(true);
 
-                int milestoneIndex = firstVisibleIndex + i;
+                int milestoneIndex = selectedIndex + i - centerSlotIndex;
+                bool hasMilestone = milestoneIndex >= 0 && milestoneIndex < totalCount;
+                if (!hasMilestone)
+                {
+                    item.BindEmpty();
+                    continue;
+                }
+
                 ChapterRewardMilestone milestone = milestones[milestoneIndex];
                 ChapterRewardState state = manager != null ? manager.GetState(milestone) : ChapterRewardState.Locked;
                 item.Bind(milestone, state, milestoneIndex == selectedIndex, SelectMilestone);
             }
-
-            ChapterRewardMilestone selectedMilestone = milestones[selectedIndex];
-            ChapterRewardState selectedState = manager != null ? manager.GetState(selectedMilestone) : ChapterRewardState.Locked;
-            RefreshSelectedDetail(selectedMilestone, selectedState, totalCount);
         }
 
         private void SetEmptyState()
         {
-            if (requirementText != null)
-                requirementText.SetText("등록된 챕터 보상이 없습니다.");
             if (stateText != null)
                 stateText.SetText(string.Empty);
-            if (claimButton != null)
-                claimButton.interactable = false;
+
+            SetClaimButtonVisible(false);
+
             if (previousButton != null)
                 previousButton.interactable = false;
             if (nextButton != null)
@@ -212,9 +194,6 @@ namespace OJ
 
         private void RefreshSelectedDetail(ChapterRewardMilestone milestone, ChapterRewardState state, int totalCount)
         {
-            if (requirementText != null)
-                requirementText.SetText(milestone != null ? milestone.RequirementText : string.Empty);
-
             if (stateText != null)
             {
                 switch (state)
@@ -231,14 +210,23 @@ namespace OJ
                 }
             }
 
-            if (claimButton != null)
-                claimButton.interactable = state == ChapterRewardState.Claimable;
+            SetClaimButtonVisible(state == ChapterRewardState.Claimable);
+
             if (previousButton != null)
                 previousButton.interactable = selectedIndex > 0;
             if (nextButton != null)
                 nextButton.interactable = selectedIndex >= 0 && selectedIndex < totalCount - 1;
 
             BindRewards(milestone != null ? milestone.rewards : null);
+        }
+
+        private void SetClaimButtonVisible(bool visible)
+        {
+            if (claimButton == null)
+                return;
+
+            claimButton.gameObject.SetActive(visible);
+            claimButton.interactable = visible;
         }
 
         private void BindRewards(IReadOnlyList<ChapterRewardEntry> rewards)
@@ -258,7 +246,7 @@ namespace OJ
                     continue;
 
                 ChapterRewardEntry reward = rewards[i];
-                rewardElement.Bind(GetPointIcon(reward.pointType), reward.amount, "x{0:#,##0}");
+                rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.pointType), reward.amount, "x{0:#,##0}");
             }
         }
 
@@ -269,66 +257,81 @@ namespace OJ
             if (manager == null || milestones == null || selectedIndex < 0 || selectedIndex >= milestones.Count)
                 return;
 
-            if (!manager.TryClaim(milestones[selectedIndex], out List<StageRewardEntry> rewards))
+            if (!manager.TryClaim(milestones[selectedIndex], out List<PointRewardEntry> rewards))
                 return;
 
-            ShowClaimResult(rewards);
             Refresh();
-        }
 
-        private void ShowClaimResult(IReadOnlyList<StageRewardEntry> rewards)
-        {
-            if (claimResultOverlay == null)
-                return;
-
-            claimResultOverlay.SetActive(true);
-            closeResultShouldAdvance = true;
-
-            if (claimResultText != null)
-                claimResultText.SetText("보상을 획득하였습니다.");
-
-            int count = rewards != null ? rewards.Count : 0;
-            EnsureRewardElements(claimResultRewardElements, claimResultRewardTemplate, claimResultRewardRoot, count);
-
-            for (int i = 0; i < claimResultRewardElements.Count; i++)
+            if (rewardResultDialog != null)
             {
-                UIRewardElement rewardElement = claimResultRewardElements[i];
-                if (rewardElement == null)
-                    continue;
-
-                bool shouldShow = i < count;
-                rewardElement.gameObject.SetActive(shouldShow);
-                if (!shouldShow)
-                    continue;
-
-                StageRewardEntry reward = rewards[i];
-                rewardElement.Bind(GetPointIcon(reward.PointType), reward.Amount, "x{0:#,##0}");
+                rewardResultDialog.Open(rewards, "보상을 획득했습니다.", HandleClaimResultClosed);
+                return;
             }
+
+            HandleClaimResultClosed();
         }
 
-        private void CloseClaimResult()
+        private void HandleClaimResultClosed()
         {
-            if (claimResultOverlay != null)
-                claimResultOverlay.SetActive(false);
-
-            if (closeResultShouldAdvance && ChapterRewardManager.Instance != null)
+            if (ChapterRewardManager.Instance != null)
                 selectedIndex = ChapterRewardManager.Instance.GetFocusIndex();
 
-            closeResultShouldAdvance = false;
             Refresh();
         }
 
-        private void EnsureMilestoneItems(int count)
+        private int GetMilestoneSlotCount()
         {
-            if (milestoneTemplate == null || milestoneRoot == null)
+            return milestoneSlots != null ? milestoneSlots.Length : 0;
+        }
+
+        private void EnsureMilestoneItems()
+        {
+            int slotCount = GetMilestoneSlotCount();
+            if (slotCount <= 0)
                 return;
 
-            while (milestoneItems.Count < count)
+            while (milestoneItems.Count < slotCount)
+                milestoneItems.Add(null);
+
+            for (int i = 0; i < slotCount; i++)
             {
-                UIChapterRewardMilestoneItem item = Object.Instantiate(milestoneTemplate, milestoneRoot);
-                item.gameObject.SetActive(true);
-                milestoneItems.Add(item);
+                RectTransform slot = milestoneSlots[i];
+                if (slot == null)
+                    continue;
+
+                slot.gameObject.SetActive(true);
+
+                if (milestoneItems[i] != null)
+                    continue;
+
+                UIChapterRewardMilestoneItem item = slot.GetComponentInChildren<UIChapterRewardMilestoneItem>(true);
+                if (item == null || item == milestoneTemplate)
+                {
+                    if (milestoneTemplate == null)
+                        continue;
+
+                    item = Object.Instantiate(milestoneTemplate, slot);
+                }
+
+                RectTransform itemRect = item.transform as RectTransform;
+                if (itemRect != null)
+                    StretchToSlot(itemRect);
+
+                item.gameObject.SetActive(false);
+                milestoneItems[i] = item;
             }
+        }
+
+        private static void StretchToSlot(RectTransform rectTransform)
+        {
+            rectTransform.SetParent(rectTransform.parent, false);
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.offsetMin = Vector2.zero;
+            rectTransform.offsetMax = Vector2.zero;
+            rectTransform.anchoredPosition = Vector2.zero;
+            rectTransform.localRotation = Quaternion.identity;
+            rectTransform.localScale = Vector3.one;
         }
 
         private static void EnsureRewardElements(
@@ -346,15 +349,6 @@ namespace OJ
                 rewardElement.gameObject.SetActive(true);
                 elements.Add(rewardElement);
             }
-        }
-
-        private static Sprite GetPointIcon(PointType pointType)
-        {
-            if (!StaticResource.isAlive || StaticResource.Instance == null || StaticResource.Instance.PointMetadataDatabase == null)
-                return null;
-
-            PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(pointType);
-            return metadata != null ? metadata.icon : null;
         }
     }
 }

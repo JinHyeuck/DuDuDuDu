@@ -195,17 +195,17 @@ namespace OJ
             int clearedWaves = Mathf.Clamp(CurrentWaveIndex - 1, 0, totalWaves);
             float rewardRatio = (float)clearedWaves / totalWaves;
 
-            List<StageRewardEntry> partialRewards = StageRewardCalculator.ScaleRewards(
+            List<PointRewardEntry> partialRewards = StageRewardCalculator.ScaleRewards(
                 StageRewardCalculator.BuildNormalClearRewards(stageIndex),
                 rewardRatio);
-            StageRewardCalculator.GrantRewards(partialRewards);
+            PointRewardUtility.GrantRewards(partialRewards);
 
             RunHistoryManager.Instance?.EndRun(
                 RunResultType.Fail,
                 CurrentWaveIndex,
                 wall != null ? wall.CurrentHp : 0);
             Debug.Log(
-                $"Stage {stageIndex} Failed | Cleared Waves: {clearedWaves}/{totalWaves} | Ratio: {rewardRatio:0.##} | Partial Normal: {StageRewardCalculator.BuildRewardSummary(partialRewards)}");
+                $"Stage {stageIndex} Failed | Cleared Waves: {clearedWaves}/{totalWaves} | Ratio: {rewardRatio:0.##} | Partial Normal: {PointRewardUtility.BuildRewardSummary(partialRewards)}");
             ShowStageResult(false, stageIndex, clearedWaves, partialRewards);
         }
 
@@ -360,25 +360,25 @@ namespace OJ
             int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
             StageClearGrade clearGrade = StageRewardCalculator.GetClearGrade(wall.CurrentHp, wall.TotalHp);
 
-            List<StageRewardEntry> normalRewards = StageRewardCalculator.BuildNormalClearRewards(stageIndex);
-            StageRewardCalculator.GrantRewards(normalRewards);
+            List<PointRewardEntry> normalRewards = StageRewardCalculator.BuildNormalClearRewards(stageIndex);
+            PointRewardUtility.GrantRewards(normalRewards);
 
             StageRewardTierFlags newFlags = StageProgressManager.Instance != null
                 ? StageProgressManager.Instance.RecordStageClear(stageIndex, clearGrade)
                 : StageRewardCalculator.GetRewardFlagsForGrade(clearGrade);
 
-            List<StageRewardEntry> bonusRewards = StageRewardCalculator.BuildBonusRewards(stageIndex, newFlags);
-            StageRewardCalculator.GrantRewards(bonusRewards);
+            List<PointRewardEntry> bonusRewards = StageRewardCalculator.BuildBonusRewards(stageIndex, newFlags);
+            PointRewardUtility.GrantRewards(bonusRewards);
 
             Debug.Log(
-                $"Stage {stageIndex} Clear ({clearGrade}) | Normal: {StageRewardCalculator.BuildRewardSummary(normalRewards)} | Bonus: {StageRewardCalculator.BuildRewardSummary(bonusRewards)}");
+                $"Stage {stageIndex} Clear ({clearGrade}) | Normal: {PointRewardUtility.BuildRewardSummary(normalRewards)} | Bonus: {PointRewardUtility.BuildRewardSummary(bonusRewards)}");
 
             RunHistoryManager.Instance?.EndRun(
                 RunResultType.Clear,
                 CurrentWaveIndex,
                 wall != null ? wall.CurrentHp : 0);
 
-            var resultRewards = new List<StageRewardEntry>(normalRewards.Count + bonusRewards.Count);
+            var resultRewards = new List<PointRewardEntry>(normalRewards.Count + bonusRewards.Count);
             resultRewards.AddRange(normalRewards);
             resultRewards.AddRange(bonusRewards);
             ShowStageResult(true, stageIndex, CurrentWaveIndex, resultRewards);
@@ -391,7 +391,7 @@ namespace OJ
             SceneFlowManager.LoadLobby();
         }
 
-        private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<StageRewardEntry> rewards)
+        private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<PointRewardEntry> rewards)
         {
             if (stageResultDialog == null)
             {
