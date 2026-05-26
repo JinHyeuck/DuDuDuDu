@@ -23,16 +23,16 @@ namespace OJ
             this.amount = Mathf.Max(1, amount);
         }
 
-        public StageRewardEntry ToStageRewardEntry()
+        public PointRewardEntry ToPointRewardEntry()
         {
-            return new StageRewardEntry(pointType, amount);
+            return new PointRewardEntry(pointType, amount);
         }
     }
 
     [Serializable]
     public class ChapterRewardMilestone
     {
-        [Tooltip("비워두면 chapterIndex_stage_wave 형식으로 자동 생성됩니다.")]
+        [Tooltip("비워두면 chapterIndex_stage_wave 형식으로 자동 생성합니다.")]
         public string id;
         [Min(1)] public int chapterIndex = 1;
         [Min(1)] public int requiredStageIndex = 1;

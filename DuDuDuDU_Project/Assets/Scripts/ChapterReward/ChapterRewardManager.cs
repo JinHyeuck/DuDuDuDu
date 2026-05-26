@@ -157,9 +157,9 @@ namespace OJ
             return milestones != null ? milestones.Count : 0;
         }
 
-        public bool TryClaim(ChapterRewardMilestone milestone, out List<StageRewardEntry> grantedRewards)
+        public bool TryClaim(ChapterRewardMilestone milestone, out List<PointRewardEntry> grantedRewards)
         {
-            grantedRewards = new List<StageRewardEntry>();
+            grantedRewards = new List<PointRewardEntry>();
 
             if (GetState(milestone) != ChapterRewardState.Claimable)
                 return false;
@@ -172,12 +172,12 @@ namespace OJ
                     if (reward.amount <= 0)
                         continue;
 
-                    grantedRewards.Add(reward.ToStageRewardEntry());
+                    grantedRewards.Add(reward.ToPointRewardEntry());
                 }
             }
 
             claimedRewardIds.Add(milestone.StableId);
-            StageRewardCalculator.GrantRewards(grantedRewards);
+            PointRewardUtility.GrantRewards(grantedRewards);
             SyncSaveData();
             Save();
             OnChanged?.Invoke();

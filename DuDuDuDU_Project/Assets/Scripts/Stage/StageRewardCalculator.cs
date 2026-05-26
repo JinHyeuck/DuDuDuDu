@@ -1,21 +1,8 @@
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 
 namespace OJ
 {
-    public struct StageRewardEntry
-    {
-        public PointType PointType;
-        public int Amount;
-
-        public StageRewardEntry(PointType pointType, int amount)
-        {
-            PointType = pointType;
-            Amount = amount;
-        }
-    }
-
     public static class StageRewardCalculator
     {
         private static readonly PointType[] ElementScrollTypes =
@@ -65,15 +52,15 @@ namespace OJ
             }
         }
 
-        public static List<StageRewardEntry> BuildNormalClearRewards(int stageIndex)
+        public static List<PointRewardEntry> BuildNormalClearRewards(int stageIndex)
         {
-            var rewards = new List<StageRewardEntry>
+            var rewards = new List<PointRewardEntry>
             {
-                new StageRewardEntry(PointType.Gold, GetGuaranteedNormalGold(stageIndex)),
+                new PointRewardEntry(PointType.Gold, GetGuaranteedNormalGold(stageIndex)),
             };
 
             AddDistinctRewards(rewards, ElementScrollTypes, new[] { 20, 40 });
-            rewards.Add(new StageRewardEntry(PointType.MythicScroll, Random.Range(5, 11)));
+            rewards.Add(new PointRewardEntry(PointType.MythicScroll, Random.Range(5, 11)));
             AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 3 });
             return rewards;
         }
@@ -91,87 +78,54 @@ namespace OJ
             return Mathf.FloorToInt(GetGuaranteedNormalGold(stageIndex) * ratio);
         }
 
-        public static List<StageRewardEntry> ScaleRewards(IReadOnlyList<StageRewardEntry> rewards, float multiplier)
+        public static List<PointRewardEntry> ScaleRewards(IReadOnlyList<PointRewardEntry> rewards, float multiplier)
         {
-            var scaledRewards = new List<StageRewardEntry>();
+            var scaledRewards = new List<PointRewardEntry>();
             if (rewards == null || rewards.Count == 0)
                 return scaledRewards;
 
             float clampedMultiplier = Mathf.Clamp01(multiplier);
             for (int i = 0; i < rewards.Count; i++)
             {
-                StageRewardEntry reward = rewards[i];
+                PointRewardEntry reward = rewards[i];
                 int scaledAmount = Mathf.FloorToInt(reward.Amount * clampedMultiplier);
                 if (scaledAmount <= 0)
                     continue;
 
-                scaledRewards.Add(new StageRewardEntry(reward.PointType, scaledAmount));
+                scaledRewards.Add(new PointRewardEntry(reward.PointType, scaledAmount));
             }
 
             return scaledRewards;
         }
 
-        public static List<StageRewardEntry> BuildBonusRewards(int stageIndex, StageRewardTierFlags rewardFlags)
+        public static List<PointRewardEntry> BuildBonusRewards(int stageIndex, StageRewardTierFlags rewardFlags)
         {
-            var rewards = new List<StageRewardEntry>();
+            var rewards = new List<PointRewardEntry>();
 
             if ((rewardFlags & StageRewardTierFlags.Minimum) != 0)
             {
-                rewards.Add(new StageRewardEntry(PointType.Gold, 300 + GetChapterBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 300 + GetChapterBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50 });
                 AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10 });
             }
 
             if ((rewardFlags & StageRewardTierFlags.Half) != 0)
             {
-                rewards.Add(new StageRewardEntry(PointType.Gold, 400 + GetChapterBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 400 + GetChapterBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 });
                 AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 });
-                rewards.Add(new StageRewardEntry(PointType.MythicScroll, 15));
+                rewards.Add(new PointRewardEntry(PointType.MythicScroll, 15));
             }
 
             if ((rewardFlags & StageRewardTierFlags.Perfect) != 0)
             {
-                rewards.Add(new StageRewardEntry(PointType.Gold, 500 + GetChapterBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 500 + GetChapterBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 });
-                rewards.Add(new StageRewardEntry(PointType.Dia, 150));
-                rewards.Add(new StageRewardEntry(PointType.MythicScroll, 10));
+                rewards.Add(new PointRewardEntry(PointType.Dia, 150));
+                rewards.Add(new PointRewardEntry(PointType.MythicScroll, 10));
             }
 
             return rewards;
-        }
-
-        public static void GrantRewards(IReadOnlyList<StageRewardEntry> rewards)
-        {
-            if (PointManager.Instance == null || rewards == null)
-                return;
-
-            for (int i = 0; i < rewards.Count; i++)
-            {
-                StageRewardEntry reward = rewards[i];
-                PointManager.Instance.Add(reward.PointType, reward.Amount, false);
-            }
-
-            PointManager.Instance.SaveAll();
-        }
-
-        public static string BuildRewardSummary(IReadOnlyList<StageRewardEntry> rewards)
-        {
-            if (rewards == null || rewards.Count == 0)
-                return "No rewards";
-
-            var builder = new StringBuilder();
-            for (int i = 0; i < rewards.Count; i++)
-            {
-                if (i > 0)
-                    builder.Append(", ");
-
-                builder.Append(rewards[i].PointType);
-                builder.Append(" x");
-                builder.Append(rewards[i].Amount);
-            }
-
-            return builder.ToString();
         }
 
         private static int GetChapterBonus(int stageIndex)
@@ -179,7 +133,7 @@ namespace OJ
             return ((Mathf.Max(1, stageIndex) - 1) / 10) * 5;
         }
 
-        private static void AddDistinctRewards(List<StageRewardEntry> rewards, PointType[] pool, int[] amounts)
+        private static void AddDistinctRewards(List<PointRewardEntry> rewards, PointType[] pool, int[] amounts)
         {
             if (rewards == null || pool == null || amounts == null || amounts.Length == 0)
                 return;
@@ -189,7 +143,7 @@ namespace OJ
             Shuffle(shuffled);
 
             for (int i = 0; i < count; i++)
-                rewards.Add(new StageRewardEntry(shuffled[i], amounts[i]));
+                rewards.Add(new PointRewardEntry(shuffled[i], amounts[i]));
         }
 
         private static void Shuffle(PointType[] values)

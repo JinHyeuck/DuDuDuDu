@@ -52,7 +52,7 @@ namespace OJ
             callback?.Invoke();
         }
 
-        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int bestStageIndex, IReadOnlyList<StageRewardEntry> rewards, Action onClose)
+        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int bestStageIndex, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
         {
             closeAction = onClose;
 
@@ -84,9 +84,9 @@ namespace OJ
         }
 
 
-        private void BindRewards(IReadOnlyList<StageRewardEntry> rewards)
+        private void BindRewards(IReadOnlyList<PointRewardEntry> rewards)
         {
-            List<StageRewardEntry> mergedRewards = MergeRewards(rewards);
+            List<PointRewardEntry> mergedRewards = PointRewardUtility.MergeRewards(rewards);
 
             Debug.Log(BuildRewardLog(mergedRewards));
 
@@ -103,12 +103,12 @@ namespace OJ
                 if (!shouldShow)
                     continue;
 
-                StageRewardEntry reward = mergedRewards[i];
-                rewardElement.Bind(GetPointIcon(reward.PointType), reward.Amount);
+                PointRewardEntry reward = mergedRewards[i];
+                rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.PointType), reward.Amount);
             }
         }
 
-        private string BuildRewardLog(IReadOnlyList<StageRewardEntry> rewards)
+        private string BuildRewardLog(IReadOnlyList<PointRewardEntry> rewards)
         {
             if (rewards == null || rewards.Count == 0)
                 return "[UIStageResultDialog] Result rewards: none";
@@ -116,8 +116,8 @@ namespace OJ
             var parts = new List<string>(rewards.Count);
             for (int i = 0; i < rewards.Count; i++)
             {
-                StageRewardEntry reward = rewards[i];
-                Sprite icon = GetPointIcon(reward.PointType);
+                PointRewardEntry reward = rewards[i];
+                Sprite icon = PointRewardUtility.GetPointIcon(reward.PointType);
                 string iconName = icon != null ? icon.name : "null";
                 parts.Add($"{reward.PointType}:{reward.Amount} (icon:{iconName})");
             }
@@ -138,47 +138,5 @@ namespace OJ
             }
         }
 
-        private static List<StageRewardEntry> MergeRewards(IReadOnlyList<StageRewardEntry> rewards)
-        {
-            var merged = new Dictionary<PointType, int>();
-            if (rewards != null)
-            {
-                for (int i = 0; i < rewards.Count; i++)
-                {
-                    StageRewardEntry reward = rewards[i];
-                    if (reward.Amount <= 0)
-                        continue;
-
-                    if (!merged.ContainsKey(reward.PointType))
-                        merged[reward.PointType] = 0;
-
-                    merged[reward.PointType] += reward.Amount;
-                }
-            }
-
-            var list = new List<StageRewardEntry>();
-            foreach (KeyValuePair<PointType, int> pair in merged)
-                list.Add(new StageRewardEntry(pair.Key, pair.Value));
-
-            list.Sort((left, right) =>
-            {
-                if (left.PointType == PointType.Gold)
-                    return -1;
-                if (right.PointType == PointType.Gold)
-                    return 1;
-                return left.PointType.CompareTo(right.PointType);
-            });
-
-            return list;
-        }
-
-        private Sprite GetPointIcon(PointType pointType)
-        {
-            if (StaticResource.Instance == null || StaticResource.Instance.PointMetadataDatabase == null)
-                return null;
-
-            PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(pointType);
-            return metadata != null ? metadata.icon : null;
-        }
     }
 }
