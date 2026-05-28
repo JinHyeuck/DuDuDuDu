@@ -6,6 +6,25 @@ namespace OJ
     [CreateAssetMenu(fileName = "StageRewardDatabase", menuName = "Stage Reward/Database")]
     public class StageRewardDatabase : ScriptableObject
     {
+        private static readonly PointType[] ElementScrollTypes =
+        {
+            PointType.NormalScroll,
+            PointType.FireScroll,
+            PointType.IceScroll,
+            PointType.PoisonScroll,
+            PointType.ThunderScroll,
+        };
+
+        private static readonly PointType[] EquipmentScrollTypes =
+        {
+            PointType.WeaponScroll,
+            PointType.HelmetScroll,
+            PointType.ArmorScroll,
+            PointType.RingScroll,
+            PointType.ShoesScroll,
+            PointType.NecklaceScroll,
+        };
+
         [SerializeField] private List<StageRewardMilestone> milestones = new List<StageRewardMilestone>();
 
         public IReadOnlyList<StageRewardMilestone> Milestones => milestones;
@@ -51,33 +70,89 @@ namespace OJ
             for (int i = 1; i <= safeCount; i++)
             {
                 StageData stageData = StageDatabaseProvider.GetStage(i);
-                int waveIndex = stageData != null ? Mathf.Max(1, stageData.totalWaves) : 10;
+                int totalWaves = stageData != null ? Mathf.Max(1, stageData.totalWaves) : 10;
 
-                milestones.Add(new StageRewardMilestone
-                {
-                    id = string.Format("default_{0}", i),
-                    stageIndex = i,
-                    requiredStageIndex = i,
-                    requiredWaveIndex = waveIndex,
-                    rewards = BuildDefaultRewards(i),
-                });
+                AddMilestone(i, "minimum", GetRequiredWaveIndex(totalWaves, 1f / 3f), BuildMinimumRewards(i));
+                AddMilestone(i, "half", GetRequiredWaveIndex(totalWaves, 2f / 3f), BuildHalfRewards(i));
+                AddMilestone(i, "perfect", totalWaves, BuildPerfectRewards(i));
             }
         }
 
-        private static List<StageRewardEntry> BuildDefaultRewards(int index)
+        private void AddMilestone(int stageIndex, string tierId, int requiredWaveIndex, List<StageRewardEntry> rewards)
         {
-            int safeIndex = Mathf.Max(1, index);
+            int safeStageIndex = Mathf.Max(1, stageIndex);
+            milestones.Add(new StageRewardMilestone
+            {
+                id = string.Format("stage_{0}_{1}", safeStageIndex, tierId),
+                stageIndex = safeStageIndex,
+                requiredStageIndex = safeStageIndex,
+                requiredWaveIndex = Mathf.Max(1, requiredWaveIndex),
+                rewards = rewards,
+            });
+        }
+
+        private static List<StageRewardEntry> BuildMinimumRewards(int stageIndex)
+        {
             var rewards = new List<StageRewardEntry>
             {
-                new StageRewardEntry(PointType.Dia, 25 + (safeIndex * 5)),
+                new StageRewardEntry(PointType.Gold, 300 + GetStageBonus(stageIndex)),
             };
 
-            if (safeIndex % 3 == 0)
-                rewards.Add(new StageRewardEntry(PointType.MythicScroll, 3 + safeIndex));
-            else
-                rewards.Add(new StageRewardEntry(PointType.Gold, 250 + (safeIndex * 50)));
+            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50 }, stageIndex);
+            AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10 }, stageIndex);
+            return rewards;
+        }
+
+        private static List<StageRewardEntry> BuildHalfRewards(int stageIndex)
+        {
+            var rewards = new List<StageRewardEntry>
+            {
+                new StageRewardEntry(PointType.Gold, 400 + GetStageBonus(stageIndex)),
+            };
+
+            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 }, stageIndex);
+            AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 }, stageIndex);
+            rewards.Add(new StageRewardEntry(PointType.MythicScroll, 15));
+            return rewards;
+        }
+
+        private static List<StageRewardEntry> BuildPerfectRewards(int stageIndex)
+        {
+            var rewards = new List<StageRewardEntry>
+            {
+                new StageRewardEntry(PointType.Gold, 500 + GetStageBonus(stageIndex)),
+            };
+
+            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 }, stageIndex);
+            rewards.Add(new StageRewardEntry(PointType.Dia, 150));
+            rewards.Add(new StageRewardEntry(PointType.MythicScroll, 10));
 
             return rewards;
+        }
+
+        private static int GetRequiredWaveIndex(int totalWaves, float ratio)
+        {
+            return Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(1, totalWaves) * ratio), 1, Mathf.Max(1, totalWaves));
+        }
+
+        private static int GetStageBonus(int stageIndex)
+        {
+            return ((Mathf.Max(1, stageIndex) - 1) / 10) * 5;
+        }
+
+        private static void AddDistinctRewards(
+            List<StageRewardEntry> rewards,
+            PointType[] pool,
+            int[] amounts,
+            int stageIndex)
+        {
+            if (rewards == null || pool == null || amounts == null || pool.Length == 0 || amounts.Length == 0)
+                return;
+
+            int count = Mathf.Min(pool.Length, amounts.Length);
+            int startIndex = (Mathf.Max(1, stageIndex) - 1) % pool.Length;
+            for (int i = 0; i < count; i++)
+                rewards.Add(new StageRewardEntry(pool[(startIndex + i) % pool.Length], amounts[i]));
         }
 
         private void EnsureValid()

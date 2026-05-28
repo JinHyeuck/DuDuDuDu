@@ -363,24 +363,18 @@ namespace OJ
             List<PointRewardEntry> normalRewards = StageRewardCalculator.BuildNormalClearRewards(stageIndex);
             PointRewardUtility.GrantRewards(normalRewards);
 
-            StageRewardTierFlags newFlags = StageProgressManager.Instance != null
-                ? StageProgressManager.Instance.RecordStageClear(stageIndex, clearGrade)
-                : StageRewardCalculator.GetRewardFlagsForGrade(clearGrade);
-
-            List<PointRewardEntry> bonusRewards = StageRewardCalculator.BuildBonusRewards(stageIndex, newFlags);
-            PointRewardUtility.GrantRewards(bonusRewards);
+            StageProgressManager.Instance?.RecordStageClear(stageIndex, clearGrade);
 
             Debug.Log(
-                $"Stage {stageIndex} Clear ({clearGrade}) | Normal: {PointRewardUtility.BuildRewardSummary(normalRewards)} | Bonus: {PointRewardUtility.BuildRewardSummary(bonusRewards)}");
+                $"Stage {stageIndex} Clear ({clearGrade}) | Normal: {PointRewardUtility.BuildRewardSummary(normalRewards)}");
 
             RunHistoryManager.Instance?.EndRun(
                 RunResultType.Clear,
                 CurrentWaveIndex,
                 wall != null ? wall.CurrentHp : 0);
 
-            var resultRewards = new List<PointRewardEntry>(normalRewards.Count + bonusRewards.Count);
+            var resultRewards = new List<PointRewardEntry>(normalRewards.Count);
             resultRewards.AddRange(normalRewards);
-            resultRewards.AddRange(bonusRewards);
             ShowStageResult(true, stageIndex, CurrentWaveIndex, resultRewards);
         }
 

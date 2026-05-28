@@ -54,12 +54,12 @@ namespace OJ
 
         public string ShortRequirementText
         {
-            get { return string.Format("스테이지{0}", requiredWaveIndex); }
+            get { return string.Format("{0}웨이브", requiredWaveIndex); }
         }
 
         public string RequirementText
         {
-            get { return string.Format("메인{0}-{1} 클리어 시 수령 가능", requiredStageIndex, requiredWaveIndex); }
+            get { return string.Format("스테이지{0}-{1} 클리어 시 수령 가능", requiredStageIndex, requiredWaveIndex); }
         }
     }
 }

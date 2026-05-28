@@ -68,7 +68,7 @@ namespace OJ
                 return;
 
             if (stageText != null)
-                stageText.SetText("Stage {0}", Mathf.Max(1, milestone.stageIndex));
+                stageText.SetText("Stage{0}", Mathf.Max(1, milestone.stageIndex));
 
             if (requirementText != null)
                 requirementText.SetText(milestone.ShortRequirementText);
