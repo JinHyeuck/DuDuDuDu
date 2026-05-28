@@ -3,12 +3,12 @@ using UnityEngine;
 
 namespace OJ
 {
-    [CreateAssetMenu(fileName = "ChapterRewardDatabase", menuName = "Chapter Reward/Database")]
-    public class ChapterRewardDatabase : ScriptableObject
+    [CreateAssetMenu(fileName = "StageRewardDatabase", menuName = "Stage Reward/Database")]
+    public class StageRewardDatabase : ScriptableObject
     {
-        [SerializeField] private List<ChapterRewardMilestone> milestones = new List<ChapterRewardMilestone>();
+        [SerializeField] private List<StageRewardMilestone> milestones = new List<StageRewardMilestone>();
 
-        public IReadOnlyList<ChapterRewardMilestone> Milestones => milestones;
+        public IReadOnlyList<StageRewardMilestone> Milestones => milestones;
         public int Count => milestones != null ? milestones.Count : 0;
 
         private void OnEnable()
@@ -16,7 +16,7 @@ namespace OJ
             EnsureValid();
         }
 
-        public ChapterRewardMilestone GetMilestone(int index)
+        public StageRewardMilestone GetMilestone(int index)
         {
             EnsureValid();
 
@@ -35,7 +35,7 @@ namespace OJ
 
             for (int i = 0; i < milestones.Count; i++)
             {
-                ChapterRewardMilestone milestone = milestones[i];
+                StageRewardMilestone milestone = milestones[i];
                 if (milestone != null && milestone.StableId == milestoneId)
                     return i;
             }
@@ -53,10 +53,10 @@ namespace OJ
                 StageData stageData = StageDatabaseProvider.GetStage(i);
                 int waveIndex = stageData != null ? Mathf.Max(1, stageData.totalWaves) : 10;
 
-                milestones.Add(new ChapterRewardMilestone
+                milestones.Add(new StageRewardMilestone
                 {
                     id = string.Format("default_{0}", i),
-                    chapterIndex = i,
+                    stageIndex = i,
                     requiredStageIndex = i,
                     requiredWaveIndex = waveIndex,
                     rewards = BuildDefaultRewards(i),
@@ -64,18 +64,18 @@ namespace OJ
             }
         }
 
-        private static List<ChapterRewardEntry> BuildDefaultRewards(int index)
+        private static List<StageRewardEntry> BuildDefaultRewards(int index)
         {
             int safeIndex = Mathf.Max(1, index);
-            var rewards = new List<ChapterRewardEntry>
+            var rewards = new List<StageRewardEntry>
             {
-                new ChapterRewardEntry(PointType.Dia, 25 + (safeIndex * 5)),
+                new StageRewardEntry(PointType.Dia, 25 + (safeIndex * 5)),
             };
 
             if (safeIndex % 3 == 0)
-                rewards.Add(new ChapterRewardEntry(PointType.MythicScroll, 3 + safeIndex));
+                rewards.Add(new StageRewardEntry(PointType.MythicScroll, 3 + safeIndex));
             else
-                rewards.Add(new ChapterRewardEntry(PointType.Gold, 250 + (safeIndex * 50)));
+                rewards.Add(new StageRewardEntry(PointType.Gold, 250 + (safeIndex * 50)));
 
             return rewards;
         }
@@ -83,7 +83,7 @@ namespace OJ
         private void EnsureValid()
         {
             if (milestones == null)
-                milestones = new List<ChapterRewardMilestone>();
+                milestones = new List<StageRewardMilestone>();
         }
     }
 }

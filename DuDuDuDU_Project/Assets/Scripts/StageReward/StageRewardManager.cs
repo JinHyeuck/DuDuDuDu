@@ -4,22 +4,23 @@ using UnityEngine;
 
 namespace OJ
 {
-    public class ChapterRewardManager : MonoBehaviour
+    public class StageRewardManager : MonoBehaviour
     {
         [Serializable]
-        private class ChapterRewardSaveData
+        private class StageRewardSaveData
         {
             public List<string> claimedRewardIds = new List<string>();
         }
 
-        public static ChapterRewardManager Instance { get; private set; }
+        public static StageRewardManager Instance { get; private set; }
 
-        private const string SaveKey = "OJ.ChapterReward.Progress";
+        private const string SaveKey = "OJ.StageReward.Progress";
+        private const string LegacySaveKey = "OJ.ChapterReward.Progress";
 
         public event Action OnChanged;
 
         private readonly HashSet<string> claimedRewardIds = new HashSet<string>();
-        private ChapterRewardSaveData saveData = new ChapterRewardSaveData();
+        private StageRewardSaveData saveData = new StageRewardSaveData();
         private bool isStageProgressSubscribed;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -28,8 +29,8 @@ namespace OJ
             if (Instance != null)
                 return;
 
-            var go = new GameObject(nameof(ChapterRewardManager));
-            go.AddComponent<ChapterRewardManager>();
+            var go = new GameObject(nameof(StageRewardManager));
+            go.AddComponent<StageRewardManager>();
         }
 
         private void Awake()
@@ -71,40 +72,40 @@ namespace OJ
             Save();
         }
 
-        public IReadOnlyList<ChapterRewardMilestone> GetMilestones()
+        public IReadOnlyList<StageRewardMilestone> GetMilestones()
         {
-            return ChapterRewardDatabaseProvider.GetDatabase().Milestones;
+            return StageRewardDatabaseProvider.GetDatabase().Milestones;
         }
 
         public bool HasClaimableReward()
         {
-            IReadOnlyList<ChapterRewardMilestone> milestones = GetMilestones();
+            IReadOnlyList<StageRewardMilestone> milestones = GetMilestones();
             for (int i = 0; i < milestones.Count; i++)
             {
-                if (GetState(milestones[i]) == ChapterRewardState.Claimable)
+                if (GetState(milestones[i]) == StageRewardState.Claimable)
                     return true;
             }
 
             return false;
         }
 
-        public ChapterRewardState GetState(ChapterRewardMilestone milestone)
+        public StageRewardState GetState(StageRewardMilestone milestone)
         {
             if (milestone == null)
-                return ChapterRewardState.Locked;
+                return StageRewardState.Locked;
 
             if (IsClaimed(milestone))
-                return ChapterRewardState.Claimed;
+                return StageRewardState.Claimed;
 
-            return IsUnlocked(milestone) ? ChapterRewardState.Claimable : ChapterRewardState.Locked;
+            return IsUnlocked(milestone) ? StageRewardState.Claimable : StageRewardState.Locked;
         }
 
-        public bool IsClaimed(ChapterRewardMilestone milestone)
+        public bool IsClaimed(StageRewardMilestone milestone)
         {
             return milestone != null && claimedRewardIds.Contains(milestone.StableId);
         }
 
-        public bool IsUnlocked(ChapterRewardMilestone milestone)
+        public bool IsUnlocked(StageRewardMilestone milestone)
         {
             if (milestone == null)
                 return false;
@@ -119,19 +120,19 @@ namespace OJ
 
         public int GetFocusIndex()
         {
-            IReadOnlyList<ChapterRewardMilestone> milestones = GetMilestones();
+            IReadOnlyList<StageRewardMilestone> milestones = GetMilestones();
             if (milestones == null || milestones.Count == 0)
                 return -1;
 
             for (int i = 0; i < milestones.Count; i++)
             {
-                if (GetState(milestones[i]) == ChapterRewardState.Claimable)
+                if (GetState(milestones[i]) == StageRewardState.Claimable)
                     return i;
             }
 
             for (int i = 0; i < milestones.Count; i++)
             {
-                if (GetState(milestones[i]) != ChapterRewardState.Claimed)
+                if (GetState(milestones[i]) != StageRewardState.Claimed)
                     return i;
             }
 
@@ -140,7 +141,7 @@ namespace OJ
 
         public int GetProgressIndex()
         {
-            IReadOnlyList<ChapterRewardMilestone> milestones = GetMilestones();
+            IReadOnlyList<StageRewardMilestone> milestones = GetMilestones();
             if (milestones == null || milestones.Count == 0)
                 return 0;
 
@@ -153,22 +154,22 @@ namespace OJ
 
         public int GetTotalCount()
         {
-            IReadOnlyList<ChapterRewardMilestone> milestones = GetMilestones();
+            IReadOnlyList<StageRewardMilestone> milestones = GetMilestones();
             return milestones != null ? milestones.Count : 0;
         }
 
-        public bool TryClaim(ChapterRewardMilestone milestone, out List<PointRewardEntry> grantedRewards)
+        public bool TryClaim(StageRewardMilestone milestone, out List<PointRewardEntry> grantedRewards)
         {
             grantedRewards = new List<PointRewardEntry>();
 
-            if (GetState(milestone) != ChapterRewardState.Claimable)
+            if (GetState(milestone) != StageRewardState.Claimable)
                 return false;
 
             if (milestone.rewards != null)
             {
                 for (int i = 0; i < milestone.rewards.Count; i++)
                 {
-                    ChapterRewardEntry reward = milestone.rewards[i];
+                    StageRewardEntry reward = milestone.rewards[i];
                     if (reward.amount <= 0)
                         continue;
 
@@ -201,9 +202,11 @@ namespace OJ
         private void Load()
         {
             string json = PlayerPrefs.GetString(SaveKey, string.Empty);
+            if (string.IsNullOrEmpty(json))
+                json = PlayerPrefs.GetString(LegacySaveKey, string.Empty);
             saveData = string.IsNullOrEmpty(json)
-                ? new ChapterRewardSaveData()
-                : JsonUtility.FromJson<ChapterRewardSaveData>(json) ?? new ChapterRewardSaveData();
+                ? new StageRewardSaveData()
+                : JsonUtility.FromJson<StageRewardSaveData>(json) ?? new StageRewardSaveData();
 
             if (saveData.claimedRewardIds == null)
                 saveData.claimedRewardIds = new List<string>();

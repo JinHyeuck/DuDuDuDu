@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 18c09bbfa1088ff4abf90b92be8482e3, type: 3}
-  m_Name: ChapterRewardDatabase
+  m_Name: StageRewardDatabase
   m_EditorClassIdentifier: 
   milestones:
   - id: main_1_3
-    chapterIndex: 1
+    stageIndex: 1
     requiredStageIndex: 1
     requiredWaveIndex: 3
     rewards:
@@ -23,7 +23,7 @@ MonoBehaviour:
     - pointType: 0
       amount: 300
   - id: main_1_6
-    chapterIndex: 1
+    stageIndex: 1
     requiredStageIndex: 1
     requiredWaveIndex: 6
     rewards:
@@ -32,7 +32,7 @@ MonoBehaviour:
     - pointType: 101
       amount: 15
   - id: main_1_10
-    chapterIndex: 1
+    stageIndex: 1
     requiredStageIndex: 1
     requiredWaveIndex: 10
     rewards:
@@ -41,7 +41,7 @@ MonoBehaviour:
     - pointType: 105
       amount: 3
   - id: main_1_15
-    chapterIndex: 1
+    stageIndex: 1
     requiredStageIndex: 1
     requiredWaveIndex: 15
     rewards:
@@ -50,7 +50,7 @@ MonoBehaviour:
     - pointType: 200
       amount: 5
   - id: main_2_3
-    chapterIndex: 2
+    stageIndex: 2
     requiredStageIndex: 2
     requiredWaveIndex: 3
     rewards:
@@ -59,7 +59,7 @@ MonoBehaviour:
     - pointType: 102
       amount: 20
   - id: main_2_6
-    chapterIndex: 2
+    stageIndex: 2
     requiredStageIndex: 2
     requiredWaveIndex: 6
     rewards:
@@ -68,7 +68,7 @@ MonoBehaviour:
     - pointType: 103
       amount: 20
   - id: main_2_10
-    chapterIndex: 2
+    stageIndex: 2
     requiredStageIndex: 2
     requiredWaveIndex: 10
     rewards:
@@ -77,7 +77,7 @@ MonoBehaviour:
     - pointType: 201
       amount: 6
   - id: main_2_15
-    chapterIndex: 2
+    stageIndex: 2
     requiredStageIndex: 2
     requiredWaveIndex: 15
     rewards:
@@ -86,7 +86,7 @@ MonoBehaviour:
     - pointType: 105
       amount: 5
   - id: main_3_3
-    chapterIndex: 3
+    stageIndex: 3
     requiredStageIndex: 3
     requiredWaveIndex: 3
     rewards:
@@ -95,7 +95,7 @@ MonoBehaviour:
     - pointType: 202
       amount: 8
   - id: main_3_6
-    chapterIndex: 3
+    stageIndex: 3
     requiredStageIndex: 3
     requiredWaveIndex: 6
     rewards:

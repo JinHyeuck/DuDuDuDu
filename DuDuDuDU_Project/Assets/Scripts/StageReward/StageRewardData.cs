@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace OJ
 {
-    public enum ChapterRewardState
+    public enum StageRewardState
     {
         Locked = 0,
         Claimable,
@@ -12,12 +13,12 @@ namespace OJ
     }
 
     [Serializable]
-    public struct ChapterRewardEntry
+    public struct StageRewardEntry
     {
         public PointType pointType;
         [Min(1)] public int amount;
 
-        public ChapterRewardEntry(PointType pointType, int amount)
+        public StageRewardEntry(PointType pointType, int amount)
         {
             this.pointType = pointType;
             this.amount = Mathf.Max(1, amount);
@@ -30,14 +31,15 @@ namespace OJ
     }
 
     [Serializable]
-    public class ChapterRewardMilestone
+    public class StageRewardMilestone
     {
-        [Tooltip("비워두면 chapterIndex_stage_wave 형식으로 자동 생성합니다.")]
+        [Tooltip("비워두면 stageIndex_stage_wave 형식으로 자동 생성합니다.")]
         public string id;
-        [Min(1)] public int chapterIndex = 1;
+        [FormerlySerializedAs("chapterIndex")]
+        [Min(1)] public int stageIndex = 1;
         [Min(1)] public int requiredStageIndex = 1;
         [Min(1)] public int requiredWaveIndex = 1;
-        public List<ChapterRewardEntry> rewards = new List<ChapterRewardEntry>();
+        public List<StageRewardEntry> rewards = new List<StageRewardEntry>();
 
         public string StableId
         {
@@ -46,7 +48,7 @@ namespace OJ
                 if (!string.IsNullOrWhiteSpace(id))
                     return id;
 
-                return string.Format("{0}_{1}_{2}", chapterIndex, requiredStageIndex, requiredWaveIndex);
+                return string.Format("{0}_{1}_{2}", stageIndex, requiredStageIndex, requiredWaveIndex);
             }
         }
 

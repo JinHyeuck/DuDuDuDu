@@ -6,11 +6,11 @@ using Object = UnityEngine.Object;
 
 namespace OJ
 {
-    public class UIChapterRewardDialog : IDialog
+    public class UIStageRewardDialog : IDialog
     {
         [Header("Milestones")]
         [SerializeField] private RectTransform[] milestoneSlots;
-        [SerializeField] private UIChapterRewardMilestoneItem milestoneTemplate;
+        [SerializeField] private UIStageRewardMilestoneItem milestoneTemplate;
 
         [Header("Reward Detail")]
         [SerializeField] private RectTransform rewardRoot;
@@ -25,7 +25,7 @@ namespace OJ
         [Header("Reward Result")]
         [SerializeField] private UIRewardResultDialog rewardResultDialog;
 
-        private readonly List<UIChapterRewardMilestoneItem> milestoneItems = new List<UIChapterRewardMilestoneItem>();
+        private readonly List<UIStageRewardMilestoneItem> milestoneItems = new List<UIStageRewardMilestoneItem>();
         private readonly List<UIRewardElement> rewardElements = new List<UIRewardElement>();
 
         private int selectedIndex = -1;
@@ -53,8 +53,8 @@ namespace OJ
             if (nextButton != null) nextButton.onClick.RemoveListener(SelectNext);
             if (claimButton != null) claimButton.onClick.RemoveListener(ClaimSelected);
 
-            if (ChapterRewardManager.Instance != null)
-                ChapterRewardManager.Instance.OnChanged -= Refresh;
+            if (StageRewardManager.Instance != null)
+                StageRewardManager.Instance.OnChanged -= Refresh;
 
             base.OnDestroy();
         }
@@ -63,17 +63,17 @@ namespace OJ
         {
             base.OnEnter();
 
-            if (ChapterRewardManager.Instance != null)
-                ChapterRewardManager.Instance.OnChanged += Refresh;
+            if (StageRewardManager.Instance != null)
+                StageRewardManager.Instance.OnChanged += Refresh;
 
-            selectedIndex = ChapterRewardManager.Instance != null ? ChapterRewardManager.Instance.GetFocusIndex() : -1;
+            selectedIndex = StageRewardManager.Instance != null ? StageRewardManager.Instance.GetFocusIndex() : -1;
             Refresh();
         }
 
         protected override void OnExit()
         {
-            if (ChapterRewardManager.Instance != null)
-                ChapterRewardManager.Instance.OnChanged -= Refresh;
+            if (StageRewardManager.Instance != null)
+                StageRewardManager.Instance.OnChanged -= Refresh;
 
             base.OnExit();
         }
@@ -93,18 +93,18 @@ namespace OJ
             SelectIndex(selectedIndex + 1);
         }
 
-        private void SelectMilestone(UIChapterRewardMilestoneItem item)
+        private void SelectMilestone(UIStageRewardMilestoneItem item)
         {
             if (item == null || item.Milestone == null)
                 return;
 
-            int index = ChapterRewardDatabaseProvider.GetDatabase().IndexOf(item.Milestone.StableId);
+            int index = StageRewardDatabaseProvider.GetDatabase().IndexOf(item.Milestone.StableId);
             SelectIndex(index);
         }
 
         private void SelectIndex(int nextIndex)
         {
-            IReadOnlyList<ChapterRewardMilestone> milestones = ChapterRewardDatabaseProvider.GetDatabase().Milestones;
+            IReadOnlyList<StageRewardMilestone> milestones = StageRewardDatabaseProvider.GetDatabase().Milestones;
             if (milestones == null || milestones.Count == 0)
             {
                 selectedIndex = -1;
@@ -118,8 +118,8 @@ namespace OJ
 
         private void Refresh()
         {
-            ChapterRewardManager manager = ChapterRewardManager.Instance;
-            IReadOnlyList<ChapterRewardMilestone> milestones = ChapterRewardDatabaseProvider.GetDatabase().Milestones;
+            StageRewardManager manager = StageRewardManager.Instance;
+            IReadOnlyList<StageRewardMilestone> milestones = StageRewardDatabaseProvider.GetDatabase().Milestones;
             int totalCount = milestones != null ? milestones.Count : 0;
 
             if (totalCount <= 0)
@@ -136,14 +136,14 @@ namespace OJ
             EnsureMilestoneItems();
             RefreshMilestoneSlots(manager, milestones, totalCount);
 
-            ChapterRewardMilestone selectedMilestone = milestones[selectedIndex];
-            ChapterRewardState selectedState = manager != null ? manager.GetState(selectedMilestone) : ChapterRewardState.Locked;
+            StageRewardMilestone selectedMilestone = milestones[selectedIndex];
+            StageRewardState selectedState = manager != null ? manager.GetState(selectedMilestone) : StageRewardState.Locked;
             RefreshSelectedDetail(selectedMilestone, selectedState, totalCount);
         }
 
         private void RefreshMilestoneSlots(
-            ChapterRewardManager manager,
-            IReadOnlyList<ChapterRewardMilestone> milestones,
+            StageRewardManager manager,
+            IReadOnlyList<StageRewardMilestone> milestones,
             int totalCount)
         {
             int slotCount = GetMilestoneSlotCount();
@@ -151,7 +151,7 @@ namespace OJ
 
             for (int i = 0; i < milestoneItems.Count; i++)
             {
-                UIChapterRewardMilestoneItem item = milestoneItems[i];
+                UIStageRewardMilestoneItem item = milestoneItems[i];
                 if (item == null)
                     continue;
 
@@ -165,8 +165,8 @@ namespace OJ
                     continue;
                 }
 
-                ChapterRewardMilestone milestone = milestones[milestoneIndex];
-                ChapterRewardState state = manager != null ? manager.GetState(milestone) : ChapterRewardState.Locked;
+                StageRewardMilestone milestone = milestones[milestoneIndex];
+                StageRewardState state = manager != null ? manager.GetState(milestone) : StageRewardState.Locked;
                 item.Bind(milestone, state, milestoneIndex == selectedIndex, SelectMilestone);
             }
         }
@@ -192,16 +192,16 @@ namespace OJ
             BindRewards(null);
         }
 
-        private void RefreshSelectedDetail(ChapterRewardMilestone milestone, ChapterRewardState state, int totalCount)
+        private void RefreshSelectedDetail(StageRewardMilestone milestone, StageRewardState state, int totalCount)
         {
             if (stateText != null)
             {
                 switch (state)
                 {
-                    case ChapterRewardState.Claimable:
+                    case StageRewardState.Claimable:
                         stateText.SetText("수령 가능");
                         break;
-                    case ChapterRewardState.Claimed:
+                    case StageRewardState.Claimed:
                         stateText.SetText("수령 완료");
                         break;
                     default:
@@ -210,7 +210,7 @@ namespace OJ
                 }
             }
 
-            SetClaimButtonVisible(state == ChapterRewardState.Claimable);
+            SetClaimButtonVisible(state == StageRewardState.Claimable);
 
             if (previousButton != null)
                 previousButton.interactable = selectedIndex > 0;
@@ -229,7 +229,7 @@ namespace OJ
             claimButton.interactable = visible;
         }
 
-        private void BindRewards(IReadOnlyList<ChapterRewardEntry> rewards)
+        private void BindRewards(IReadOnlyList<StageRewardEntry> rewards)
         {
             int count = rewards != null ? rewards.Count : 0;
             EnsureRewardElements(rewardElements, rewardElementTemplate, rewardRoot, count);
@@ -245,15 +245,15 @@ namespace OJ
                 if (!shouldShow)
                     continue;
 
-                ChapterRewardEntry reward = rewards[i];
+                StageRewardEntry reward = rewards[i];
                 rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.pointType), reward.amount, "x{0:#,##0}");
             }
         }
 
         private void ClaimSelected()
         {
-            ChapterRewardManager manager = ChapterRewardManager.Instance;
-            IReadOnlyList<ChapterRewardMilestone> milestones = ChapterRewardDatabaseProvider.GetDatabase().Milestones;
+            StageRewardManager manager = StageRewardManager.Instance;
+            IReadOnlyList<StageRewardMilestone> milestones = StageRewardDatabaseProvider.GetDatabase().Milestones;
             if (manager == null || milestones == null || selectedIndex < 0 || selectedIndex >= milestones.Count)
                 return;
 
@@ -273,8 +273,8 @@ namespace OJ
 
         private void HandleClaimResultClosed()
         {
-            if (ChapterRewardManager.Instance != null)
-                selectedIndex = ChapterRewardManager.Instance.GetFocusIndex();
+            if (StageRewardManager.Instance != null)
+                selectedIndex = StageRewardManager.Instance.GetFocusIndex();
 
             Refresh();
         }
@@ -304,7 +304,7 @@ namespace OJ
                 if (milestoneItems[i] != null)
                     continue;
 
-                UIChapterRewardMilestoneItem item = slot.GetComponentInChildren<UIChapterRewardMilestoneItem>(true);
+                UIStageRewardMilestoneItem item = slot.GetComponentInChildren<UIStageRewardMilestoneItem>(true);
                 if (item == null || item == milestoneTemplate)
                 {
                     if (milestoneTemplate == null)

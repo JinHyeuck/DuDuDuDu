@@ -1,15 +1,17 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace OJ
 {
     [RequireComponent(typeof(CanvasGroup))]
-    public class UIChapterRewardMilestoneItem : MonoBehaviour
+    public class UIStageRewardMilestoneItem : MonoBehaviour
     {
         [Header("Labels")]
-        [SerializeField] private TMP_Text chapterText;
+        [FormerlySerializedAs("chapterText")]
+        [SerializeField] private TMP_Text stageText;
         [SerializeField] private TMP_Text requirementText;
 
         [Header("State")]
@@ -24,10 +26,10 @@ namespace OJ
         [Header("Input")]
         [SerializeField] private Button selectButton;
 
-        private Action<UIChapterRewardMilestoneItem> onSelected;
-        private ChapterRewardMilestone milestone;
+        private Action<UIStageRewardMilestoneItem> onSelected;
+        private StageRewardMilestone milestone;
 
-        public ChapterRewardMilestone Milestone => milestone;
+        public StageRewardMilestone Milestone => milestone;
 
         private void Awake()
         {
@@ -54,10 +56,10 @@ namespace OJ
         }
 
         public void Bind(
-            ChapterRewardMilestone nextMilestone,
-            ChapterRewardState state,
+            StageRewardMilestone nextMilestone,
+            StageRewardState state,
             bool isSelected,
-            Action<UIChapterRewardMilestoneItem> selectedCallback)
+            Action<UIStageRewardMilestoneItem> selectedCallback)
         {
             milestone = nextMilestone;
             onSelected = selectedCallback;
@@ -65,16 +67,16 @@ namespace OJ
             if (milestone == null)
                 return;
 
-            if (chapterText != null)
-                chapterText.SetText("Chapter {0}", Mathf.Max(1, milestone.chapterIndex));
+            if (stageText != null)
+                stageText.SetText("Stage {0}", Mathf.Max(1, milestone.stageIndex));
 
             if (requirementText != null)
-                requirementText.SetText("{0}", Mathf.Max(1, milestone.requiredWaveIndex));
+                requirementText.SetText(milestone.ShortRequirementText);
 
             if (selectedRoot != null && selectedRoot != gameObject)
                 selectedRoot.SetActive(isSelected);
             if (redDot != null)
-                redDot.SetActive(state == ChapterRewardState.Claimable);
+                redDot.SetActive(state == StageRewardState.Claimable);
 
             transform.localScale = Vector3.one * (isSelected ? 1f : Mathf.Max(0.1f, unselectedScale));
 
@@ -86,7 +88,7 @@ namespace OJ
                     alpha = unselectedAlpha;
                 }
 
-                if (!isSelected && state == ChapterRewardState.Locked)
+                if (!isSelected && state == StageRewardState.Locked)
                     alpha = Mathf.Min(alpha, lockedAlpha);
 
                 canvasGroup.alpha = alpha;
@@ -102,8 +104,8 @@ namespace OJ
 
             gameObject.SetActive(true);
 
-            if (chapterText != null)
-                chapterText.SetText(string.Empty);
+            if (stageText != null)
+                stageText.SetText(string.Empty);
 
             if (requirementText != null)
                 requirementText.SetText(string.Empty);

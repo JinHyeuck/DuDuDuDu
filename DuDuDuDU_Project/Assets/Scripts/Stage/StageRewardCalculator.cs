@@ -67,7 +67,7 @@ namespace OJ
 
         public static int GetGuaranteedNormalGold(int stageIndex)
         {
-            return 150 + GetChapterBonus(stageIndex);
+            return 150 + GetStageBonus(stageIndex);
         }
 
         public static int GetAccumulatedGuaranteedGold(int stageIndex, int clearedWaves, int totalWaves)
@@ -104,14 +104,14 @@ namespace OJ
 
             if ((rewardFlags & StageRewardTierFlags.Minimum) != 0)
             {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 300 + GetChapterBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 300 + GetStageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50 });
                 AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10 });
             }
 
             if ((rewardFlags & StageRewardTierFlags.Half) != 0)
             {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 400 + GetChapterBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 400 + GetStageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 });
                 AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 });
                 rewards.Add(new PointRewardEntry(PointType.MythicScroll, 15));
@@ -119,7 +119,7 @@ namespace OJ
 
             if ((rewardFlags & StageRewardTierFlags.Perfect) != 0)
             {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 500 + GetChapterBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 500 + GetStageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 });
                 rewards.Add(new PointRewardEntry(PointType.Dia, 150));
                 rewards.Add(new PointRewardEntry(PointType.MythicScroll, 10));
@@ -128,7 +128,7 @@ namespace OJ
             return rewards;
         }
 
-        private static int GetChapterBonus(int stageIndex)
+        private static int GetStageBonus(int stageIndex)
         {
             return ((Mathf.Max(1, stageIndex) - 1) / 10) * 5;
         }

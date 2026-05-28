@@ -26,7 +26,8 @@ namespace OJ
         public DiceMetaDataDatabase DiceMetaDataDatabase;
         public GemDefinitionDatabase GemDefinitionDatabase;
         public StageDatabase StageDatabase;
-        public ChapterRewardDatabase ChapterRewardDatabase;
+        [FormerlySerializedAs("ChapterRewardDatabase")]
+        public StageRewardDatabase StageRewardDatabase;
         public List<ElementResource> ElementResources;
         
         public List<RarityResource> RarityResources;
