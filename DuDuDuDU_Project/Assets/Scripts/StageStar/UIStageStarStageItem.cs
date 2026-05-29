@@ -51,7 +51,7 @@ namespace OJ
             onStartStage = startCallback;
 
             if (stageTitleText != null)
-                stageTitleText.SetText("{0}. {1}", stageIndex, GetStageDisplayName(stageIndex));
+                stageTitleText.SetText($"{stageIndex}. {GetStageDisplayName(stageIndex)}");
 
             if (stageSummaryText != null)
                 stageSummaryText.SetText("{0}/3", StageStarUtility.GetStarCount(bestGrade));
