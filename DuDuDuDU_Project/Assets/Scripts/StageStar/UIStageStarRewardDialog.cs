@@ -12,7 +12,6 @@ namespace OJ
         [SerializeField] private TMP_Text totalStarText;
         [SerializeField] private RectTransform rewardRoot;
         [SerializeField] private UIStageStarRewardElement rewardElementTemplate;
-        [SerializeField] private Button closeButton;
         [SerializeField] private UIRewardResultDialog rewardResultDialog;
 
         private readonly List<UIStageStarRewardElement> rewardElements = new List<UIStageStarRewardElement>();
@@ -26,16 +25,10 @@ namespace OJ
 
             if (rewardElementTemplate != null)
                 rewardElementTemplate.gameObject.SetActive(false);
-
-            if (closeButton != null)
-                closeButton.onClick.AddListener(Exit);
         }
 
         protected override void OnDestroy()
         {
-            if (closeButton != null)
-                closeButton.onClick.RemoveListener(Exit);
-
             if (StageStarManager.Instance != null)
                 StageStarManager.Instance.OnChanged -= Refresh;
 

@@ -9,7 +9,6 @@ namespace OJ
     {
         [Header("Labels")]
         [SerializeField] private TMP_Text stageTitleText;
-        [SerializeField] private TMP_Text stageSummaryText;
 
         [Header("Visuals")]
         [SerializeField] private Image bannerImage;
@@ -52,9 +51,6 @@ namespace OJ
 
             if (stageTitleText != null)
                 stageTitleText.SetText($"{stageIndex}. {GetStageDisplayName(stageIndex)}");
-
-            if (stageSummaryText != null)
-                stageSummaryText.SetText("{0}/3", StageStarUtility.GetStarCount(bestGrade));
 
             ApplyBanner(stageIndex);
 

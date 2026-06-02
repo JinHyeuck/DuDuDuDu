@@ -19,7 +19,6 @@ namespace OJ
         [Header("Buttons")]
         [SerializeField] private Button rewardButton;
         [SerializeField] private GameObject rewardRedDot;
-        [SerializeField] private Button closeButton;
 
         [Header("Reward Popup")]
         [SerializeField] private UIStageStarRewardDialog rewardDialog;
@@ -38,16 +37,12 @@ namespace OJ
 
             if (rewardButton != null)
                 rewardButton.onClick.AddListener(OpenRewardDialog);
-            if (closeButton != null)
-                closeButton.onClick.AddListener(Exit);
         }
 
         protected override void OnDestroy()
         {
             if (rewardButton != null)
                 rewardButton.onClick.RemoveListener(OpenRewardDialog);
-            if (closeButton != null)
-                closeButton.onClick.RemoveListener(Exit);
 
             if (StageProgressManager.Instance != null)
                 StageProgressManager.Instance.OnProgressChanged -= Refresh;
