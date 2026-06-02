@@ -9,6 +9,12 @@ namespace OJ
         [SerializeField] private Image iconImage;
         [SerializeField] private TMP_Text amountText;
 
+        public void Construct(Image icon, TMP_Text amount)
+        {
+            iconImage = icon;
+            amountText = amount;
+        }
+
         public void Bind(Sprite iconSprite, int amount)
         {
             Bind(iconSprite, amount, "{0:#,##0}");
