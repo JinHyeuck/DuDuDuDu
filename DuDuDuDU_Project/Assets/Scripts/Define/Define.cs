@@ -128,8 +128,8 @@ namespace OJ
 
     public static class Define
     {
-        public const int MaxEquipmentSlot = 8;
-        public static readonly int[] EquipmentSlotUnlockLevels = { 1, 10, 20, 30, 40, 50, 60, 70 };
+        public const int MaxEquipmentSlot = 5;
+        public static readonly int[] EquipmentSlotUnlockLevels = { 1, 10, 20, 30, 40};
     }
 
 }

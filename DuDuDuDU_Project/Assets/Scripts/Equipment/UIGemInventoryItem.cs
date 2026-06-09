@@ -11,6 +11,9 @@ namespace OJ
         [SerializeField] private TMP_Text rarityText;
         [SerializeField] private TMP_Text countText;
         [SerializeField] private TMP_Text descText;
+        [SerializeField] private Image backgroundImage;
+        [SerializeField] private Image gemIconImage;
+        [SerializeField] private Image equipTypeIconImage;
         [SerializeField] private Image selectedFrame;
 
         private string gemId;
@@ -19,6 +22,9 @@ namespace OJ
 
         private void Awake()
         {
+            if (backgroundImage == null)
+                backgroundImage = GetComponent<Image>();
+
             TryBindClick();
         }
 
@@ -26,24 +32,6 @@ namespace OJ
         {
             if (isClickBound && clickButton != null)
                 clickButton.onClick.RemoveListener(OnClick);
-        }
-
-        public void ConfigureRuntime(
-            Button runtimeClickButton,
-            TMP_Text runtimeNameText,
-            TMP_Text runtimeRarityText,
-            TMP_Text runtimeCountText,
-            TMP_Text runtimeDescText,
-            Image runtimeSelectedFrame)
-        {
-            clickButton = runtimeClickButton;
-            nameText = runtimeNameText;
-            rarityText = runtimeRarityText;
-            countText = runtimeCountText;
-            descText = runtimeDescText;
-            selectedFrame = runtimeSelectedFrame;
-
-            TryBindClick();
         }
 
         public void Bind(string id, System.Action<string> onClick)
@@ -57,14 +45,23 @@ namespace OJ
             if (definition != null)
             {
                 if (nameText != null) nameText.SetText(definition.displayName);
-                if (rarityText != null) rarityText.SetText(definition.rarity.ToString());
-                if (descText != null) descText.SetText(UIEquipmentEffectTextFormatter.BuildGemDescription(definition));
+                if (rarityText != null) rarityText.SetText(UIEquipmentText.GetRarityName(definition.rarity));
+                SetImage(backgroundImage, UIEquipmentSpriteResolver.GetGemFrameSprite(definition.rarity), true);
+                SetImage(gemIconImage, UIEquipmentSpriteResolver.GetGemIconSprite(definition.rarity), true);
+                SetImage(equipTypeIconImage, UIEquipmentSpriteResolver.GetEquipmentSmallIconSprite(definition.equipableType), true);
             }
             else
             {
                 if (nameText != null) nameText.SetText(gemId);
                 if (rarityText != null) rarityText.SetText("Unknown");
-                if (descText != null) descText.SetText("효과 없음");
+                SetImage(gemIconImage, null, false);
+                SetImage(equipTypeIconImage, null, false);
+            }
+
+            if (descText != null)
+            {
+                descText.SetText(string.Empty);
+                descText.gameObject.SetActive(false);
             }
 
             if (countText != null)
@@ -83,6 +80,15 @@ namespace OJ
         private void OnClick()
         {
             clickCallback?.Invoke(gemId);
+        }
+
+        private static void SetImage(Image image, Sprite sprite, bool enabledWhenNull)
+        {
+            if (image == null)
+                return;
+
+            image.sprite = sprite;
+            image.enabled = sprite != null || enabledWhenNull;
         }
 
         private void TryBindClick()

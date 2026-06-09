@@ -9,6 +9,7 @@ namespace OJ
     {
         Locked = 0,
         Empty,
+        Equipped,
         Uncommon,
         Common,
         Normal,
@@ -20,22 +21,16 @@ namespace OJ
     public class UIEquipmentItem : MonoBehaviour
     {
         [SerializeField] private Button clickButton;
-        [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text levelText;
         [SerializeField] private TMP_Text attackText;
-        [SerializeField] private Image selectedFrame;
+        [SerializeField] private Image iconImage;
         [Header("Slot Visual")]
         [SerializeField] private List<Image> slotStateImages;
         [SerializeField] private Sprite unlockedSlotSprite;
+        [SerializeField] private Sprite equippedSlotSprite;
+        [SerializeField] private Vector2 unLockedSlotSpriteSize = new Vector2(80f, 80f);
         [SerializeField] private Sprite lockedSlotSprite;
-        [SerializeField] private Color lockedColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-        [SerializeField] private Color emptyColor = new Color(0.45f, 0.45f, 0.45f, 1f);
-        [SerializeField] private Color uncommonColor = new Color(0.75f, 0.75f, 0.75f, 1f);
-        [SerializeField] private Color commonColor = new Color(0.20f, 0.55f, 1.0f, 1f);
-        [SerializeField] private Color normalColor = new Color(0.20f, 0.95f, 0.35f, 1f);
-        [SerializeField] private Color rareColor = new Color(1.0f, 0.55f, 0.0f, 1f);
-        [SerializeField] private Color epicColor = new Color(0.75f, 0.35f, 1.0f, 1f);
-        [SerializeField] private Color mythicColor = new Color(1.0f, 0.2f, 0.2f, 1f);
+        [SerializeField] private Vector2 lockedSlotSpriteSize = new Vector2(40f, 40f);
 
         private EquipmentType equipmentType;
         private System.Action<EquipmentType> clickCallback;
@@ -52,32 +47,12 @@ namespace OJ
                 clickButton.onClick.RemoveListener(OnClick);
         }
 
-        public void ConfigureRuntime(
-            Button runtimeClickButton,
-            TMP_Text runtimeNameText,
-            TMP_Text runtimeLevelText,
-            TMP_Text runtimeAttackText,
-            Image runtimeSelectedFrame,
-            List<Image> runtimeSlotStateImages,
-            Sprite runtimeUnlockedSlotSprite,
-            Sprite runtimeLockedSlotSprite)
-        {
-            clickButton = runtimeClickButton;
-            nameText = runtimeNameText;
-            levelText = runtimeLevelText;
-            attackText = runtimeAttackText;
-            selectedFrame = runtimeSelectedFrame;
-            slotStateImages = runtimeSlotStateImages;
-            unlockedSlotSprite = runtimeUnlockedSlotSprite;
-            lockedSlotSprite = runtimeLockedSlotSprite;
-
-            TryBindClick();
-        }
-
         public void Bind(EquipmentType type, System.Action<EquipmentType> onClick)
         {
             equipmentType = type;
             clickCallback = onClick;
+            Sprite icon = UIEquipmentSpriteResolver.GetEquipmentLargeIconSprite(type);
+            iconImage.sprite = icon;
         }
 
         public void Refresh(
@@ -86,14 +61,10 @@ namespace OJ
             bool selected,
             IReadOnlyList<EquipmentSlotVisualState> slotStates)
         {
-            if (nameText != null)
-                nameText.SetText(UIEquipmentText.GetEquipmentName(equipmentType));
             if (levelText != null)
                 levelText.SetText("Lv.{0}", level);
             if (attackText != null)
                 attackText.SetText("ATK {0}", attack);
-            if (selectedFrame != null)
-                selectedFrame.enabled = selected;
 
             RefreshSlotVisual(slotStates);
         }
@@ -123,26 +94,42 @@ namespace OJ
 
                 slotImage.enabled = true;
                 EquipmentSlotVisualState state = slotStates[i];
-                slotImage.sprite = state == EquipmentSlotVisualState.Locked ? lockedSlotSprite : unlockedSlotSprite;
-                slotImage.color = GetStateColor(state);
+                slotImage.sprite = GetSlotSprite(state);
+                slotImage.rectTransform.sizeDelta = GetSlotSpriteSize(state);
+                slotImage.color = Color.white;
             }
         }
 
-        private Color GetStateColor(EquipmentSlotVisualState state)
+        private Sprite GetSlotSprite(EquipmentSlotVisualState state)
         {
             switch (state)
             {
-                case EquipmentSlotVisualState.Locked: return lockedColor;
-                case EquipmentSlotVisualState.Empty: return emptyColor;
-                case EquipmentSlotVisualState.Uncommon: return uncommonColor;
-                case EquipmentSlotVisualState.Common: return commonColor;
-                case EquipmentSlotVisualState.Normal: return normalColor;
-                case EquipmentSlotVisualState.Rare: return rareColor;
-                case EquipmentSlotVisualState.Epic: return epicColor;
-                case EquipmentSlotVisualState.Mythic: return mythicColor;
-                default: return emptyColor;
+                case EquipmentSlotVisualState.Locked:
+                    return lockedSlotSprite != null
+                        ? lockedSlotSprite
+                        : UIEquipmentSpriteResolver.GetLockedSlotSprite();
+                case EquipmentSlotVisualState.Empty:
+                    return unlockedSlotSprite != null
+                        ? unlockedSlotSprite
+                        : UIEquipmentSpriteResolver.GetEmptySlotSprite();
+                default:
+                    return equippedSlotSprite != null
+                        ? equippedSlotSprite
+                        : UIEquipmentSpriteResolver.GetEquippedSlotSprite();
             }
         }
+
+        private Vector2 GetSlotSpriteSize(EquipmentSlotVisualState state)
+        {
+            switch (state)
+            {
+                case EquipmentSlotVisualState.Locked:
+                    return lockedSlotSpriteSize;
+                default:
+                    return unLockedSlotSpriteSize;
+            }
+        }
+
 
         private void TryBindClick()
         {

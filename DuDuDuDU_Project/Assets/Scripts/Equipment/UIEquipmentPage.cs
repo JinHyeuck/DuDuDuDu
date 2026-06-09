@@ -8,8 +8,27 @@ namespace OJ
 {
     public class UIEquipmentPage : IDialog
     {
+        private enum EquipmentPageTab
+        {
+            EquippedEffects,
+            Gems
+        }
+
         [Header("Summary")]
         [SerializeField] private TMP_Text totalAttackText;
+
+        [Header("Tabs")]
+        [SerializeField] private Button equippedEffectTabButton;
+        [SerializeField] private Button gemTabButton;
+        [SerializeField] private GameObject equippedEffect_UnselectedTabIndicator;
+        [SerializeField] private GameObject gem_UnselectedTabIndicator;
+        [SerializeField] private GameObject equippedEffectView;
+        [SerializeField] private GameObject gemInventoryView;
+
+        [Header("Equipped Effects")]
+        [SerializeField] private TMP_Text emptyEquippedEffectText;
+        [SerializeField] private Transform equippedEffectRoot;
+        [SerializeField] private TMP_Text equippedEffectItemPrefab;
 
         [Header("Equipment List")]
         [SerializeField] private List<UIEquipmentItem> manualEquipmentItems = new List<UIEquipmentItem>();
@@ -26,7 +45,6 @@ namespace OJ
         [SerializeField] private Button mergeAllButton;
 
         [Header("Dialogs")]
-        [SerializeField] private UIEquipmentDetailDialog detailDialog;
         [SerializeField] private UIEquipmentConfirmDialog confirmDialog;
         [SerializeField] private LobbyLayoutController lobbyLayoutController;
 
@@ -34,9 +52,11 @@ namespace OJ
 
         private readonly List<UIEquipmentItem> equipmentItems = new List<UIEquipmentItem>();
         private readonly List<UIGemInventoryItem> gemInventoryItems = new List<UIGemInventoryItem>();
+        private readonly List<TMP_Text> equippedEffectItems = new List<TMP_Text>();
         private readonly List<EquipmentType> equipmentTypes = new List<EquipmentType>();
 
         private EquipmentType selectedEquipmentType = EquipmentType.Weapon;
+        private EquipmentPageTab currentTab = EquipmentPageTab.EquippedEffects;
         private bool buttonsBound;
         private bool missingReferenceWarned;
 
@@ -53,6 +73,10 @@ namespace OJ
                 unEquipAllGemButton.onClick.RemoveListener(OnClickUnEquipAllGems);
             if (buttonsBound && mergeAllButton != null)
                 mergeAllButton.onClick.RemoveListener(OnClickMergeAll);
+            if (buttonsBound && equippedEffectTabButton != null)
+                equippedEffectTabButton.onClick.RemoveListener(OnClickEquippedEffectTab);
+            if (buttonsBound && gemTabButton != null)
+                gemTabButton.onClick.RemoveListener(OnClickGemTab);
         }
 
         protected override void OnEnter()
@@ -60,6 +84,7 @@ namespace OJ
             ValidateSceneReferences();
             Subscribe();
             BuildIfNeeded();
+            SelectTab(EquipmentPageTab.EquippedEffects, false);
             RefreshAll();
         }
 
@@ -77,7 +102,9 @@ namespace OJ
         {
             RefreshSummary();
             RefreshEquipmentList();
+            RefreshEquippedEffects();
             RefreshGemInventory();
+            RefreshTabViews();
             NotifyChanged();
         }
 
@@ -85,9 +112,10 @@ namespace OJ
         {
             if (totalAttackText != null &&
                 (manualEquipmentItems.Count > 0 || equipmentListRoot != null) &&
+                equippedEffectRoot != null &&
+                equippedEffectItemPrefab != null &&
                 gemInventoryRoot != null &&
                 gemInventoryItemPrefab != null &&
-                detailDialog != null &&
                 confirmDialog != null)
             {
                 return;
@@ -111,9 +139,7 @@ namespace OJ
             if (manualEquipmentItems != null && manualEquipmentItems.Count > 0)
             {
                 if (equipmentItems.Count == 0)
-                {
                     equipmentItems.AddRange(manualEquipmentItems);
-                }
 
                 for (int i = 0; i < equipmentItems.Count; i++)
                 {
@@ -127,10 +153,8 @@ namespace OJ
                         equipmentItems[i].gameObject.SetActive(false);
                     }
                 }
-                return;
             }
-
-            if (equipmentItemPrefab != null && equipmentListRoot != null)
+            else if (equipmentItemPrefab != null && equipmentListRoot != null)
             {
                 while (equipmentItems.Count < equipmentTypes.Count)
                 {
@@ -169,7 +193,7 @@ namespace OJ
             if (totalAttackText == null || EquipmentManager.Instance == null)
                 return;
 
-            totalAttackText.SetText("총 장비 공격력 {0}", EquipmentManager.Instance.GetTotalEquipmentAttack());
+            totalAttackText.SetText("{0}", EquipmentManager.Instance.GetTotalEquipmentAttack());
         }
 
         private void RefreshEquipmentList()
@@ -199,53 +223,88 @@ namespace OJ
 
             for (int slotIndex = 0; slotIndex < Define.MaxEquipmentSlot; slotIndex++)
             {
-                bool unlocked = EquipmentManager.Instance.IsSlotUnlocked(equipmentType, slotIndex);
-                if (!unlocked)
+                if (!EquipmentManager.Instance.IsSlotUnlocked(equipmentType, slotIndex))
                 {
                     states.Add(EquipmentSlotVisualState.Locked);
                     continue;
                 }
 
                 string gemId = EquipmentManager.Instance.GetEquippedGemId(equipmentType, slotIndex);
-                if (string.IsNullOrEmpty(gemId))
-                {
-                    states.Add(EquipmentSlotVisualState.Empty);
-                    continue;
-                }
-
-                if (!EquipmentManager.Instance.TryGetGemDefinition(gemId, out GemDefinition gemDefinition) || gemDefinition == null)
-                {
-                    states.Add(EquipmentSlotVisualState.Empty);
-                    continue;
-                }
-
-                switch (gemDefinition.rarity)
-                {
-                    case Rarity.Uncommon:
-                        states.Add(EquipmentSlotVisualState.Uncommon);
-                        break;
-                    case Rarity.Common:
-                        states.Add(EquipmentSlotVisualState.Common);
-                        break;
-                    case Rarity.Normal:
-                        states.Add(EquipmentSlotVisualState.Normal);
-                        break;
-                    case Rarity.Rare:
-                        states.Add(EquipmentSlotVisualState.Rare);
-                        break;
-                    case Rarity.Epic:
-                        states.Add(EquipmentSlotVisualState.Epic);
-                        break;
-                    case Rarity.Mythic:
-                        states.Add(EquipmentSlotVisualState.Mythic);
-                        break;
-                    default:
-                        states.Add(EquipmentSlotVisualState.Empty);
-                        break;
-                }
+                states.Add(string.IsNullOrEmpty(gemId) ? EquipmentSlotVisualState.Empty : EquipmentSlotVisualState.Equipped);
             }
 
             return states;
+        }
+
+        private void RefreshEquippedEffects()
+        {
+            List<string> effectLines = BuildEquippedEffectLines();
+
+            RefreshEquippedEffectRows(effectLines);
+
+            if (emptyEquippedEffectText != null)
+            {
+                emptyEquippedEffectText.gameObject.SetActive(effectLines.Count <= 0);
+                if (effectLines.Count <= 0)
+                    emptyEquippedEffectText.SetText("장착한 보석 효과가 없습니다.");
+            }
+        }
+
+        private List<string> BuildEquippedEffectLines()
+        {
+            List<string> lines = new List<string>();
+            if (EquipmentManager.Instance == null)
+                return lines;
+
+            foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
+            {
+                for (int slotIndex = 0; slotIndex < Define.MaxEquipmentSlot; slotIndex++)
+                {
+                    string gemId = EquipmentManager.Instance.GetEquippedGemId(equipmentType, slotIndex);
+                    if (string.IsNullOrEmpty(gemId))
+                        continue;
+
+                    if (!EquipmentManager.Instance.TryGetGemDefinition(gemId, out GemDefinition definition) || definition == null)
+                        continue;
+
+                    string prefix = $"{UIEquipmentText.GetEquipmentName(equipmentType)} {slotIndex + 1} - {definition.displayName}";
+                    if (definition.effects == null || definition.effects.Count <= 0)
+                    {
+                        lines.Add($"{prefix}: 효과 없음");
+                        continue;
+                    }
+
+                    for (int effectIndex = 0; effectIndex < definition.effects.Count; effectIndex++)
+                        lines.Add($"{prefix}: {UIEquipmentEffectTextFormatter.BuildEffectText(definition.effects[effectIndex])}");
+                }
+            }
+
+            return lines;
+        }
+
+        private void RefreshEquippedEffectRows(IReadOnlyList<string> effectLines)
+        {
+            if (equippedEffectRoot == null || equippedEffectItemPrefab == null || effectLines == null)
+                return;
+
+            while (equippedEffectItems.Count < effectLines.Count)
+            {
+                TMP_Text item = Instantiate(equippedEffectItemPrefab, equippedEffectRoot);
+                item.gameObject.SetActive(true);
+                equippedEffectItems.Add(item);
+            }
+
+            for (int i = 0; i < equippedEffectItems.Count; i++)
+            {
+                TMP_Text item = equippedEffectItems[i];
+                if (item == null)
+                    continue;
+
+                bool active = i < effectLines.Count;
+                item.gameObject.SetActive(active);
+                if (active)
+                    item.SetText(effectLines[i]);
+            }
         }
 
         private void RefreshGemInventory()
@@ -259,8 +318,10 @@ namespace OJ
             for (int i = 0; i < gemDefinitions.Count; i++)
             {
                 GemDefinition definition = gemDefinitions[i];
-                int count = EquipmentManager.Instance.GetGemCount(definition.gemId);
+                if (definition == null || definition.equipableType != selectedEquipmentType)
+                    continue;
 
+                int count = EquipmentManager.Instance.GetGemCount(definition.gemId);
                 if (count <= 0)
                     continue;
 
@@ -268,6 +329,7 @@ namespace OJ
                 {
                     if (gemInventoryItemPrefab == null || gemInventoryRoot == null)
                         break;
+
                     UIGemInventoryItem newItem = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
                     gemInventoryItems.Add(newItem);
                 }
@@ -282,16 +344,15 @@ namespace OJ
             }
 
             for (int i = itemIndex; i < gemInventoryItems.Count; i++)
-            {
                 gemInventoryItems[i].gameObject.SetActive(false);
-            }
         }
 
         private void OnClickEquipmentItem(EquipmentType equipmentType)
         {
             selectedEquipmentType = equipmentType;
             RefreshEquipmentList();
-            OpenDetailDialog();
+            RefreshGemInventory();
+            OpenEquipmentDialog(string.Empty);
         }
 
         private void OnClickGemInventoryItem(string gemId)
@@ -303,17 +364,21 @@ namespace OJ
             {
                 selectedEquipmentType = definition.equipableType;
                 RefreshEquipmentList();
+                RefreshGemInventory();
             }
 
-            OpenDetailDialog();
+            OpenEquipmentDialog(gemId);
         }
 
-        private void OpenDetailDialog()
+        private void OpenEquipmentDialog(string selectedGemId)
         {
-            if (detailDialog == null)
+            if (confirmDialog == null)
+            {
+                Debug.LogWarning("UIEquipmentPage: UIEquipmentConfirmDialog is missing.");
                 return;
+            }
 
-            detailDialog.Open(selectedEquipmentType, RefreshAll);
+            confirmDialog.Open(selectedEquipmentType, selectedGemId, RefreshAll);
         }
 
         private void OnClickLevelUpAll()
@@ -361,8 +426,42 @@ namespace OJ
             if (EquipmentManager.Instance == null)
                 return;
 
-            // TODO: Implement TryMergeAllGems in EquipmentManager
+            // TODO: Implement TryMergeAllGems in EquipmentManager.
             RefreshAll();
+        }
+
+        private void OnClickEquippedEffectTab()
+        {
+            SelectTab(EquipmentPageTab.EquippedEffects, true);
+        }
+
+        private void OnClickGemTab()
+        {
+            SelectTab(EquipmentPageTab.Gems, true);
+        }
+
+        private void SelectTab(EquipmentPageTab tab, bool refresh)
+        {
+            currentTab = tab;
+            RefreshTabViews();
+
+            if (refresh)
+                RefreshAll();
+        }
+
+        private void RefreshTabViews()
+        {
+            bool showEquippedEffects = currentTab == EquipmentPageTab.EquippedEffects;
+
+            if (equippedEffectView != null)
+                equippedEffectView.SetActive(showEquippedEffects);
+            if (gemInventoryView != null)
+                gemInventoryView.SetActive(!showEquippedEffects);
+
+            if (equippedEffect_UnselectedTabIndicator != null)
+                equippedEffect_UnselectedTabIndicator.SetActive(!showEquippedEffects);
+            if (gem_UnselectedTabIndicator != null)
+                gem_UnselectedTabIndicator.SetActive(showEquippedEffects);
         }
 
         private void Subscribe()
@@ -425,8 +524,16 @@ namespace OJ
                 unEquipAllGemButton.onClick.AddListener(OnClickUnEquipAllGems);
             if (mergeAllButton != null)
                 mergeAllButton.onClick.AddListener(OnClickMergeAll);
+            if (equippedEffectTabButton != null)
+                equippedEffectTabButton.onClick.AddListener(OnClickEquippedEffectTab);
+            if (gemTabButton != null)
+                gemTabButton.onClick.AddListener(OnClickGemTab);
 
-            buttonsBound = levelUpAllButton != null || unEquipAllGemButton != null || mergeAllButton != null;
+            buttonsBound = levelUpAllButton != null ||
+                           unEquipAllGemButton != null ||
+                           mergeAllButton != null ||
+                           equippedEffectTabButton != null ||
+                           gemTabButton != null;
         }
     }
 }

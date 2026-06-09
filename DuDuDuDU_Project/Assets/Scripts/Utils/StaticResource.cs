@@ -20,6 +20,14 @@ namespace OJ
         public Color Color; 
     }
 
+    [Serializable]
+    public class EquipmentResource
+    {
+        public EquipmentType EquipmentType;
+        public Sprite LargeIcon;
+        public Sprite SmallIcon;
+    }
+
     public class StaticResource : MonoSingleton<StaticResource>
     {
         public PointMetadataDatabase PointMetadataDatabase;
@@ -31,21 +39,30 @@ namespace OJ
         public List<ElementResource> ElementResources;
         
         public List<RarityResource> RarityResources;
+        public List<EquipmentResource> EquipmentResources;
 
         private Dictionary<ElementType, ElementResource> elementResourceMap = new Dictionary<ElementType, ElementResource>();
         private Dictionary<Rarity, RarityResource> rarityResourceMap = new Dictionary<Rarity, RarityResource>();
+        private Dictionary<EquipmentType, EquipmentResource> equipmentResourceMap = new Dictionary<EquipmentType, EquipmentResource>();
 
         protected override void Init()
         {
             BuildElementResourceMap();
             BuildRarityResourceMap();
+            BuildEquipmentResourceMap();
         }
 
         private void BuildElementResourceMap()
         {
             elementResourceMap.Clear();
+            if (ElementResources == null)
+                return;
+
             foreach (var elementResource in ElementResources)
             {
+                if (elementResource == null)
+                    continue;
+
                 elementResourceMap[elementResource.ElementType] = elementResource;
             }
         }
@@ -53,9 +70,30 @@ namespace OJ
         private void BuildRarityResourceMap()
         {
             rarityResourceMap.Clear();
+            if (RarityResources == null)
+                return;
+
             foreach (var rarityResource in RarityResources)
             {
+                if (rarityResource == null)
+                    continue;
+
                 rarityResourceMap[rarityResource.Rarity] = rarityResource;
+            }
+        }
+
+        private void BuildEquipmentResourceMap()
+        {
+            equipmentResourceMap.Clear();
+            if (EquipmentResources == null)
+                return;
+
+            foreach (var equipmentResource in EquipmentResources)
+            {
+                if (equipmentResource == null)
+                    continue;
+
+                equipmentResourceMap[equipmentResource.EquipmentType] = equipmentResource;
             }
         }
 
@@ -77,6 +115,28 @@ namespace OJ
             }
 
             return null;
+        }
+
+        public EquipmentResource GetEquipmentResource(EquipmentType equipmentType)
+        {
+            if (equipmentResourceMap.TryGetValue(equipmentType, out EquipmentResource equipmentResource))
+            {
+                return equipmentResource;
+            }
+
+            return null;
+        }
+
+        public Sprite GetEquipmentLargeIcon(EquipmentType equipmentType)
+        {
+            EquipmentResource resource = GetEquipmentResource(equipmentType);
+            return resource != null ? resource.LargeIcon : null;
+        }
+
+        public Sprite GetEquipmentSmallIcon(EquipmentType equipmentType)
+        {
+            EquipmentResource resource = GetEquipmentResource(equipmentType);
+            return resource != null ? resource.SmallIcon : null;
         }
     }
 }
