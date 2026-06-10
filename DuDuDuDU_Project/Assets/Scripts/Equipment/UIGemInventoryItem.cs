@@ -1,4 +1,5 @@
 using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,11 +8,8 @@ namespace OJ
     public class UIGemInventoryItem : MonoBehaviour
     {
         [SerializeField] private Button clickButton;
-        [SerializeField] private TMP_Text nameText;
-        [SerializeField] private TMP_Text rarityText;
         [SerializeField] private TMP_Text countText;
-        [SerializeField] private TMP_Text descText;
-        [SerializeField] private Image backgroundImage;
+        [SerializeField] private List<Image> backgroundImage;
         [SerializeField] private Image gemIconImage;
         [SerializeField] private Image equipTypeIconImage;
         [SerializeField] private Image selectedFrame;
@@ -23,7 +21,7 @@ namespace OJ
         private void Awake()
         {
             if (backgroundImage == null)
-                backgroundImage = GetComponent<Image>();
+                backgroundImage = new List<Image> { GetComponent<Image>() };
 
             TryBindClick();
         }
@@ -44,24 +42,18 @@ namespace OJ
         {
             if (definition != null)
             {
-                if (nameText != null) nameText.SetText(definition.displayName);
-                if (rarityText != null) rarityText.SetText(UIEquipmentText.GetRarityName(definition.rarity));
-                SetImage(backgroundImage, UIEquipmentSpriteResolver.GetGemFrameSprite(definition.rarity), true);
+                foreach (var img in backgroundImage)
+                {
+                    if (img != null)
+                        SetImage(img, UIEquipmentSpriteResolver.GetGemFrameSprite(definition.rarity), true);
+                }
                 SetImage(gemIconImage, UIEquipmentSpriteResolver.GetGemIconSprite(definition.rarity), true);
                 SetImage(equipTypeIconImage, UIEquipmentSpriteResolver.GetEquipmentSmallIconSprite(definition.equipableType), true);
             }
             else
             {
-                if (nameText != null) nameText.SetText(gemId);
-                if (rarityText != null) rarityText.SetText("Unknown");
                 SetImage(gemIconImage, null, false);
                 SetImage(equipTypeIconImage, null, false);
-            }
-
-            if (descText != null)
-            {
-                descText.SetText(string.Empty);
-                descText.gameObject.SetActive(false);
             }
 
             if (countText != null)
