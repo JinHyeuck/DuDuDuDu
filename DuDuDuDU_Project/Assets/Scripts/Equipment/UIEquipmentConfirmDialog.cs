@@ -38,6 +38,11 @@ namespace OJ
         [SerializeField] private Transform slotRoot;
         [SerializeField] private UIEquipmentGemSlotItem slotItemPrefab;
 
+        [Header("Gem Inventory")]
+        [SerializeField] private Transform gemInventoryRoot;
+        [SerializeField] private UIGemInventoryItem gemInventoryItemPrefab;
+        [SerializeField] private TMP_Text emptyGemInventoryText;
+
         [Header("Selected Gem")]
         [SerializeField] private GameObject gemInfoEmptyView;
         [SerializeField] private GameObject gemInfoFilledView;
@@ -62,6 +67,7 @@ namespace OJ
         [SerializeField] private Button closeButton;
 
         private readonly List<UIEquipmentGemSlotItem> slotItems = new List<UIEquipmentGemSlotItem>();
+        private readonly List<UIGemInventoryItem> gemInventoryItems = new List<UIGemInventoryItem>();
         private readonly List<TMP_Text> equipmentEffectItems = new List<TMP_Text>();
 
         private System.Action confirmAction;
@@ -158,6 +164,7 @@ namespace OJ
 
             BuildSlotIfNeeded();
             RefreshSlots();
+            RefreshGemInventory();
             RefreshEquipmentEffects();
             RefreshSelectedGemInfo();
             RefreshDetailButtons();
@@ -199,6 +206,56 @@ namespace OJ
 
                 item.gameObject.SetActive(true);
                 item.Refresh(unlocked, unlockLevel, definition, i == selectedSlotIndex);
+            }
+        }
+
+        private void RefreshGemInventory()
+        {
+            if (EquipmentManager.Instance == null)
+                return;
+
+            IReadOnlyList<GemDefinition> definitions = EquipmentManager.Instance.GetGemDefinitions();
+            int itemIndex = 0;
+
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                GemDefinition definition = definitions[i];
+                if (definition == null || definition.equipableType != equipmentType)
+                    continue;
+
+                int count = EquipmentManager.Instance.GetGemCount(definition.gemId);
+                if (count <= 0)
+                    continue;
+
+                while (gemInventoryItems.Count <= itemIndex)
+                {
+                    if (gemInventoryRoot == null || gemInventoryItemPrefab == null)
+                        break;
+
+                    UIGemInventoryItem item = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
+                    item.gameObject.SetActive(true);
+                    gemInventoryItems.Add(item);
+                }
+
+                if (itemIndex < gemInventoryItems.Count)
+                {
+                    bool selected = selectedGemId == definition.gemId;
+
+                    gemInventoryItems[itemIndex].gameObject.SetActive(true);
+                    gemInventoryItems[itemIndex].Bind(definition.gemId, OnClickGemInventoryItem);
+                    gemInventoryItems[itemIndex].Refresh(definition, count, selected, true);
+                    itemIndex++;
+                }
+            }
+
+            for (int i = itemIndex; i < gemInventoryItems.Count; i++)
+                gemInventoryItems[i].gameObject.SetActive(false);
+
+            if (emptyGemInventoryText != null)
+            {
+                emptyGemInventoryText.gameObject.SetActive(itemIndex <= 0);
+                if (itemIndex <= 0)
+                    emptyGemInventoryText.SetText("장착 가능한 보석이 없습니다.");
             }
         }
 
@@ -394,6 +451,24 @@ namespace OJ
         {
             selectedSlotIndex = slotIndex;
             RefreshEquipmentDetail();
+        }
+
+        private void OnClickGemInventoryItem(string gemId)
+        {
+            if (string.IsNullOrEmpty(gemId) || EquipmentManager.Instance == null)
+                return;
+
+            if (!EquipmentManager.Instance.TryGetGemDefinition(gemId, out GemDefinition definition) ||
+                definition == null ||
+                definition.equipableType != equipmentType)
+            {
+                return;
+            }
+
+            selectedGemId = gemId;
+            RefreshGemInventory();
+            RefreshSelectedGemInfo();
+            RefreshDetailButtons();
         }
 
         private void OnClickLevelUp()

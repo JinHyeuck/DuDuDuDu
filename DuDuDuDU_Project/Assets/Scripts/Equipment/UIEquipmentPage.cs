@@ -318,7 +318,7 @@ namespace OJ
             for (int i = 0; i < gemDefinitions.Count; i++)
             {
                 GemDefinition definition = gemDefinitions[i];
-                if (definition == null || definition.equipableType != selectedEquipmentType)
+                if (definition == null)
                     continue;
 
                 int count = EquipmentManager.Instance.GetGemCount(definition.gemId);
