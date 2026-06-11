@@ -18,11 +18,6 @@ namespace OJ
             }
         }
 
-        public static string GetLevelUpAllConfirmMessage()
-        {
-            return "장비 도면과 골드를 소모해 가능한 만큼 강화하시겠습니까?";
-        }
-
         public static string GetRarityName(Rarity rarity)
         {
             switch (rarity)

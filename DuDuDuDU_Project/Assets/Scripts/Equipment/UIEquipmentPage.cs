@@ -40,8 +40,6 @@ namespace OJ
         [SerializeField] private UIGemInventoryItem gemInventoryItemPrefab;
 
         [Header("Buttons")]
-        [SerializeField] private Button levelUpAllButton;
-        [SerializeField] private Button unEquipAllGemButton;
         [SerializeField] private Button mergeAllButton;
 
         [Header("Dialogs")]
@@ -67,10 +65,6 @@ namespace OJ
 
         protected override void OnUnload()
         {
-            if (buttonsBound && levelUpAllButton != null)
-                levelUpAllButton.onClick.RemoveListener(OnClickLevelUpAll);
-            if (buttonsBound && unEquipAllGemButton != null)
-                unEquipAllGemButton.onClick.RemoveListener(OnClickUnEquipAllGems);
             if (buttonsBound && mergeAllButton != null)
                 mergeAllButton.onClick.RemoveListener(OnClickMergeAll);
             if (buttonsBound && equippedEffectTabButton != null)
@@ -381,46 +375,6 @@ namespace OJ
             confirmDialog.Open(selectedEquipmentType, selectedGemId, RefreshAll);
         }
 
-        private void OnClickLevelUpAll()
-        {
-            if (confirmDialog == null)
-            {
-                DoLevelUpAll();
-                return;
-            }
-
-            confirmDialog.Open(UIEquipmentText.GetLevelUpAllConfirmMessage(), DoLevelUpAll);
-        }
-
-        private void DoLevelUpAll()
-        {
-            if (EquipmentManager.Instance == null)
-                return;
-
-            int upgraded = EquipmentManager.Instance.TryLevelUpAll();
-            if (upgraded > 0)
-                RefreshAll();
-        }
-
-        private void OnClickUnEquipAllGems()
-        {
-            if (EquipmentManager.Instance == null)
-                return;
-
-            bool changed = false;
-            foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
-            {
-                for (int i = 0; i < Define.MaxEquipmentSlot; i++)
-                {
-                    if (EquipmentManager.Instance.UnequipGem(equipmentType, i))
-                        changed = true;
-                }
-            }
-
-            if (changed)
-                RefreshAll();
-        }
-
         private void OnClickMergeAll()
         {
             if (EquipmentManager.Instance == null)
@@ -518,10 +472,6 @@ namespace OJ
             if (buttonsBound)
                 return;
 
-            if (levelUpAllButton != null)
-                levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
-            if (unEquipAllGemButton != null)
-                unEquipAllGemButton.onClick.AddListener(OnClickUnEquipAllGems);
             if (mergeAllButton != null)
                 mergeAllButton.onClick.AddListener(OnClickMergeAll);
             if (equippedEffectTabButton != null)
@@ -529,9 +479,7 @@ namespace OJ
             if (gemTabButton != null)
                 gemTabButton.onClick.AddListener(OnClickGemTab);
 
-            buttonsBound = levelUpAllButton != null ||
-                           unEquipAllGemButton != null ||
-                           mergeAllButton != null ||
+            buttonsBound = mergeAllButton != null ||
                            equippedEffectTabButton != null ||
                            gemTabButton != null;
         }

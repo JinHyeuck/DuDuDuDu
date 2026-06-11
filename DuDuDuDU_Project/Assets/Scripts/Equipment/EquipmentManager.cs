@@ -129,27 +129,6 @@ namespace OJ
             return true;
         }
 
-        public int TryLevelUpAll()
-        {
-            int upgraded = 0;
-            bool progressed;
-
-            do
-            {
-                progressed = false;
-                foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
-                {
-                    if (!TryLevelUp(equipmentType))
-                        continue;
-
-                    upgraded++;
-                    progressed = true;
-                }
-            } while (progressed);
-
-            return upgraded;
-        }
-
         public int GetSlotUnlockLevel(int slotIndex)
         {
             if (slotIndex < 0 || slotIndex >= Define.MaxEquipmentSlot)

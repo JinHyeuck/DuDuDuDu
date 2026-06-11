@@ -7,18 +7,6 @@ namespace OJ
 {
     public class UIEquipmentConfirmDialog : IDialog
     {
-        private enum DialogMode
-        {
-            Confirm,
-            EquipmentDetail
-        }
-
-        [Header("Confirm")]
-        [SerializeField] private GameObject confirmView;
-        [SerializeField] private TMP_Text messageText;
-        [SerializeField] private Button cancelButton;
-        [SerializeField] private Button confirmButton;
-
         [Header("Equipment Detail")]
         [SerializeField] private GameObject equipmentDetailView;
         [SerializeField] private TMP_Text equipmentTitleText;
@@ -59,6 +47,7 @@ namespace OJ
         [Header("Cost")]
         [SerializeField] private TMP_Text goldCostText;
         [SerializeField] private TMP_Text scrollCostText;
+        [SerializeField] private Image scrollCostIconImage;
 
         [Header("Detail Buttons")]
         [SerializeField] private Button levelUpButton;
@@ -70,12 +59,10 @@ namespace OJ
         private readonly List<UIGemInventoryItem> gemInventoryItems = new List<UIGemInventoryItem>();
         private readonly List<TMP_Text> equipmentEffectItems = new List<TMP_Text>();
 
-        private System.Action confirmAction;
         private System.Action onChanged;
         private EquipmentType equipmentType;
         private string selectedGemId = string.Empty;
         private int selectedSlotIndex = -1;
-        private DialogMode mode = DialogMode.Confirm;
         private bool buttonsBound;
 
         protected override void OnLoad()
@@ -85,10 +72,6 @@ namespace OJ
 
         protected override void OnUnload()
         {
-            if (buttonsBound && cancelButton != null)
-                cancelButton.onClick.RemoveListener(OnClickCancel);
-            if (buttonsBound && confirmButton != null)
-                confirmButton.onClick.RemoveListener(OnClickConfirm);
             if (buttonsBound && levelUpButton != null)
                 levelUpButton.onClick.RemoveListener(OnClickLevelUp);
             if (buttonsBound && equipButton != null)
@@ -99,46 +82,23 @@ namespace OJ
                 closeButton.onClick.RemoveListener(OnClickClose);
         }
 
-        public void ConfigureRuntime(TMP_Text runtimeMessageText, Button runtimeCancelButton, Button runtimeConfirmButton)
-        {
-            messageText = runtimeMessageText;
-            cancelButton = runtimeCancelButton;
-            confirmButton = runtimeConfirmButton;
-
-            TryBindButtons();
-        }
-
-        public void Open(string message, System.Action onConfirm)
-        {
-            mode = DialogMode.Confirm;
-            confirmAction = onConfirm;
-            onChanged = null;
-
-            RefreshModeViews();
-
-            if (messageText != null)
-                messageText.SetText(message);
-
-            Enter();
-        }
-
         public void Open(EquipmentType type, string gemId, System.Action changedCallback)
         {
-            mode = DialogMode.EquipmentDetail;
-            confirmAction = null;
             equipmentType = type;
             selectedGemId = gemId ?? string.Empty;
             onChanged = changedCallback;
             selectedSlotIndex = FindDefaultSlotIndex();
 
-            RefreshModeViews();
+            if (equipmentDetailView != null)
+                equipmentDetailView.SetActive(true);
+
             Enter();
             RefreshEquipmentDetail();
         }
 
         private void RefreshEquipmentDetail()
         {
-            if (mode != DialogMode.EquipmentDetail || EquipmentManager.Instance == null)
+            if (EquipmentManager.Instance == null)
                 return;
 
             int level = EquipmentManager.Instance.GetLevel(equipmentType);
@@ -161,6 +121,7 @@ namespace OJ
             PointType scrollType = PointManager.ToEquipmentScrollType(equipmentType);
             if (scrollCostText != null)
                 scrollCostText.SetText("Scroll {0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(scrollType) : 0, scrollCost);
+            SetImage(scrollCostIconImage, GetScrollCostIconSprite(scrollType), false);
 
             BuildSlotIfNeeded();
             RefreshSlots();
@@ -508,46 +469,22 @@ namespace OJ
             }
         }
 
-        private void OnClickCancel()
-        {
-            confirmAction = null;
-            Exit();
-        }
-
-        private void OnClickConfirm()
-        {
-            System.Action callback = confirmAction;
-            confirmAction = null;
-            Exit();
-            callback?.Invoke();
-        }
-
         private void OnClickClose()
         {
             Exit();
         }
 
-        private void RefreshModeViews()
+        private Sprite GetScrollCostIconSprite(PointType scrollType)
         {
-            bool isConfirm = mode == DialogMode.Confirm;
+            Sprite icon = PointRewardUtility.GetPointIcon(scrollType);
+            if (icon != null)
+                return icon;
 
-            if (confirmView != null)
-                confirmView.SetActive(isConfirm);
-            else
-                SetConfirmControlsActive(isConfirm);
+            icon = Resources.Load<Sprite>($"Art/Gem/{scrollType}");
+            if (icon != null)
+                return icon;
 
-            if (equipmentDetailView != null)
-                equipmentDetailView.SetActive(!isConfirm);
-        }
-
-        private void SetConfirmControlsActive(bool active)
-        {
-            if (messageText != null)
-                messageText.gameObject.SetActive(active);
-            if (cancelButton != null)
-                cancelButton.gameObject.SetActive(active);
-            if (confirmButton != null)
-                confirmButton.gameObject.SetActive(active);
+            return UIEquipmentSpriteResolver.GetEquipmentSmallIconSprite(equipmentType);
         }
 
         private static void SetImage(Image image, Sprite sprite, bool enabledWhenNull)
@@ -564,10 +501,6 @@ namespace OJ
             if (buttonsBound)
                 return;
 
-            if (cancelButton != null)
-                cancelButton.onClick.AddListener(OnClickCancel);
-            if (confirmButton != null)
-                confirmButton.onClick.AddListener(OnClickConfirm);
             if (levelUpButton != null)
                 levelUpButton.onClick.AddListener(OnClickLevelUp);
             if (equipButton != null)
@@ -577,9 +510,7 @@ namespace OJ
             if (closeButton != null)
                 closeButton.onClick.AddListener(OnClickClose);
 
-            buttonsBound = cancelButton != null ||
-                           confirmButton != null ||
-                           levelUpButton != null ||
+            buttonsBound = levelUpButton != null ||
                            equipButton != null ||
                            unequipButton != null ||
                            closeButton != null;
