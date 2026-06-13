@@ -62,9 +62,9 @@ namespace OJ
             IReadOnlyList<EquipmentSlotVisualState> slotStates)
         {
             if (levelText != null)
-                levelText.SetText("Lv.{0}", level);
+                levelText.SetText("{0}", level);
             if (attackText != null)
-                attackText.SetText("ATK {0}", attack);
+                attackText.SetText("{0}", attack);
 
             RefreshSlotVisual(slotStates);
         }

@@ -7,14 +7,16 @@ namespace OJ
     public class UIEquipmentGemSlotItem : MonoBehaviour
     {
         [SerializeField] private Button clickButton;
-        [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text descText;
         [SerializeField] private TMP_Text lockText;
         [SerializeField] private Image slotStateImage;
+        [SerializeField] private Color slotLockedStateColor;
+        [SerializeField] private Color slotUnlockedStateColor;
+
+        [SerializeField] private Image backgroundImage;
+        [SerializeField] private GameObject gemIconObject;
         [SerializeField] private Image gemIconImage;
-        [SerializeField] private Sprite emptySlotSprite;
-        [SerializeField] private Sprite equippedSlotSprite;
-        [SerializeField] private Sprite lockedSlotSprite;
+        [SerializeField] private Image lockImage;
         [SerializeField] private Image selectedFrame;
 
         private int slotIndex;
@@ -32,41 +34,10 @@ namespace OJ
                 clickButton.onClick.RemoveListener(OnClick);
         }
 
-        public void ConfigureRuntime(
-            Button runtimeClickButton,
-            TMP_Text runtimeTitleText,
-            TMP_Text runtimeDescText,
-            TMP_Text runtimeLockText,
-            Image runtimeSelectedFrame,
-            Image runtimeSlotStateImage = null,
-            Image runtimeGemIconImage = null,
-            Sprite runtimeEmptySlotSprite = null,
-            Sprite runtimeEquippedSlotSprite = null,
-            Sprite runtimeLockedSlotSprite = null)
-        {
-            clickButton = runtimeClickButton;
-            titleText = runtimeTitleText;
-            descText = runtimeDescText;
-            lockText = runtimeLockText;
-            selectedFrame = runtimeSelectedFrame;
-            slotStateImage = runtimeSlotStateImage;
-            gemIconImage = runtimeGemIconImage;
-            emptySlotSprite = runtimeEmptySlotSprite;
-            equippedSlotSprite = runtimeEquippedSlotSprite;
-            lockedSlotSprite = runtimeLockedSlotSprite;
-
-            TryBindClick();
-        }
-
         public void Bind(int index, System.Action<int> onClick)
         {
             slotIndex = index;
             clickCallback = onClick;
-        }
-
-        public void Refresh(bool unlocked, int unlockLevel, string gemName, string gemDesc, bool selected)
-        {
-            Refresh(unlocked, unlockLevel, gemName, gemDesc, selected, null);
         }
 
         public void Refresh(bool unlocked, int unlockLevel, GemDefinition gemDefinition, bool selected)
@@ -80,9 +51,6 @@ namespace OJ
         {
             if (selectedFrame != null)
                 selectedFrame.enabled = selected;
-
-            if (titleText != null)
-                titleText.SetText($"슬롯 {slotIndex + 1} - {(string.IsNullOrEmpty(gemName) ? "비어 있음" : gemName)}");
 
             if (descText != null)
             {
@@ -107,15 +75,16 @@ namespace OJ
 
         private void RefreshVisual(bool unlocked, GemDefinition gemDefinition)
         {
-            Sprite slotSprite;
-            if (!unlocked)
-                slotSprite = lockedSlotSprite != null ? lockedSlotSprite : UIEquipmentSpriteResolver.GetLockedSlotSprite();
-            else if (gemDefinition != null)
-                slotSprite = equippedSlotSprite != null ? equippedSlotSprite : UIEquipmentSpriteResolver.GetEquippedSlotSprite();
-            else
-                slotSprite = emptySlotSprite != null ? emptySlotSprite : UIEquipmentSpriteResolver.GetEmptySlotSprite();
+            if (slotStateImage != null)
+                slotStateImage.color = unlocked ? slotUnlockedStateColor : slotLockedStateColor;
 
-            SetImage(slotStateImage, slotSprite, true);
+            if (lockImage != null)
+                lockImage.gameObject.SetActive(!unlocked);
+
+            if (gemIconObject != null)
+                gemIconObject.gameObject.SetActive(unlocked && gemDefinition != null);
+
+            SetImage(backgroundImage, gemDefinition != null ? UIEquipmentSpriteResolver.GetGemFrameSprite(gemDefinition.rarity) : null, false);
             SetImage(gemIconImage, gemDefinition != null ? UIEquipmentSpriteResolver.GetGemIconSprite(gemDefinition.rarity) : null, false);
         }
 

@@ -8,19 +8,10 @@ namespace OJ
     public class UIEquipmentConfirmDialog : IDialog
     {
         [Header("Equipment Detail")]
-        [SerializeField] private GameObject equipmentDetailView;
-        [SerializeField] private TMP_Text equipmentTitleText;
         [SerializeField] private TMP_Text equipmentTypeText;
-        [SerializeField] private TMP_Text equipmentLevelText;
-        [SerializeField] private TMP_Text equipmentAttackText;
-        [SerializeField] private Image equipmentIconImage;
 
-        [Header("Equipment Effects")]
-        [SerializeField] private TMP_Text equipmentEffectSummaryText;
-        [SerializeField] private TMP_Text emptyEquipmentEffectText;
-        [SerializeField] private List<TMP_Text> manualEquipmentEffectTexts = new List<TMP_Text>();
-        [SerializeField] private Transform equipmentEffectRoot;
-        [SerializeField] private TMP_Text equipmentEffectItemPrefab;
+        [Header("Equipment Item")]
+        [SerializeField] private UIEquipmentItem equipmentItem;
 
         [Header("Slots")]
         [SerializeField] private Transform slotRoot;
@@ -57,7 +48,6 @@ namespace OJ
 
         private readonly List<UIEquipmentGemSlotItem> slotItems = new List<UIEquipmentGemSlotItem>();
         private readonly List<UIGemInventoryItem> gemInventoryItems = new List<UIGemInventoryItem>();
-        private readonly List<TMP_Text> equipmentEffectItems = new List<TMP_Text>();
 
         private System.Action onChanged;
         private EquipmentType equipmentType;
@@ -89,9 +79,6 @@ namespace OJ
             onChanged = changedCallback;
             selectedSlotIndex = FindDefaultSlotIndex();
 
-            if (equipmentDetailView != null)
-                equipmentDetailView.SetActive(true);
-
             Enter();
             RefreshEquipmentDetail();
         }
@@ -105,15 +92,9 @@ namespace OJ
             int attack = EquipmentManager.Instance.GetEquipmentAttack(equipmentType);
             (int goldCost, int scrollCost) = EquipmentManager.Instance.GetNextUpgradeCost(equipmentType);
 
-            if (equipmentTitleText != null)
-                equipmentTitleText.SetText(UIEquipmentText.GetEquipmentName(equipmentType));
             if (equipmentTypeText != null)
                 equipmentTypeText.SetText(UIEquipmentText.GetEquipmentName(equipmentType));
-            if (equipmentLevelText != null)
-                equipmentLevelText.SetText("Lv.{0}", level);
-            if (equipmentAttackText != null)
-                equipmentAttackText.SetText("ATK {0}", attack);
-            SetImage(equipmentIconImage, UIEquipmentSpriteResolver.GetEquipmentLargeIconSprite(equipmentType), false);
+            RefreshEquipmentItem(level, attack);
 
             if (goldCostText != null)
                 goldCostText.SetText("Gold {0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0, goldCost);
@@ -126,9 +107,35 @@ namespace OJ
             BuildSlotIfNeeded();
             RefreshSlots();
             RefreshGemInventory();
-            RefreshEquipmentEffects();
             RefreshSelectedGemInfo();
             RefreshDetailButtons();
+        }
+
+        private void RefreshEquipmentItem(int level, int attack)
+        {
+            equipmentItem.Bind(equipmentType, null);
+            equipmentItem.Refresh(level, attack, true, BuildEquipmentSlotStates());
+        }
+
+        private List<EquipmentSlotVisualState> BuildEquipmentSlotStates()
+        {
+            List<EquipmentSlotVisualState> states = new List<EquipmentSlotVisualState>(Define.MaxEquipmentSlot);
+            if (EquipmentManager.Instance == null)
+                return states;
+
+            for (int slotIndex = 0; slotIndex < Define.MaxEquipmentSlot; slotIndex++)
+            {
+                if (!EquipmentManager.Instance.IsSlotUnlocked(equipmentType, slotIndex))
+                {
+                    states.Add(EquipmentSlotVisualState.Locked);
+                    continue;
+                }
+
+                string gemId = EquipmentManager.Instance.GetEquippedGemId(equipmentType, slotIndex);
+                states.Add(string.IsNullOrEmpty(gemId) ? EquipmentSlotVisualState.Empty : EquipmentSlotVisualState.Equipped);
+            }
+
+            return states;
         }
 
         private void BuildSlotIfNeeded()
@@ -217,99 +224,6 @@ namespace OJ
                 emptyGemInventoryText.gameObject.SetActive(itemIndex <= 0);
                 if (itemIndex <= 0)
                     emptyGemInventoryText.SetText("장착 가능한 보석이 없습니다.");
-            }
-        }
-
-        private void RefreshEquipmentEffects()
-        {
-            List<string> lines = BuildEquipmentEffectLines();
-
-            if (equipmentEffectSummaryText != null)
-                equipmentEffectSummaryText.SetText(lines.Count > 0 ? string.Join("\n", lines) : "현재 효과 없음");
-
-            RefreshEquipmentEffectRows(lines);
-
-            if (emptyEquipmentEffectText != null)
-            {
-                emptyEquipmentEffectText.gameObject.SetActive(lines.Count <= 0 && equipmentEffectSummaryText == null);
-                if (lines.Count <= 0)
-                    emptyEquipmentEffectText.SetText("현재 효과 없음");
-            }
-        }
-
-        private List<string> BuildEquipmentEffectLines()
-        {
-            List<string> lines = new List<string>();
-            if (EquipmentManager.Instance == null)
-                return lines;
-
-            for (int slotIndex = 0; slotIndex < Define.MaxEquipmentSlot; slotIndex++)
-            {
-                if (!EquipmentManager.Instance.IsSlotUnlocked(equipmentType, slotIndex))
-                {
-                    lines.Add($"슬롯 {slotIndex + 1}: Lv.{EquipmentManager.Instance.GetSlotUnlockLevel(slotIndex)} 해금");
-                    continue;
-                }
-
-                string gemId = EquipmentManager.Instance.GetEquippedGemId(equipmentType, slotIndex);
-                if (string.IsNullOrEmpty(gemId))
-                    continue;
-
-                if (!EquipmentManager.Instance.TryGetGemDefinition(gemId, out GemDefinition definition) || definition == null)
-                    continue;
-
-                if (definition.effects == null || definition.effects.Count <= 0)
-                {
-                    lines.Add($"슬롯 {slotIndex + 1}: 효과 없음");
-                    continue;
-                }
-
-                for (int effectIndex = 0; effectIndex < definition.effects.Count; effectIndex++)
-                    lines.Add($"슬롯 {slotIndex + 1}: {UIEquipmentEffectTextFormatter.BuildEffectText(definition.effects[effectIndex])}");
-            }
-
-            return lines;
-        }
-
-        private void RefreshEquipmentEffectRows(IReadOnlyList<string> lines)
-        {
-            if (manualEquipmentEffectTexts != null && manualEquipmentEffectTexts.Count > 0)
-            {
-                for (int i = 0; i < manualEquipmentEffectTexts.Count; i++)
-                {
-                    TMP_Text text = manualEquipmentEffectTexts[i];
-                    if (text == null)
-                        continue;
-
-                    bool active = lines != null && i < lines.Count;
-                    text.gameObject.SetActive(active);
-                    if (active)
-                        text.SetText(lines[i]);
-                }
-
-                return;
-            }
-
-            if (equipmentEffectRoot == null || equipmentEffectItemPrefab == null || lines == null)
-                return;
-
-            while (equipmentEffectItems.Count < lines.Count)
-            {
-                TMP_Text item = Instantiate(equipmentEffectItemPrefab, equipmentEffectRoot);
-                item.gameObject.SetActive(true);
-                equipmentEffectItems.Add(item);
-            }
-
-            for (int i = 0; i < equipmentEffectItems.Count; i++)
-            {
-                TMP_Text item = equipmentEffectItems[i];
-                if (item == null)
-                    continue;
-
-                bool active = i < lines.Count;
-                item.gameObject.SetActive(active);
-                if (active)
-                    item.SetText(lines[i]);
             }
         }
 
