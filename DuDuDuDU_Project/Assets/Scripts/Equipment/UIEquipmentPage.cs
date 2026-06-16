@@ -308,32 +308,38 @@ namespace OJ
 
             IReadOnlyList<GemDefinition> gemDefinitions = EquipmentManager.Instance.GetGemDefinitions();
             int itemIndex = 0;
+            bool filterByEquipmentType = confirmDialog != null && confirmDialog.isEnter;
 
             for (int i = 0; i < gemDefinitions.Count; i++)
             {
                 GemDefinition definition = gemDefinitions[i];
                 if (definition == null)
                     continue;
+                if (filterByEquipmentType && definition.equipableType != selectedEquipmentType)
+                    continue;
 
                 int count = EquipmentManager.Instance.GetGemCount(definition.gemId);
                 if (count <= 0)
                     continue;
 
-                while (gemInventoryItems.Count <= itemIndex)
+                for (int countIndex = 0; countIndex < count; countIndex++)
                 {
-                    if (gemInventoryItemPrefab == null || gemInventoryRoot == null)
-                        break;
+                    while (gemInventoryItems.Count <= itemIndex)
+                    {
+                        if (gemInventoryItemPrefab == null || gemInventoryRoot == null)
+                            break;
 
-                    UIGemInventoryItem newItem = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
-                    gemInventoryItems.Add(newItem);
-                }
+                        UIGemInventoryItem newItem = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
+                        gemInventoryItems.Add(newItem);
+                    }
 
-                if (itemIndex < gemInventoryItems.Count)
-                {
-                    gemInventoryItems[itemIndex].gameObject.SetActive(true);
-                    gemInventoryItems[itemIndex].Bind(definition.gemId, OnClickGemInventoryItem);
-                    gemInventoryItems[itemIndex].Refresh(definition, count, false, true);
-                    itemIndex++;
+                    if (itemIndex < gemInventoryItems.Count)
+                    {
+                        gemInventoryItems[itemIndex].gameObject.SetActive(true);
+                        gemInventoryItems[itemIndex].Bind(definition.gemId, OnClickGemInventoryItem);
+                        gemInventoryItems[itemIndex].Refresh(definition, false, true);
+                        itemIndex++;
+                    }
                 }
             }
 
@@ -345,7 +351,6 @@ namespace OJ
         {
             selectedEquipmentType = equipmentType;
             RefreshEquipmentList();
-            RefreshGemInventory();
             OpenEquipmentDialog(string.Empty);
         }
 
@@ -373,6 +378,9 @@ namespace OJ
             }
 
             confirmDialog.Open(selectedEquipmentType, selectedGemId, RefreshAll);
+            SelectTab(EquipmentPageTab.Gems, false);
+            RefreshGemInventory();
+            RefreshTabViews();
         }
 
         private void OnClickMergeAll()

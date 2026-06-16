@@ -56,7 +56,7 @@ namespace OJ
             {
                 descText.SetText(unlocked
                     ? (string.IsNullOrEmpty(gemDesc) ? "보석을 장착해 보세요." : gemDesc)
-                    : "잠금 상태");
+                    : string.Empty);
             }
 
             if (lockText != null)

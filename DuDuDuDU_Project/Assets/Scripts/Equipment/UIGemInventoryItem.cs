@@ -1,4 +1,3 @@
-using TMPro;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,7 +7,6 @@ namespace OJ
     public class UIGemInventoryItem : MonoBehaviour
     {
         [SerializeField] private Button clickButton;
-        [SerializeField] private TMP_Text countText;
         [SerializeField] private List<Image> backgroundImage;
         [SerializeField] private Image gemIconImage;
         [SerializeField] private Image equipTypeIconImage;
@@ -38,7 +36,7 @@ namespace OJ
             clickCallback = onClick;
         }
 
-        public void Refresh(GemDefinition definition, int count, bool selected, bool interactable)
+        public void Refresh(GemDefinition definition, bool selected, bool interactable)
         {
             if (definition != null)
             {
@@ -54,12 +52,6 @@ namespace OJ
             {
                 SetImage(gemIconImage, null, false);
                 SetImage(equipTypeIconImage, null, false);
-            }
-
-            if (countText != null)
-            {
-                countText.SetText("x{0}", count);
-                countText.gameObject.SetActive(count > 0);
             }
 
             if (selectedFrame != null)
