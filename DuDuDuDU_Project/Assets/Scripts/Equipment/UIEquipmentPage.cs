@@ -40,10 +40,11 @@ namespace OJ
         [SerializeField] private UIGemInventoryItem gemInventoryItemPrefab;
 
         [Header("Buttons")]
-        [SerializeField] private Button mergeAllButton;
+        [SerializeField] private Button mergeButton;
 
         [Header("Dialogs")]
         [SerializeField] private UIEquipmentConfirmDialog confirmDialog;
+        [SerializeField] private UIMergePopup mergePopup;
         [SerializeField] private LobbyLayoutController lobbyLayoutController;
 
         public event Action OnDataChanged;
@@ -65,8 +66,8 @@ namespace OJ
 
         protected override void OnUnload()
         {
-            if (buttonsBound && mergeAllButton != null)
-                mergeAllButton.onClick.RemoveListener(OnClickMergeAll);
+            if (buttonsBound && mergeButton != null)
+                mergeButton.onClick.RemoveListener(OnClickMergeAll);
             if (buttonsBound && equippedEffectTabButton != null)
                 equippedEffectTabButton.onClick.RemoveListener(OnClickEquippedEffectTab);
             if (buttonsBound && gemTabButton != null)
@@ -99,6 +100,7 @@ namespace OJ
             RefreshEquippedEffects();
             RefreshGemInventory();
             RefreshTabViews();
+            RefreshMergeButton();
             NotifyChanged();
         }
 
@@ -381,14 +383,19 @@ namespace OJ
             SelectTab(EquipmentPageTab.Gems, false);
             RefreshGemInventory();
             RefreshTabViews();
+            RefreshMergeButton();
         }
 
         private void OnClickMergeAll()
         {
-            if (EquipmentManager.Instance == null)
+            if (mergePopup == null || confirmDialog == null || !confirmDialog.isEnter)
                 return;
 
-            // TODO: Implement TryMergeAllGems in EquipmentManager.
+            mergePopup.Open(selectedEquipmentType, OnMergeCompleted);
+        }
+
+        private void OnMergeCompleted(IReadOnlyList<string> resultGemIds)
+        {
             RefreshAll();
         }
 
@@ -426,6 +433,18 @@ namespace OJ
                 gem_UnselectedTabIndicator.SetActive(showEquippedEffects);
         }
 
+        private void RefreshMergeButton()
+        {
+            if (mergeButton == null)
+                return;
+
+            bool visible = confirmDialog != null && confirmDialog.isEnter;
+            mergeButton.gameObject.SetActive(visible);
+            mergeButton.interactable = visible &&
+                                       EquipmentManager.Instance != null &&
+                                       EquipmentManager.Instance.HasMergeMaterials(selectedEquipmentType);
+        }
+
         private void Subscribe()
         {
             if (EquipmentManager.Instance != null)
@@ -434,6 +453,12 @@ namespace OJ
                 EquipmentManager.Instance.OnGemChanged -= OnGemChanged;
                 EquipmentManager.Instance.OnEquipmentChanged += OnEquipmentChanged;
                 EquipmentManager.Instance.OnGemChanged += OnGemChanged;
+            }
+
+            if (confirmDialog != null)
+            {
+                confirmDialog.Hidden -= OnConfirmDialogHidden;
+                confirmDialog.Hidden += OnConfirmDialogHidden;
             }
 
             if (PointManager.Instance != null)
@@ -453,6 +478,16 @@ namespace OJ
 
             if (PointManager.Instance != null)
                 PointManager.Instance.OnPointChanged -= OnPointChanged;
+
+            if (confirmDialog != null)
+                confirmDialog.Hidden -= OnConfirmDialogHidden;
+        }
+
+        private void OnConfirmDialogHidden()
+        {
+            RefreshGemInventory();
+            RefreshTabViews();
+            RefreshMergeButton();
         }
 
         private void OnEquipmentChanged(EquipmentType equipmentType)
@@ -480,14 +515,14 @@ namespace OJ
             if (buttonsBound)
                 return;
 
-            if (mergeAllButton != null)
-                mergeAllButton.onClick.AddListener(OnClickMergeAll);
+            if (mergeButton != null)
+                mergeButton.onClick.AddListener(OnClickMergeAll);
             if (equippedEffectTabButton != null)
                 equippedEffectTabButton.onClick.AddListener(OnClickEquippedEffectTab);
             if (gemTabButton != null)
                 gemTabButton.onClick.AddListener(OnClickGemTab);
 
-            buttonsBound = mergeAllButton != null ||
+            buttonsBound = mergeButton != null ||
                            equippedEffectTabButton != null ||
                            gemTabButton != null;
         }
