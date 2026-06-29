@@ -14,6 +14,13 @@ namespace OJ
             Gems
         }
 
+        private class EquippedEffectGroup
+        {
+            public EquipmentType equipmentType;
+            public readonly List<string> gemNames = new List<string>();
+            public readonly List<string> effectTexts = new List<string>();
+        }
+
         [Header("Summary")]
         [SerializeField] private TMP_Text totalAttackText;
 
@@ -28,7 +35,7 @@ namespace OJ
         [Header("Equipped Effects")]
         [SerializeField] private TMP_Text emptyEquippedEffectText;
         [SerializeField] private Transform equippedEffectRoot;
-        [SerializeField] private TMP_Text equippedEffectItemPrefab;
+        [SerializeField] private UIEquipmentEffectGroupItem equippedEffectGroupPrefab;
 
         [Header("Equipment List")]
         [SerializeField] private List<UIEquipmentItem> manualEquipmentItems = new List<UIEquipmentItem>();
@@ -51,7 +58,7 @@ namespace OJ
 
         private readonly List<UIEquipmentItem> equipmentItems = new List<UIEquipmentItem>();
         private readonly List<UIGemInventoryItem> gemInventoryItems = new List<UIGemInventoryItem>();
-        private readonly List<TMP_Text> equippedEffectItems = new List<TMP_Text>();
+        private readonly List<UIEquipmentEffectGroupItem> equippedEffectGroups = new List<UIEquipmentEffectGroupItem>();
         private readonly List<EquipmentType> equipmentTypes = new List<EquipmentType>();
 
         private EquipmentType selectedEquipmentType = EquipmentType.Weapon;
@@ -109,7 +116,7 @@ namespace OJ
             if (totalAttackText != null &&
                 (manualEquipmentItems.Count > 0 || equipmentListRoot != null) &&
                 equippedEffectRoot != null &&
-                equippedEffectItemPrefab != null &&
+                equippedEffectGroupPrefab != null &&
                 gemInventoryRoot != null &&
                 gemInventoryItemPrefab != null &&
                 confirmDialog != null)
@@ -234,14 +241,15 @@ namespace OJ
 
         private void RefreshEquippedEffects()
         {
-            List<string> effectLines = BuildEquippedEffectLines();
+            List<EquippedEffectGroup> effectGroups = BuildEquippedEffectGroups();
+            int effectCount = CountEquippedEffectRows(effectGroups);
 
-            RefreshEquippedEffectRows(effectLines);
+            RefreshEquippedEffectGroups(effectGroups);
 
             if (emptyEquippedEffectText != null)
             {
-                emptyEquippedEffectText.gameObject.SetActive(effectLines.Count <= 0);
-                if (effectLines.Count <= 0)
+                emptyEquippedEffectText.gameObject.SetActive(effectCount <= 0);
+                if (effectCount <= 0)
                     emptyEquippedEffectText.SetText("장착한 보석 효과가 없습니다.");
             }
         }
@@ -278,29 +286,95 @@ namespace OJ
             return lines;
         }
 
-        private void RefreshEquippedEffectRows(IReadOnlyList<string> effectLines)
+        private List<EquippedEffectGroup> BuildEquippedEffectGroups()
         {
-            if (equippedEffectRoot == null || equippedEffectItemPrefab == null || effectLines == null)
+            List<EquippedEffectGroup> groups = new List<EquippedEffectGroup>();
+            if (EquipmentManager.Instance == null)
+                return groups;
+
+            foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
+            {
+                EquippedEffectGroup group = null;
+
+                for (int slotIndex = 0; slotIndex < Define.MaxEquipmentSlot; slotIndex++)
+                {
+                    string gemId = EquipmentManager.Instance.GetEquippedGemId(equipmentType, slotIndex);
+                    if (string.IsNullOrEmpty(gemId))
+                        continue;
+
+                    if (!EquipmentManager.Instance.TryGetGemDefinition(gemId, out GemDefinition definition) || definition == null)
+                        continue;
+
+                    if (group == null)
+                    {
+                        group = new EquippedEffectGroup { equipmentType = equipmentType };
+                        groups.Add(group);
+                    }
+
+                    if (definition.effects == null || definition.effects.Count <= 0)
+                    {
+                        group.gemNames.Add(definition.displayName);
+                        group.effectTexts.Add("효과 없음");
+                        continue;
+                    }
+
+                    for (int effectIndex = 0; effectIndex < definition.effects.Count; effectIndex++)
+                    {
+                        group.gemNames.Add(definition.displayName);
+                        group.effectTexts.Add(UIEquipmentEffectTextFormatter.BuildEffectText(definition.effects[effectIndex]));
+                    }
+                }
+            }
+
+            return groups;
+        }
+
+        private int CountEquippedEffectRows(IReadOnlyList<EquippedEffectGroup> groups)
+        {
+            int count = 0;
+            if (groups == null)
+                return count;
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                if (groups[i] != null && groups[i].gemNames != null)
+                    count += groups[i].gemNames.Count;
+            }
+
+            return count;
+        }
+
+        private void RefreshEquippedEffectGroups(IReadOnlyList<EquippedEffectGroup> effectGroups)
+        {
+            if (equippedEffectRoot == null || equippedEffectGroupPrefab == null || effectGroups == null)
                 return;
 
-            while (equippedEffectItems.Count < effectLines.Count)
+            while (equippedEffectGroups.Count < effectGroups.Count)
             {
-                TMP_Text item = Instantiate(equippedEffectItemPrefab, equippedEffectRoot);
-                item.gameObject.SetActive(true);
-                equippedEffectItems.Add(item);
+                UIEquipmentEffectGroupItem groupItem = Instantiate(equippedEffectGroupPrefab, equippedEffectRoot);
+                groupItem.gameObject.SetActive(true);
+                equippedEffectGroups.Add(groupItem);
             }
 
-            for (int i = 0; i < equippedEffectItems.Count; i++)
+            for (int i = 0; i < equippedEffectGroups.Count; i++)
             {
-                TMP_Text item = equippedEffectItems[i];
-                if (item == null)
+                UIEquipmentEffectGroupItem groupItem = equippedEffectGroups[i];
+                if (groupItem == null)
                     continue;
 
-                bool active = i < effectLines.Count;
-                item.gameObject.SetActive(active);
-                if (active)
-                    item.SetText(effectLines[i]);
+                bool active = i < effectGroups.Count;
+                groupItem.gameObject.SetActive(active);
+                if (!active)
+                    continue;
+
+                EquippedEffectGroup group = effectGroups[i];
+                groupItem.Refresh(group.equipmentType, group.gemNames, group.effectTexts);
+                groupItem.RebuildLayout();
             }
+
+            Canvas.ForceUpdateCanvases();
+            if (equippedEffectRoot is RectTransform rectTransform)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
         }
 
         private void RefreshGemInventory()
