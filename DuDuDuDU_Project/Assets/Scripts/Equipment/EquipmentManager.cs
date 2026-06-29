@@ -230,6 +230,117 @@ namespace OJ
             return gemInventory.TryGetValue(gemId, out int count) ? Mathf.Max(0, count) : 0;
         }
 
+        public bool HasMergeMaterials(EquipmentType equipmentType)
+        {
+            Dictionary<Rarity, int> counts = new Dictionary<Rarity, int>();
+
+            for (int i = 0; i < gemDefinitions.Count; i++)
+            {
+                GemDefinition definition = gemDefinitions[i];
+                if (definition == null ||
+                    definition.equipableType != equipmentType ||
+                    definition.rarity == Rarity.Mythic)
+                {
+                    continue;
+                }
+
+                int count = GetGemCount(definition.gemId);
+                if (count <= 0)
+                    continue;
+
+                counts.TryGetValue(definition.rarity, out int current);
+                counts[definition.rarity] = current + count;
+            }
+
+            foreach (var pair in counts)
+            {
+                if (pair.Value >= 4)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public bool TryMergeGems(EquipmentType equipmentType, IReadOnlyList<string> materialGemIds, out List<string> resultGemIds)
+        {
+            resultGemIds = new List<string>();
+            if (materialGemIds == null || materialGemIds.Count < 4)
+                return false;
+
+            Dictionary<string, int> requiredCounts = new Dictionary<string, int>();
+            Dictionary<Rarity, List<string>> groupedMaterials = new Dictionary<Rarity, List<string>>();
+
+            for (int i = 0; i < materialGemIds.Count; i++)
+            {
+                string gemId = materialGemIds[i];
+                if (string.IsNullOrEmpty(gemId))
+                    continue;
+                if (!gemDefinitionMap.TryGetValue(gemId, out GemDefinition definition) || definition == null)
+                    continue;
+                if (definition.equipableType != equipmentType || definition.rarity == Rarity.Mythic)
+                    continue;
+
+                requiredCounts.TryGetValue(gemId, out int requiredCount);
+                requiredCounts[gemId] = requiredCount + 1;
+
+                if (!groupedMaterials.TryGetValue(definition.rarity, out List<string> group))
+                {
+                    group = new List<string>();
+                    groupedMaterials[definition.rarity] = group;
+                }
+
+                group.Add(gemId);
+            }
+
+            foreach (var pair in requiredCounts)
+            {
+                if (GetGemCount(pair.Key) < pair.Value)
+                    return false;
+            }
+
+            List<string> consumedGemIds = new List<string>();
+
+            foreach (var pair in groupedMaterials)
+            {
+                int consumeCount = (pair.Value.Count / 4) * 4;
+                if (consumeCount <= 0)
+                    continue;
+                if (!TryGetNextRarity(pair.Key, out Rarity nextRarity))
+                    continue;
+
+                int resultCount = consumeCount / 4;
+                for (int i = 0; i < resultCount; i++)
+                {
+                    if (!TryGetRandomGemDefinition(equipmentType, nextRarity, out GemDefinition resultDefinition))
+                        return false;
+
+                    resultGemIds.Add(resultDefinition.gemId);
+                }
+
+                for (int i = 0; i < consumeCount; i++)
+                    consumedGemIds.Add(pair.Value[i]);
+            }
+
+            if (consumedGemIds.Count <= 0 || resultGemIds.Count <= 0)
+                return false;
+
+            for (int i = 0; i < consumedGemIds.Count; i++)
+            {
+                string gemId = consumedGemIds[i];
+                gemInventory[gemId] = Mathf.Max(0, GetGemCount(gemId) - 1);
+            }
+
+            for (int i = 0; i < resultGemIds.Count; i++)
+            {
+                string gemId = resultGemIds[i];
+                gemInventory[gemId] = GetGemCount(gemId) + 1;
+            }
+
+            SaveAll();
+            OnGemChanged?.Invoke();
+            return true;
+        }
+
         public float GetAttackPercentBonus(DiceType diceType)
         {
             return Mathf.Max(0f, SumPercent(GemStatType.AttackPercent, diceType));
@@ -461,6 +572,41 @@ namespace OJ
 
             SaveAll();
             OnGemChanged?.Invoke();
+        }
+
+        private bool TryGetRandomGemDefinition(EquipmentType equipmentType, Rarity rarity, out GemDefinition result)
+        {
+            List<GemDefinition> candidates = new List<GemDefinition>();
+
+            for (int i = 0; i < gemDefinitions.Count; i++)
+            {
+                GemDefinition definition = gemDefinitions[i];
+                if (definition == null)
+                    continue;
+                if (definition.equipableType == equipmentType && definition.rarity == rarity)
+                    candidates.Add(definition);
+            }
+
+            if (candidates.Count <= 0)
+            {
+                result = null;
+                return false;
+            }
+
+            result = candidates[UnityEngine.Random.Range(0, candidates.Count)];
+            return result != null;
+        }
+
+        private static bool TryGetNextRarity(Rarity rarity, out Rarity nextRarity)
+        {
+            if (rarity >= Rarity.Mythic)
+            {
+                nextRarity = rarity;
+                return false;
+            }
+
+            nextRarity = (Rarity)((int)rarity + 1);
+            return true;
         }
 
         private float SumPercent(GemStatType statType, DiceType diceType)

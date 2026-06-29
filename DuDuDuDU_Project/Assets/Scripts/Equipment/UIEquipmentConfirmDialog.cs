@@ -7,6 +7,8 @@ namespace OJ
 {
     public class UIEquipmentConfirmDialog : IDialog
     {
+        public event System.Action Hidden;
+
         [Header("Equipment Detail")]
         [SerializeField] private TMP_Text equipmentTypeText;
 
@@ -60,6 +62,11 @@ namespace OJ
                 unequipButton.onClick.RemoveListener(OnClickUnequip);
             if (buttonsBound && closeButton != null)
                 closeButton.onClick.RemoveListener(OnClickClose);
+        }
+
+        protected override void OnExit()
+        {
+            Hidden?.Invoke();
         }
 
         public void Open(EquipmentType type, string gemId, System.Action changedCallback)
