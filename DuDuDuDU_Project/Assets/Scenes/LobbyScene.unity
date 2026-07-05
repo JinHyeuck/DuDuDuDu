@@ -8251,7 +8251,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 930ec514d169ea146855fba9dd3efd15, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10239,7 +10239,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &702998043
 RectTransform:
   m_ObjectHideFlags: 0
@@ -19700,6 +19700,7 @@ GameObject:
   - component: {fileID: 1254084966}
   - component: {fileID: 1254084968}
   - component: {fileID: 1254084967}
+  - component: {fileID: 1254084969}
   m_Layer: 0
   m_Name: Wizard
   m_TagString: Untagged
@@ -19724,7 +19725,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 50}
-  m_SizeDelta: {x: 376, y: 496}
+  m_SizeDelta: {x: 900, y: 900}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1254084967
 MonoBehaviour:
@@ -19746,7 +19747,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 83f4a3fd2f68ef54da8cf17383a91072, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6eea8a7de164f914c8c6ce49a401ffe5, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -19764,6 +19765,36 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1254084965}
   m_CullTransparentMesh: 1
+--- !u!114 &1254084969
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1254084965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 538fca09277144de989e873726717a5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetImage: {fileID: 1254084967}
+  sprites:
+  - {fileID: 21300000, guid: 6eea8a7de164f914c8c6ce49a401ffe5, type: 3}
+  - {fileID: 21300000, guid: b0f1a2cb4b647af43a8f5cd9f468af14, type: 3}
+  - {fileID: 21300000, guid: 278c2cacb1a84fc4686f409f5e0d09fc, type: 3}
+  - {fileID: 21300000, guid: 035d4b9116eedfb47a92d6a5cbd18645, type: 3}
+  - {fileID: 21300000, guid: 7367aba7e6349c6448e2548aa5baab51, type: 3}
+  - {fileID: 21300000, guid: 6125334f705d8be43a75fd9d5c3f5844, type: 3}
+  - {fileID: 21300000, guid: ce4e4023b2f3d584d9ea3b2933821f0b, type: 3}
+  - {fileID: 21300000, guid: b243a9cae421d034f97fd47ea78196c4, type: 3}
+  frameInterval: 0.2
+  playOnEnable: 1
+  loop: 1
+  useScaleWobble: 0
+  scaleMultiplierA: {x: 1, y: 1, z: 1}
+  scaleMultiplierB: {x: 1.06, y: 0.96, z: 1}
+  scaleWobbleSeconds: 0.8
+  restoreScaleOnStop: 1
 --- !u!1 &1266343549
 GameObject:
   m_ObjectHideFlags: 0
