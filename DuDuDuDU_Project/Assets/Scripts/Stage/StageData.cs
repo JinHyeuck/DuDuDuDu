@@ -24,6 +24,7 @@ namespace OJ
     public class StageData
     {
         [Min(1)] public int stageIndex = 1;
+        [Min(1)] public int stageResourceId = 0;
         [Min(1)] public int totalWaves = 8;
         [Min(1)] public int monstersPerWave = 20;
         [Min(1)] public int wallHp = 100;
@@ -83,6 +84,21 @@ namespace OJ
                 defenseValue *= 0.96f;
 
             return Mathf.Max(0, Mathf.RoundToInt(defenseValue));
+        }
+
+        public static string GetStageDisplayName(int stageIndex)
+        {
+            switch (stageIndex)
+            {
+                case 1:
+                    return "\uC5B4\uB460\uC758 \uC232\uC18D";
+                case 2:
+                    return "\uACA8\uC6B8 \uC232\uC18D";
+                case 3:
+                    return "\uC0AC\uB9C9 \uB3C4\uC2DC";
+                default:
+                    return string.Format("Stage {0}", stageIndex);
+            }
         }
     }
 }

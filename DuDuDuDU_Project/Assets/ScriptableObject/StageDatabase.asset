@@ -14,272 +14,482 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stages:
   - stageIndex: 1
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 7
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 2
+    stageResourceId: 1
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 10
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 3
+    stageResourceId: 2
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 13
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 4
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 16
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 5
+    stageResourceId: 1
+    totalWaves: 10
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 117
+    waveClearSP: 103
+    baseMonsterHp: 21
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 6
+    stageResourceId: 2
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 22
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 2
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 7
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 25
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 8
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 28
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 3
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 9
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 35
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 4
+    baseMonsterHp: 32
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 10
+    stageResourceId: 0
+    totalWaves: 20
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 84
+    waveClearSP: 74
+    baseMonsterHp: 32
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 11
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 38
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 12
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 42
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 5
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 13
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 45
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 14
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 49
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 15
+    stageResourceId: 0
     totalWaves: 10
     monstersPerWave: 20
     wallHp: 100
     initialSP: 117
     waveClearSP: 103
     baseMonsterHp: 58
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 6
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 16
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 57
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 7
+    baseMonsterHp: 56
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 17
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 65
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 8
+    baseMonsterHp: 59
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 18
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 73
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 9
+    baseMonsterHp: 63
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 19
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 67
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 20
+    stageResourceId: 0
+    totalWaves: 20
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 84
+    waveClearSP: 74
+    baseMonsterHp: 63
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 21
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 74
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 22
+    stageResourceId: 0
+    totalWaves: 15
+    monstersPerWave: 20
+    wallHp: 100
+    initialSP: 100
+    waveClearSP: 80
+    baseMonsterHp: 78
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
+  - stageIndex: 23
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 81
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 10
-    totalWaves: 20
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 84
-    waveClearSP: 74
-    baseMonsterHp: 75
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 11
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 98
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 12
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 107
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 13
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 116
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 14
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 126
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 15
-    totalWaves: 10
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 117
-    waveClearSP: 103
-    baseMonsterHp: 167
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 16
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 146
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 17
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 156
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 18
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 166
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 19
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 177
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 20
-    totalWaves: 20
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 84
-    waveClearSP: 74
-    baseMonsterHp: 162
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 21
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 199
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 22
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 210
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
-  - stageIndex: 23
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 222
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
   - stageIndex: 24
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 234
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterHp: 85
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
   - stageIndex: 25
+    stageResourceId: 0
     totalWaves: 10
     monstersPerWave: 20
     wallHp: 100
     initialSP: 117
     waveClearSP: 103
-    baseMonsterHp: 295
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterHp: 98
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
   - stageIndex: 26
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 259
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterHp: 93
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
   - stageIndex: 27
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 272
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterHp: 96
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
   - stageIndex: 28
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 285
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterHp: 100
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
   - stageIndex: 29
+    stageResourceId: 0
     totalWaves: 15
     monstersPerWave: 20
     wallHp: 100
     initialSP: 100
     waveClearSP: 80
-    baseMonsterHp: 298
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterHp: 104
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45
   - stageIndex: 30
+    stageResourceId: 0
     totalWaves: 20
     monstersPerWave: 20
     wallHp: 100
     initialSP: 84
     waveClearSP: 74
-    baseMonsterHp: 272
-    waveHpLinearFactor: 0.16
-    waveHpQuadraticFactor: 0.02
+    baseMonsterHp: 97
+    baseMonsterDefense: 0
+    waveHpLinearFactor: 0.145
+    waveHpQuadraticFactor: 0.018
+    waveDefenseLinearFactor: 0.12
+    waveDefenseQuadraticFactor: 0.015
+    bossHpMultiplier: 6.4
+    bossDefenseMultiplier: 2.5
+    bossScaleMultiplier: 1.45

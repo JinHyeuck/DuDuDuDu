@@ -50,9 +50,9 @@ namespace OJ
             onStartStage = startCallback;
 
             if (stageTitleText != null)
-                stageTitleText.SetText($"{stageIndex}. {GetStageDisplayName(stageIndex)}");
+                stageTitleText.SetText(StageData.GetStageDisplayName(stageData.stageIndex));
 
-            ApplyBanner(stageIndex);
+            ApplyBanner(stageData.stageResourceId);
 
             if (minimumRow != null)
                 minimumRow.Bind(StageClearGrade.Minimum, bestGrade, minimumConditionText);
@@ -78,13 +78,9 @@ namespace OJ
                 startButtonText.SetText(isUnlocked ? "\uAC8C\uC784 \uC2DC\uC791" : "\uC7A0\uAE40");
         }
 
-        private void ApplyBanner(int nextStageIndex)
+        private void ApplyBanner(int stageResourceId)
         {
-            if (bannerImage == null || bannerSprites == null || bannerSprites.Length == 0)
-                return;
-
-            int spriteIndex = (Mathf.Max(1, nextStageIndex) - 1) % bannerSprites.Length;
-            Sprite sprite = bannerSprites[spriteIndex];
+            Sprite sprite = StaticResource.Instance.GetStageStarRewardBanner(stageResourceId);
             if (sprite != null)
                 bannerImage.sprite = sprite;
         }

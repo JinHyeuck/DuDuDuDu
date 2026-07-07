@@ -69,7 +69,7 @@ namespace OJ
 
         public int GetSelectedStageIndex()
         {
-            return Mathf.Clamp(saveData.selectedStageIndex, 1, GetMaxStageIndex());
+            return Mathf.Clamp(saveData.highestUnlockedStageIndex, 0, GetMaxStageIndex());
         }
 
         public StageData GetSelectedStage()

@@ -21,6 +21,9 @@ namespace OJ
         [SerializeField] private Button previousStageButton;
         [SerializeField] private Button nextStageButton;
         [SerializeField] private TMP_Text selectedStageText;
+        [SerializeField] private Image selectedStageImage;
+        [SerializeField] private TMP_Text stageNameText;
+        [SerializeField] private TMP_Text stageClearWaveText;
         [SerializeField] private TMP_Text stageSummaryText;
 
         [Header("Bottom Buttons")]
@@ -56,7 +59,7 @@ namespace OJ
         private void OnEnable()
         {
             ResolvePanelsIfNeeded();
-            selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetSelectedStageIndex() : 1;
+            selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetHighestUnlockedStageIndex() : 1;
             ShowTab(defaultTab);
             RefreshStageUI();
         }
@@ -130,6 +133,12 @@ namespace OJ
                 ? StageProgressManager.Instance.GetBestClearGrade(selectedStageIndex)
                 : StageClearGrade.None;
 
+            if (selectedStageImage != null)
+            {
+                Sprite stageSprite = StaticResource.Instance.GetStageBanner(stageData != null ? stageData.stageResourceId : 0);
+                selectedStageImage.sprite = stageSprite;
+            }
+
             if (selectedStageText != null)
             {
                 selectedStageText.SetText(
@@ -137,6 +146,12 @@ namespace OJ
                         ? $"Stage {selectedStageIndex}"
                         : $"Stage {selectedStageIndex} Locked");
             }
+
+            if (stageNameText != null)
+                stageNameText.SetText(StageData.GetStageDisplayName(stageData.stageIndex));
+
+            if (stageClearWaveText != null)
+                stageClearWaveText.SetText($"{StageProgressManager.Instance.GetBestClearedWave(selectedStageIndex)}/{stageData.totalWaves}");
 
             if (stageSummaryText != null)
             {

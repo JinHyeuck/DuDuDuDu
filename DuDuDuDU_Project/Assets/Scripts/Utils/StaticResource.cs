@@ -28,6 +28,14 @@ namespace OJ
         public Sprite SmallIcon;
     }
 
+        [Serializable]
+    public class StageUIResource
+    {
+        public int StageResourceId;
+        public Sprite MainBanner;
+        public Sprite StarRewardBanner;
+    }
+
     public class StaticResource : MonoSingleton<StaticResource>
     {
         public PointMetadataDatabase PointMetadataDatabase;
@@ -40,6 +48,8 @@ namespace OJ
         
         public List<RarityResource> RarityResources;
         public List<EquipmentResource> EquipmentResources;
+
+        public List<StageUIResource> StageUIResources;
 
         private Dictionary<ElementType, ElementResource> elementResourceMap = new Dictionary<ElementType, ElementResource>();
         private Dictionary<Rarity, RarityResource> rarityResourceMap = new Dictionary<Rarity, RarityResource>();
@@ -137,6 +147,38 @@ namespace OJ
         {
             EquipmentResource resource = GetEquipmentResource(equipmentType);
             return resource != null ? resource.SmallIcon : null;
+        }
+
+        public Sprite GetStageBanner(int stageResourceId)
+        {
+            if (StageUIResources == null)
+                return null;
+
+            foreach (var stageUIResource in StageUIResources)
+            {
+                if (stageUIResource != null && stageUIResource.StageResourceId == stageResourceId)
+                {
+                    return stageUIResource.MainBanner;
+                }
+            }
+
+            return null;
+        }
+
+        public Sprite GetStageStarRewardBanner(int stageResourceId)
+        {
+            if (StageUIResources == null)
+                return null;
+
+            foreach (var stageUIResource in StageUIResources)
+            {
+                if (stageUIResource != null && stageUIResource.StageResourceId == stageResourceId)
+                {
+                    return stageUIResource.StarRewardBanner;
+                }
+            }
+
+            return null;
         }
     }
 }
