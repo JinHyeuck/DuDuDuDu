@@ -66,6 +66,7 @@ namespace OJ
                 GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : 0);
 
             Destroy(from.gameObject);
+            RelicManager.Instance?.ApplyMergeInsurance();
 
             return true;
         }

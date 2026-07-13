@@ -143,6 +143,9 @@ namespace OJ
             if (attackType == DiceType.Normal && diceLevel >= 12 && Random.value <= 0.2f)
                 damage *= 2;
 
+            if (RelicManager.Instance != null)
+                damage = Mathf.Max(1, Mathf.RoundToInt(damage * RelicManager.Instance.ConsumeAttackDamageMultiplier()));
+
             if (attackType == DiceType.Normal && diceLevel >= 9 && Random.value <= 0.2f)
                 UIDiceSummonSystem.Instance?.AddSP(5);
 
@@ -229,6 +232,8 @@ namespace OJ
             int count = DiceMetaDataProvider.GetThunderTargetCount(level);
             if (EquipmentManager.Instance != null)
                 count += EquipmentManager.Instance.GetThunderChainExtraCount(DiceType.Thunder);
+            if (RelicManager.Instance != null)
+                count += RelicManager.Instance.GetThunderExtraTargetCount(diceType);
             return Mathf.Max(0, count);
         }
 

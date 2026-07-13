@@ -71,6 +71,7 @@ namespace OJ
         {
             InitializeStage();
             ChangeState(InGameState.Setting);
+            StartCoroutine(CoApplyStageStartRelics());
         }
 
         public void OnClick_PlayUI()
@@ -135,6 +136,7 @@ namespace OJ
             {
                 isPause = false;
                 CurrentWaveIndex++;
+                RelicManager.Instance?.BeginWave(CurrentWaveIndex);
                 WaveMonsterCount = GetWaveTargetCount();
                 UpdateWaveText();
                 SetRemainMonster(0);
@@ -189,6 +191,7 @@ namespace OJ
             if (isGameOver) return;
             isGameOver = true;
             inGameState = InGameState.None;
+            RelicManager.Instance?.EndWave();
 
             int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
             int totalWaves = CurrentStageData != null ? Mathf.Max(1, CurrentStageData.totalWaves) : 1;
@@ -256,6 +259,7 @@ namespace OJ
 
         private void InitializeStage()
         {
+            RelicManager.Instance?.BeginStageRun();
             CurrentStageData = StageProgressManager.Instance != null
                 ? StageProgressManager.Instance.GetSelectedStage()
                 : StageDatabaseProvider.GetStage(1);
@@ -273,9 +277,16 @@ namespace OJ
 
             ElementUpgradeManager.Instance?.ResetRunState();
             wall.SetInit(WallHp);
-            UIDiceSummonSystem.Instance?.SetStageStartSp(CurrentStageData.initialSP);
+            int startSpBonus = RelicManager.Instance != null ? RelicManager.Instance.GetStageStartSpBonus() : 0;
+            UIDiceSummonSystem.Instance?.SetStageStartSp(CurrentStageData.initialSP + startSpBonus);
             RunHistoryManager.Instance?.StartRun(CurrentStageData, WallHp);
             UpdateWaveText();
+        }
+
+        private IEnumerator CoApplyStageStartRelics()
+        {
+            yield return null;
+            RelicManager.Instance?.TryApplyStageStartDice();
         }
 
         private int GetWaveTargetCount()
@@ -293,6 +304,7 @@ namespace OJ
         private void HandleWaveCompleted()
         {
             PointManager.Instance?.Add(PointType.Coin, 1);
+            RelicManager.Instance?.ApplyWaveClearRelics(wall);
 
             if (CurrentStageData != null)
             {
@@ -310,10 +322,12 @@ namespace OJ
 
             if (CurrentStageData != null && CurrentWaveIndex >= CurrentStageData.totalWaves)
             {
+                RelicManager.Instance?.EndWave();
                 ClearStage();
                 return;
             }
 
+            RelicManager.Instance?.EndWave();
             ChangeState(InGameState.Setting);
         }
 
@@ -361,6 +375,8 @@ namespace OJ
             StageClearGrade clearGrade = StageRewardCalculator.GetClearGrade(wall.CurrentHp, wall.TotalHp);
 
             List<PointRewardEntry> normalRewards = StageRewardCalculator.BuildNormalClearRewards(stageIndex);
+            if (RelicManager.Instance != null)
+                normalRewards = RelicManager.Instance.ApplyStageClearRewardBonus(normalRewards);
             PointRewardUtility.GrantRewards(normalRewards);
 
             StageProgressManager.Instance?.RecordStageClear(stageIndex, clearGrade);

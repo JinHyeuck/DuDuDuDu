@@ -54,6 +54,8 @@ namespace OJ
                 var slot = Instantiate(slotPrefab, grid.transform);
                 slots.Add(slot);
             }
+
+            RelicManager.Instance?.TryApplyStageStartDice();
         }
 
         public void SpawnDice(DiceType type, int star, int slotIndex)

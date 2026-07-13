@@ -46,6 +46,21 @@ namespace OJ
 
             if (CurrentHp <= 0)
             {
+                if (RelicManager.Instance != null && RelicManager.Instance.TryTriggerLastWall())
+                {
+                    CurrentHp = 1;
+                    if (CurrentHp_Text != null)
+                        CurrentHp_Text.SetText("{0}", CurrentHp);
+
+                    float reviveRatio = TotalHp > 0 ? (float)CurrentHp / TotalHp : 0f;
+                    reviveRatio = Mathf.Clamp01(reviveRatio);
+
+                    Vector2 reviveSize = wallHp_RectTrans.sizeDelta;
+                    reviveSize.x = wallHp_Width * reviveRatio;
+                    wallHp_RectTrans.sizeDelta = reviveSize;
+                    return;
+                }
+
                 GameManager.Instance.GameOver();
                 Destroy(gameObject);
             }

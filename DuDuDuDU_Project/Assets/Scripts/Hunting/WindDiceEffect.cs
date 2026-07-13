@@ -22,6 +22,8 @@ namespace OJ
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             int targetCount = DiceMetaDataProvider.GetWindTargetCount(level);
             float chancePercent = DiceMetaDataProvider.GetWindPushChancePercent(DiceType, level);
+            if (RelicManager.Instance != null)
+                chancePercent += RelicManager.Instance.GetWindPushChanceBonusPercent();
             float distance = BasePushDistance * DiceMetaDataProvider.GetWindDistanceMultiplier(level);
 
             Vector2 areaCenter = GetWallFrontAreaCenter(wall);
@@ -43,6 +45,8 @@ namespace OJ
                 monster.PushBy(Vector2.up, distance);
                 if (level >= 6)
                     monster.ApplyWindDamageTakenBonus(10, 3f);
+                if (RelicManager.Instance != null)
+                    monster.ApplyRelicDamageTakenBonus(RelicManager.Instance.GetWindDamageTakenBonusPercent(), 3f);
                 PlayEffectAt(DiceType, effectPosition);
                 pushedAny = true;
             }

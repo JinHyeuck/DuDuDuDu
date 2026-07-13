@@ -39,6 +39,12 @@ namespace OJ
                     continue;
 
                 monster.AddSmoothPull(center, pullDistance, pullDuration);
+                if (RelicManager.Instance != null)
+                {
+                    monster.ApplyRelicDamageTakenBonus(
+                        RelicManager.Instance.GetTornadoDamageTakenBonusPercent(),
+                        RelicManager.Instance.GetTornadoDamageTakenBonusDuration());
+                }
             }
 
             attackContent.StartCoroutine(CoPlayTornadoSequence(center, pullDuration));

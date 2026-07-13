@@ -277,6 +277,9 @@ namespace OJ
             if (ElementUpgradeManager.Instance != null)
                 scaled *= ElementUpgradeManager.Instance.GetTotalBonusMultiplier(diceType);
 
+            if (RelicManager.Instance != null)
+                scaled *= RelicManager.Instance.GetDamageMultiplier(diceType);
+
             return Mathf.Max(1, Mathf.RoundToInt(scaled));
         }
 
@@ -349,6 +352,12 @@ namespace OJ
             {
                 float reducePercent = EquipmentManager.Instance.GetCooldownReductionPercent(diceType);
                 cooldown *= Mathf.Max(0.05f, 1f - reducePercent);
+            }
+
+            if (RelicManager.Instance != null)
+            {
+                float relicReducePercent = RelicManager.Instance.GetCooldownReductionPercent() * 0.01f;
+                cooldown *= Mathf.Max(0.05f, 1f - relicReducePercent);
             }
 
             return cooldown;

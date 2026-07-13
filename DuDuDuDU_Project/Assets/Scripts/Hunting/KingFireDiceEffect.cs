@@ -22,6 +22,11 @@ namespace OJ
                 explosionRange *= (1f + EquipmentManager.Instance.GetFireExplosionRangeBonus(DiceType));
                 fireHitTargetCount += EquipmentManager.Instance.GetFireExplosionExtraTargetCount(DiceType) + 2;
             }
+            if (RelicManager.Instance != null)
+            {
+                explosionRange *= RelicManager.Instance.GetFireExplosionRangeMultiplier(DiceType);
+                fireHitTargetCount += RelicManager.Instance.GetFireExplosionExtraTargetCount(DiceType);
+            }
 
             for (int i = 0; i < hitMonsters.Count; ++i)
             {
@@ -81,6 +86,11 @@ namespace OJ
             {
                 explosionRange *= (1f + EquipmentManager.Instance.GetFireExplosionRangeBonus(DiceType));
                 fireHitTargetCount += EquipmentManager.Instance.GetFireExplosionExtraTargetCount(DiceType) + 2;
+            }
+            if (RelicManager.Instance != null)
+            {
+                explosionRange *= RelicManager.Instance.GetFireExplosionRangeMultiplier(DiceType);
+                fireHitTargetCount += RelicManager.Instance.GetFireExplosionExtraTargetCount(DiceType);
             }
 
             List<Monster> monsters = attackContent.GetRedHitTarget(

@@ -36,6 +36,8 @@ namespace OJ
         private float _thunderDamageTakenBonusUntil;
         private int _windDamageTakenBonusPercent;
         private float _windDamageTakenBonusUntil;
+        private int _relicDamageTakenBonusPercent;
+        private float _relicDamageTakenBonusUntil;
         private Coroutine _defenseDownRoutine;
         private Coroutine _poisonRoutine;
         private Coroutine _attackRoutine;
@@ -71,6 +73,8 @@ namespace OJ
             _thunderDamageTakenBonusUntil = -1f;
             _windDamageTakenBonusPercent = 0;
             _windDamageTakenBonusUntil = -1f;
+            _relicDamageTakenBonusPercent = 0;
+            _relicDamageTakenBonusUntil = -1f;
             RecalculateDefense();
 
             MonsterManager.Instance.RegisterMonster(this);
@@ -99,6 +103,8 @@ namespace OJ
             _thunderDamageTakenBonusUntil = -1f;
             _windDamageTakenBonusPercent = 0;
             _windDamageTakenBonusUntil = -1f;
+            _relicDamageTakenBonusPercent = 0;
+            _relicDamageTakenBonusUntil = -1f;
             _attackRoutine = null;
             _attackWall = null;
             _pullRoutine = null;
@@ -148,8 +154,10 @@ namespace OJ
                 stateBonusPercent += 15;
             if (IsPoisoned() && DiceMetaDataProvider.HasKingPoisonDamageBonus())
                 stateBonusPercent += 15;
+            if (IsSlowed() && RelicManager.Instance != null)
+                stateBonusPercent += RelicManager.Instance.GetSlowDamageTakenBonusPercent();
 
-            float incomingDamageMultiplier = 1f + (_poisonDamageTakenBonusPercent + _stunDamageTakenBonusPercent + _armorBreakDamageTakenBonusPercent + _thunderDamageTakenBonusPercent + _windDamageTakenBonusPercent + stateBonusPercent) * 0.01f;
+            float incomingDamageMultiplier = 1f + (_poisonDamageTakenBonusPercent + _stunDamageTakenBonusPercent + _armorBreakDamageTakenBonusPercent + _thunderDamageTakenBonusPercent + _windDamageTakenBonusPercent + _relicDamageTakenBonusPercent + stateBonusPercent) * 0.01f;
             int appliedDamage = Mathf.CeilToInt(dmg * damageMultiplier * incomingDamageMultiplier);
 
             _hp -= appliedDamage;
@@ -157,9 +165,12 @@ namespace OJ
             {
                 if (CharacterState != CharacterState.Dead)
                 {
+                    bool wasPoisoned = IsPoisoned();
+                    Vector3 deathPosition = transform.position;
                     CharacterState = CharacterState.Dead;
                     StopAllCoroutines();
                     EquipmentManager.Instance?.OnMonsterKilled();
+                    RelicManager.Instance?.OnMonsterKilled(this, wasPoisoned, deathPosition);
                     MonsterManager.Instance.UnregisterMonster(this, true);
                     MonsterSpawner.Instance.PoolMonster(this);
                 }
@@ -244,6 +255,12 @@ namespace OJ
         {
             _windDamageTakenBonusPercent = Mathf.Max(_windDamageTakenBonusPercent, Mathf.Max(0, percent));
             _windDamageTakenBonusUntil = Mathf.Max(_windDamageTakenBonusUntil, Time.time + Mathf.Max(0.1f, duration));
+        }
+
+        public void ApplyRelicDamageTakenBonus(int percent, float duration)
+        {
+            _relicDamageTakenBonusPercent = Mathf.Max(_relicDamageTakenBonusPercent, Mathf.Max(0, percent));
+            _relicDamageTakenBonusUntil = Mathf.Max(_relicDamageTakenBonusUntil, Time.time + Mathf.Max(0.1f, duration));
         }
 
         public void ApplyDefenseDown(float duration, int percent)
@@ -436,6 +453,12 @@ namespace OJ
             {
                 _windDamageTakenBonusPercent = 0;
                 _windDamageTakenBonusUntil = -1f;
+            }
+
+            if (Time.time >= _relicDamageTakenBonusUntil)
+            {
+                _relicDamageTakenBonusPercent = 0;
+                _relicDamageTakenBonusUntil = -1f;
             }
         }
 

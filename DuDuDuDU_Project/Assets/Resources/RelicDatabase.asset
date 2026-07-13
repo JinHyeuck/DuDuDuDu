@@ -1,0 +1,392 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72d1455205364ed1b787e794702ac5a7, type: 3}
+  m_Name: RelicDatabase
+  m_EditorClassIdentifier: 
+  maxLevel: 20
+  baseGoldCost: 500
+  goldCostPerSummon: 100
+  baseTicketCost: 1
+  ticketCostIncreaseInterval: 10
+  ticketCostIncreaseAmount: 1
+  rarityWeights:
+  - rarity: 2
+    weight: 60
+  - rarity: 3
+    weight: 30
+  - rarity: 4
+    weight: 8
+  - rarity: 5
+    weight: 2
+  normalBackground: {fileID: 21300000, guid: 643bdd9f47105654e8be08ca06b785d4, type: 3}
+  rareBackground: {fileID: 21300000, guid: 3a2d498a6237e7a44a4e7192f86bd93b, type: 3}
+  epicBackground: {fileID: 21300000, guid: 942721840a723fc45903476014dfcb81, type: 3}
+  mythicBackground: {fileID: 21300000, guid: b80ea934b69574243b7f60c8761b5ea2, type: 3}
+  relics:
+  - relicId: 1
+    index: 1
+    rarity: 2
+    displayName: "\uCD08\uC2EC\uC790\uC758 \uC8FC\uBA38\uB2C8"
+    description: "\uC804\uD22C \uC2DC\uC791 SP +{0}"
+    example: "\uAE30\uBCF8 \uC2DC\uC791 SP\uAC00 100\uC774\uBA74 110\uC73C\uB85C
+      \uC2DC\uC791"
+    icon: {fileID: 21300000, guid: d964e23130d7fdc4687a3811f069a8da, type: 3}
+    baseValue: 10
+    levelUpValue: 2
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 2
+    index: 2
+    rarity: 2
+    displayName: "\uC804\uD22C \uAE08\uACE0"
+    description: "\uC6E8\uC774\uBE0C \uD074\uB9AC\uC5B4 \uC2DC {0}% \uD655\uB960\uB85C
+      \uAC15\uD654 \uCF54\uC778 +1"
+    example: "\uAC15\uD654 \uCF54\uC778 \uAE30\uBCF8 \uD68D\uB4DD\uC5D0 \uCD94\uAC00\uB85C
+      1\uAC1C\uB97C \uB354 \uC5BB\uC744 \uC218 \uC788\uC74C"
+    icon: {fileID: 21300000, guid: 5f7372d7a112fe54eaacad77521c7fa8, type: 3}
+    baseValue: 20
+    levelUpValue: 1
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 3
+    index: 3
+    rarity: 2
+    displayName: "\uD589\uC6B4 \uD0C4\uCC3D"
+    description: "\uACF5\uACA9 \uC2DC {0}% \uD655\uB960\uB85C \uC774\uBC88 \uACF5\uACA9
+      \uCD5C\uC885 \uD53C\uD574 +{1}%"
+    example: "100 \uD53C\uD574\uB97C \uC904 \uACF5\uACA9\uC774 \uBC1C\uB3D9\uD558\uBA74
+      180 \uD53C\uD574"
+    icon: {fileID: 21300000, guid: ca5c548df31669749ae5bab108e21cd0, type: 3}
+    baseValue: 10
+    levelUpValue: 0.5
+    baseSecondaryValue: 80
+    levelUpSecondaryValue: 4
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 4
+    index: 4
+    rarity: 2
+    displayName: "\uC218\uB9AC \uB9DD\uCE58"
+    description: "\uC6E8\uC774\uBE0C \uC885\uB8CC \uC2DC \uBCBD \uCCB4\uB825 {0}%
+      \uD68C\uBCF5"
+    example: "\uBCBD \uCD5C\uB300 \uCCB4\uB825\uC774 100\uC774\uBA74 \uC6E8\uC774\uBE0C
+      \uC885\uB8CC \uC2DC 2 \uD68C\uBCF5"
+    icon: {fileID: 21300000, guid: 7986f5c61de55ba438f39b88cf7ab2fa, type: 3}
+    baseValue: 2
+    levelUpValue: 0.15
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 5
+    index: 5
+    rarity: 2
+    displayName: "\uBE60\uB978 \uC190\uBAA9"
+    description: "\uBAA8\uB4E0 \uC8FC\uC0AC\uC704 \uCFE8\uB2E4\uC6B4 {0}% \uAC10\uC18C"
+    example: "\uCFE8\uB2E4\uC6B4 10\uCD08 \uC8FC\uC0AC\uC704\uAC00 9.7\uCD08\uB9C8\uB2E4
+      \uACF5\uACA9"
+    icon: {fileID: 21300000, guid: a0ad41cad1b93ce409fa177e80bea538, type: 3}
+    baseValue: 3
+    levelUpValue: 0.15
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 6
+    index: 6
+    rarity: 2
+    displayName: "\uC804\uB9AC\uD488 \uC9C0\uB3C4"
+    description: "\uC2A4\uD14C\uC774\uC9C0 \uD074\uB9AC\uC5B4 \uBCF4\uC0C1 \uACE8\uB4DC/\uC2A4\uD06C\uB864
+      +{0}%"
+    example: "\uACE8\uB4DC 1,000 \uBCF4\uC0C1 \uD074\uB9AC\uC5B4 \uC2DC 1,050 \uD68D\uB4DD"
+    icon: {fileID: 21300000, guid: 83e88dbc83cfff3479d39909103d6109, type: 3}
+    baseValue: 5
+    levelUpValue: 0.5
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 7
+    index: 7
+    rarity: 3
+    displayName: "\uBD88\uC528 \uD56D\uC544\uB9AC"
+    description: "Fire/King Fire \uD3ED\uBC1C \uBC94\uC704 +{0}%, \uD3ED\uBC1C \uB300\uC0C1
+      +{1}"
+    example: "Fire \uD3ED\uBC1C\uC774 \uB354 \uB113\uC5B4\uC9C0\uACE0 \uB9DE\uCD9C
+      \uC218 \uC788\uB294 \uC801\uC774 \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: 4b42c2ff51885454cbc6926382161f77, type: 3}
+    baseValue: 10
+    levelUpValue: 0.5
+    baseSecondaryValue: 1
+    levelUpSecondaryValue: 0.05
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 8
+    index: 8
+    rarity: 3
+    displayName: "\uC11C\uB9AC\uBABB"
+    description: "Ice\uB85C \uB454\uD654\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574
+      +{0}%"
+    example: "Ice\uC5D0 \uB9DE\uC544 \uB290\uB824\uC9C4 \uC801\uC5D0\uAC8C \uB2E4\uB978
+      \uC8FC\uC0AC\uC704 \uD53C\uD574\uB3C4 \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: 9d0dd226bf8d59748be6818df0b30442, type: 3}
+    baseValue: 8
+    levelUpValue: 0.5
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 9
+    index: 9
+    rarity: 3
+    displayName: "\uD53C\uB8B0\uCE68 \uACE0\uB9AC"
+    description: "Thunder/King Thunder \uC5F0\uC1C4 \uB300\uC0C1 +{0}"
+    example: "Thunder\uAC00 2\uBA85\uC5D0\uAC8C \uD295\uAE30\uB358 \uC0C1\uD669\uC774\uBA74
+      3\uBA85\uC5D0\uAC8C \uD295\uAE40"
+    icon: {fileID: 21300000, guid: 1f169f8c88b6b8e438d7fb5762c0f423, type: 3}
+    baseValue: 1
+    levelUpValue: 0.05
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 10
+    index: 10
+    rarity: 3
+    displayName: "\uB3C5\uD5A5\uB85C"
+    description: "Poison \uC0C1\uD0DC\uC758 \uC801\uC774 \uC8FD\uC73C\uBA74 \uC8FC\uBCC0
+      \uC801 {0}\uBA85\uC5D0\uAC8C \uB3C5 \uC804\uC774"
+    example: "\uB3C5\uC5D0 \uAC78\uB9B0 \uC801\uC774 \uC8FD\uC73C\uBA74 \uAC00\uAE4C\uC6B4
+      \uC801\uB3C4 \uB3C5\uC5D0 \uAC78\uB9BC"
+    icon: {fileID: 21300000, guid: ae4e15ce6ba36ff4b84f0c2eab2437b6, type: 3}
+    baseValue: 1
+    levelUpValue: 0.05
+    baseSecondaryValue: 1
+    levelUpSecondaryValue: 0.02
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 11
+    index: 11
+    rarity: 3
+    displayName: "\uD68C\uC624\uB9AC \uB2FB"
+    description: "Tornado\uB85C \uB04C\uB9B0 \uC801\uC740 {2}\uCD08\uAC04 \uBC1B\uB294
+      \uD53C\uD574 +{0}%"
+    example: "\uD68C\uC624\uB9AC\uC5D0 \uB04C\uB9B0 \uC801\uC5D0\uAC8C \uC7A0\uC2DC
+      \uB3D9\uC548 \uBAA8\uB4E0 \uD53C\uD574 \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: 02ea79fe7a41f9b42bf8cba19cd8a7bb, type: 3}
+    baseValue: 8
+    levelUpValue: 0.5
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 3
+    levelUpDuration: 0.1
+  - relicId: 12
+    index: 12
+    rarity: 3
+    displayName: "\uB9C8\uBE44 \uBC14\uB298"
+    description: "Stun \uD655\uB960 +{0}%, \uAE30\uC808\uD55C \uC801\uC774 \uBC1B\uB294
+      \uD53C\uD574 +{1}%"
+    example: "\uAE30\uC808 \uD655\uB960\uC774 \uC624\uB974\uACE0 \uAE30\uC808 \uC911\uC778
+      \uC801\uC5D0\uAC8C \uD53C\uD574 \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: 3496deea7b0297c429502cceb0940d7a, type: 3}
+    baseValue: 5
+    levelUpValue: 0.25
+    baseSecondaryValue: 10
+    levelUpSecondaryValue: 0.5
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 13
+    index: 13
+    rarity: 3
+    displayName: "\uADE0\uC5F4 \uB9DD\uCE58"
+    description: "ArmorBreak \uBC29\uC5B4 \uAC10\uC18C\uB7C9 +{0}%p, \uC9C0\uC18D\uC2DC\uAC04
+      +{2}\uCD08"
+    example: "\uBC29\uC5B4 \uAC10\uC18C 30% \uD6A8\uACFC\uAC00 35%\uAC00 \uB418\uACE0
+      \uB354 \uC624\uB798 \uC720\uC9C0"
+    icon: {fileID: 21300000, guid: b1efef12f5b16c44bbad27be41fbb523, type: 3}
+    baseValue: 5
+    levelUpValue: 0.25
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 1
+    levelUpDuration: 0.05
+  - relicId: 14
+    index: 14
+    rarity: 3
+    displayName: "\uC21C\uD48D \uAE43\uD138"
+    description: "Wind \uBC00\uCE58\uAE30 \uD655\uB960 +{0}%, \uBC00\uB9B0 \uC801\uC774
+      \uBC1B\uB294 \uD53C\uD574 +{1}%"
+    example: "Wind\uB85C \uBC00\uB9B0 \uC801\uC5D0\uAC8C \uC7A0\uC2DC \uB3D9\uC548
+      \uD53C\uD574 \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: e11eefb33f95bb24ca34892190844a3e, type: 3}
+    baseValue: 8
+    levelUpValue: 0.4
+    baseSecondaryValue: 8
+    levelUpSecondaryValue: 0.5
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 15
+    index: 15
+    rarity: 4
+    displayName: "\uD569\uC131 \uBCF4\uD5D8\uC99D"
+    description: "\uC8FC\uC0AC\uC704 \uD569\uC131 \uC2DC {0}% \uD655\uB960\uB85C
+      SP +{1} \uD68D\uB4DD"
+    example: "\uC8FC\uC0AC\uC704 \uD569\uC131 \uD6C4 \uBC1C\uB3D9\uD558\uBA74 SP
+      \uD68D\uB4DD"
+    icon: {fileID: 21300000, guid: c0dc270c5af9bf04396b6f2a0313f458, type: 3}
+    baseValue: 10
+    levelUpValue: 0.5
+    baseSecondaryValue: 5
+    levelUpSecondaryValue: 1
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 16
+    index: 16
+    rarity: 4
+    displayName: "\uC30D\uB465\uC774 \uC18C\uD658\uC11D"
+    description: "\uC8FC\uC0AC\uC704 \uC18C\uD658 \uC2DC {0}% \uD655\uB960\uB85C
+      \uAC19\uC740 \uD0C0\uC785 1\uC131 \uC8FC\uC0AC\uC704 \uCD94\uAC00 \uC0DD\uC131"
+    example: "Fire\uB97C \uC18C\uD658\uD588\uB294\uB370 \uBC1C\uB3D9\uD558\uBA74
+      Fire 1\uC131\uC774 \uD558\uB098 \uB354 \uC0DD\uC131"
+    icon: {fileID: 21300000, guid: 69aac7843df1de440b54f3676eabb6c3, type: 3}
+    baseValue: 8
+    levelUpValue: 0.4
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 17
+    index: 17
+    rarity: 4
+    displayName: "\uB531 \uD55C \uB300"
+    description: "\uAC01 \uC6E8\uC774\uBE0C\uB9C8\uB2E4 \uCCAB \uC8FC\uC0AC\uC704
+      \uACF5\uACA9 \uCD5C\uC885 \uD53C\uD574 +{0}%"
+    example: "\uC6E8\uC774\uBE0C \uCCAB \uACF5\uACA9 100 \uD53C\uD574\uAC00 130 \uD53C\uD574\uB85C
+      \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: 93892cd74a3823f4db43353f14b9fb30, type: 3}
+    baseValue: 30
+    levelUpValue: 2
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 18
+    index: 18
+    rarity: 4
+    displayName: "\uD589\uC6B4\uC758 \uC190\uC9D3"
+    description: "\uC8FC\uC0AC\uC704 \uC18C\uD658 \uC2DC {0}% \uD655\uB960\uB85C
+      2\uC131 \uC8FC\uC0AC\uC704 \uB4F1\uC7A5"
+    example: "Normal 1\uC131 \uB300\uC2E0 Normal 2\uC131\uC774 \uBC14\uB85C \uB4F1\uC7A5"
+    icon: {fileID: 21300000, guid: d475b96464b68f54793d08e1a0fcb32a, type: 3}
+    baseValue: 5
+    levelUpValue: 0.25
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 19
+    index: 19
+    rarity: 4
+    displayName: "\uC655\uC758 \uC124\uACC4\uB3C4"
+    description: "\uC804\uD22C \uC911 \uCCAB \uC2E0\uD654 \uC8FC\uC0AC\uC704 \uC81C\uC791
+      \uC2DC SP +{0} \uD68D\uB4DD"
+    example: "\uCCAB King Fire \uC81C\uC791\uC5D0 \uC131\uACF5\uD558\uBA74 SP \uD68D\uB4DD"
+    icon: {fileID: 21300000, guid: b42eb67b0c46e3b4d983d46eb08616ec, type: 3}
+    baseValue: 30
+    levelUpValue: 3
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 20
+    index: 20
+    rarity: 4
+    displayName: "\uB9CC\uC11D\uC758 \uC555\uB825"
+    description: "\uBCF4\uB4DC\uAC00 \uAC00\uB4DD \uCC2C \uB3D9\uC548 \uBAA8\uB4E0
+      \uC8FC\uC0AC\uC704 \uCD5C\uC885 \uD53C\uD574 +{0}%"
+    example: "24\uCE78\uC774 \uBAA8\uB450 \uCC28 \uC788\uC73C\uBA74 \uBAA8\uB4E0
+      \uC8FC\uC0AC\uC704 \uD53C\uD574 \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: 405711b3a39dbec449b84a390e882859, type: 3}
+    baseValue: 15
+    levelUpValue: 0.75
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 21
+    index: 21
+    rarity: 5
+    displayName: "\uC120\uC81C \uBC30\uCE58"
+    description: "\uC804\uD22C \uC2DC\uC791 \uC2DC \uB79C\uB364 \uAE30\uBCF8 \uC8FC\uC0AC\uC704
+      {0}\uC131 1\uAC1C \uC9C0\uAE09"
+    example: "\uC804\uD22C \uC2DC\uC791\uACFC \uB3D9\uC2DC\uC5D0 Fire 2\uC131 \uD558\uB098\uAC00
+      \uBCF4\uB4DC\uC5D0 \uC0DD\uC131"
+    icon: {fileID: 21300000, guid: 1e0e1e6cbde338744ac15cd91a0ea2d3, type: 3}
+    baseValue: 2
+    levelUpValue: 0
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 3
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 22
+    index: 22
+    rarity: 5
+    displayName: "\uD589\uC6B4\uC758 \uCD08\uB300\uC7A5"
+    description: "\uC8FC\uC0AC\uC704 \uC18C\uD658 \uC2DC {0}% \uD655\uB960\uB85C
+      \uC774\uBC88 \uC18C\uD658\uC740 \uBE44\uC6A9 \uC99D\uAC00 \uD69F\uC218\uC5D0
+      \uD3EC\uD568\uB418\uC9C0 \uC54A\uC74C"
+    example: "\uC18C\uD658 \uBE44\uC6A9 10\uC5D0\uC11C \uC18C\uD658\uD588\uB294\uB370
+      \uBC1C\uB3D9\uD558\uBA74 \uB2E4\uC74C \uBE44\uC6A9\uB3C4 10 \uC720\uC9C0"
+    icon: {fileID: 21300000, guid: 0c75fac416c07ce4bbea8088bfe18302, type: 3}
+    baseValue: 10
+    levelUpValue: 0.5
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 23
+    index: 23
+    rarity: 5
+    displayName: "\uC655\uAD00 \uACF5\uBA85"
+    description: "King \uACC4\uC5F4 \uC2E0\uD654 \uC8FC\uC0AC\uC704\uAC00 \uC788\uC73C\uBA74
+      \uAC19\uC740 \uC18D\uC131 \uAE30\uBCF8 \uC8FC\uC0AC\uC704 \uCD5C\uC885 \uD53C\uD574
+      +{0}%"
+    example: "King Fire\uAC00 \uC788\uC73C\uBA74 Fire \uC8FC\uC0AC\uC704 \uD53C\uD574
+      \uC99D\uAC00"
+    icon: {fileID: 21300000, guid: ed4142a65fd3d22418d7c3c52b0e4ed4, type: 3}
+    baseValue: 20
+    levelUpValue: 1
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0
+  - relicId: 24
+    index: 24
+    rarity: 5
+    displayName: "\uCD5C\uD6C4\uC758 \uC131\uBCBD"
+    description: "\uBCBD\uC774 \uCC98\uC74C \uD30C\uAD34\uB420 \uB54C \uCCB4\uB825
+      1\uB85C \uB9CC\uB4E4\uBA70, \uD574\uB2F9 \uC6E8\uC774\uBE0C \uB3D9\uC548 \uBAA8\uB4E0
+      \uC8FC\uC0AC\uC704 \uCFE8\uB2E4\uC6B4 {0}% \uAC10\uC18C"
+    example: "\uBCBD\uC774 \uCC98\uC74C\uC73C\uB85C \uD30C\uAD34\uB420 \uC0C1\uD669\uC5D0\uC11C
+      \uCCB4\uB825 1\uB85C \uBC84\uD2F0\uACE0 \uADF8 \uC6E8\uC774\uBE0C\uAC00 \uB05D\uB0A0
+      \uB54C\uAE4C\uC9C0 \uACF5\uACA9\uC774 \uBE68\uB77C\uC9D0"
+    icon: {fileID: 21300000, guid: 01b594352dd22204dba60086b2781984, type: 3}
+    baseValue: 25
+    levelUpValue: 1
+    baseSecondaryValue: 0
+    levelUpSecondaryValue: 0
+    baseDuration: 0
+    levelUpDuration: 0

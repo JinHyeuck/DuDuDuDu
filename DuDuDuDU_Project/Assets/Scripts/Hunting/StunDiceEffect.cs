@@ -15,6 +15,8 @@ namespace OJ
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             float chancePercent = DiceMetaDataProvider.GetStunChancePercent(level);
+            if (RelicManager.Instance != null)
+                chancePercent += RelicManager.Instance.GetStunChanceBonusPercent();
             if (Random.value * 100f > chancePercent)
                 return;
 
@@ -22,6 +24,8 @@ namespace OJ
             target.ApplyStun(duration);
             if (level >= 12)
                 target.ApplyStunDamageTakenBonus(20, duration);
+            if (RelicManager.Instance != null)
+                target.ApplyRelicDamageTakenBonus(RelicManager.Instance.GetStunDamageTakenBonusPercent(), duration);
             PlayEffectAt(DiceType, target.transform.position);
         }
     }

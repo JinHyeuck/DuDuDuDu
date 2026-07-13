@@ -41,6 +41,7 @@ namespace OJ
         public PointMetadataDatabase PointMetadataDatabase;
         public DiceMetaDataDatabase DiceMetaDataDatabase;
         public GemDefinitionDatabase GemDefinitionDatabase;
+        public RelicDatabase RelicDatabase;
         public StageDatabase StageDatabase;
         [FormerlySerializedAs("ChapterRewardDatabase")]
         public StageRewardDatabase StageRewardDatabase;

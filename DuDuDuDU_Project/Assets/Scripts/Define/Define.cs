@@ -75,6 +75,7 @@ namespace OJ
         Dia,
         Stamina,
         Coin,
+        RelicTicket,
         NormalScroll = 100,
         FireScroll,
         IceScroll,

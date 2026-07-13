@@ -114,18 +114,23 @@ namespace OJ
 
             currentSP -= summonCost;
             int spentCost = summonCost;
-            summonsSinceLastCostIncrease++;
-            if (summonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
+            bool skipCostIncrease = RelicManager.Instance != null && RelicManager.Instance.ShouldSkipSummonCostIncrease();
+            if (!skipCostIncrease)
             {
-                summonCost++;
-                summonsSinceLastCostIncrease = 0;
+                summonsSinceLastCostIncrease++;
+                if (summonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
+                {
+                    summonCost++;
+                    summonsSinceLastCostIncrease = 0;
+                }
             }
             UpdateSPUI();
 
             DiceType type = summonable[Random.Range(0, summonable.Count)];
-            int star = 1;
+            int star = RelicManager.Instance != null ? RelicManager.Instance.RollSummonStar() : 1;
             DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
+            RelicManager.Instance?.TrySpawnTwinDice(type);
             RunHistoryManager.Instance?.RecordSummon(type, star, GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : 0, spentCost, currentSP);
         }
 
