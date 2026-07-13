@@ -78,6 +78,12 @@ namespace OJ
             }
         }
 
+        public void VisibleName(bool visible)
+        {
+            if (nameText != null)
+                nameText.gameObject.SetActive(visible);
+        }
+
         public void SetSelected(bool selected)
         {
             if (selectedFrame != null)
