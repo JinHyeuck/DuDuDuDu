@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,7 @@ namespace OJ
 
         private RelicDefinition definition;
         private System.Action<RelicDefinition> clickCallback;
+        private Coroutine receiveAnimationCoroutine;
 
         public RelicDefinition Definition => definition;
 
@@ -90,10 +92,51 @@ namespace OJ
                 selectedFrame.SetActive(selected);
         }
 
+        public void PlayReceiveAnimation()
+        {
+            if (!gameObject.activeInHierarchy)
+                return;
+
+            if (receiveAnimationCoroutine != null)
+                StopCoroutine(receiveAnimationCoroutine);
+
+            receiveAnimationCoroutine = StartCoroutine(CoPlayReceiveAnimation());
+        }
+
         private void HandleClick()
         {
             if (definition != null)
                 clickCallback?.Invoke(definition);
+        }
+
+        private IEnumerator CoPlayReceiveAnimation()
+        {
+            Transform cachedTransform = transform;
+            Vector3 originScale = cachedTransform.localScale;
+            Vector3 punchScale = originScale * 1.16f;
+
+            yield return CoScale(cachedTransform, originScale, punchScale, 0.12f);
+            yield return CoScale(cachedTransform, punchScale, originScale, 0.16f);
+            yield return CoScale(cachedTransform, originScale, originScale * 1.07f, 0.08f);
+            yield return CoScale(cachedTransform, originScale * 1.07f, originScale, 0.10f);
+
+            cachedTransform.localScale = originScale;
+            receiveAnimationCoroutine = null;
+        }
+
+        private static IEnumerator CoScale(Transform target, Vector3 from, Vector3 to, float duration)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                t = 1f - Mathf.Pow(1f - t, 3f);
+                target.localScale = Vector3.LerpUnclamped(from, to, t);
+                yield return null;
+            }
+
+            target.localScale = to;
         }
     }
 }

@@ -344,7 +344,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -744,7 +744,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1541,7 +1541,7 @@ MonoBehaviour:
   detailPopupCloseButton: {fileID: 2075165927348509464}
   detailPreviousButton: {fileID: 3136984384017461112}
   detailNextButton: {fileID: 7987977192174347876}
-  detailRelicElement: {fileID: 6528957554945147398}
+  detailRelicElement: {fileID: 2299036020683715517}
   detailBackgroundImage: {fileID: 0}
   detailIconImage: {fileID: 0}
   detailNameText: {fileID: 0}
@@ -1704,7 +1704,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4294960839
   m_fontColor: {r: 0.78, g: 0.9, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1717,7 +1717,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1907,7 +1907,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 4ee60cfcffaff5f46998243efe175303, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 3de2857110fb44e45b3419c08b2cbabb, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2056,7 +2056,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &20452736068783495
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2069,7 +2069,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4857636102429004524}
+  - {fileID: 438431454768210775}
   - {fileID: 6688597004860829450}
   - {fileID: 1444091168150228025}
   - {fileID: 4382615281405101531}
@@ -2250,7 +2250,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -2513,7 +2513,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 0.2
---- !u!1001 &5557443738707315867
+--- !u!1001 &602449888557120800
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -2524,6 +2524,10 @@ PrefabInstance:
     - target: {fileID: 342556407156661596, guid: bc54da2fbba40f243974c0d4e8723ba3, type: 3}
       propertyPath: m_Name
       value: UIRelicElement
+      objectReference: {fileID: 0}
+    - target: {fileID: 342556407156661596, guid: bc54da2fbba40f243974c0d4e8723ba3, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1029578215539777143, guid: bc54da2fbba40f243974c0d4e8723ba3, type: 3}
       propertyPath: m_Pivot.x
@@ -2610,15 +2614,15 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bc54da2fbba40f243974c0d4e8723ba3, type: 3}
---- !u!224 &4857636102429004524 stripped
+--- !u!224 &438431454768210775 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1029578215539777143, guid: bc54da2fbba40f243974c0d4e8723ba3, type: 3}
-  m_PrefabInstance: {fileID: 5557443738707315867}
+  m_PrefabInstance: {fileID: 602449888557120800}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6528957554945147398 stripped
+--- !u!114 &2299036020683715517 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1710107745744948893, guid: bc54da2fbba40f243974c0d4e8723ba3, type: 3}
-  m_PrefabInstance: {fileID: 5557443738707315867}
+  m_PrefabInstance: {fileID: 602449888557120800}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1

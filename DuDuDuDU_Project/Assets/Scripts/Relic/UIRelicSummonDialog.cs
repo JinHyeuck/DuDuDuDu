@@ -16,6 +16,7 @@ namespace OJ
         [SerializeField] private TMP_Text guideText;
 
         private RelicSummonResult result;
+        private System.Action<RelicSummonResult> closeCallback;
         private int currentStepIndex;
         private bool revealed;
 
@@ -31,9 +32,10 @@ namespace OJ
                 tapButton.onClick.RemoveListener(HandleTap);
         }
 
-        public void Open(RelicSummonResult summonResult)
+        public void Open(RelicSummonResult summonResult, System.Action<RelicSummonResult> onClosed = null)
         {
             result = summonResult;
+            closeCallback = onClosed;
             currentStepIndex = 0;
             revealed = false;
             Enter();
@@ -63,7 +65,11 @@ namespace OJ
                 return;
             }
 
+            RelicSummonResult closedResult = result;
+            System.Action<RelicSummonResult> callback = closeCallback;
+            closeCallback = null;
             Exit();
+            callback?.Invoke(closedResult);
         }
 
         private void ApplyMysteryState(Rarity rarity)

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -37,6 +38,9 @@ namespace OJ
         [SerializeField] private LobbyLayoutController lobbyLayoutController;
 
         private RelicDefinition selectedDefinition;
+        private bool deferRelicRefresh;
+        private Coroutine landingAnimationCoroutine;
+        private UIRelicElement landingAnimationElement;
 
         protected override void OnLoad()
         {
@@ -57,8 +61,8 @@ namespace OJ
 
             if (RelicManager.Instance != null)
             {
-                RelicManager.Instance.OnRelicChanged += RefreshAll;
-                RelicManager.Instance.OnSummonCountChanged += RefreshSummonCost;
+                RelicManager.Instance.OnRelicChanged += HandleRelicChanged;
+                RelicManager.Instance.OnSummonCountChanged += HandleSummonCountChanged;
             }
 
             SetDetailPopupVisible(false);
@@ -80,15 +84,18 @@ namespace OJ
 
             if (RelicManager.Instance != null)
             {
-                RelicManager.Instance.OnRelicChanged -= RefreshAll;
-                RelicManager.Instance.OnSummonCountChanged -= RefreshSummonCost;
+                RelicManager.Instance.OnRelicChanged -= HandleRelicChanged;
+                RelicManager.Instance.OnSummonCountChanged -= HandleSummonCountChanged;
             }
+
+            StopLandingAnimation();
         }
 
         protected override void OnEnter()
         {
             BuildElementsIfNeeded();
             selectedDefinition = null;
+            deferRelicRefresh = false;
             SetDetailPopupVisible(false);
 
             RefreshAll();
@@ -97,6 +104,12 @@ namespace OJ
         public override void BackKeyCall()
         {
             lobbyLayoutController?.ShowTab(LobbyTab.Home);
+        }
+
+        protected override void OnExit()
+        {
+            deferRelicRefresh = false;
+            StopLandingAnimation();
         }
 
         private void BuildElementsIfNeeded()
@@ -150,13 +163,44 @@ namespace OJ
                 return;
             }
 
+            deferRelicRefresh = true;
             if (!RelicManager.Instance.TrySummon(out RelicSummonResult result))
+            {
+                deferRelicRefresh = false;
+                RefreshSummonCost();
+                return;
+            }
+
+            summonDialog.Load_Element();
+            summonDialog.Open(result, HandleSummonDialogClosed);
+        }
+
+        private void HandleRelicChanged()
+        {
+            if (deferRelicRefresh)
                 return;
 
-            selectedDefinition = result.Definition;
             RefreshAll();
-            summonDialog.Load_Element();
-            summonDialog.Open(result);
+        }
+
+        private void HandleSummonCountChanged()
+        {
+            if (deferRelicRefresh)
+                return;
+
+            RefreshSummonCost();
+        }
+
+        private void HandleSummonDialogClosed(RelicSummonResult result)
+        {
+            deferRelicRefresh = false;
+
+            if (!isEnter || dialogView == null || !dialogView.activeInHierarchy)
+                return;
+
+            selectedDefinition = result != null ? result.Definition : null;
+            RefreshAll();
+            PlaySummonedRelicLanding(result);
         }
 
         private void RefreshAll()
@@ -184,6 +228,116 @@ namespace OJ
                     continue;
 
                 element.SetSelected(selectedDefinition != null && element.Definition.relicId == selectedDefinition.relicId);
+            }
+        }
+
+        private void PlaySummonedRelicLanding(RelicSummonResult result)
+        {
+            if (result == null || result.Definition == null)
+                return;
+
+            UIRelicElement targetElement = GetRelicElement(result.Definition.relicId);
+            if (targetElement == null)
+                return;
+
+            StopLandingAnimation();
+            landingAnimationCoroutine = StartCoroutine(CoPlaySummonedRelicLanding(result.Definition, targetElement));
+        }
+
+        private IEnumerator CoPlaySummonedRelicLanding(RelicDefinition definition, UIRelicElement targetElement)
+        {
+            RectTransform rootRt = dialogView != null ? dialogView.GetComponent<RectTransform>() : null;
+            RectTransform targetRt = targetElement != null ? targetElement.GetComponent<RectTransform>() : null;
+            if (rootRt == null || targetRt == null || relicElementPrefab == null)
+            {
+                targetElement?.PlayReceiveAnimation();
+                landingAnimationCoroutine = null;
+                yield break;
+            }
+
+            yield return null;
+
+            landingAnimationElement = Instantiate(relicElementPrefab, dialogView.transform);
+            landingAnimationElement.name = "SummonedRelicLanding";
+            landingAnimationElement.Bind(definition, null);
+            landingAnimationElement.SetSelected(false);
+            landingAnimationElement.VisibleName(false);
+
+            RectTransform landingRt = landingAnimationElement.GetComponent<RectTransform>();
+            CanvasGroup canvasGroup = landingAnimationElement.gameObject.AddComponent<CanvasGroup>();
+            canvasGroup.blocksRaycasts = false;
+
+            Vector2 startPosition = Vector2.zero;
+            Vector2 endPosition = GetLocalCenter(rootRt, targetRt);
+            SetAnchor(landingRt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(160f, 190f), startPosition);
+            landingRt.localScale = Vector3.one * 2.1f;
+            landingRt.SetAsLastSibling();
+
+            const float moveDuration = 0.46f;
+            float elapsed = 0f;
+            while (elapsed < moveDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / moveDuration);
+                float eased = 1f - Mathf.Pow(1f - t, 3f);
+
+                landingRt.anchoredPosition = Vector2.LerpUnclamped(startPosition, endPosition, eased);
+                landingRt.localScale = Vector3.LerpUnclamped(Vector3.one * 2.1f, Vector3.one, eased);
+                canvasGroup.alpha = t < 0.84f ? 1f : Mathf.Lerp(1f, 0.25f, (t - 0.84f) / 0.16f);
+                yield return null;
+            }
+
+            Destroy(landingAnimationElement.gameObject);
+            landingAnimationElement = null;
+            targetElement.PlayReceiveAnimation();
+            landingAnimationCoroutine = null;
+        }
+
+        private UIRelicElement GetRelicElement(RelicId relicId)
+        {
+            for (int i = 0; i < relicElements.Count; i++)
+            {
+                UIRelicElement element = relicElements[i];
+                if (element != null && element.Definition != null && element.Definition.relicId == relicId)
+                    return element;
+            }
+
+            return null;
+        }
+
+        private Vector2 GetLocalCenter(RectTransform rootRt, RectTransform targetRt)
+        {
+            Vector3[] corners = new Vector3[4];
+            targetRt.GetWorldCorners(corners);
+            Vector3 centerWorld = (corners[0] + corners[2]) * 0.5f;
+
+            Camera uiCamera = GetUICamera();
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, centerWorld);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(rootRt, screenPoint, uiCamera, out Vector2 localPoint);
+            return localPoint;
+        }
+
+        private Camera GetUICamera()
+        {
+            Canvas canvas = dialogView != null ? dialogView.GetComponentInParent<Canvas>() : GetComponentInParent<Canvas>();
+            if (canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                return null;
+
+            return canvas.worldCamera;
+        }
+
+        private void StopLandingAnimation()
+        {
+            if (landingAnimationCoroutine != null)
+            {
+                StopCoroutine(landingAnimationCoroutine);
+                landingAnimationCoroutine = null;
+            }
+
+            if (landingAnimationElement != null)
+            {
+                Destroy(landingAnimationElement.gameObject);
+                landingAnimationElement = null;
             }
         }
 
