@@ -112,6 +112,7 @@ namespace OJ
             StopLandingAnimation();
         }
 
+
         private void BuildElementsIfNeeded()
         {
             if (RelicManager.Instance == null)
