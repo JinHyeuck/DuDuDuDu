@@ -65,6 +65,26 @@ namespace OJ
             return rewards;
         }
 
+        public static List<PointRewardEntry> BuildAutoBattleRewards(int stageIndex, double clearCount, int seed)
+        {
+            var rewards = new List<PointRewardEntry>();
+            if (stageIndex < 1 || clearCount <= 0d)
+                return rewards;
+
+            double safeClearCount = System.Math.Min(24d, clearCount);
+            int fullClearCount = Mathf.FloorToInt((float)safeClearCount);
+            float partialClearRatio = Mathf.Clamp01((float)(safeClearCount - fullClearCount));
+            var random = new System.Random(seed);
+
+            for (int i = 0; i < fullClearCount; i++)
+                AddAutoBattleClearRewards(rewards, stageIndex, 1f, random);
+
+            if (partialClearRatio > 0f)
+                AddAutoBattleClearRewards(rewards, stageIndex, partialClearRatio, random);
+
+            return PointRewardUtility.MergeRewards(rewards);
+        }
+
         public static int GetGuaranteedNormalGold(int stageIndex)
         {
             return 150 + GetStageBonus(stageIndex);
@@ -146,11 +166,52 @@ namespace OJ
                 rewards.Add(new PointRewardEntry(shuffled[i], amounts[i]));
         }
 
+        private static void AddAutoBattleClearRewards(
+            List<PointRewardEntry> rewards,
+            int stageIndex,
+            float multiplier,
+            System.Random random)
+        {
+            AddScaledReward(rewards, PointType.Gold, GetGuaranteedNormalGold(stageIndex), multiplier);
+
+            PointType[] elementTypes = (PointType[])ElementScrollTypes.Clone();
+            Shuffle(elementTypes, random);
+            AddScaledReward(rewards, elementTypes[0], 20, multiplier);
+            AddScaledReward(rewards, elementTypes[1], 40, multiplier);
+
+            AddScaledReward(rewards, PointType.MythicScroll, random.Next(5, 11), multiplier);
+
+            PointType equipmentType = EquipmentScrollTypes[random.Next(0, EquipmentScrollTypes.Length)];
+            AddScaledReward(rewards, equipmentType, 3, multiplier);
+        }
+
+        private static void AddScaledReward(
+            List<PointRewardEntry> rewards,
+            PointType pointType,
+            int amount,
+            float multiplier)
+        {
+            int scaledAmount = Mathf.FloorToInt(amount * Mathf.Clamp01(multiplier));
+            if (scaledAmount > 0)
+                rewards.Add(new PointRewardEntry(pointType, scaledAmount));
+        }
+
         private static void Shuffle(PointType[] values)
         {
             for (int i = 0; i < values.Length; i++)
             {
                 int swapIndex = Random.Range(i, values.Length);
+                PointType temp = values[i];
+                values[i] = values[swapIndex];
+                values[swapIndex] = temp;
+            }
+        }
+
+        private static void Shuffle(PointType[] values, System.Random random)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                int swapIndex = random.Next(i, values.Length);
                 PointType temp = values[i];
                 values[i] = values[swapIndex];
                 values[swapIndex] = temp;

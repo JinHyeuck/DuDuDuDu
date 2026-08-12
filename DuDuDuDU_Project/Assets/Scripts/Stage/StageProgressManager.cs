@@ -82,6 +82,21 @@ namespace OJ
             return Mathf.Clamp(saveData.highestUnlockedStageIndex, 1, GetMaxStageIndex());
         }
 
+        public int GetLastClearedStageIndex()
+        {
+            int lastClearedStageIndex = 0;
+            foreach (KeyValuePair<int, StageRecord> pair in stageRecords)
+            {
+                StageRecord record = pair.Value;
+                if (record == null || record.bestClearGrade <= (int)StageClearGrade.None)
+                    continue;
+
+                lastClearedStageIndex = Mathf.Max(lastClearedStageIndex, pair.Key);
+            }
+
+            return Mathf.Clamp(lastClearedStageIndex, 0, GetMaxStageIndex());
+        }
+
         public bool IsStageUnlocked(int stageIndex)
         {
             return stageIndex >= 1 && stageIndex <= GetHighestUnlockedStageIndex();
