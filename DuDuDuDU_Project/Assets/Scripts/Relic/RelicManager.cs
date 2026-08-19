@@ -635,6 +635,7 @@ namespace OJ
                 case PointType.PoisonScroll:
                 case PointType.ThunderScroll:
                 case PointType.MythicScroll:
+                case PointType.SpecialDiceCore:
                 case PointType.WeaponScroll:
                 case PointType.HelmetScroll:
                 case PointType.ArmorScroll:
