@@ -28,10 +28,18 @@ namespace OJ
         public Sprite SmallIcon;
     }
 
-        [Serializable]
-    public class StageUIResource
+    [Serializable]
+    public class StageThemeResource
     {
-        public int StageResourceId;
+        [FormerlySerializedAs("StageResourceId")]
+        public StageTheme Theme;
+
+        [Header("Battle")]
+        public Sprite MapBackground;
+        public Monster[] Monsters;
+        public Monster BossMonster;
+
+        [Header("Banners")]
         public Sprite MainBanner;
         public Sprite StarRewardBanner;
     }
@@ -50,17 +58,20 @@ namespace OJ
         public List<RarityResource> RarityResources;
         public List<EquipmentResource> EquipmentResources;
 
-        public List<StageUIResource> StageUIResources;
+        [FormerlySerializedAs("StageUIResources")]
+        public List<StageThemeResource> StageThemeResources;
 
         private Dictionary<ElementType, ElementResource> elementResourceMap = new Dictionary<ElementType, ElementResource>();
         private Dictionary<Rarity, RarityResource> rarityResourceMap = new Dictionary<Rarity, RarityResource>();
         private Dictionary<EquipmentType, EquipmentResource> equipmentResourceMap = new Dictionary<EquipmentType, EquipmentResource>();
+        private Dictionary<StageTheme, StageThemeResource> stageThemeResourceMap = new Dictionary<StageTheme, StageThemeResource>();
 
         protected override void Init()
         {
             BuildElementResourceMap();
             BuildRarityResourceMap();
             BuildEquipmentResourceMap();
+            BuildStageThemeResourceMap();
         }
 
         private void BuildElementResourceMap()
@@ -108,6 +119,21 @@ namespace OJ
             }
         }
 
+        private void BuildStageThemeResourceMap()
+        {
+            stageThemeResourceMap.Clear();
+            if (StageThemeResources == null)
+                return;
+
+            foreach (StageThemeResource resource in StageThemeResources)
+            {
+                if (resource == null)
+                    continue;
+
+                stageThemeResourceMap[resource.Theme] = resource;
+            }
+        }
+
         public ElementResource GetElementResource(ElementType elementType)
         {
             if (elementResourceMap.TryGetValue(elementType, out ElementResource elementResource))
@@ -150,36 +176,25 @@ namespace OJ
             return resource != null ? resource.SmallIcon : null;
         }
 
-        public Sprite GetStageBanner(int stageResourceId)
+        public StageThemeResource GetStageThemeResource(StageTheme theme)
         {
-            if (StageUIResources == null)
-                return null;
+            if (stageThemeResourceMap.Count == 0 && StageThemeResources != null && StageThemeResources.Count > 0)
+                BuildStageThemeResourceMap();
 
-            foreach (var stageUIResource in StageUIResources)
-            {
-                if (stageUIResource != null && stageUIResource.StageResourceId == stageResourceId)
-                {
-                    return stageUIResource.MainBanner;
-                }
-            }
-
-            return null;
+            stageThemeResourceMap.TryGetValue(theme, out StageThemeResource resource);
+            return resource;
         }
 
-        public Sprite GetStageStarRewardBanner(int stageResourceId)
+        public Sprite GetStageBanner(StageTheme theme)
         {
-            if (StageUIResources == null)
-                return null;
+            StageThemeResource resource = GetStageThemeResource(theme);
+            return resource != null ? resource.MainBanner : null;
+        }
 
-            foreach (var stageUIResource in StageUIResources)
-            {
-                if (stageUIResource != null && stageUIResource.StageResourceId == stageResourceId)
-                {
-                    return stageUIResource.StarRewardBanner;
-                }
-            }
-
-            return null;
+        public Sprite GetStageStarRewardBanner(StageTheme theme)
+        {
+            StageThemeResource resource = GetStageThemeResource(theme);
+            return resource != null ? resource.StarRewardBanner : null;
         }
     }
 }

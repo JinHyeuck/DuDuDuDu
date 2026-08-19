@@ -65,6 +65,7 @@ namespace OJ
                 stages.Add(new StageData
                 {
                     stageIndex = i,
+                    theme = (StageTheme)((i - 1) % 5),
                     totalWaves = totalWaves,
                     monstersPerWave = 20,
                     wallHp = 100,
