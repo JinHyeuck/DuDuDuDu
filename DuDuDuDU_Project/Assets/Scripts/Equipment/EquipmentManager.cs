@@ -61,7 +61,7 @@ namespace OJ
         protected override void Init()
         {
             BuildGemDefinitionsFromDatabase();
-            InitializeCollections();
+            LoadAll();
         }
 
         private void OnApplicationPause(bool pauseStatus)

@@ -11,6 +11,11 @@ namespace OJ
 
         public event Action<DiceType, int> OnDiceLevelChanged;
 
+        protected override void Init()
+        {
+            LoadAll();
+        }
+
         private void OnApplicationPause(bool pauseStatus)
         {
             if (pauseStatus)
@@ -39,7 +44,10 @@ namespace OJ
             OnDiceLevelChanged?.Invoke(diceType, clamped);
 
             if (saveNow)
+            {
                 Save(diceType);
+                PlayerPrefs.Save();
+            }
         }
 
         public bool TryLevelUp(DiceType diceType)

@@ -14,8 +14,8 @@ namespace OJ
 
         private IEnumerator CoMoveToLobby()
         {
-            DiceLevelManager.Instance.LoadAll();
-            EquipmentManager.Instance.LoadAll();
+            _ = DiceLevelManager.Instance;
+            _ = EquipmentManager.Instance;
             yield return new WaitForSecondsRealtime(staySeconds);
             SceneFlowManager.LoadLobby();
         }
