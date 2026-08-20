@@ -82,6 +82,7 @@ namespace OJ
         PoisonScroll,
         ThunderScroll,
         MythicScroll,
+        SpecialDiceCore,
         WeaponScroll = 200,
         HelmetScroll,
         ArmorScroll,

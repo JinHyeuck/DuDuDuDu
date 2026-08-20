@@ -13,6 +13,7 @@ namespace OJ
         private List<int> monsterIdList = new List<int>();
         private Dictionary<int, Queue<Monster>> bossMonsterPools = new Dictionary<int, Queue<Monster>>();
         private List<int> bossMonsterIdList = new List<int>();
+        private readonly HashSet<Monster> bossMonsterInstances = new HashSet<Monster>();
 
         public List<Monster> monsterPrefab;
         public List<Monster> bossMonsterPrefab;
@@ -27,6 +28,10 @@ namespace OJ
 
         private int regularSpawnCount = 0;
         private bool bossSpawnedInWave = false;
+        private List<Monster> defaultMonsterPrefabs;
+        private List<Monster> defaultBossMonsterPrefabs;
+        private bool poolsInitialized;
+        private StageTheme configuredTheme;
 
         void Awake()
         {
@@ -37,6 +42,12 @@ namespace OJ
             }
 
             Instance = this;
+            defaultMonsterPrefabs = monsterPrefab != null
+                ? new List<Monster>(monsterPrefab)
+                : new List<Monster>();
+            defaultBossMonsterPrefabs = bossMonsterPrefab != null
+                ? new List<Monster>(bossMonsterPrefab)
+                : new List<Monster>();
         }
 
         private void OnDestroy()
@@ -48,8 +59,24 @@ namespace OJ
         private void Start()
         {
             CacheSpawnCamera();
-            InitializePools(monsterPrefab, monsterPools, monsterIdList);
-            InitializePools(bossMonsterPrefab, bossMonsterPools, bossMonsterIdList);
+            StageTheme theme = GameManager.Instance != null && GameManager.Instance.CurrentStageData != null
+                ? GameManager.Instance.CurrentStageData.theme
+                : StageTheme.DarkForest;
+            ConfigureTheme(theme);
+        }
+
+        public void ConfigureTheme(StageTheme theme)
+        {
+            if (poolsInitialized && configuredTheme == theme)
+                return;
+
+            StageThemeResource resource = StaticResource.Instance.GetStageThemeResource(theme);
+            monsterPrefab = BuildRegularPrefabList(resource);
+            bossMonsterPrefab = BuildBossPrefabList(resource);
+
+            RebuildPools();
+            configuredTheme = theme;
+            poolsInitialized = true;
         }
 
         public void PlayWave()
@@ -77,6 +104,12 @@ namespace OJ
 
         public Monster GetMonster()
         {
+            if (monsterIdList.Count == 0)
+            {
+                Debug.LogError($"No regular monsters are configured for stage theme {configuredTheme}.");
+                return null;
+            }
+
             int monsterIdx = monsterIdList[Random.Range(0, monsterIdList.Count)];
 
             Queue<Monster> pool = monsterPools[monsterIdx];
@@ -108,7 +141,9 @@ namespace OJ
             }
 
             GameObject obj = Instantiate(bossMonsterPrefab.Find(x => x.MonsterID == monsterIdx).gameObject);
-            return obj.GetComponent<Monster>();
+            Monster spawnedBoss = obj.GetComponent<Monster>();
+            bossMonsterInstances.Add(spawnedBoss);
+            return spawnedBoss;
         }
 
         public void PoolMonster(Monster monster)
@@ -119,7 +154,7 @@ namespace OJ
             monster.gameObject.SetActive(false);
 
             if (bossMonsterPools.TryGetValue(monster.MonsterID, out Queue<Monster> bossPool)
-                && ((monster is BossMonster) || !monsterPools.ContainsKey(monster.MonsterID)))
+                && bossMonsterInstances.Contains(monster))
             {
                 bossPool.Enqueue(monster);
                 return;
@@ -146,6 +181,9 @@ namespace OJ
             Vector2 spawnPos = GetSpawnPosition();
 
             Monster monster = GetMonster();
+            if (monster == null)
+                return;
+
             monster.OnSpawn();
             monster.transform.position = spawnPos;
             monster.transform.rotation = Quaternion.identity;
@@ -160,6 +198,9 @@ namespace OJ
         {
             Vector2 spawnPos = GetSpawnPosition();
             Monster monster = GetBossMonster();
+            if (monster == null)
+                return;
+
             monster.OnSpawn();
             monster.transform.position = spawnPos;
             monster.transform.rotation = Quaternion.identity;
@@ -170,7 +211,11 @@ namespace OJ
             bossSpawnedInWave = true;
         }
 
-        private void InitializePools(List<Monster> prefabs, Dictionary<int, Queue<Monster>> pools, List<int> idList)
+        private void InitializePools(
+            List<Monster> prefabs,
+            Dictionary<int, Queue<Monster>> pools,
+            List<int> idList,
+            bool isBossPool)
         {
             if (prefabs == null)
                 return;
@@ -188,9 +233,68 @@ namespace OJ
                 {
                     GameObject obj = Instantiate(monster.gameObject);
                     obj.SetActive(false);
-                    pools[monster.MonsterID].Enqueue(obj.GetComponent<Monster>());
+                    Monster instance = obj.GetComponent<Monster>();
+                    pools[monster.MonsterID].Enqueue(instance);
+                    if (isBossPool)
+                        bossMonsterInstances.Add(instance);
                 }
             }
+        }
+
+        private void RebuildPools()
+        {
+            DestroyPooledMonsters(monsterPools);
+            DestroyPooledMonsters(bossMonsterPools);
+            monsterPools.Clear();
+            bossMonsterPools.Clear();
+            monsterIdList.Clear();
+            bossMonsterIdList.Clear();
+            bossMonsterInstances.Clear();
+
+            InitializePools(monsterPrefab, monsterPools, monsterIdList, false);
+            InitializePools(bossMonsterPrefab, bossMonsterPools, bossMonsterIdList, true);
+        }
+
+        private static void DestroyPooledMonsters(Dictionary<int, Queue<Monster>> pools)
+        {
+            foreach (Queue<Monster> pool in pools.Values)
+            {
+                while (pool.Count > 0)
+                {
+                    Monster monster = pool.Dequeue();
+                    if (monster != null)
+                        Destroy(monster.gameObject);
+                }
+            }
+        }
+
+        private List<Monster> BuildRegularPrefabList(StageThemeResource resource)
+        {
+            var result = new List<Monster>();
+            if (resource != null && resource.Monsters != null)
+            {
+                for (int i = 0; i < resource.Monsters.Length; i++)
+                {
+                    if (resource.Monsters[i] != null)
+                        result.Add(resource.Monsters[i]);
+                }
+            }
+
+            if (result.Count == 0)
+                result.AddRange(defaultMonsterPrefabs);
+
+            return result;
+        }
+
+        private List<Monster> BuildBossPrefabList(StageThemeResource resource)
+        {
+            var result = new List<Monster>();
+            if (resource != null && resource.BossMonster != null)
+                result.Add(resource.BossMonster);
+            else
+                result.AddRange(defaultBossMonsterPrefabs);
+
+            return result;
         }
 
         private bool IsWaveSpawnCompleted()

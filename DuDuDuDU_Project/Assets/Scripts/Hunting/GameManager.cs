@@ -22,6 +22,8 @@ namespace OJ
         public int CurrentWaveIndex { get; private set; } = 0;
         public StageData CurrentStageData { get; private set; }
 
+        [Header("Stage Theme")]
+        [SerializeField] private SpriteRenderer stageBackground;
         [Header("Craft")]
         [SerializeField] private UIDiceCraftProgressDialog craftProgressDialog;
         [Header("Reward Preview")]
@@ -269,6 +271,8 @@ namespace OJ
                 CurrentStageData = new StageData();
             }
 
+            ApplyStageTheme();
+
             WallHp = CurrentStageData.wallHp;
             WaveMonsterCount = CurrentStageData.monstersPerWave;
             CurrentWaveIndex = 0;
@@ -281,6 +285,15 @@ namespace OJ
             UIDiceSummonSystem.Instance?.SetStageStartSp(CurrentStageData.initialSP + startSpBonus);
             RunHistoryManager.Instance?.StartRun(CurrentStageData, WallHp);
             UpdateWaveText();
+        }
+
+        private void ApplyStageTheme()
+        {
+            StageThemeResource themeResource = StaticResource.Instance.GetStageThemeResource(CurrentStageData.theme);
+            if (stageBackground != null && themeResource != null && themeResource.MapBackground != null)
+                stageBackground.sprite = themeResource.MapBackground;
+
+            MonsterSpawner.Instance?.ConfigureTheme(CurrentStageData.theme);
         }
 
         private IEnumerator CoApplyStageStartRelics()

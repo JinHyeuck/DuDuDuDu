@@ -135,7 +135,8 @@ namespace OJ
 
             if (selectedStageImage != null)
             {
-                Sprite stageSprite = StaticResource.Instance.GetStageBanner(stageData != null ? stageData.stageResourceId : 0);
+                Sprite stageSprite = StaticResource.Instance.GetStageBanner(
+                    stageData != null ? stageData.theme : StageTheme.DarkForest);
                 selectedStageImage.sprite = stageSprite;
             }
 

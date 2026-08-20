@@ -4726,6 +4726,7 @@ MonoBehaviour:
   inGameState: 0
   WaveMonsterCount: 20
   WaveMonsterDeadCount: 0
+  stageBackground: {fileID: 2068141307}
   craftProgressDialog: {fileID: 769307361}
   waveRewardPreviewDialog: {fileID: 2001001002}
   stageResultDialog: {fileID: 2001002002}
@@ -16486,7 +16487,7 @@ GameObject:
   - component: {fileID: 2068141308}
   - component: {fileID: 2068141307}
   m_Layer: 15
-  m_Name: InGameBG
+  m_Name: StageBackground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -16536,7 +16537,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: -17
-  m_Sprite: {fileID: 21300000, guid: 75695befe1c2f904ba48cce7ca559758, type: 3}
+  m_Sprite: {fileID: 21300000, guid: cc5a7c5c010830a4eae90fe42d39995f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -16556,8 +16557,8 @@ Transform:
   m_GameObject: {fileID: 2068141306}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.4, y: 0.9, z: 0}
-  m_LocalScale: {x: 2.1, y: 2.1, z: 2.1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.6, y: 0.6, z: 0.6}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}

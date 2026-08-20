@@ -93,6 +93,8 @@ namespace OJ
         protected override void OnExit()
         {
             Unsubscribe();
+
+            confirmDialog?.Exit();
         }
 
         public override void BackKeyCall()

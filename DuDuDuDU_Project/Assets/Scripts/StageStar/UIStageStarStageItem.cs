@@ -52,7 +52,7 @@ namespace OJ
             if (stageTitleText != null)
                 stageTitleText.SetText(StageData.GetStageDisplayName(stageData.stageIndex));
 
-            ApplyBanner(stageData.stageResourceId);
+            ApplyBanner(stageData.theme);
 
             if (minimumRow != null)
                 minimumRow.Bind(StageClearGrade.Minimum, bestGrade, minimumConditionText);
@@ -78,9 +78,9 @@ namespace OJ
                 startButtonText.SetText(isUnlocked ? "\uAC8C\uC784 \uC2DC\uC791" : "\uC7A0\uAE40");
         }
 
-        private void ApplyBanner(int stageResourceId)
+        private void ApplyBanner(StageTheme theme)
         {
-            Sprite sprite = StaticResource.Instance.GetStageStarRewardBanner(stageResourceId);
+            Sprite sprite = StaticResource.Instance.GetStageStarRewardBanner(theme);
             if (sprite != null)
                 bannerImage.sprite = sprite;
         }

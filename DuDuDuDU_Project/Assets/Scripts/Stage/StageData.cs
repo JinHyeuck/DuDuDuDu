@@ -1,8 +1,23 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace OJ
 {
+    public enum StageTheme
+    {
+        [InspectorName("어두운 숲")]
+        DarkForest = 0,
+        [InspectorName("얼음/눈")]
+        IceSnow = 1,
+        [InspectorName("화산")]
+        Volcano = 3,
+        [InspectorName("사막")]
+        Desert = 2,
+        [InspectorName("공동묘지")]
+        Cemetery = 4,
+    }
+
     public enum StageClearGrade
     {
         None = 0,
@@ -24,7 +39,8 @@ namespace OJ
     public class StageData
     {
         [Min(1)] public int stageIndex = 1;
-        [Min(1)] public int stageResourceId = 0;
+        [FormerlySerializedAs("stageResourceId")]
+        public StageTheme theme = StageTheme.DarkForest;
         [Min(1)] public int totalWaves = 8;
         [Min(1)] public int monstersPerWave = 20;
         [Min(1)] public int wallHp = 100;
