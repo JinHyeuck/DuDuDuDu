@@ -636,36 +636,36 @@ namespace OJ
                     (6, "적을 2초 동안 흡입"),
                     (9, "쿨타임 20% 감소"),
                     (12, "최종 대미지 30% 증가")
-                }, new [] { ElementType.Normal, ElementType.Dark, ElementType.Water },
-                    false, false, false, (DiceType.Normal, 2, 1), (DiceType.Ice, 1, 2), (DiceType.Poison, 1, 1)) },
+                }, new [] { ElementType.Normal, ElementType.Water },
+                    false, false, false, (DiceType.Normal, 2, 1), (DiceType.Ice, 2, 1)) },
                 { DiceType.Stun, CreateDefault(DiceType.Stun, "Stun Dice", "적 1명에게 8 + (레벨 x 2) 대미지를 주고 40% 확률로 스턴시킵니다.", 8, 2, 140, 58, 10, 2, 3.5f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "스턴 확률 10% 증가"),
                     (9, "쿨타임 10% 감소"),
                     (12, "스턴된 적이 받는 피해 20% 증가")
-                }, new [] { ElementType.Dark, ElementType.Water },
-                    false, false, false, (DiceType.Thunder, 2, 1), (DiceType.Poison, 1, 1), (DiceType.Ice, 1, 1)) },
+                }, new [] { ElementType.Light, ElementType.Dark },
+                    false, false, false, (DiceType.Thunder, 2, 1), (DiceType.Poison, 2, 1)) },
                 { DiceType.ArmorBreak, CreateDefault(DiceType.ArmorBreak, "Armor Break Dice", "적 1명에게 10 + (레벨 x 3) 대미지를 주고 방어력을 30% 감소시킵니다.", 10, 3, 150, 64, 11, 2, 3.2f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "방어력 감소 10% 증가"),
                     (9, "쿨타임 20% 감소"),
                     (12, "방깎 상태 적이 받는 피해 10% 증가")
-                }, new [] { ElementType.Dark, ElementType.Fire },
+                }, new [] { ElementType.Fire, ElementType.Dark },
                     false, false, false, (DiceType.Fire, 2, 1), (DiceType.Poison, 2, 1)) },
                 { DiceType.Wind, CreateDefault(DiceType.Wind, "Wind Dice", "적 2명을 40 + (레벨 x 1)% 확률로 밀어냅니다. 대미지는 없습니다.", 0, 0, 135, 56, 9, 2, 2.9f, new []{
                     (3, "밀어내는 거리 10% 증가"),
                     (6, "밀리는 적이 받는 피해 10% 증가"),
                     (9, "밀어내기 확률 10% 추가 증가"),
                     (12, "밀어내는 대상 +1")
-                }, new [] { ElementType.Water, ElementType.Light },
-                    false, false, false, (DiceType.Ice, 2, 1), (DiceType.Thunder, 1, 1), (DiceType.Normal, 1, 1)) },
+                }, new [] { ElementType.Water, ElementType.Fire },
+                    false, false, false, (DiceType.Ice, 2, 1), (DiceType.Fire, 2, 1)) },
                 { DiceType.Time, CreateDefault(DiceType.Time, "Time Dice", "다른 무작위 다이스 2개의 남은 쿨타임을 10 + (레벨 x 1)% 감소시킵니다. 대미지는 없습니다.", 0, 0, 170, 70, 12, 3, 4.0f, new []{
                     (3, "쿨타임 감소량 5% 추가 증가"),
                     (6, "대상 +1"),
                     (9, "자신의 쿨타임 10% 감소"),
                     (12, "쿨타임 감소량 10% 추가 증가")
-                }, new [] { ElementType.Light, ElementType.Normal },
-                    false, false, false, (DiceType.Normal, 2, 1), (DiceType.Thunder, 2, 1), (DiceType.Ice, 2, 1)) },
+                }, new [] { ElementType.Normal, ElementType.Light },
+                    false, false, false, (DiceType.Normal, 2, 1), (DiceType.Thunder, 2, 1)) },
                 { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "적 1명과 주변 적에게 첫 타 70%, 이후 0.2초 간격으로 10%씩 3연타를 가합니다.", 104, 20, 3.0f, new []{
                     (3, "최종 대미지 30% 증가"),
                     (6, "소환 중인 동안 NormalDice 최종 대미지 20% 증가"),

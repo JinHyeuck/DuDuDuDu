@@ -149,7 +149,7 @@ namespace OJ
             if (recipeText != null)
                 recipeText.SetText(lineBuilder.ToString());
             if (progressText != null)
-                progressText.SetText("{0}% ({1}/{2})", Mathf.Max(percent, calculatedPercent), readyCount, recipe.Count);
+                progressText.SetText("{0}/{1}  {2}%", readyCount, recipe.Count, Mathf.Max(percent, calculatedPercent));
             HideExtraMaterialSlots(recipe.Count);
 
             return canCraft;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -54,7 +55,26 @@ namespace OJ
                 iconImage.sprite = DiceMetaDataProvider.GetIcon(mythicType);
 
             if (percentText != null)
-                percentText.SetText("{0}%", percent);
+            {
+                IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe =
+                    DiceMetaDataProvider.GetRecipeMaterials(mythicType);
+                int readyCount = 0;
+                int requirementCount = recipe != null ? recipe.Count : 0;
+
+                if (recipe != null && DiceTypeStarManager.Instance != null)
+                {
+                    for (int i = 0; i < recipe.Count; i++)
+                    {
+                        DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
+                        if (DiceTypeStarManager.Instance.GetTypeStarCount(req.diceType, req.star) >= req.count)
+                            readyCount++;
+                    }
+                }
+
+                percentText.SetText(requirementCount > 0
+                    ? $"{readyCount}/{requirementCount}  {percent}%"
+                    : $"{percent}%");
+            }
         }
 
         public void SetSelected(bool selected)
