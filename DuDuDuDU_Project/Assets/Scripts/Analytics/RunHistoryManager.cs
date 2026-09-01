@@ -1,8 +1,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting;
+using OJ.DI;
+using OJ.Hunting;
+using OJ.Stage;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Analytics
 {
     public enum RunResultType
     {
@@ -23,7 +28,21 @@ namespace OJ
         RunEnd = 6,
     }
 
-    public class RunHistoryManager : MonoBehaviour
+    /// <summary>
+    /// 판 기록(진단용 로그). (MIGRATION_BASELINE 8.3b)
+    ///
+    /// <b>세이브 파일(7단계)에는 들어가지 않는다.</b> 런 30개 x 이벤트 400개라 크기도
+    /// 수명도 다르고, 로그가 깨졌다고 진행도까지 잃을 이유가 없다. 계속 자기 PlayerPrefs
+    /// 키를 쓴다.
+    ///
+    /// <b>루트에 사는 영구 서비스다.</b> 전투 밖(로비·타이틀)에서도 살아 있으므로
+    /// <see cref="IBattleRefs.Game"/> 이 null 인 상태가 <b>정상</b>이다. 그래서 여기 있는
+    /// null 검사는 조용한 폴백이 아니라 <b>기록해 둔 마지막 값으로 되돌아가는 정상 경로</b>다 —
+    /// 지우면 로비에서 터진다.
+    /// </summary>
+    // IL2CPP 스트리핑 대비. 이유는 GameContainer 주석 참고 — 에디터에서는 안 드러난다.
+    [Preserve]
+    public sealed class RunHistoryManager : ISaveOnApplicationLifecycle
     {
         [Serializable]
         private class RunEventRecord
@@ -71,7 +90,8 @@ namespace OJ
             public List<RunRecord> runs = new List<RunRecord>();
         }
 
-        public static RunHistoryManager Instance { get; private set; }
+        /// <summary>과도기 다리. 대입은 <see cref="GameContainer"/> 에서만 한다.</summary>
+        public static RunHistoryManager Instance { get; internal set; }
 
         private const string SaveKey = "OJ.RunHistory";
         private const int MaxStoredRuns = 30;
@@ -81,39 +101,37 @@ namespace OJ
         private RunRecord currentRun;
         private float runStartRealtime;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Bootstrap()
+        // 8.3b: 전투 씬 매니저로 가는 창구. 루트에 등록돼 있어 생성자로 받는다.
+        // 전투 밖에서는 안이 비어 있는 것이 정상이므로, 쓰는 쪽에서 반드시 null 을 봐야 한다.
+        private readonly IBattleRefs battle;
+
+        public RunHistoryManager(IBattleRefs battle)
         {
-            if (Instance != null)
-                return;
-
-            var go = new GameObject(nameof(RunHistoryManager));
-            go.AddComponent<RunHistoryManager>();
-        }
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+            this.battle = battle;
             Load();
         }
 
-        private void OnApplicationPause(bool pauseStatus)
-        {
-            if (pauseStatus)
-                Save();
-        }
-
-        private void OnApplicationQuit()
+        /// <summary>
+        /// 앱이 멈추거나 끝날 때 <see cref="SaveOnApplicationLifecycle"/> 이 부른다.
+        ///
+        /// 예전에는 OnApplicationPause 가 저장만 하고 OnApplicationQuit 만 미완 런을
+        /// 닫았다. 이제 한 곳이라 <b>둘 다 닫는다</b> — 모바일에서는 Quit 이 아예 안
+        /// 불리는 경우가 많아서, 나가는 판이 영영 '진행 중'으로 남던 쪽이 문제였다.
+        /// </summary>
+        public void SaveAll()
         {
             if (currentRun != null && string.IsNullOrEmpty(currentRun.endedAtUtc))
-                EndRun(RunResultType.Abandoned, GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : currentRun.finalWaveIndex, GameManager.Instance != null && GameManager.Instance.wall != null ? GameManager.Instance.wall.CurrentHp : currentRun.wallHpEnd);
+            {
+                // null 검사를 남긴다. 여기는 앱이 멈추거나 끝날 때 불리는데, 그 시점에
+                // 전투 씬이 이미 내려갔거나 애초에 로비였을 수 있다. 그때는 기록해 둔
+                // 마지막 웨이브·벽 HP 로 판을 닫는 것이 맞다.
+                EndRun(
+                    RunResultType.Abandoned,
+                    battle.Game != null ? battle.Game.CurrentWaveIndex : currentRun.finalWaveIndex,
+                    battle.Game != null && battle.Game.wall != null
+                        ? battle.Game.wall.CurrentHp
+                        : currentRun.wallHpEnd);
+            }
 
             Save();
         }
@@ -299,8 +317,10 @@ namespace OJ
 
         private int GetCurrentWallHp()
         {
-            if (GameManager.Instance != null && GameManager.Instance.wall != null)
-                return GameManager.Instance.wall.CurrentHp;
+            // 전투 중이면 지금 벽 HP 를 읽고, 아니면(로비·타이틀·씬 전환 중) 마지막으로
+            // 기록해 둔 값을 쓴다. 진단 로그라 값이 없다고 멈출 이유가 없다.
+            if (battle.Game != null && battle.Game.wall != null)
+                return battle.Game.wall.CurrentHp;
 
             return currentRun != null ? currentRun.wallHpEnd : 0;
         }

@@ -1,6 +1,6 @@
 using System;
 
-namespace OJ
+namespace OJ.Relic
 {
     public enum RelicId
     {

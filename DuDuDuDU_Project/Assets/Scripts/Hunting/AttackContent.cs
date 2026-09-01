@@ -1,12 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
+using OJ.Core;
+using OJ.DI;
 using UnityEngine;
+using OJ.Dice;
+using OJ.Equipment;
+using OJ.Relic;
+using OJ.Utils;
+using VContainer;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class AttackContent : MonoBehaviour
     {
-        public static AttackContent Instance;
+        // 8.3b: 배틀 스코프가 채운다. 이 컴포넌트는 BattleScene 에서만 사니 여기서는 null 이 아니다.
+        // 이 컴포넌트는 <b>씬에 놓여 있으므로</b> 스코프의 sceneLoaded 순회로 채워진다 —
+        // 즉 자기 Awake 뒤다. Start 부터 쓸 것. (런타임에 Instantiate 되는 것은 반대다.)
+        [Inject] private IBattleRefs battle;
 
         private Dictionary<int, Collider2D[]> _recvColliderPools = new Dictionary<int, Collider2D[]>();
         private List<Monster> _skillHitReceivers = new List<Monster>();
@@ -31,43 +41,36 @@ namespace OJ
         private Vector3 _windRangeGizmoCenter;
         private Vector3 _windRangeGizmoSize;
 
-        private void Awake()
+        // 8.6: 다이스 효과 15개가 창구를 생성자로 받게 되면서(DiceEffectBase 에 무인자 생성자가
+        // 없다) 효과 생성을 Awake 에 둘 수 없다. 배틀 스코프는 씬의 모든 Awake 뒤에 빌드되므로
+        // Awake 시점의 battle 은 아직 null 이고, 거기서 만들면 효과 15개 전부가 null 창구를
+        // 들고 태어나 첫 공격에서 터진다. 스코프 빌드는 모든 Start 앞이라 여기서는 채워져 있다.
+        private void Start()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
             InitializeDiceEffects();
-        }
-
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
         }
 
         private void InitializeDiceEffects()
         {
             _diceEffects.Clear();
 
-            RegisterDiceEffect(new NormalDiceEffect());
-            RegisterDiceEffect(new FireDiceEffect());
-            RegisterDiceEffect(new IceDiceEffect());
-            RegisterDiceEffect(new ThunderDiceEffect());
-            RegisterDiceEffect(new PoisonDiceEffect());
-            RegisterDiceEffect(new KingNormalDiceEffect());
-            RegisterDiceEffect(new KingFireDiceEffect());
-            RegisterDiceEffect(new KingIceDiceEffect());
-            RegisterDiceEffect(new KingThunderDiceEffect());
-            RegisterDiceEffect(new KingPoisonDiceEffect());
-            RegisterDiceEffect(new TornadoDiceEffect());
-            RegisterDiceEffect(new StunDiceEffect());
-            RegisterDiceEffect(new ArmorBreakDiceEffect());
-            RegisterDiceEffect(new WindDiceEffect());
-            RegisterDiceEffect(new TimeDiceEffect());
+            // 효과 15개는 컨테이너가 만들지 않는 순수 C# 이라 [Inject] 를 쓸 수 없다.
+            // 그래서 만드는 쪽인 여기가 창구를 생성자로 넘겨준다.
+            RegisterDiceEffect(new NormalDiceEffect(battle));
+            RegisterDiceEffect(new FireDiceEffect(battle));
+            RegisterDiceEffect(new IceDiceEffect(battle));
+            RegisterDiceEffect(new ThunderDiceEffect(battle));
+            RegisterDiceEffect(new PoisonDiceEffect(battle));
+            RegisterDiceEffect(new KingNormalDiceEffect(battle));
+            RegisterDiceEffect(new KingFireDiceEffect(battle));
+            RegisterDiceEffect(new KingIceDiceEffect(battle));
+            RegisterDiceEffect(new KingThunderDiceEffect(battle));
+            RegisterDiceEffect(new KingPoisonDiceEffect(battle));
+            RegisterDiceEffect(new TornadoDiceEffect(battle));
+            RegisterDiceEffect(new StunDiceEffect(battle));
+            RegisterDiceEffect(new ArmorBreakDiceEffect(battle));
+            RegisterDiceEffect(new WindDiceEffect(battle));
+            RegisterDiceEffect(new TimeDiceEffect(battle));
         }
 
         private void RegisterDiceEffect(DiceEffectBase diceEffect)
@@ -115,7 +118,7 @@ namespace OJ
             if (appliedDamage <= 0)
                 return;
 
-            GameObject dtObj = DamageTextPool.Instance.GetDamageText();
+            GameObject dtObj = battle.DamageTexts.GetDamageText();
             dtObj.transform.position = target.transform.position;
             dtObj.transform.ResetLocalZ();
             Color typeColor = DiceMetaDataProvider.GetColor(diceType);
@@ -137,17 +140,46 @@ namespace OJ
             int myDicePip = Mathf.Max(1, shotDicePip);
             int diceLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(attackType) : 1;
             int damage = DiceMetaDataProvider.CalculateDamage(attackType, myDicePip, diceLevel);
+
+            // 배수 3단(크리 → 일반 lv12 더블 → 유물)의 산술은 OJ.Core 의 CriticalFormula 로 내려갔다.
+            // 여기 남은 것은 순수 함수가 될 수 없는 것뿐이다 — 난수, 싱글톤 조회, DiceType 판정,
+            // 그리고 ConsumeAttackDamageMultiplier(읽기가 아니라 쓰기다).
+            //
+            // <b>아래 네 줄의 차례를 바꾸지 마라.</b> 크리 난수 → 크리배수 조회 → 더블 난수 →
+            // 유물 소모 순서가 원본(141~147줄)과 같아야 한다. 값이 아니라 난수열과 유물
+            // 1회성 효과가 여기에 걸려 있다. 단축평가(&&)도 그대로다 — 크리 확률이 0 이면
+            // 난수를 뽑지 않고, 일반 다이스가 아니거나 lv<12 면 역시 뽑지 않는다.
             float critChance = DiceMetaDataProvider.GetGlobalCriticalChancePercent();
-            if (critChance > 0f && Random.value * 100f <= critChance)
-                damage = Mathf.RoundToInt(damage * DiceMetaDataProvider.GetGlobalCriticalDamageMultiplier());
-            if (attackType == DiceType.Normal && diceLevel >= 12 && Random.value <= 0.2f)
-                damage *= 2;
+            bool criticalHit = CriticalFormula.IsCriticalChanceActive(critChance)
+                               && CriticalFormula.RollHitsCritical(Random.value, critChance);
 
-            if (RelicManager.Instance != null)
-                damage = Mathf.Max(1, Mathf.RoundToInt(damage * RelicManager.Instance.ConsumeAttackDamageMultiplier()));
+            // 크리가 안 떴으면 배수를 조회하지 않는다(원본도 if 안에서만 불렀다).
+            // 이때 넘기는 1f 는 ApplyCritical 이 criticalHit=false 라 쓰지 않는 자리채움이다.
+            float criticalDamageMultiplier = criticalHit
+                ? DiceMetaDataProvider.GetGlobalCriticalDamageMultiplier()
+                : 1f;
 
+            bool doubleHit = attackType == DiceType.Normal
+                             && CriticalFormula.IsDoubleHitLevel(diceLevel)
+                             && CriticalFormula.RollHitsDoubleHit(Random.value);
+
+            // 매니저 유무를 bool 로 따로 넘긴다. 3단은 곱만 하는 것이 아니라 하한 1 을 같이
+            // 걸기 때문에 "유물 없음"과 "배수 1f"가 damage=0 에서 갈린다.
+            bool relicMultiplierApplies = RelicManager.Instance != null;
+            float relicDamageMultiplier = relicMultiplierApplies
+                ? RelicManager.Instance.ConsumeAttackDamageMultiplier()
+                : 1f;
+
+            damage = CriticalFormula.ApplyCritical(
+                damage, criticalHit, criticalDamageMultiplier, doubleHit, relicMultiplierApplies, relicDamageMultiplier);
+
+            // 아래는 데미지가 아니라 SP 다. 임계 9 와 0.2f 를 CriticalFormula 로 끌어오지 않은 것은
+            // 값이 우연히 겹칠 뿐 다른 기능이기 때문이다 — 합치면 한쪽 조정이 양쪽을 움직인다.
+            // 8.3b: 기존 ?. 는 지웠다. 소환 시스템은 같은 씬에 상주하므로 여기서 null 이면
+            // 그것은 사고다 — 조용히 SP 를 삼키는 대신 터져야 한다. 난수를 뽑는 조건식은
+            // 그대로라 SP 판정의 난수열은 바뀌지 않는다.
             if (attackType == DiceType.Normal && diceLevel >= 9 && Random.value <= 0.2f)
-                UIDiceSummonSystem.Instance?.AddSP(5);
+                battle.Summon.AddSP(5);
 
             _currentDamage = damage;
             _currentDiceLevel = diceLevel;
@@ -374,7 +406,9 @@ namespace OJ
         {
             List<Monster> results = new List<Monster>();
 
-            if (MonsterManager.Instance == null || MonsterManager.Instance.activeMonsters == null)
+            // 8.3b: 매니저 자체의 null 검사는 지웠다(같은 씬에 상주하므로 없을 수 없다).
+            // 반면 activeMonsters 는 매니저의 내부 상태라 창구가 보증하는 것이 아니어서 남긴다.
+            if (battle.Monsters.activeMonsters == null)
                 return results;
 
             Vector2 dir = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.down;
@@ -383,9 +417,9 @@ namespace OJ
             float maxForward = halfLength;
             float width = Mathf.Max(0.01f, halfWidth);
 
-            for (int i = 0; i < MonsterManager.Instance.activeMonsters.Count; i++)
+            for (int i = 0; i < battle.Monsters.activeMonsters.Count; i++)
             {
-                Monster monster = MonsterManager.Instance.activeMonsters[i];
+                Monster monster = battle.Monsters.activeMonsters[i];
                 if (monster == null || monster.gameObject.activeInHierarchy == false)
                     continue;
 

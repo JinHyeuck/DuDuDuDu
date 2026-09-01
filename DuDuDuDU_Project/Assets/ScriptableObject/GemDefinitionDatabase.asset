@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gemDefinitions:
   - gemId: weapon_common_precision_1
-    displayName: 평범한 정밀석
+    displayName: "\uD3C9\uBC94\uD55C \uC815\uBC00\uC11D"
     rarity: 1
     equipableType: 0
-    initialCount: 4
+    initialCount: 0
     effects:
     - statType: 0
       targetDiceType: 0
@@ -26,10 +26,10 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: weapon_common_flame_1
-    displayName: 미약한 화염핵
+    displayName: "\uBBF8\uC57D\uD55C \uD654\uC5FC\uD575"
     rarity: 1
     equipableType: 0
-    initialCount: 4
+    initialCount: 0
     effects:
     - statType: 0
       targetDiceType: 1
@@ -38,10 +38,10 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: weapon_common_frost_1
-    displayName: 미약한 서리핵
+    displayName: "\uBBF8\uC57D\uD55C \uC11C\uB9AC\uD575"
     rarity: 1
     equipableType: 0
-    initialCount: 4
+    initialCount: 0
     effects:
     - statType: 0
       targetDiceType: 2
@@ -50,10 +50,10 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: weapon_common_thunder_1
-    displayName: 미약한 번개핵
+    displayName: "\uBBF8\uC57D\uD55C \uBC88\uAC1C\uD575"
     rarity: 1
     equipableType: 0
-    initialCount: 4
+    initialCount: 0
     effects:
     - statType: 0
       targetDiceType: 3
@@ -62,10 +62,10 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: weapon_common_poison_1
-    displayName: 미약한 맹독핵
+    displayName: "\uBBF8\uC57D\uD55C \uB9F9\uB3C5\uD575"
     rarity: 1
     equipableType: 0
-    initialCount: 4
+    initialCount: 0
     effects:
     - statType: 0
       targetDiceType: 4
@@ -74,184 +74,184 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: weapon_normal_dual_1
-    displayName: 교차 공명석
+    displayName: "\uAD50\uCC28 \uACF5\uBA85\uC11D"
     rarity: 2
     equipableType: 0
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 0
       percentValue: 0.07
       flatValue: 0
       intParam: 0
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 1
       percentValue: 0.07
       flatValue: 0
       intParam: 0
   - gemId: weapon_normal_flat_1
-    displayName: 날선 파편석
+    displayName: "\uB0A0\uC120 \uD30C\uD3B8\uC11D"
     rarity: 2
     equipableType: 0
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 14
       intParam: 0
   - gemId: weapon_rare_final_1
-    displayName: 관통의 핵정
+    displayName: "\uAD00\uD1B5\uC758 \uD575\uC815"
     rarity: 3
     equipableType: 0
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.08
       flatValue: 0
       intParam: 0
   - gemId: weapon_rare_element_1
-    displayName: 원소 각인석
+    displayName: "\uC6D0\uC18C \uAC01\uC778\uC11D"
     rarity: 3
     equipableType: 0
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 2
       percentValue: 0.12
       flatValue: 0
       intParam: 0
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 4
       percentValue: 0.12
       flatValue: 0
       intParam: 0
   - gemId: weapon_epic_burst_1
-    displayName: 선봉 학살석
+    displayName: "\uC120\uBD09 \uD559\uC0B4\uC11D"
     rarity: 4
     equipableType: 0
     initialCount: 0
     effects:
     - statType: 3
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 90
       intParam: 5
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.07
       flatValue: 0
       intParam: 0
   - gemId: weapon_epic_mastery_1
-    displayName: 절대 숙련석
+    displayName: "\uC808\uB300 \uC219\uB828\uC11D"
     rarity: 4
     equipableType: 0
     initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.14
       flatValue: 0
       intParam: 0
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 18
       intParam: 0
   - gemId: weapon_mythic_omniblade
-    displayName: 창세의 검혼석
+    displayName: "\uCC3D\uC138\uC758 \uAC80\uD63C\uC11D"
     rarity: 5
     equipableType: 0
     initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.2
       flatValue: 0
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.15
       flatValue: 0
       intParam: 0
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 30
       intParam: 0
   - gemId: helmet_common_darkflow_1
-    displayName: 암류 촉매석
+    displayName: "\uC554\uB958 \uCD09\uB9E4\uC11D"
     rarity: 1
     equipableType: 1
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 4
       percentValue: 0.05
       flatValue: 0
       intParam: 0
   - gemId: helmet_common_lightflow_1
-    displayName: 광류 촉매석
+    displayName: "\uAD11\uB958 \uCD09\uB9E4\uC11D"
     rarity: 1
     equipableType: 1
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 3
       percentValue: 0.05
       flatValue: 0
       intParam: 0
   - gemId: helmet_normal_balance_1
-    displayName: 박동 안정석
+    displayName: "\uBC15\uB3D9 \uC548\uC815\uC11D"
     rarity: 2
     equipableType: 1
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.06
       flatValue: 0
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.04
       flatValue: 0
       intParam: 0
   - gemId: helmet_rare_overclock_1
-    displayName: 과충전 두정석
+    displayName: "\uACFC\uCDA9\uC804 \uB450\uC815\uC11D"
     rarity: 3
     equipableType: 1
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.1
       flatValue: 0
       intParam: 0
   - gemId: helmet_rare_stormlink_1
-    displayName: 폭풍 연결석
+    displayName: "\uD3ED\uD48D \uC5F0\uACB0\uC11D"
     rarity: 3
     equipableType: 1
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 8
       targetDiceType: 3
@@ -266,7 +266,7 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: helmet_epic_stormcrown_1
-    displayName: 천둥왕관석
+    displayName: "\uCC9C\uB465\uC655\uAD00\uC11D"
     rarity: 4
     equipableType: 1
     initialCount: 0
@@ -284,37 +284,37 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: helmet_epic_depth_1
-    displayName: 심연 관측석
+    displayName: "\uC2EC\uC5F0 \uAD00\uCE21\uC11D"
     rarity: 4
     equipableType: 1
     initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.12
       flatValue: 0
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 4
       percentValue: 0.1
       flatValue: 0
       intParam: 0
   - gemId: helmet_mythic_voidclock
-    displayName: 공허의 시계석
+    displayName: "\uACF5\uD5C8\uC758 \uC2DC\uACC4\uC11D"
     rarity: 5
     equipableType: 1
     initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.16
       flatValue: 0
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.14
       flatValue: 0
@@ -326,154 +326,154 @@ MonoBehaviour:
       flatValue: 2
       intParam: 0
   - gemId: armor_common_vanguard_1
-    displayName: 선봉 결정석
+    displayName: "\uC120\uBD09 \uACB0\uC815\uC11D"
     rarity: 1
     equipableType: 2
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 3
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 35
       intParam: 3
   - gemId: armor_common_well_1
-    displayName: 우물 순환석
+    displayName: "\uC6B0\uBB3C \uC21C\uD658\uC11D"
     rarity: 1
     equipableType: 2
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 1
       intParam: 0
   - gemId: armor_normal_guard_1
-    displayName: 수호 기원석
+    displayName: "\uC218\uD638 \uAE30\uC6D0\uC11D"
     rarity: 2
     equipableType: 2
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 2
       intParam: 0
     - statType: 3
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 30
       intParam: 4
   - gemId: armor_normal_warspoils_1
-    displayName: 전리품 각인석
+    displayName: "\uC804\uB9AC\uD488 \uAC01\uC778\uC11D"
     rarity: 2
     equipableType: 2
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 1
       intParam: 0
   - gemId: armor_rare_warspoils_1
-    displayName: 황금 전리석
+    displayName: "\uD669\uAE08 \uC804\uB9AC\uC11D"
     rarity: 3
     equipableType: 2
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 2
       intParam: 0
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 2
       intParam: 0
   - gemId: armor_rare_vanguard_1
-    displayName: 맹공 선봉석
+    displayName: "\uB9F9\uACF5 \uC120\uBD09\uC11D"
     rarity: 3
     equipableType: 2
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 3
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 60
       intParam: 5
   - gemId: armor_epic_bastion_1
-    displayName: 요새 심장석
+    displayName: "\uC694\uC0C8 \uC2EC\uC7A5\uC11D"
     rarity: 4
     equipableType: 2
     initialCount: 0
     effects:
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 4
       intParam: 0
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 3
       intParam: 0
   - gemId: armor_epic_siege_1
-    displayName: 공성 선혈석
+    displayName: "\uACF5\uC131 \uC120\uD608\uC11D"
     rarity: 4
     equipableType: 2
     initialCount: 0
     effects:
     - statType: 3
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 110
       intParam: 6
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.08
       flatValue: 0
       intParam: 0
   - gemId: armor_mythic_eternalwell
-    displayName: 영원의 우물핵
+    displayName: "\uC601\uC6D0\uC758 \uC6B0\uBB3C\uD575"
     rarity: 5
     equipableType: 2
     initialCount: 0
     effects:
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 7
       intParam: 0
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 4
       intParam: 0
     - statType: 3
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 120
       intParam: 7
   - gemId: ring_common_cinder_1
-    displayName: 잿불 파열석
+    displayName: "\uC7BF\uBD88 \uD30C\uC5F4\uC11D"
     rarity: 1
     equipableType: 3
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 4
       targetDiceType: 1
@@ -482,10 +482,10 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: ring_common_cinder_2
-    displayName: 잿불 분기석
+    displayName: "\uC7BF\uBD88 \uBD84\uAE30\uC11D"
     rarity: 1
     equipableType: 3
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 7
       targetDiceType: 1
@@ -494,10 +494,10 @@ MonoBehaviour:
       flatValue: 1
       intParam: 0
   - gemId: ring_normal_inferno_1
-    displayName: 화염 포화석
+    displayName: "\uD654\uC5FC \uD3EC\uD654\uC11D"
     rarity: 2
     equipableType: 3
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 4
       targetDiceType: 1
@@ -512,28 +512,28 @@ MonoBehaviour:
       flatValue: 1
       intParam: 0
   - gemId: ring_normal_elementmix_1
-    displayName: 혼합 공진석
+    displayName: "\uD63C\uD569 \uACF5\uC9C4\uC11D"
     rarity: 2
     equipableType: 3
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 1
       percentValue: 0.06
       flatValue: 0
       intParam: 0
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 3
       percentValue: 0.06
       flatValue: 0
       intParam: 0
   - gemId: ring_rare_chainfire_1
-    displayName: 연쇄 화염석
+    displayName: "\uC5F0\uC1C4 \uD654\uC5FC\uC11D"
     rarity: 3
     equipableType: 3
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 7
       targetDiceType: 1
@@ -548,10 +548,10 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: ring_rare_ruin_1
-    displayName: 파멸 반응석
+    displayName: "\uD30C\uBA78 \uBC18\uC751\uC11D"
     rarity: 3
     equipableType: 3
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 6
       targetDiceType: 1
@@ -566,7 +566,7 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: ring_epic_supernova_1
-    displayName: 초신성 고리핵
+    displayName: "\uCD08\uC2E0\uC131 \uACE0\uB9AC\uD575"
     rarity: 4
     equipableType: 3
     initialCount: 0
@@ -590,7 +590,7 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: ring_epic_stormbrand_1
-    displayName: 폭풍 낙인석
+    displayName: "\uD3ED\uD48D \uB099\uC778\uC11D"
     rarity: 4
     equipableType: 3
     initialCount: 0
@@ -608,7 +608,7 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: ring_mythic_helios
-    displayName: 헬리오스 성환석
+    displayName: "\uD5EC\uB9AC\uC624\uC2A4 \uC131\uD658\uC11D"
     rarity: 5
     equipableType: 3
     initialCount: 0
@@ -632,22 +632,22 @@ MonoBehaviour:
       flatValue: 3
       intParam: 0
   - gemId: shoes_common_stride_1
-    displayName: 전진 각인석
+    displayName: "\uC804\uC9C4 \uAC01\uC778\uC11D"
     rarity: 1
     equipableType: 4
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 8
       intParam: 0
   - gemId: shoes_common_focus_1
-    displayName: 집중 보폭석
+    displayName: "\uC9D1\uC911 \uBCF4\uD3ED\uC11D"
     rarity: 1
     equipableType: 4
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 6
       targetDiceType: 0
@@ -656,67 +656,67 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: shoes_normal_stepburst_1
-    displayName: 질주 폭발석
+    displayName: "\uC9C8\uC8FC \uD3ED\uBC1C\uC11D"
     rarity: 2
     equipableType: 4
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 12
       intParam: 0
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.04
       flatValue: 0
       intParam: 0
   - gemId: shoes_normal_darkstep_1
-    displayName: 암영 보폭석
+    displayName: "\uC554\uC601 \uBCF4\uD3ED\uC11D"
     rarity: 2
     equipableType: 4
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 4
       percentValue: 0.08
       flatValue: 0
       intParam: 0
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 4
       percentValue: 0.05
       flatValue: 0
       intParam: 0
   - gemId: shoes_rare_assault_1
-    displayName: 강습 발걸음석
+    displayName: "\uAC15\uC2B5 \uBC1C\uAC78\uC74C\uC11D"
     rarity: 3
     equipableType: 4
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.08
       flatValue: 0
       intParam: 0
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 15
       intParam: 0
   - gemId: shoes_rare_quickspark_1
-    displayName: 퀵스파크 주석
+    displayName: "\uD035\uC2A4\uD30C\uD06C \uC8FC\uC11D"
     rarity: 3
     equipableType: 4
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.08
       flatValue: 0
@@ -728,37 +728,37 @@ MonoBehaviour:
       flatValue: 1
       intParam: 0
   - gemId: shoes_epic_blitz_1
-    displayName: 섬광 질주핵
+    displayName: "\uC12C\uAD11 \uC9C8\uC8FC\uD575"
     rarity: 4
     equipableType: 4
     initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.12
       flatValue: 0
       intParam: 0
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 20
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.08
       flatValue: 0
       intParam: 0
   - gemId: shoes_epic_wavebreaker_1
-    displayName: 파도절단 활석
+    displayName: "\uD30C\uB3C4\uC808\uB2E8 \uD65C\uC11D"
     rarity: 4
     equipableType: 4
     initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 2
       percentValue: 0.15
       flatValue: 0
@@ -770,181 +770,181 @@ MonoBehaviour:
       flatValue: 0
       intParam: 0
   - gemId: shoes_mythic_tempeststep
-    displayName: 폭풍군주의 보주
+    displayName: "\uD3ED\uD48D\uAD70\uC8FC\uC758 \uBCF4\uC8FC"
     rarity: 5
     equipableType: 4
     initialCount: 0
     effects:
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.15
       flatValue: 0
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.16
       flatValue: 0
       intParam: 0
     - statType: 1
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 24
       intParam: 0
   - gemId: necklace_common_bounty_1
-    displayName: 하급 현상석
+    displayName: "\uD558\uAE09 \uD604\uC0C1\uC11D"
     rarity: 1
     equipableType: 5
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 1
       intParam: 0
   - gemId: necklace_common_well_1
-    displayName: 하급 생명석
+    displayName: "\uD558\uAE09 \uC0DD\uBA85\uC11D"
     rarity: 1
     equipableType: 5
-    initialCount: 3
+    initialCount: 0
     effects:
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 2
       intParam: 0
   - gemId: necklace_normal_hunt_1
-    displayName: 사냥 축복석
+    displayName: "\uC0AC\uB0E5 \uCD95\uBCF5\uC11D"
     rarity: 2
     equipableType: 5
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 2
       intParam: 0
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 2
       intParam: 0
   - gemId: necklace_normal_focus_1
-    displayName: 공명 목정석
+    displayName: "\uACF5\uBA85 \uBAA9\uC815\uC11D"
     rarity: 2
     equipableType: 5
-    initialCount: 2
+    initialCount: 0
     effects:
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.06
       flatValue: 0
       intParam: 0
   - gemId: necklace_rare_harvest_1
-    displayName: 수확 왕실석
+    displayName: "\uC218\uD655 \uC655\uC2E4\uC11D"
     rarity: 3
     equipableType: 5
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 3
       intParam: 0
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 3
       intParam: 0
   - gemId: necklace_rare_element_1
-    displayName: 원소 수호목석
+    displayName: "\uC6D0\uC18C \uC218\uD638\uBAA9\uC11D"
     rarity: 3
     equipableType: 5
-    initialCount: 1
+    initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 2
       percentValue: 0.1
       flatValue: 0
       intParam: 0
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 3
       percentValue: 0.1
       flatValue: 0
       intParam: 0
   - gemId: necklace_epic_overlord_1
-    displayName: 지배자의 목핵
+    displayName: "\uC9C0\uBC30\uC790\uC758 \uBAA9\uD575"
     rarity: 4
     equipableType: 5
     initialCount: 0
     effects:
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 4
       intParam: 0
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 5
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.08
       flatValue: 0
       intParam: 0
   - gemId: necklace_epic_starseed_1
-    displayName: 별씨앗 보주
+    displayName: "\uBCC4\uC528\uC557 \uBCF4\uC8FC"
     rarity: 4
     equipableType: 5
     initialCount: 0
     effects:
     - statType: 0
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.12
       flatValue: 0
       intParam: 0
     - statType: 2
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.07
       flatValue: 0
       intParam: 0
   - gemId: necklace_mythic_eden
-    displayName: 에덴의 맥동핵
+    displayName: "\uC5D0\uB374\uC758 \uB9E5\uB3D9\uD575"
     rarity: 5
     equipableType: 5
     initialCount: 0
     effects:
     - statType: 9
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 5
       intParam: 0
     - statType: 5
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0
       flatValue: 8
       intParam: 0
     - statType: 6
-      targetDiceType: 100
+      targetDiceType: 205
       targetElementType: 5
       percentValue: 0.14
       flatValue: 0

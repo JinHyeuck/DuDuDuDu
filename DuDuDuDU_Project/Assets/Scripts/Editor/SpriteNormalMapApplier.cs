@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace OJ.Editor
+namespace OJ.EditorTools
 {
     public static class SpriteNormalMapApplier
     {

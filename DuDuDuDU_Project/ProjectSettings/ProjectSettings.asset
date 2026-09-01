@@ -815,7 +815,9 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Android: DEV_DEFINE
+    Android: DEV_DEFINE;VCONTAINER_UNITASK_INTEGRATION
+    Standalone: VCONTAINER_UNITASK_INTEGRATION
+    iPhone: VCONTAINER_UNITASK_INTEGRATION
   additionalCompilerArguments:
     Android: []
   platformArchitecture: {}

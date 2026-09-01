@@ -104,3 +104,12 @@ DuDuDuDU_Project/DuDuDuDU_Project.slnx
 slack-unity-agent
 .DS_Store
 DuDuDuDU_Project/_Build
+
+# Python bytecode from Tools/*.py
+__pycache__/
+
+# Headless EditMode test runner build output (Tools/headless)
+/Tools/headless/.build/
+# ...but the runner's own project file is hand-written source, not Unity-generated,
+# so it must survive the repo-wide *.csproj ignore above.
+!/Tools/headless/src/**/*.csproj

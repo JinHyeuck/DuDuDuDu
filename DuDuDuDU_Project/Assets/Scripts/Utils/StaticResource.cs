@@ -2,8 +2,16 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using OJ.Dice;
+using OJ.Equipment;
+using OJ.Hunting;
+using OJ.Point;
+using OJ.Relic;
+using OJ.Stage;
+using OJ.StageReward;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Utils
 {
     [Serializable]
     public class ElementResource
@@ -44,6 +52,13 @@ namespace OJ
         public Sprite StarRewardBanner;
     }
 
+    // 이 타입의 정본은 인스펙터에 채워 둔 참조다. 씬에서 못 찾았을 때 빈 객체를
+    // 만들면 아래 필드가 전부 null 인 인스턴스가 조용히 생기고, Provider 들이
+    // 코드 기본값으로 흘러 배선 사고가 통째로 흡수된다. 그래서 프리팹에서만 만든다.
+    // (MIGRATION_BASELINE 2.1)
+    // 경로 정본은 이 한 줄이다. 에디터 추출 도구도 이 어트리뷰트를 읽어 저장 위치를
+    // 정하므로, 여기만 고치면 둘이 갈라지지 않는다.
+    [SingletonPrefab("StaticResource")]
     public class StaticResource : MonoSingleton<StaticResource>
     {
         public PointMetadataDatabase PointMetadataDatabase;
@@ -53,6 +68,9 @@ namespace OJ
         public StageDatabase StageDatabase;
         [FormerlySerializedAs("ChapterRewardDatabase")]
         public StageRewardDatabase StageRewardDatabase;
+
+        /// <summary>팝업 프리팹 목록. (10.1) 비면 팝업이 하나도 열리지 않는다.</summary>
+        public DialogCatalog DialogCatalog;
         public List<ElementResource> ElementResources;
         
         public List<RarityResource> RarityResources;

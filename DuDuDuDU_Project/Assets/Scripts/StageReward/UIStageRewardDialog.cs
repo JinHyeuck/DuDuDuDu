@@ -3,10 +3,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
+using OJ.DI;
+using OJ.Hunting;
+using OJ.Point;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.StageReward
 {
-    public class UIStageRewardDialog : IDialog
+    public class UIStageRewardDialog : DialogBase
     {
         [Header("Milestones")]
         [SerializeField] private RectTransform[] milestoneSlots;
@@ -21,9 +25,6 @@ namespace OJ
         [SerializeField] private Button previousButton;
         [SerializeField] private Button nextButton;
         [SerializeField] private Button claimButton;
-
-        [Header("Reward Result")]
-        [SerializeField] private UIRewardResultDialog rewardResultDialog;
 
         private readonly List<UIStageRewardMilestoneItem> milestoneItems = new List<UIStageRewardMilestoneItem>();
         private readonly List<UIRewardElement> rewardElements = new List<UIRewardElement>();
@@ -262,9 +263,17 @@ namespace OJ
 
             Refresh();
 
-            if (rewardResultDialog != null)
+            // 카탈로그에서 꺼내 띄운다. (10.4)
+            //
+            // 예전에는 결과창을 [SerializeField] 로 직접 가리켰고, 그 참조가 None 이면
+            // 아무 로그 없이 창만 안 떴다. 보상은 이미 지급된 뒤라 유저 눈에는
+            // 그냥 눌러도 아무 일이 없는 버튼이 된다. UIService 는 못 열면 사유를 남긴다.
+            //
+            // Show 가 아니라 Get 인 이유: Open 이 보상 목록을 채운 뒤 스스로 Enter 를 부른다.
+            UIRewardResultDialog resultDialog = GameContainer.UI?.Get<UIRewardResultDialog>();
+            if (resultDialog != null)
             {
-                rewardResultDialog.Open(rewards, "보상을 획득했습니다.", HandleClaimResultClosed);
+                resultDialog.Open(rewards, "보상을 획득했습니다.", HandleClaimResultClosed);
                 return;
             }
 

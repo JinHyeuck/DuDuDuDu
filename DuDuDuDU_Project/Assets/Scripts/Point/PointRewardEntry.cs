@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Point
 {
     public struct PointRewardEntry
     {

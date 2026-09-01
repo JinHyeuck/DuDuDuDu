@@ -90,6 +90,12 @@ def main():
                     if target == '0' or target not in docs:
                         continue
 
+                    # <b>이 도구는 메서드가 실제로 있는지는 모른다.</b> 프리팹 YAML 만 읽으므로
+                    # 대상 컴포넌트의 타입에 그 이름의 public 메서드가 있는지 확인할 수 없다.
+                    # 그래서 결과 문구는 "실행된다"가 아니라 "확인이 필요하다"여야 한다 —
+                    # 실제로 UIDice.prefab 이 그 차이에 걸렸다. 대상은 살아 있었지만
+                    # UIDice 에 OnClick 이 아예 없어서 리스너 0개로 아무 일도 안 하고 있었고,
+                    # 문서에는 "실제로 실행된다"고 단정돼 있어 없는 버그를 쫓게 만들었다.
                     line = '%s 의 %s → %s(%s)' % (
                         rel, owner_name(docs, body), method, name_of(docs, target))
                     (notes if rel in LEGACY else errors).append(line)
@@ -102,8 +108,12 @@ def main():
 
     if errors:
         for e in errors:
-            print('  ERROR 살아 있는 옛 배선: %s' % e)
-        print('실패: %d건 — 눌렀을 때 의도하지 않은 동작이 함께 실행된다.' % len(errors))
+            print('  ERROR 대상이 살아 있는 옛 배선: %s' % e)
+        print('실패: %d건 — 눌렀을 때 <b>의도하지 않은 동작이 함께 실행될 수 있다.</b>' % len(errors))
+        print('       이 도구는 프리팹 YAML 만 읽어 <b>그 메서드가 실제로 있는지는 모른다.</b>')
+        print('       대상 클래스에 그 이름의 public 메서드가 있는지 확인할 것 —')
+        print('       없으면 리스너 0개로 아무 일도 안 하지만, 그래도 지우는 것이 맞다')
+        print('       (인스펙터에 Missing 으로 뜨고, 나중에 같은 이름을 만들면 그때 살아난다).')
         sys.exit(1)
 
     print('통과')

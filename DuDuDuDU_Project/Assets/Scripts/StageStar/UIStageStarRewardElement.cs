@@ -2,8 +2,10 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Hunting;
+using OJ.Point;
 
-namespace OJ
+namespace OJ.StageStar
 {
     public class UIStageStarRewardElement : MonoBehaviour
     {

@@ -3,10 +3,18 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
+using OJ.DI;
+using OJ.Equipment;
+// OJ.Hunting 은 GameManager.Instance·PlayerController.Instance 를 이름으로 부를 때만
+// 필요했다. 이제 battle 창구로 받으므로 이 파일에 그 네임스페이스의 이름이 남지 않는다.
+// InGameState 는 OJ 네임스페이스(Define.cs)라 상위 네임스페이스로 그냥 보인다.
+using OJ.UI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Dice
 {
-    public class UIBattleDiceDetailPanel : IDialog
+    public class UIBattleDiceDetailPanel : DialogBase
     {
         [Header("Header")]
         [SerializeField] private Image iconImage;
@@ -27,6 +35,24 @@ namespace OJ
         private int currentDiceStar = 1;
         private UIDice currentDice;
 
+        /// <summary>
+        /// 배틀 씬 매니저로 가는 창구. (8.3b)
+        ///
+        /// <b>이 창은 씬에 없다.</b> UIService 가 카탈로그에서 꺼내 런타임에 찍는 프리팹이라,
+        /// BattleScope 가 빌드 직후 씬 루트를 훑는 그 순회에는 아직 태어나지도 않았다.
+        /// 그래서 주입은 <c>resolver.Instantiate</c> 가 찍는 그 순간에 일어난다.
+        ///
+        /// <b>그 순간은 <c>Awake</c> 보다 뒤다.</b> 그러므로 <c>Awake</c>(여기서는 DialogBase 의
+        /// <c>Awake</c> → <c>Load</c> → <c>OnLoad</c>) 에서는 이 필드를 읽으면 안 된다.
+        /// 실제로 읽는 곳은 <c>Open</c> 이 부른 <c>Refresh</c> 와 <c>isEnter</c> 가 선 뒤의
+        /// <c>Update</c> 뿐이고, 둘 다 찍기가 끝난 다음이다.
+        ///
+        /// 여기 남아 있는 <c>DiceLevelManager</c>·<c>EquipmentManager</c>·<c>StaticResource</c> 의
+        /// <c>.Instance</c> 는 이 창구와 무관하다 — 전투 씬 매니저 14개가 아니라
+        /// 루트에 사는 것들이라 <c>IBattleRefs</c> 가 들고 있지 않다.
+        /// </summary>
+        [Inject] private IBattleRefs battle;
+
         protected override void OnEnter()
         {
             if (DiceLevelManager.Instance != null)
@@ -44,13 +70,13 @@ namespace OJ
             if (!isEnter)
                 return;
 
-            if (currentDice == null || GameManager.Instance == null)
+            if (currentDice == null || battle.Game == null)
             {
                 Exit();
                 return;
             }
 
-            InGameState state = GameManager.Instance.inGameState;
+            InGameState state = battle.Game.inGameState;
             if (state != InGameState.Wave && state != InGameState.Setting)
             {
                 Exit();
@@ -353,9 +379,16 @@ namespace OJ
             return CalculateAppliedDamage(poisonRawDamage, monster.Defense, poisonBonusPercent);
         }
 
-        private static float GetBattleCooldown(DiceType diceType, int star)
+        /// <summary>
+        /// <b>static 을 뗐다.</b> 창구가 인스턴스 필드라 static 에서는 볼 수 없다.
+        /// 부르는 곳은 이 클래스 안 <c>Refresh</c> 한 곳뿐이라 호출부 모양은 그대로다.
+        /// </summary>
+        private float GetBattleCooldown(DiceType diceType, int star)
         {
-            float shotDelay = PlayerController.Instance != null ? Mathf.Max(0f, PlayerController.Instance.fireRate) : 0f;
+            // 아래 null 검사는 원래 있던 것을 그대로 둔다. 창구를 막는 방어가 아니라,
+            // 전투가 끝나 스코프가 비워진 프레임에 Refresh 가 한 번 더 불릴 때
+            // 발사 딜레이를 0 으로 치던 기존 동작이다 — 지우면 동작이 바뀐다.
+            float shotDelay = battle.Player != null ? Mathf.Max(0f, battle.Player.fireRate) : 0f;
             return shotDelay + DiceMetaDataProvider.GetCooldown(diceType, star);
         }
 
@@ -424,23 +457,28 @@ namespace OJ
             return bonusPercent;
         }
 
-        private static BattleMonsterSnapshot GetBattleMonsterSnapshot()
+        /// <summary>
+        /// <b>static 을 뗐다.</b> 이유는 <see cref="GetBattleCooldown"/> 과 같다.
+        /// </summary>
+        private BattleMonsterSnapshot GetBattleMonsterSnapshot()
         {
-            if (GameManager.Instance == null)
+            // 이 null 검사도 원래 있던 것이다. 전투가 끝난 프레임에 설명문이 한 번 더
+            // 그려질 때 "몬스터 / 체력 1 / 방어 0" 으로 떨어지던 기존 동작이라 그대로 둔다.
+            if (battle.Game == null)
                 return new BattleMonsterSnapshot("몬스터", 1, 0);
 
-            if (GameManager.Instance.inGameState == InGameState.Setting)
+            if (battle.Game.inGameState == InGameState.Setting)
             {
                 return new BattleMonsterSnapshot(
                     "다음 웨이브 몬스터",
-                    GameManager.Instance.GetCurrentWaveMonsterHp(),
-                    GameManager.Instance.GetCurrentWaveMonsterDefense());
+                    battle.Game.GetCurrentWaveMonsterHp(),
+                    battle.Game.GetCurrentWaveMonsterDefense());
             }
 
-            bool isBoss = GameManager.Instance.IsBossWave();
+            bool isBoss = battle.Game.IsBossWave();
             return isBoss
-                ? new BattleMonsterSnapshot("보스", GameManager.Instance.GetCurrentWaveBossHp(), GameManager.Instance.GetCurrentWaveBossDefense())
-                : new BattleMonsterSnapshot("몬스터", GameManager.Instance.GetCurrentWaveMonsterHp(), GameManager.Instance.GetCurrentWaveMonsterDefense());
+                ? new BattleMonsterSnapshot("보스", battle.Game.GetCurrentWaveBossHp(), battle.Game.GetCurrentWaveBossDefense())
+                : new BattleMonsterSnapshot("몬스터", battle.Game.GetCurrentWaveMonsterHp(), battle.Game.GetCurrentWaveMonsterDefense());
         }
 
         private readonly struct BattleMonsterSnapshot

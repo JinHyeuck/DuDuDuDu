@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-namespace OJ
+namespace OJ.Lobby
 {
     public class LobbyBottomBtn : MonoBehaviour
     {

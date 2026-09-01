@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Equipment
 {
-    public class UIMergePopup : IDialog
+    public class UIMergePopup : DialogBase
     {
         private class MergeMaterial
         {

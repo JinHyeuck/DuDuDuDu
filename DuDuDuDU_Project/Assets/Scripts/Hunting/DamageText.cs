@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class DamageText : MonoBehaviour
     {

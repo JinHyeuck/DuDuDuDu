@@ -59,9 +59,21 @@ ProjectP의 `Game.Core`는 BigDouble 때문에 UnityEngine을 열어뒀고 "순�
 
 ### 네임스페이스
 
-루트는 기존 `OJ`를 유지하고 계층을 붙인다 — `OJ.Core.Equipment`, `OJ.Game.UI` 등.
-폴더 위치와 일치시킨다. 네임스페이스·클래스명 변경은 GUID에 영향이 없어 안전하다
-(반면 **파일명 변경은 GUID가 바뀌므로 위험**).
+루트는 기존 `OJ`를 유지하고 `Assets/Scripts` 아래 폴더 경로를 그대로 붙인다 —
+`Scripts/Equipment` → `OJ.Equipment`, `Scripts/SceneFlow` → `OJ.SceneFlow`.
+어셈블리 이름(`OJ.Game`)은 네임스페이스에 들어가지 않는다. 네임스페이스·클래스명
+변경은 GUID에 영향이 없어 안전하다 (반면 **파일명 변경은 GUID가 바뀌므로 위험**).
+
+**예외 두 건이 있고, 둘 다 이름이 이름을 가리는 문제다.**
+
+| 위치 | 네임스페이스 | 이유 |
+|---|---|---|
+| `Scripts/Editor` | `OJ.EditorTools` | `namespace OJ.Editor` 안에서는 `Editor`가 네임스페이스로 먼저 잡혀 `UnityEditor.Editor`를 가린다(CS0118). 폴더명은 Unity 관례상 `Editor`로 둔다 |
+| `Scripts/Define.cs` | `OJ` (루트) | `DiceType`·`Rarity`·`PointType` 등 전 계층이 쓰는 열거형이다. 하위 네임스페이스로 내리면 149개 파일 전부가 `using`을 달아야 한다 |
+
+**폴더명을 정할 때 그 안의 타입명과 겹치지 않게 할 것.** `Scripts/Bullet`을
+`OJ.Bullet`으로 만들면 `class Bullet`(Hunting)이 다른 네임스페이스에서 가려진다 —
+그래서 11.3에서 `Scripts/Dice`로 흡수했다.
 
 ---
 
@@ -115,24 +127,41 @@ ProjectP의 `Game.Core`는 BigDouble 때문에 UnityEngine을 열어뒀고 "순�
   순으로 조용히 내려간다. **배선 사고가 전부 "기본값 게임"으로 흡수된다.**
 - **`Resources.Load`가 항상 실패하는 경로**: `DiceMetaDataDatabase.asset`, `GemDefinitionDatabase.asset`이
   `Assets/ScriptableObject/`에 있어 Resources 규약 밖이다. 폴백을 예외로 승격하기 **전에** 경로를 먼저 고쳐야 한다.
-- **`CombatPowerUIPrefabBuilder`**: `[InitializeOnLoad]`로 에디터 기동마다 LobbyScene을 덮어쓰고 저장한다.
-  1단계에서 비활성화한다.
+- ~~**`CombatPowerUIPrefabBuilder`**: `[InitializeOnLoad]`로 에디터 기동마다 LobbyScene을 덮어쓰고 저장한다.~~
+  **1.1에서 해소.** 자동 설치 경로를 제거하고 메뉴 항목(`Tools/OJ/Combat Power/…`)만 남겼다.
+  씬을 건드리는 에디터 훅은 이제 전 프로젝트에 없다.
 - **`IDialog`는 인터페이스가 아니라 MonoBehaviour 베이스 클래스다.** ProjectP의 `IDialog`/`DialogBase`와
   이름·개념이 모두 충돌하므로 리네임 계획이 필요하다.
 - **`UIIdleRewardDialog`는 규약 밖이다.** `IDialog`를 상속하지 않고 프리팹 없이 코드로 전량 조립하며
   폰트를 씬의 아무 `TMP_Text`에서 훔쳐 쓰고 Escape를 자체 처리한다. 10단계 재작성 대상.
 - **수치 정본이 코드다.** `DiceMetaDataProvider.MergeMeta`가 asset을 코드 fallback으로 덮고,
   `StageDatabase.ApplyMonsterHpBalance`가 `GetStage` 호출마다 HP를 재계산한다. 결정 3번으로 뒤집는다.
-- **인코딩 파손 4파일**: `Dice/TypeUIComponent.cs`, `Dice/UIRemoveDice.cs`가 CP949 원시 바이트,
-  `Define/Define.cs`, `Build/Editor/Unity3dBuilder.cs`는 이미 U+FFFD로 한글 주석이 파괴됨(주석 재작성만이 해결책).
-- **평문 자격증명**: `Build/Editor/Unity3dBuilder.cs` 27~30줄에 키스토어 비밀번호가 상수로 박혀 있다.
-  제거 + **비밀번호 로테이션**이 필요하다(이미 커밋됐으므로 파일 수정만으로는 사라지지 않는다).
+- ~~**인코딩 파손 4파일**~~ **1.2에서 해소.** 138파일 전부 UTF-8이며 `Tools/verify_encoding.py`가 지킨다.
+  `Define.cs`는 규약이 예상한 재작성이 아니라 `bfa569d`에서 **원문 복구**됐다.
+  → **U+FFFD를 만나면 재작성하기 전에 `git log --follow`로 성한 리비전을 먼저 찾을 것.**
+- **평문 자격증명**: `Unity3dBuilder.cs`의 상수는 **1.3a에서 제거**(환경 변수 `OJ_KEYSTORE_PASS` /
+  `OJ_KEYSTORE_ALIAS_PASS`로 주입, 미설정 시 빌드 중단). 다만 **노출은 아직 안 닫혔다** —
+  히스토리에 남아 있고 `Keystore/osw.keystore`까지 추적 중이며 GitHub에 푸시된 상태다.
+  **비밀번호 로테이션이 선행 조치다.** 상세는 `MIGRATION_BASELINE.md` 하단 전용 절.
 
 ---
 
 ## 검증 도구
 
-에디터를 열지 않고 프리팹의 무음 오류를 잡는다. 전부 `python Tools/ui/<이름>.py .` 로 실행.
+에디터를 열지 않고 무음 오류를 잡는다. 전부 리포 루트에서 `python <경로> .` 로 실행.
+
+**커밋 전에는 이거 하나면 된다.**
+
+```
+Toolserify-all.cmd            # 인코딩 + 네임스페이스 + Missing + 테스트 3273개
+Toolserify-all.cmd --quick    # 테스트는 빼고 (몇 초)
+```
+
+넷을 따로 기억해서 돌려야 하면 아무도 안 돌린다. 하나라도 실패하면 종료 코드가 0이 아니다.
+`.github/workflows/verify.yml` 은 이 중 **Unity 없이 도는 둘**(인코딩·네임스페이스)만 돌린다 —
+나머지 둘은 `Library/PackageCache` 와 설치된 Unity 가 있어야 해서 러너에서 못 돈다.
+
+**UI 프리팹 (`Tools/ui/`)**
 
 | 도구 | 잡는 것 |
 |---|---|
@@ -142,8 +171,56 @@ ProjectP의 `Game.Core`는 BigDouble 때문에 UnityEngine을 열어뒀고 "순�
 | `verify_prefab_refs.py` | 프리팹이 **다른 프리팹의 컴포넌트**를 직접 참조 (복제 시 원본에 남은 참조) |
 | `layout_rect.py` | RectTransform 실제 사각형 계산 — "화면 밖/겹침"을 눈대중 대신 숫자로 |
 
+**프로젝트 무결성 (`Tools/`)**
+
+| 도구 | 잡는 것 |
+|---|---|
+| `verify_encoding.py` | `.cs`가 UTF-8이 아니거나 U+FFFD로 글자가 파괴된 경우. **복구 가능/불가를 구분해 알려준다** |
+| `verify_missing_scripts.py` | 씬·프리팹·SO의 Missing script. `--baseline N`으로 기준선 대비 증가를 판정 (현재 기준선 **0**) |
+| `verify_namespaces.py` | 폴더와 `namespace` 불일치. 그리고 **폴더명이 타입명과 겹쳐 그 타입을 가리는 경우**(CS0118) — 위 "네임스페이스" 절의 규칙을 검사로 못박은 것이다 |
+| `diff_prefab.py` | 프리팹 두 판을 **fileID 를 무시하고** 비교. 굽기 도구가 멱등인지 판정할 때 쓴다. `git diff` 로는 못 한다 — Unity 가 저장마다 fileID 를 새로 발급해 전부 바뀐 것으로 보인다 |
+
+**EditMode 테스트 (`Tools/headless/`)** — Unity를 열지 않고 돌린다.
+
+```
+Tools\headless\run-tests.cmd            # 판정용. Mono 에서 돈다
+Tools\headless\run-tests.cmd --list     # 수집만
+Tools\headless\run-tests.cmd --filter <정규식>
+```
+
+웜 1~2초. 종료 코드 0 통과 / 1 실패 / 2 컴파일 실패 / 3 러너 오류.
+Unity 설치본의 Roslyn·BCL·엔진 DLL을 쓰고 `Library/ScriptAssemblies`는 **쓰지 않는다** —
+그걸 쓰면 에디터가 포커스를 받아야 갱신되어 다시 사람 손이 필요해진다.
+
+> `--coreclr` 옵션은 진단용이다. **판정에 쓰지 말 것** — 아래 이유로 Unity와 답이 갈린다.
+
+---
+
+## 부동소수: Unity는 Mono, 재구현은 오라클이 아니다
+
+**이 프로젝트의 float 산술은 Mono 의미론을 따른다.** Unity는 에디터/EditMode 테스트를 Mono에서
+돌리고, Mono의 JIT는 float 식의 중간 결과를 매 연산마다 float로 접지 않고 **더 높은 정밀도로
+들고 가다 대입 시점에 한 번 접는다**(C# 명세가 허용한다). CoreCLR은 연산마다 접는다.
+
+```
+1f + (7f * 0.145f) + (7f * 7f * 0.015f)     // StageGrowthFormula.MonsterHp(2, 0.145f, 0.015f, 8)
+  Mono    → 2.75f       → RoundToInt(2 * 2.75f)      = 6     ← Unity의 실제 동작
+  CoreCLR → 2.7499998f  → RoundToInt(2 * 2.7499998f) = 5
+```
+
+실제로 이것 때문에 골든 테스트 1개가 틀린 기대값을 갖고 있었다. 엄격 float32로 재구현해
+뽑은 값이 5였고, Unity는 6이었다.
+
+**규칙: 기대값을 계산해서 만들지 마라.** 파이썬이든 C#이든 재구현은 Mono의 확장 정밀도를
+재현하지 못한다. 값은 **게임이나 Mono 러너가 실제로 내놓은 것**이어야 한다.
+그것이 `Tests/Golden/formula_baseline.txt`가 존재하는 이유다.
+
+`StageGrowthFormulaTests.MonsterHpMatchesMonoFloatBehaviour`가 이 경계를 지키는 카나리아다 —
+5가 나오면 CoreCLR 의미론으로 돌고 있다는 뜻이다.
+
 이 종류는 **컴파일도 콘솔도 조용해서 눌러 보기 전에는 드러나지 않는다.**
 프리팹을 만지는 단계(추출·10단계·12단계)에서는 커밋 전에 돌린다.
+`verify_missing_scripts.py`는 `Library/PackageCache`가 있어야 한다(없으면 오탐 방지를 위해 중단).
 
 ---
 

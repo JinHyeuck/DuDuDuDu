@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class UIRewardElement : MonoBehaviour
     {

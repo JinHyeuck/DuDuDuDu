@@ -1,37 +1,30 @@
 using UnityEngine;
 using System.Collections.Generic;
+using VContainer;
+using VContainer.Unity;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class BulletPool : MonoBehaviour
     {
-        public static BulletPool Instance;
-
         public GameObject bulletPrefab;
         public int poolSize = 20;
         private Queue<Bullet> pool = new Queue<Bullet>();
 
-        void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
+        // 찍어낸 총알에도 [Inject] 가 채워지도록 리졸버를 통해 생성한다
+        [Inject] private IObjectResolver resolver;
 
-            Instance = this;
+        void Start()
+        {
+            // 이 컴포넌트는 씬에 놓여 있어 스코프의 sceneLoaded 순회로 채워진다 —
+            // 즉 자기 Awake 뒤다. 그래서 풀 예열을 Start 로 내렸다.
+            // Awake 에서 찍으면 resolver 가 아직 null 이다
             for (int i = 0; i < poolSize; i++)
             {
-                GameObject obj = Instantiate(bulletPrefab, transform);
+                GameObject obj = resolver.Instantiate(bulletPrefab, transform);
                 obj.SetActive(false);
                 pool.Enqueue(obj.GetComponent<Bullet>());
             }
-        }
-
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
         }
 
         public Bullet GetBullet()
@@ -43,7 +36,7 @@ namespace OJ
                 return queuebullet;
             }
 
-            GameObject obj = Instantiate(bulletPrefab, transform);
+            GameObject obj = resolver.Instantiate(bulletPrefab, transform);
             return obj.GetComponent<Bullet>();
         }
 

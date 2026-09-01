@@ -1,7 +1,10 @@
 using System;
 using UnityEngine;
+using OJ.Dice;
+using OJ.Equipment;
+using OJ.Relic;
 
-namespace OJ
+namespace OJ.CombatPower
 {
     /// <summary>
     /// Permanent progression only. Run-scoped element levels, dice stars and mythic crafting

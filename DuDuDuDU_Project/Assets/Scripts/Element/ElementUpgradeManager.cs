@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using OJ.DI;
+using OJ.Dice;
+using OJ.Point;
+using OJ.UI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Element
 {
     public class ElementUpgradeManager : MonoBehaviour
     {
-        public static ElementUpgradeManager Instance;
         [SerializeField] private Button ElementUpgrade;
         [SerializeField] private Image coinIconImage;
         [SerializeField] private TMP_Text coinAmountText;
-        [SerializeField] private UIElementUpgradePanel elementUpgradePanel;
 
         private readonly Dictionary<ElementType, int> levels = new Dictionary<ElementType, int>();
 
@@ -20,14 +23,6 @@ namespace OJ
 
         void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-
             ResetAll(false);
             BindUI();
             RefreshCoinUI();
@@ -37,8 +32,6 @@ namespace OJ
         {
             UnbindUI();
 
-            if (Instance == this)
-                Instance = null;
         }
 
         public int GetLevel(ElementType elementType)
@@ -148,9 +141,16 @@ namespace OJ
                 PointManager.Instance.OnPointChanged -= OnPointChanged;
         }
 
+        /// <summary>
+        /// 카탈로그에서 꺼내 띄운다. (10.4)
+        ///
+        /// 예전에는 씬 인스턴스를 <c>[SerializeField]</c> 로 직접 가리켰고, 그 참조가 <c>None</c> 이면
+        /// <c>?.</c> 가 그대로 삼켜 <b>아무 로그 없이</b> 버튼이 먹통이 됐다.
+        /// <see cref="UIService"/> 는 못 열면 사유를 로그로 남긴다.
+        /// </summary>
         private void OnClickElementUpgrade()
         {
-            elementUpgradePanel?.Open();
+            GameContainer.UI?.Show<UIElementUpgradePanel>();
         }
 
         private void OnPointChanged(PointType pointType, int value)

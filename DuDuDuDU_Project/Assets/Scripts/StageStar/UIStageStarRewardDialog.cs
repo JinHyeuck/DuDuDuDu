@@ -4,15 +4,18 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
+using OJ.DI;
+using OJ.Hunting;
+using OJ.Point;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.StageStar
 {
-    public class UIStageStarRewardDialog : IDialog
+    public class UIStageStarRewardDialog : DialogBase
     {
         [SerializeField] private TMP_Text totalStarText;
         [SerializeField] private RectTransform rewardRoot;
         [SerializeField] private UIStageStarRewardElement rewardElementTemplate;
-        [SerializeField] private UIRewardResultDialog rewardResultDialog;
 
         private readonly List<UIStageStarRewardElement> rewardElements = new List<UIStageStarRewardElement>();
 
@@ -99,8 +102,15 @@ namespace OJ
 
             Refresh();
 
-            if (rewardResultDialog != null)
-                rewardResultDialog.Open(rewards, "\uBCF4\uC0C1\uC744 \uD68D\uB4DD\uD588\uC2B5\uB2C8\uB2E4.", Refresh);
+            // 카탈로그에서 꺼내 띄운다. (10.4)
+            //
+            // 예전에는 결과창을 [SerializeField] 로 직접 가리켰다. 그 참조가 None 이면
+            // 보상은 이미 지급돼 되돌릴 수 없는데 결과창만 아무 로그 없이 안 떴다 —
+            // 유저에게는 버튼이 먹통인 것으로 보이고 단서는 하나도 안 남는다.
+            //
+            // Open 이 값을 채운 뒤 스스로 Enter 까지 부르므로 Show 가 아니라 Get 이다.
+            GameContainer.UI?.Get<UIRewardResultDialog>()
+                ?.Open(rewards, "보상을 획득했습니다.", Refresh);
         }
 
         private void EnsureRewardElements(int count)

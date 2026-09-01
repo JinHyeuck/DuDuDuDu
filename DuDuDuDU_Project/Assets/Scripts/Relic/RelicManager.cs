@@ -1,26 +1,37 @@
 using System;
 using System.Collections.Generic;
+using OJ.Core;
 using UnityEngine;
+using UnityEngine.Scripting;
+using OJ.DI;
+using OJ.Dice;
+using OJ.Hunting;
+using OJ.Point;
+using OJ.Save;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Relic
 {
-    public class RelicManager : MonoBehaviour
+    /// <summary>
+    /// 유물 보유·레벨과 유물 효과. (MIGRATION_BASELINE 8.3b)
+    ///
+    /// 이 클래스는 두 가지를 한 몸에 갖고 있다 — 저장되는 <i>메타 상태</i>(레벨, 소환 횟수)와
+    /// 전투 중 <i>효과 적용</i>(보드에 주사위 소환, SP 추가, 몬스터 조회). 뒤쪽이
+    /// <c>UIBoard</c> · <c>DiceTypeStarManager</c> · <c>GameManager</c> · <c>MonsterManager</c> ·
+    /// <c>UIDiceSummonSystem</c> 다섯을 <b>이름으로</b> 붙잡고 있었다. 8.3a 에서 수명만 먼저
+    /// 컨테이너로 옮기고 전투 참조는 남겨 뒀는데, 그 다섯이 8.3b 에서
+    /// <see cref="IBattleRefs"/> 창구로 바뀌었다. 두 가지를 한 커밋에 섞지 않은 이유가
+    /// 이것이다 — 수명과 참조가 같이 흔들리면 무엇이 깨졌는지 가릴 수 없다.
+    ///
+    /// <b>이것은 루트에 사는 영구 서비스다.</b> 로비·타이틀에도 살아 있고 거기서도 불린다
+    /// (유물 소환, 효과 문구, 세이브). 그때 <c>battle.Board</c> 같은 참조는
+    /// <b>정상적으로 null</b> 이다. 그래서 아래에 남아 있는 null 검사들은 사고 방지가 아니라
+    /// "전투 밖에서는 할 일이 없다"는 뜻이다 — 지우면 로비에서 터진다.
+    /// </summary>
+    // IL2CPP 스트리핑 대비. 이유는 GameContainer 주석 참고 — 에디터에서는 안 드러난다.
+    [Preserve]
+    public sealed class RelicManager : ISaveStateOwner
     {
-        [Serializable]
-        private class RelicLevelData
-        {
-            public RelicId relicId;
-            public int level;
-        }
-
-        [Serializable]
-        private class RelicSaveData
-        {
-            public int summonCount;
-            public List<RelicLevelData> levels = new List<RelicLevelData>();
-        }
-
-        private const string SaveKey = "OJ.Relic.Save";
         private static readonly DiceType[] BasicDiceTypes =
         {
             DiceType.Normal,
@@ -30,12 +41,31 @@ namespace OJ
             DiceType.Thunder,
         };
 
-        public static RelicManager Instance { get; private set; }
+        /// <summary>
+        /// 과도기 다리. <b>대입은 <see cref="GameContainer"/> 에서만 한다.</b>
+        /// 호출부가 95곳(21개 파일)이다.
+        /// </summary>
+        public static RelicManager Instance { get; internal set; }
 
         public event Action OnRelicChanged;
         public event Action OnSummonCountChanged;
 
+        // "하나도 안 가진 상태"가 곧 신규 설치의 정상 상태다. 그래서 이 필드 초기화 하나로
+        // 첫 실행 준비가 끝나고, 생성자에서 따로 해 둘 일이 없다. (7.5 에서 구 로드 경로를
+        // 지울 때 거기 섞여 있던 초기화를 같이 잃지 않았는지 확인한 결과다 — 유물은
+        // 초기 지급도, 미리 채워 둘 칸도 없어서 잃을 것이 없었다.)
         private readonly Dictionary<RelicId, int> levels = new Dictionary<RelicId, int>();
+
+        /// <summary>
+        /// BattleScene 매니저로 가는 창구. (8.3b)
+        ///
+        /// 창구 자체는 루트 컨테이너가 소유하므로 <b>언제나 있다.</b> 반면 그 안의 참조는
+        /// 배틀 스코프가 채우고 비우므로 <b>전투 밖에서는 전부 null 이다.</b> 이 서비스는
+        /// 로비에서도 살아 있으니 그 null 은 정상 상태이고, 아래 호출부의 null 검사가
+        /// 그것을 뜻한다.
+        /// </summary>
+        private readonly IBattleRefs battle;
+
         private RelicDatabase database;
         private int summonCount;
         private bool stageStartDiceApplied;
@@ -57,44 +87,63 @@ namespace OJ
         public int SummonCount => summonCount;
         public int MaxLevel => Database != null ? Mathf.Max(1, Database.maxLevel) : 20;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Bootstrap()
+        /// <summary>
+        /// 컨테이너가 부른다. <b>여기서 <paramref name="battleRefs"/> 안을 들여다보지 마라</b> —
+        /// 루트 컨테이너가 세워지는 시점에는 BattleScene 이 아직 없어서 전부 null 이다.
+        /// 창구는 들고만 있고, 읽는 것은 실제로 효과를 적용하는 순간에 한다.
+        /// </summary>
+        public RelicManager(IBattleRefs battleRefs)
         {
-            if (Instance != null)
-                return;
-
-            var go = new GameObject(nameof(RelicManager));
-            go.AddComponent<RelicManager>();
+            battle = battleRefs;
         }
 
-        private void Awake()
+        /// <summary>이 매니저가 소유한 영구 상태를 <paramref name="state"/> 에 쓴다.</summary>
+        public void WriteTo(OJ.Core.SaveState state)
         {
-            if (Instance != null && Instance != this)
+            if (state == null)
+                return;
+
+            state.Relics.SummonCount = summonCount;
+
+            // 통합 세이브의 컬렉션은 계속 재사용되는 인스턴스다. 지우지 않으면 지난번에 쓴
+            // 유물이 남아 "잃은 유물"이 되살아난다. 아래 루프는 덮어쓰기만 하지 지우지
+            // 않으므로, 여기서 비우지 않으면 그 잔재를 걷어낼 곳이 없다.
+            state.Relics.Levels.Clear();
+
+            foreach (KeyValuePair<RelicId, int> pair in levels)
             {
-                Destroy(gameObject);
-                return;
+                // 레벨 0 은 "안 가진 것"과 같은 뜻이라 적을 이유가 없고, None 은 유물이 아니라
+                // enum 기본값이다. 이게 새어 나가면 존재하지 않는 유물 한 칸이 생긴다.
+                if (pair.Key == RelicId.None || pair.Value <= 0)
+                    continue;
+
+                state.Relics.Levels[pair.Key.ToString()] = Mathf.Clamp(pair.Value, 0, MaxLevel);
             }
-
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            Load();
         }
 
-        private void OnDestroy()
+        /// <summary>영구 상태를 <paramref name="state"/> 에서 읽어 온다.</summary>
+        public void ReadFrom(OJ.Core.SaveState state)
         {
-            if (Instance == this)
-                Instance = null;
-        }
+            // 로드는 초기화다. 세이브가 비어 있더라도 이전에 들고 있던 유물이 남으면 안 된다.
+            levels.Clear();
+            if (state == null)
+                return;
 
-        private void OnApplicationPause(bool pauseStatus)
-        {
-            if (pauseStatus)
-                Save();
-        }
+            // 소환 횟수가 음수면 소환 비용표 조회가 앞쪽으로 되감겨 비용이 다시 싸진다.
+            // 손상된 세이브 한 줄이 무한 저렴 소환이 되지 않도록 바닥을 둔다.
+            summonCount = Mathf.Max(0, state.Relics.SummonCount);
 
-        private void OnApplicationQuit()
-        {
-            Save();
+            foreach (KeyValuePair<string, int> pair in state.Relics.Levels)
+            {
+                // 없어진 유물 이름이 옛 세이브에 남아 있을 수 있다. 그 한 줄 때문에 로드 전체가
+                // 죽으면 진행도를 통째로 잃으므로 조용히 버린다.
+                if (!System.Enum.TryParse(pair.Key, out RelicId relicId) || relicId == RelicId.None)
+                    continue;
+
+                // 데이터에서 maxLevel 을 내리면 저장된 레벨이 성장 수식 범위를 벗어나
+                // GetPrimaryValue 가 엉뚱한 값을 낸다. 그래서 읽는 순간 잘라 둔다.
+                levels[relicId] = Mathf.Clamp(pair.Value, 0, MaxLevel);
+            }
         }
 
         public IReadOnlyList<RelicDefinition> GetDefinitions()
@@ -272,7 +321,9 @@ namespace OJ
             if (stageStartDiceApplied || !HasRelic(RelicId.AdvanceDeployment))
                 return;
 
-            UIBoard board = UIBoard.Instance;
+            // 전투 밖(로비)에서 불리면 board 가 null 이다. 그건 사고가 아니라
+            // "지금은 놓을 보드가 없다"는 정상 상태라 조용히 나간다.
+            UIBoard board = battle.Board;
             if (board == null || board.diceMap == null || board.diceMap.Length <= 0)
                 return;
 
@@ -286,7 +337,7 @@ namespace OJ
             if (upgradeChance > 0f && UnityEngine.Random.value * 100f <= upgradeChance)
                 star = Mathf.Min(MergeSystem.MaxStar, star + 1);
 
-            DiceTypeStarManager.Instance?.OnDiceSpawn(type, star);
+            battle.DiceStars?.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
             stageStartDiceApplied = true;
         }
@@ -332,24 +383,19 @@ namespace OJ
 
         public float GetCooldownReductionPercent()
         {
-            float percent = GetPrimaryValue(RelicId.QuickHands);
-            if (IsLastWallCooldownActive())
-                percent += GetPrimaryValue(RelicId.LastWall);
-
-            return Mathf.Clamp(percent, 0f, 80f);
+            return RelicEffectFormula.CooldownReductionPercent(
+                GetPrimaryValue(RelicId.QuickHands),
+                GetPrimaryValue(RelicId.LastWall),
+                IsLastWallCooldownActive());
         }
 
         public float GetDamageMultiplier(DiceType diceType)
         {
-            float bonusPercent = 0f;
-
-            if (HasRelic(RelicId.FullBoardPressure) && IsBoardFull())
-                bonusPercent += GetPrimaryValue(RelicId.FullBoardPressure);
-
-            if (HasCrownResonance(diceType))
-                bonusPercent += GetPrimaryValue(RelicId.CrownResonance);
-
-            return 1f + bonusPercent * 0.01f;
+            return RelicEffectFormula.DamageMultiplier(
+                GetPrimaryValue(RelicId.FullBoardPressure),
+                HasRelic(RelicId.FullBoardPressure) && IsBoardFull(),
+                GetPrimaryValue(RelicId.CrownResonance),
+                HasCrownResonance(diceType));
         }
 
         public float ConsumeAttackDamageMultiplier()
@@ -390,7 +436,8 @@ namespace OJ
                 return false;
             }
 
-            UIBoard board = UIBoard.Instance;
+            // 위와 같다 — 전투 밖에서는 board 가 null 인 것이 정상이다.
+            UIBoard board = battle.Board;
             if (board == null || board.diceMap == null)
                 return false;
 
@@ -399,7 +446,7 @@ namespace OJ
                 return false;
 
             const int twinStar = 1;
-            DiceTypeStarManager.Instance?.OnDiceSpawn(type, twinStar);
+            battle.DiceStars?.OnDiceSpawn(type, twinStar);
             board.SpawnDice(type, twinStar, slotIndex);
             return true;
         }
@@ -412,14 +459,17 @@ namespace OJ
 
         public void ApplyMergeInsurance()
         {
+            // 한 번만 읽어 지역에 담는다. 창구를 두 번 읽는 사이에 배틀 스코프가 파괴되면
+            // 검사와 사용이 서로 다른 상태를 보게 되는데, 그 창이 좁다고 없는 것은 아니다.
+            UIDiceSummonSystem summon = battle.Summon;
             if (!HasRelic(RelicId.MergeInsurance)
-                || UIDiceSummonSystem.Instance == null
+                || summon == null
                 || UnityEngine.Random.value * 100f > GetPrimaryValue(RelicId.MergeInsurance))
             {
                 return;
             }
 
-            UIDiceSummonSystem.Instance.AddSP(Mathf.RoundToInt(GetSecondaryValue(RelicId.MergeInsurance)));
+            summon.AddSP(Mathf.RoundToInt(GetSecondaryValue(RelicId.MergeInsurance)));
         }
 
         public void OnMythicCrafted(DiceType mythicType)
@@ -431,7 +481,7 @@ namespace OJ
                 return;
 
             firstMythicCrafted = true;
-            UIDiceSummonSystem.Instance?.AddSP(Mathf.RoundToInt(GetPrimaryValue(RelicId.KingBlueprint)));
+            battle.Summon?.AddSP(Mathf.RoundToInt(GetPrimaryValue(RelicId.KingBlueprint)));
         }
 
         public bool TryTriggerLastWall()
@@ -440,7 +490,11 @@ namespace OJ
                 return false;
 
             lastWallTriggered = true;
-            lastWallCooldownWaveIndex = GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : -1;
+
+            // -1 은 "쿨다운 걸 웨이브를 모른다"는 뜻이고, IsLastWallCooldownActive 가
+            // 그 값을 비활성으로 읽는다. 전투 밖이라면 걸어 둘 웨이브 자체가 없으니 맞는 값이다.
+            GameManager game = battle.Game;
+            lastWallCooldownWaveIndex = game != null ? game.CurrentWaveIndex : -1;
             return true;
         }
 
@@ -449,12 +503,15 @@ namespace OJ
             if (!wasPoisoned || !HasRelic(RelicId.PoisonIncense))
                 return;
 
-            if (MonsterManager.Instance == null || MonsterManager.Instance.activeMonsters == null)
+            // 몬스터가 죽는 것은 전투 안에서뿐이지만, 이 서비스는 루트에 살아서
+            // 씬이 내려가는 도중에도 불릴 수 있다. 그때는 창구가 이미 비어 있다.
+            MonsterManager monsters = battle.Monsters;
+            if (monsters == null || monsters.activeMonsters == null)
                 return;
 
             int targetCount = Mathf.Max(1, Mathf.RoundToInt(GetPrimaryValue(RelicId.PoisonIncense)));
             float poisonMultiplier = Mathf.Max(1f, GetSecondaryValue(RelicId.PoisonIncense));
-            List<Monster> candidates = MonsterManager.Instance.activeMonsters;
+            List<Monster> candidates = monsters.activeMonsters;
 
             HashSet<Monster> usedTargets = new HashSet<Monster>();
             for (int applied = 0; applied < targetCount; applied++)
@@ -494,17 +551,17 @@ namespace OJ
 
         public int GetSlowDamageTakenBonusPercent()
         {
-            return Mathf.RoundToInt(GetPrimaryValue(RelicId.FrostNail));
+            return RelicEffectFormula.PercentToInt(GetPrimaryValue(RelicId.FrostNail));
         }
 
         public int GetTornadoDamageTakenBonusPercent()
         {
-            return Mathf.RoundToInt(GetPrimaryValue(RelicId.TornadoAnchor));
+            return RelicEffectFormula.PercentToInt(GetPrimaryValue(RelicId.TornadoAnchor));
         }
 
         public float GetTornadoDamageTakenBonusDuration()
         {
-            return Mathf.Max(0.1f, GetDuration(RelicId.TornadoAnchor));
+            return RelicEffectFormula.DurationWithFloor(GetDuration(RelicId.TornadoAnchor));
         }
 
         public float GetStunChanceBonusPercent()
@@ -514,12 +571,12 @@ namespace OJ
 
         public int GetStunDamageTakenBonusPercent()
         {
-            return Mathf.RoundToInt(GetSecondaryValue(RelicId.ParalysisNeedle));
+            return RelicEffectFormula.PercentToInt(GetSecondaryValue(RelicId.ParalysisNeedle));
         }
 
         public int GetArmorBreakPercentBonus()
         {
-            return Mathf.RoundToInt(GetPrimaryValue(RelicId.CrackHammer));
+            return RelicEffectFormula.PercentToInt(GetPrimaryValue(RelicId.CrackHammer));
         }
 
         public float GetArmorBreakDurationBonus()
@@ -534,7 +591,7 @@ namespace OJ
 
         public int GetWindDamageTakenBonusPercent()
         {
-            return Mathf.RoundToInt(GetSecondaryValue(RelicId.TailwindFeather));
+            return RelicEffectFormula.PercentToInt(GetSecondaryValue(RelicId.TailwindFeather));
         }
 
         private RelicDefinition PickRelic()
@@ -591,29 +648,34 @@ namespace OJ
 
         private bool IsLastWallCooldownActive()
         {
+            // 전투가 없으면 쿨다운도 없다. game == null 이 곧 그 뜻이다.
+            GameManager game = battle.Game;
             return lastWallCooldownWaveIndex >= 0
-                && GameManager.Instance != null
-                && GameManager.Instance.inGameState == InGameState.Wave
-                && GameManager.Instance.CurrentWaveIndex == lastWallCooldownWaveIndex;
+                && game != null
+                && game.inGameState == InGameState.Wave
+                && game.CurrentWaveIndex == lastWallCooldownWaveIndex;
         }
 
         private bool HasCrownResonance(DiceType diceType)
         {
-            if (!HasRelic(RelicId.CrownResonance) || DiceTypeStarManager.Instance == null)
+            // 다섯 갈래가 같은 대상을 보게 지역에 담는다. 전투 밖이면 null 이고,
+            // 그때 공명은 성립할 수 없으니 false 가 맞는 답이다.
+            DiceTypeStarManager diceStars = battle.DiceStars;
+            if (!HasRelic(RelicId.CrownResonance) || diceStars == null)
                 return false;
 
             switch (diceType)
             {
                 case DiceType.Normal:
-                    return DiceTypeStarManager.Instance.GetTypeCount(DiceType.KingNormal) > 0;
+                    return diceStars.GetTypeCount(DiceType.KingNormal) > 0;
                 case DiceType.Fire:
-                    return DiceTypeStarManager.Instance.GetTypeCount(DiceType.KingFire) > 0;
+                    return diceStars.GetTypeCount(DiceType.KingFire) > 0;
                 case DiceType.Ice:
-                    return DiceTypeStarManager.Instance.GetTypeCount(DiceType.KingIce) > 0;
+                    return diceStars.GetTypeCount(DiceType.KingIce) > 0;
                 case DiceType.Thunder:
-                    return DiceTypeStarManager.Instance.GetTypeCount(DiceType.KingThunder) > 0;
+                    return diceStars.GetTypeCount(DiceType.KingThunder) > 0;
                 case DiceType.Poison:
-                    return DiceTypeStarManager.Instance.GetTypeCount(DiceType.KingPoison) > 0;
+                    return diceStars.GetTypeCount(DiceType.KingPoison) > 0;
                 default:
                     return false;
             }
@@ -648,12 +710,18 @@ namespace OJ
             }
         }
 
-        private static bool IsBoardFull()
+        /// <summary>
+        /// 8.3b 에서 <c>static</c> 을 뗐다. 보드를 <c>UIBoard.Instance</c> 라는 전역에서
+        /// 꺼내던 것이 인스턴스 필드인 창구를 통하게 바뀌었기 때문이다 — 정적 메서드는
+        /// 창구를 볼 수 없다. 하는 일은 그대로다.
+        /// </summary>
+        private bool IsBoardFull()
         {
-            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null || UIBoard.Instance.diceMap.Length <= 0)
+            UIBoard board = battle.Board;
+            if (board == null || board.diceMap == null || board.diceMap.Length <= 0)
                 return false;
 
-            UIDice[] map = UIBoard.Instance.diceMap;
+            UIDice[] map = board.diceMap;
             for (int i = 0; i < map.Length; i++)
             {
                 if (map[i] == null)
@@ -717,60 +785,23 @@ namespace OJ
             return value.ToString("0.#");
         }
 
-        private void Load()
-        {
-            levels.Clear();
-            string json = PlayerPrefs.GetString(SaveKey, string.Empty);
-            if (string.IsNullOrEmpty(json))
-                return;
-
-            try
-            {
-                RelicSaveData saveData = JsonUtility.FromJson<RelicSaveData>(json);
-                if (saveData == null)
-                    return;
-
-                summonCount = Mathf.Max(0, saveData.summonCount);
-                if (saveData.levels == null)
-                    return;
-
-                for (int i = 0; i < saveData.levels.Count; i++)
-                {
-                    RelicLevelData data = saveData.levels[i];
-                    if (data == null || data.relicId == RelicId.None)
-                        continue;
-
-                    levels[data.relicId] = Mathf.Clamp(data.level, 0, MaxLevel);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"Failed to load relic save: {ex.Message}");
-            }
-        }
-
+        /// <summary>
+        /// 거래가 끝난 그 자리에서 통합 세이브를 파일에 쓴다.
+        ///
+        /// <b>왜 호출 지점을 그대로 뒀는가.</b> 7.5 에서 바뀐 것은 저장 매체뿐이다 —
+        /// 소환과 유물 획득은 재화를 <b>먼저</b> 깎고 결과를 나중에 주는 거래라, 여기서
+        /// 즉시 쓰지 않으면 앱이 백그라운드로 갈 때까지 그 결과가 메모리에만 남는다.
+        /// 모바일에서 OS 가 프로세스를 죽이는 것은 사고가 아니라 일상이고, 그러면
+        /// <b>골드와 티켓만 사라지고 유물은 없는</b> 상태로 되돌아간다.
+        ///
+        /// <b>왜 <c>?.</c> 인가.</b> 컨테이너는 매니저를 전부 만든 뒤에야 SaveService 를
+        /// 해석한다. 매니저 생성자가 도는 동안 간접적으로 여기 들어오면 SaveService 가
+        /// 아직 null 이고, 그때는 조용히 건너뛰는 것이 맞다 — 아직 아무 거래도 일어나지
+        /// 않았으니 굳혀 둘 진행도가 없다.
+        /// </summary>
         private void Save()
         {
-            RelicSaveData saveData = new RelicSaveData
-            {
-                summonCount = summonCount,
-                levels = new List<RelicLevelData>()
-            };
-
-            foreach (KeyValuePair<RelicId, int> pair in levels)
-            {
-                if (pair.Key == RelicId.None || pair.Value <= 0)
-                    continue;
-
-                saveData.levels.Add(new RelicLevelData
-                {
-                    relicId = pair.Key,
-                    level = Mathf.Clamp(pair.Value, 0, MaxLevel)
-                });
-            }
-
-            PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(saveData));
-            PlayerPrefs.Save();
+            GameContainer.SaveService?.SaveAll();
         }
     }
 }

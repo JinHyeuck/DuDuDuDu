@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OJ
+namespace OJ.Equipment
 {
     [Serializable]
     public class GemEffect

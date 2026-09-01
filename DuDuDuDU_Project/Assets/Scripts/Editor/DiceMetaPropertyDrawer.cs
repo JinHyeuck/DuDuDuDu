@@ -1,7 +1,8 @@
 using UnityEditor;
 using UnityEngine;
+using OJ.Dice;
 
-namespace OJ.Editor
+namespace OJ.EditorTools
 {
     [CustomPropertyDrawer(typeof(DiceMetaDataDatabase.DiceMeta))]
     public class DiceMetaPropertyDrawer : PropertyDrawer

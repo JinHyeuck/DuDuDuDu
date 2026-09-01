@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Point;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Equipment
 {
-    public class UIEquipmentConfirmDialog : IDialog
+    public class UIEquipmentConfirmDialog : DialogBase
     {
         public event System.Action Hidden;
 

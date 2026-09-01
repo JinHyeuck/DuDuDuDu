@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace OJ
+namespace OJ.Utils
 {
     [DisallowMultipleComponent]
     public class SimpleImageAnimator : MonoBehaviour

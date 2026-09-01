@@ -1,8 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using VContainer;
+using OJ.Analytics;
+using OJ.DI;
+using OJ.Dice;
+using OJ.Equipment;
+using OJ.Hunting;
 
-namespace OJ
+namespace OJ.Point
 {
     public class PointCheatController : MonoBehaviour
     {
@@ -47,6 +53,16 @@ namespace OJ
         private GameObject inputBlockerRoot;
         private bool lastVisibleState;
 
+        /// <summary>
+        /// BattleScene 매니저로 가는 창구. (8.3b)
+        ///
+        /// <b>로비·타이틀에서는 <c>IsActive</c> 가 false 인 것이 정상이다.</b> 이 오버레이는
+        /// <c>DontDestroyOnLoad</c> 로 앱 내내 살아 있고 전투 밖에서도 열리므로, 전투 참조를
+        /// 만지는 자리마다 <c>IsActive</c> 로 먼저 막는다 — 예전 <c>X.Instance == null</c>
+        /// 검사가 하던 일과 같은 뜻이다.
+        /// </summary>
+        [Inject] private IBattleRefs battle;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
@@ -66,6 +82,29 @@ namespace OJ
             SyncDebugSummonSelection();
             EnsureInputBlocker();
             SetInputBlockerVisible(visible);
+        }
+
+        /// <summary>
+        /// 창구를 받아 온다. (8.3b)
+        ///
+        /// <b>이 오브젝트는 컨테이너가 만들지 않는다.</b> 위 <see cref="Bootstrap"/> 가
+        /// <c>new GameObject</c> + <c>AddComponent</c> 로 씬 밖에 세우는 개발용 오버레이라
+        /// 어떤 스코프의 계층에도 속하지 않고, 그래서 <c>[Inject]</c> 필드를 아무도 채워
+        /// 주지 않는다. 컨테이너 바깥 오브젝트에 쓰라고 있는 <c>IObjectResolver.Inject</c> 로
+        /// 직접 채운다.
+        ///
+        /// <b>시점이 <c>Awake</c> 가 아니라 <c>Start</c> 인 이유.</b> 루트 컨테이너는
+        /// <c>BeforeSceneLoad</c> 에 이미 서 있어 <c>Awake</c> 에서도 잡히긴 하지만,
+        /// 창구를 채우는 배틀 스코프는 <c>sceneLoaded</c>(모든 <c>Awake</c> 뒤,
+        /// 모든 <c>Start</c> 앞)에 만들어진다. 8.6 규칙대로 <c>Start</c> 에 두면
+        /// 배선이 끝난 뒤라는 것이 한눈에 읽힌다.
+        ///
+        /// 창구 인스턴스는 루트가 들고 있는 하나뿐이고 씬이 바뀌어도 교체되지 않는다
+        /// (배틀 스코프는 그 안을 채우고 비울 뿐이다). 그래서 여기서 한 번만 받으면 된다.
+        /// </summary>
+        private void Start()
+        {
+            GameContainer.Root.Container.Inject(this);
         }
 
         private void Update()
@@ -500,7 +539,10 @@ namespace OJ
 
         private void SummonSelectedDice()
         {
-            if (UIBoard.Instance == null || DiceTypeStarManager.Instance == null)
+            // 보드도 주사위 매니저도 전투 씬에만 있다. 예전에는 둘을 따로 null 검사했지만
+            // 창구는 <b>한 번에 전부 채워지거나 전부 비거나</b> 둘 중 하나이므로
+            // (BattleContext.Bind 참조) IsActive 한 줄이 그 검사와 정확히 같은 뜻이다.
+            if (!battle.IsActive)
                 return;
 
             int slotIndex = GetRandomEmptySlot();
@@ -513,27 +555,33 @@ namespace OJ
             DiceType summonType = DebugSummonDiceType;
             int summonStar = Mathf.Clamp(DebugSummonStar, 1, 7);
 
-            DiceTypeStarManager.Instance.OnDiceSpawn(summonType, summonStar);
-            UIBoard.Instance.SpawnDice(summonType, summonStar, slotIndex);
+            battle.DiceStars.OnDiceSpawn(summonType, summonStar);
+            battle.Board.SpawnDice(summonType, summonStar, slotIndex);
+
+            // RunHistoryManager 는 전투 매니저가 아니라 루트 서비스라 창구 밖이다 — 그대로 둔다.
+            // 웨이브·SP 는 위 IsActive 가 통과한 이상 반드시 살아 있으므로 삼항이 필요 없다.
             RunHistoryManager.Instance?.RecordSummon(
                 summonType,
                 summonStar,
-                GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : 0,
+                battle.Game.CurrentWaveIndex,
                 0,
-                UIDiceSummonSystem.Instance != null ? UIDiceSummonSystem.Instance.currentSP : 0);
+                battle.Summon.currentSP);
         }
 
         private int GetRandomEmptySlot()
         {
-            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+            // 부르는 쪽이 이미 IsActive 를 확인했지만, 이 메서드만 따로 읽어도 뜻이 서게
+            // 남겨 둔다. diceMap 검사는 창구와 무관하다 — 보드가 아직 격자를 만들기 전인
+            // 순간을 거르는 것이고, 그건 전투 중에도 성립할 수 있는 상태다.
+            if (!battle.IsActive || battle.Board.diceMap == null)
                 return -1;
 
-            int total = UIBoard.Instance.rows * UIBoard.Instance.cols;
+            int total = battle.Board.rows * battle.Board.cols;
             int emptyCount = 0;
 
             for (int i = 0; i < total; i++)
             {
-                if (UIBoard.Instance.GetDice(i) == null)
+                if (battle.Board.GetDice(i) == null)
                     emptyCount++;
             }
 
@@ -543,7 +591,7 @@ namespace OJ
             int pickIndex = Random.Range(0, emptyCount);
             for (int i = 0; i < total; i++)
             {
-                if (UIBoard.Instance.GetDice(i) != null)
+                if (battle.Board.GetDice(i) != null)
                     continue;
 
                 if (pickIndex == 0)
@@ -557,7 +605,9 @@ namespace OJ
 
         private void SetActiveMonstersHp()
         {
-            if (MonsterManager.Instance == null)
+            // 몬스터 매니저는 전투 씬에만 있다. 로비에서 눌러도 조용히 아무 일도 없는 것이
+            // 예전 MonsterManager.Instance == null 검사와 같은 동작이다.
+            if (!battle.IsActive)
                 return;
 
             if (!int.TryParse(monsterHpInput, out int hp))
@@ -565,9 +615,9 @@ namespace OJ
 
             hp = Mathf.Max(1, hp);
 
-            for (int i = 0; i < MonsterManager.Instance.activeMonsters.Count; i++)
+            for (int i = 0; i < battle.Monsters.activeMonsters.Count; i++)
             {
-                Monster monster = MonsterManager.Instance.activeMonsters[i];
+                Monster monster = battle.Monsters.activeMonsters[i];
                 if (monster == null || monster.gameObject.activeInHierarchy == false)
                     continue;
 

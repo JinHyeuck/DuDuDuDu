@@ -1,4 +1,4 @@
-namespace OJ
+namespace OJ.Hunting
 {
     public static class AttackContentExtensions
     {

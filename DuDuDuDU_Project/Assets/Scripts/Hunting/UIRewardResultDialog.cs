@@ -4,10 +4,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
+using OJ.Point;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Hunting
 {
-    public class UIRewardResultDialog : IDialog
+    public class UIRewardResultDialog : DialogBase
     {
         [SerializeField] private TMP_Text messageText;
         [SerializeField] private RectTransform rewardRoot;

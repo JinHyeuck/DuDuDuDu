@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace OJ
+namespace OJ.Relic
 {
     [Serializable]
     public class RelicDefinition

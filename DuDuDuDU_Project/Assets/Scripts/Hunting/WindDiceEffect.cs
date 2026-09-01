@@ -1,21 +1,36 @@
 using System.Collections.Generic;
 using UnityEngine;
+using OJ.DI;
+using OJ.Dice;
+using OJ.Relic;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class WindDiceEffect : DiceEffectBase
     {
         private const float BasePushDistance = 0.7f;
+
+        // 8.3b: 컨테이너가 만들지 않고 AttackContent 가 new 로 찍는 순수 C# 클래스라
+        // 생성자로 창구를 받는다. 창구 필드는 기반 클래스(DiceEffectBase)가 protected 로
+        // 들고 있으니 여기서 새로 만들지 않고 base 로 넘기기만 한다 — 여기서 따로 필드를
+        // 두면 기반의 것을 가려서(CS0108) 기반의 PlayEffectAt 이 빈 창구를 보게 된다.
+        public WindDiceEffect(IBattleRefs battle) : base(battle)
+        {
+        }
 
         public override DiceType DiceType => DiceType.Wind;
         public override bool ShouldApplyDamage => false;
 
         public override bool TryCastWithoutTarget(AttackContent attackContent, int shotDicePip)
         {
-            if (attackContent == null || MonsterManager.Instance == null || MonsterManager.Instance.activeMonsters == null)
+            // 8.3b: MonsterManager 는 전투 씬 안에서 null 이 될 수 없으므로 매니저 자체를
+            // 검사하던 부분은 지운다. activeMonsters 는 매니저가 들고 있는 데이터라 그대로 본다.
+            if (attackContent == null || battle.Monsters.activeMonsters == null)
                 return false;
 
-            Wall wall = GameManager.Instance != null ? GameManager.Instance.wall : null;
+            // 8.3b: GameManager 는 살아 있는 게 보장되지만 wall 은 스테이지 상태에 따라
+            // 비어 있을 수 있는 데이터 필드라 null 검사를 남긴다.
+            Wall wall = battle.Game.wall;
             if (wall == null)
                 return false;
 

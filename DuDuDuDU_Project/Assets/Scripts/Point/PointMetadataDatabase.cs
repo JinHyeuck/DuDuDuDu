@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OJ
+namespace OJ.Point
 {
     [CreateAssetMenu(fileName = "PointMetadataDatabase", menuName = "Point/Metadata Database")]
     public class PointMetadataDatabase : ScriptableObject

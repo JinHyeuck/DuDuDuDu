@@ -3,33 +3,57 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
+using System;
+using VContainer;
+using OJ.Core;
+using OJ.Analytics;
+using OJ.DI;
+using OJ.Dice;
+using OJ.Element;
+using OJ.Point;
+using OJ.Relic;
+using OJ.SceneFlow;
+using OJ.Stage;
+using OJ.UI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class GameManager : MonoBehaviour
     {
-        public static GameManager Instance;
-        private bool isGameOver = false;
+        /// <summary>
+        /// (8.3b) BattleScene 매니저들로 가는 창구. 배틀 스코프는 씬의 모든 <c>Awake</c> 뒤,
+        /// 모든 <c>Start</c> 앞에 빌드되므로 <b><c>Awake</c> 에서는 아직 null 이고
+        /// <c>Start</c> 이후로는 절대 null 이 아니다.</b> 그래서 아래 호출들에는
+        /// <c>?.</c> 를 쓰지 않는다 — 여기서 null 이면 그것은 사고이고 울어야 한다.
+        /// </summary>
+        [Inject] private IBattleRefs battle;
 
-        public int WallHp;
+        private bool isGameOver { get => Run.IsGameOver; set => Run.IsGameOver = value; }
+
+        public int WallHp => Run.WallHp;
 
         public Wall wall;
 
         public InGameState inGameState = InGameState.None;
 
-        public int WaveMonsterCount = 20;
-        public int WaveMonsterDeadCount = 0;
-        public int CurrentWaveIndex { get; private set; } = 0;
+        public int WaveMonsterCount => Run.WaveMonsterCount;
+        public int WaveMonsterDeadCount { get => Run.WaveMonsterDeadCount; set => Run.WaveMonsterDeadCount = value; }
+        /// <summary>
+        /// 이 판의 상태. (6.1) 예전에는 벽 HP·웨이브·몬스터 수가 각각 public 필드였고
+        /// 씬에도 직렬화돼 있었다. 그런데 <c>InitializeStage</c> 가 매번 스테이지 데이터로
+        /// 덮어써서 씬 값은 죽은 값이었다 — 인스펙터에서 고쳐도 아무 일도 일어나지 않았다.
+        ///
+        /// 이제 소유자가 하나다. 판을 리셋하려면 <c>Run.BeginRun</c> 한 번이면 되고,
+        /// 필드를 늘려도 리셋을 빠뜨릴 수 없다.
+        /// </summary>
+        public RunState Run { get; } = new RunState();
+
+        public int CurrentWaveIndex => Run.WaveIndex;
         public StageData CurrentStageData { get; private set; }
 
         [Header("Stage Theme")]
         [SerializeField] private SpriteRenderer stageBackground;
-        [Header("Craft")]
-        [SerializeField] private UIDiceCraftProgressDialog craftProgressDialog;
-        [Header("Reward Preview")]
-        [SerializeField] private UIWaveRewardPreviewDialog waveRewardPreviewDialog;
-        [Header("Result")]
-        [SerializeField] private UIStageResultDialog stageResultDialog;
         public Button PlayUI;
         public Image PlayUI_Field;
         public Button Pause;
@@ -46,14 +70,6 @@ namespace OJ
 
         void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-
             PlayUI.onClick.AddListener(OnClick_PlayUI);
             Pause.onClick.AddListener(OnClick_Pause);
             Speed.onClick.AddListener(OnClick_Speed);
@@ -65,8 +81,6 @@ namespace OJ
             if (Pause != null) Pause.onClick.RemoveListener(OnClick_Pause);
             if (Speed != null) Speed.onClick.RemoveListener(OnClick_Speed);
 
-            if (Instance == this)
-                Instance = null;
         }
 
         private void Start()
@@ -128,21 +142,29 @@ namespace OJ
             PlayUI_Field?.gameObject.SetActive(state == InGameState.Setting);
             Pause?.gameObject.SetActive(state == InGameState.Wave);
             Speed?.gameObject.SetActive(state == InGameState.Wave);
-            craftProgressDialog?.SetActive(state == InGameState.Setting);
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
             WaveText?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
 
+            // (10.4) 이 파일이 여는 팝업 셋은 예전에 씬 인스턴스였고 [SerializeField] 로 직접
+            // 가리켰다. 그 참조가 None 이 되면 아무 로그 없이 창이 안 열렸다 — 실패가 조용했다.
+            // UIService 는 못 열면 사유를 로그로 남긴다.
+            // 닫을 때 Hide 인 이유는 이미 만들어 둔 것만 건드리기 때문이다 —
+            // 닫으려고 프리팹을 새로 찍는 일이 없다.
+            if (state == InGameState.Setting)
+                GameContainer.UI?.Show<UIDiceCraftProgressDialog>();
+            else
+                GameContainer.UI?.Hide<UIDiceCraftProgressDialog>();
 
             if (state == InGameState.Wave)
             {
                 isPause = false;
-                CurrentWaveIndex++;
+                Run.WaveIndex++;
                 RelicManager.Instance?.BeginWave(CurrentWaveIndex);
-                WaveMonsterCount = GetWaveTargetCount();
+                Run.WaveMonsterCount = GetWaveTargetCount();
                 UpdateWaveText();
                 SetRemainMonster(0);
-                MonsterSpawner.Instance.PlayWave();
+                battle.Spawner.PlayWave();
                 Time.timeScale = timeSpeed;
                 WaveMonsterDeadCount = 0;
                 SetSpeedText();
@@ -273,27 +295,38 @@ namespace OJ
 
             ApplyStageTheme();
 
-            WallHp = CurrentStageData.wallHp;
-            WaveMonsterCount = CurrentStageData.monstersPerWave;
-            CurrentWaveIndex = 0;
-            WaveMonsterDeadCount = 0;
-            isGameOver = false;
+            // 런 상태를 한 번에 세운다. 예전에는 이 다섯 줄이 각각 다른 필드를 건드렸고,
+            // 하나만 빠뜨리면 이전 판 값이 새어 나갔다.
+            Run.BeginRun(
+                seed: Environment.TickCount,
+                stageIndex: CurrentStageData.stageIndex,
+                wallMaxHp: CurrentStageData.wallHp,
+                monstersPerWave: CurrentStageData.monstersPerWave,
+                initialSummonPoint: 0,
+                initialSummonCost: 0);
 
-            ElementUpgradeManager.Instance?.ResetRunState();
+            battle.ElementUpgrade.ResetRunState();
             wall.SetInit(WallHp);
             int startSpBonus = RelicManager.Instance != null ? RelicManager.Instance.GetStageStartSpBonus() : 0;
-            UIDiceSummonSystem.Instance?.SetStageStartSp(CurrentStageData.initialSP + startSpBonus);
+            battle.Summon.SetStageStartSp(CurrentStageData.initialSP + startSpBonus);
             RunHistoryManager.Instance?.StartRun(CurrentStageData, WallHp);
             UpdateWaveText();
         }
 
         private void ApplyStageTheme()
         {
-            StageThemeResource themeResource = StaticResource.Instance.GetStageThemeResource(CurrentStageData.theme);
+            // 여기서 터지면 InitializeStage() 가 중간에 끊겨 WallHp·시작 SP·웨이브 수가
+            // 통째로 설정되지 않고, ChangeState(Setting) 도 실행되지 않아 플레이 버튼이
+            // 살아나지 않는다. 배경 하나 때문에 스테이지 초기화를 잃을 이유가 없다.
+            // StaticResource 가 없다는 사실 자체는 MonoSingleton 이 이미 크게 운다.
+            StaticResource resource = StaticResource.Instance;
+            StageThemeResource themeResource = resource != null
+                ? resource.GetStageThemeResource(CurrentStageData.theme)
+                : null;
             if (stageBackground != null && themeResource != null && themeResource.MapBackground != null)
                 stageBackground.sprite = themeResource.MapBackground;
 
-            MonsterSpawner.Instance?.ConfigureTheme(CurrentStageData.theme);
+            battle.Spawner.ConfigureTheme(CurrentStageData.theme);
         }
 
         private IEnumerator CoApplyStageStartRelics()
@@ -321,14 +354,14 @@ namespace OJ
 
             if (CurrentStageData != null)
             {
-                UIDiceSummonSystem.Instance?.AddSP(CurrentStageData.waveClearSP);
+                battle.Summon.AddSP(CurrentStageData.waveClearSP);
                 ShowWaveRewardPreview();
             }
 
             RunHistoryManager.Instance?.RecordWaveComplete(
                 CurrentWaveIndex,
                 wall != null ? wall.CurrentHp : 0,
-                UIDiceSummonSystem.Instance != null ? UIDiceSummonSystem.Instance.currentSP : 0);
+                battle.Summon.currentSP);
 
             if (CurrentStageData != null)
                 StageProgressManager.Instance?.RecordClearedWave(CurrentStageData.stageIndex, CurrentWaveIndex);
@@ -346,7 +379,12 @@ namespace OJ
 
         private void ShowWaveRewardPreview()
         {
-            if (waveRewardPreviewDialog == null || CurrentStageData == null)
+            if (CurrentStageData == null)
+                return;
+
+            // ShowGoldGain 이 안에서 Enter 까지 부르므로 Show 가 아니라 Get 으로 받는다.
+            UIWaveRewardPreviewDialog previewDialog = GameContainer.UI?.Get<UIWaveRewardPreviewDialog>();
+            if (previewDialog == null)
                 return;
 
             int totalWaves = Mathf.Max(1, CurrentStageData.totalWaves);
@@ -360,7 +398,7 @@ namespace OJ
                 totalWaves);
             int gainedGold = currentAccumulatedGold - previousAccumulatedGold;
 
-            waveRewardPreviewDialog.ShowGoldGain(
+            previewDialog.ShowGoldGain(
                 gainedGold,
                 currentAccumulatedGold,
                 StageRewardCalculator.GetGuaranteedNormalGold(CurrentStageData.stageIndex));
@@ -416,19 +454,23 @@ namespace OJ
 
         private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<PointRewardEntry> rewards)
         {
-            if (stageResultDialog == null)
+            // Open 이 값을 채우고 Enter 까지 부르므로 Get 으로 받는다.
+            UIStageResultDialog resultDialog = GameContainer.UI?.Get<UIStageResultDialog>();
+            if (resultDialog == null)
             {
+                // 결과창을 못 띄워도 로비로는 돌아가야 한다. 여기서 멈추면 이미 끝난 판의
+                // 전투 씬에 갇힌다. 못 연 사유는 UIService 가 이미 로그로 남겼다.
                 StartCoroutine(CoReturnToLobby());
                 return;
             }
 
-            waveRewardPreviewDialog?.Exit();
+            GameContainer.UI?.Hide<UIWaveRewardPreviewDialog>();
 
             int bestStageIndex = StageProgressManager.Instance != null
                 ? StageProgressManager.Instance.GetHighestUnlockedStageIndex()
                 : stageIndex;
 
-            stageResultDialog.Open(
+            resultDialog.Open(
                 isWin,
                 stageIndex,
                 reachedWaveCount,

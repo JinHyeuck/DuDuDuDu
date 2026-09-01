@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using OJ.Core;
 using UnityEngine;
+using OJ.Point;
 
-namespace OJ
+namespace OJ.Stage
 {
     public static class StageRewardCalculator
     {
@@ -24,17 +26,21 @@ namespace OJ
             PointType.NecklaceScroll,
         };
 
+        // 비율 판정은 StageRewardFormula.ClearGradeTier 로 옮겼다. StageClearGrade 는
+        // Assembly-CSharp 타입이라 OJ.Core 에서 볼 수 없어 int 티어로 돌려받는다.
+        // 티어(0/1/2)와 enum 값(Minimum=1, Half=2, Perfect=3)이 어긋나 있으므로
+        // (StageClearGrade)tier 로 캐스팅하면 안 되고 아래처럼 명시적으로 매핑해야 한다.
         public static StageClearGrade GetClearGrade(int currentWallHp, int totalWallHp)
         {
-            if (totalWallHp <= 0)
-                return StageClearGrade.Minimum;
-
-            float ratio = Mathf.Clamp01((float)currentWallHp / totalWallHp);
-            if (ratio >= 0.999f)
-                return StageClearGrade.Perfect;
-            if (ratio >= 0.5f)
-                return StageClearGrade.Half;
-            return StageClearGrade.Minimum;
+            switch (StageRewardFormula.ClearGradeTier(currentWallHp, totalWallHp))
+            {
+                case 2:
+                    return StageClearGrade.Perfect;
+                case 1:
+                    return StageClearGrade.Half;
+                default:
+                    return StageClearGrade.Minimum;
+            }
         }
 
         public static StageRewardTierFlags GetRewardFlagsForGrade(StageClearGrade clearGrade)
@@ -87,15 +93,12 @@ namespace OJ
 
         public static int GetGuaranteedNormalGold(int stageIndex)
         {
-            return 150 + GetStageBonus(stageIndex);
+            return StageRewardFormula.GuaranteedNormalGold(stageIndex);
         }
 
         public static int GetAccumulatedGuaranteedGold(int stageIndex, int clearedWaves, int totalWaves)
         {
-            int safeTotalWaves = Mathf.Max(1, totalWaves);
-            int safeClearedWaves = Mathf.Clamp(clearedWaves, 0, safeTotalWaves);
-            float ratio = (float)safeClearedWaves / safeTotalWaves;
-            return Mathf.FloorToInt(GetGuaranteedNormalGold(stageIndex) * ratio);
+            return StageRewardFormula.AccumulatedGuaranteedGold(stageIndex, clearedWaves, totalWaves);
         }
 
         public static List<PointRewardEntry> ScaleRewards(IReadOnlyList<PointRewardEntry> rewards, float multiplier)
@@ -104,11 +107,13 @@ namespace OJ
             if (rewards == null || rewards.Count == 0)
                 return scaledRewards;
 
-            float clampedMultiplier = Mathf.Clamp01(multiplier);
+            // 원래는 Mathf.Clamp01(multiplier) 를 루프 밖으로 뽑아 뒀지만, Clamp01 은
+            // 입력만 보는 순수 함수라 매 회 다시 계산해도 결과 float 비트가 같다.
+            // 그래서 ScaleAmount 안으로 들어가도 산술은 그대로다.
             for (int i = 0; i < rewards.Count; i++)
             {
                 PointRewardEntry reward = rewards[i];
-                int scaledAmount = Mathf.FloorToInt(reward.Amount * clampedMultiplier);
+                int scaledAmount = StageRewardFormula.ScaleAmount(reward.Amount, multiplier);
                 if (scaledAmount <= 0)
                     continue;
 
@@ -124,14 +129,14 @@ namespace OJ
 
             if ((rewardFlags & StageRewardTierFlags.Minimum) != 0)
             {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 300 + GetStageBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 300 + StageRewardFormula.StageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50 });
                 AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10 });
             }
 
             if ((rewardFlags & StageRewardTierFlags.Half) != 0)
             {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 400 + GetStageBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 400 + StageRewardFormula.StageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 });
                 AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 });
                 rewards.Add(new PointRewardEntry(PointType.MythicScroll, 15));
@@ -139,18 +144,13 @@ namespace OJ
 
             if ((rewardFlags & StageRewardTierFlags.Perfect) != 0)
             {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 500 + GetStageBonus(stageIndex)));
+                rewards.Add(new PointRewardEntry(PointType.Gold, 500 + StageRewardFormula.StageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 });
                 rewards.Add(new PointRewardEntry(PointType.Dia, 150));
                 rewards.Add(new PointRewardEntry(PointType.MythicScroll, 10));
             }
 
             return rewards;
-        }
-
-        private static int GetStageBonus(int stageIndex)
-        {
-            return ((Mathf.Max(1, stageIndex) - 1) / 10) * 5;
         }
 
         private static void AddDistinctRewards(List<PointRewardEntry> rewards, PointType[] pool, int[] amounts)
@@ -191,7 +191,7 @@ namespace OJ
             int amount,
             float multiplier)
         {
-            int scaledAmount = Mathf.FloorToInt(amount * Mathf.Clamp01(multiplier));
+            int scaledAmount = StageRewardFormula.ScaleAmount(amount, multiplier);
             if (scaledAmount > 0)
                 rewards.Add(new PointRewardEntry(pointType, scaledAmount));
         }
