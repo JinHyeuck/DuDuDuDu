@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Lobby
 {
     [ExecuteAlways]
     public class SpritePointLightController : MonoBehaviour

@@ -1,10 +1,11 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Relic
 {
-    public class UIRelicSummonDialog : IDialog
+    public class UIRelicSummonDialog : DialogBase
     {
         [SerializeField] private Button tapButton;
         [SerializeField] private Image backgroundImage;

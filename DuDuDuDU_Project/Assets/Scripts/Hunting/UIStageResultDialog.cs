@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using Object = UnityEngine.Object;
+using OJ.Point;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Hunting
 {
-    public class UIStageResultDialog : IDialog
+    public class UIStageResultDialog : DialogBase
     {
         [Header("State")]
         [SerializeField] private RectTransform rootRect;

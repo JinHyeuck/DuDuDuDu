@@ -2,8 +2,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
+using OJ.DI;
+using OJ.Dice;
+using OJ.Equipment;
+using OJ.Hunting;
+using OJ.Relic;
+using OJ.SceneFlow;
+using OJ.Stage;
+using OJ.UI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Lobby
 {
     public enum LobbyTab
     {
@@ -18,8 +27,6 @@ namespace OJ
     {
         [Header("Top / Middle")]
         [SerializeField] private Button enterStageButton;
-        [SerializeField] private Button previousStageButton;
-        [SerializeField] private Button nextStageButton;
         [SerializeField] private TMP_Text selectedStageText;
         [SerializeField] private Image selectedStageImage;
         [SerializeField] private TMP_Text stageNameText;
@@ -30,10 +37,15 @@ namespace OJ
         [SerializeField] private List<LobbyBottomBtn> bottomButtons;
 
         [Header("Tab Panels")]
-        [SerializeField] private IDialog shopPanel;
-        [SerializeField] private IDialog equipmentPanel;
-        [SerializeField] private IDialog bulletPanel;
-        [SerializeField] private IDialog helperPanel;
+
+        /// <summary>
+        /// 탭 내용물이 올라갈 자리. 페이지는 이제 카탈로그에서 만들어 여기 붙인다.
+        ///
+        /// <b>팝업 루트가 아니라 여기여야 한다.</b> 페이지는 화면 위에 떠야 하는 것이 아니라
+        /// 로비 레이아웃의 <c>Content</c> 영역 <b>안에</b> 들어가야 한다. 팝업 루트에 붙이면
+        /// 전체 화면을 덮는다.
+        /// </summary>
+        [SerializeField] private RectTransform pageRoot;
 
         [SerializeField] private LobbyTab defaultTab = LobbyTab.Home;
 
@@ -41,11 +53,8 @@ namespace OJ
 
         private void Awake()
         {
-            ResolvePanelsIfNeeded();
 
             if (enterStageButton != null) enterStageButton.onClick.AddListener(OnClickEnterStage);
-            if (previousStageButton != null) previousStageButton.onClick.AddListener(OnClickPreviousStage);
-            if (nextStageButton != null) nextStageButton.onClick.AddListener(OnClickNextStage);
             if (bottomButtons != null)
             {
                 for (int i = 0; i < bottomButtons.Count; i++)
@@ -58,7 +67,6 @@ namespace OJ
 
         private void OnEnable()
         {
-            ResolvePanelsIfNeeded();
             selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetHighestUnlockedStageIndex() : 1;
             ShowTab(defaultTab);
             RefreshStageUI();
@@ -67,8 +75,6 @@ namespace OJ
         private void OnDestroy()
         {
             if (enterStageButton != null) enterStageButton.onClick.RemoveListener(OnClickEnterStage);
-            if (previousStageButton != null) previousStageButton.onClick.RemoveListener(OnClickPreviousStage);
-            if (nextStageButton != null) nextStageButton.onClick.RemoveListener(OnClickNextStage);
         }
 
         public void OnClickEnterStage()
@@ -84,34 +90,33 @@ namespace OJ
             SceneFlowManager.LoadBattle();
         }
 
-        public void OnClickPreviousStage()
-        {
-            SelectStage(selectedStageIndex - 1);
-        }
+        // 여기 있던 OnClickPreviousStage / OnClickNextStage / SelectStage 를 지웠다.
+        //
+        // 로비에서 스테이지를 넘기는 버튼은 씬에 배선된 적이 없고(previousStageButton /
+        // nextStageButton 이 None), 앞으로도 붙이지 않기로 정했다. 스테이지를 고르는 경로는
+        // 별의 시련 하나다. 배선되지 않은 필드에 걸린 코드는 "있는데 안 도는" 상태로 남아
+        // 읽는 사람마다 이게 기능인지 사고인지 다시 확인하게 만든다.
+        //
+        // selectedStageIndex 는 남는다 — OnEnable 이 해금 상한으로 세우고
+        // OnClickEnterStage 와 RefreshStageUI 가 쓴다.
 
-        public void OnClickNextStage()
-        {
-            SelectStage(selectedStageIndex + 1);
-        }
-
-        public void SelectStage(int stageIndex)
-        {
-            int maxStage = Mathf.Max(1, StageDatabaseProvider.GetDatabase().StageCount);
-            selectedStageIndex = Mathf.Clamp(stageIndex, 1, maxStage);
-            if (StageProgressManager.Instance != null)
-                StageProgressManager.Instance.SelectStage(selectedStageIndex);
-
-            RefreshStageUI();
-        }
-
+        /// <summary>
+        /// 탭을 바꾼다. 페이지는 <see cref="UIService"/> 가 카탈로그에서 만들어 준다. (10.4)
+        ///
+        /// <b>예전에는 씬 참조와 자식 탐색 폴백이 섞여 있었다.</b> 넷 중 둘은 씬에 꽂혀
+        /// 있었고, <c>equipmentPanel</c> 은 <b>꽂혀 있지 않은데</b>
+        /// <c>GetComponentInChildren</c> 폴백 덕분에 우연히 동작하고 있었다.
+        /// <c>shopPanel</c> 은 그 폴백조차 없어서 상점 탭은 아무것도 열지 않는다.
+        /// 어느 쪽이든 배선이 맞는지 코드만 보고는 알 수 없었다.
+        ///
+        /// 상점 탭은 <b>지금도 비어 있다.</b> 페이지가 아직 없기 때문이고, 그 사실을
+        /// 폴백으로 감추지 않는다.
+        /// </summary>
         public void ShowTab(LobbyTab tab)
         {
-            ResolvePanelsIfNeeded();
-
-            if (shopPanel != null) shopPanel.SetActive(tab == LobbyTab.Shop);
-            if (equipmentPanel != null) equipmentPanel.SetActive(tab == LobbyTab.Equipment);
-            if (bulletPanel != null) bulletPanel.SetActive(tab == LobbyTab.Bullet);
-            if (helperPanel != null) helperPanel.SetActive(tab == LobbyTab.Helper);
+            SetPageActive<UIEquipmentPage>(tab == LobbyTab.Equipment);
+            SetPageActive<UIDiceGrowthPage>(tab == LobbyTab.Bullet);
+            SetPageActive<UIRelicDialog>(tab == LobbyTab.Helper);
 
             if (bottomButtons != null)
             {
@@ -169,23 +174,39 @@ namespace OJ
 
             if (enterStageButton != null)
                 enterStageButton.interactable = isUnlocked;
-
-            if (previousStageButton != null)
-                previousStageButton.interactable = selectedStageIndex > 1;
-
-            if (nextStageButton != null)
-            {
-                int maxStage = Mathf.Max(highestUnlockedStage, selectedStageIndex);
-                nextStageButton.interactable = selectedStageIndex < Mathf.Min(StageDatabaseProvider.GetDatabase().StageCount, maxStage + 1);
-            }
         }
 
-        private void ResolvePanelsIfNeeded()
+        /// <summary>
+        /// 페이지를 켜거나 끈다.
+        ///
+        /// <b>켤 때만 만든다.</b> 끄려고 인스턴스를 새로 찍으면 한 번도 안 연 탭까지
+        /// 로비를 열자마자 전부 생성된다 — 씬에 상주하던 예전 방식과 같아져 버린다.
+        /// </summary>
+        /// <summary>
+        /// 홈 탭으로 돌아간다. 열려 있던 페이지는 <see cref="ShowTab"/> 이 끈다.
+        /// </summary>
+        private void GoHome()
         {
-            if (equipmentPanel == null)
-                equipmentPanel = GetComponentInChildren<UIEquipmentPage>(true);
-            if (bulletPanel == null)
-                bulletPanel = GetComponentInChildren<UIDiceGrowthPage>(true);
+            ShowTab(LobbyTab.Home);
+        }
+
+        private void SetPageActive<T>(bool active) where T : DialogBase
+        {
+            if (!active)
+            {
+                GameContainer.UI?.Hide<T>();
+                return;
+            }
+
+            T page = GameContainer.UI?.Get<T>(pageRoot);
+            if (page == null)
+                return;
+
+
+            // 백키는 페이지를 닫는 것이 아니라 홈 탭으로 돌아가야 한다.
+            // 그냥 닫으면 탭 버튼은 눌린 채로 내용물만 사라져 빈 화면이 된다.
+            page.BackKeyOverride = GoHome;
+            page.Enter();
         }
     }
 }

@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
+using OJ.Dice;
+using OJ.DI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class PlayerController : MonoBehaviour
     {
-        public static PlayerController Instance;
-
         public CharacterAnimation characterAnimation;
         public CharacterAnimation bowAnimation;
         public Transform bowTransform;
@@ -23,21 +25,9 @@ namespace OJ
         private readonly List<UIDice> cooldownAdjustBuffer = new List<UIDice>();
         private bool wasWaveState = false;
 
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-        }
-
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
+        // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
+        // 스코프 빌드는 씬의 모든 Awake 뒤·모든 Start 앞이므로 Awake 에서는 아직 쓸 수 없다.
+        [Inject] private IBattleRefs battle;
 
         private void Start()
         {
@@ -47,7 +37,7 @@ namespace OJ
 
         void Update()
         {
-            bool isWaveState = GameManager.Instance.inGameState == InGameState.Wave;
+            bool isWaveState = battle.Game.inGameState == InGameState.Wave;
             if (!isWaveState)
             {
                 if (wasWaveState)
@@ -56,9 +46,10 @@ namespace OJ
             }
             wasWaveState = true;
 
-            if (UIBoard.Instance == null
-                || UIBoard.Instance.diceMap == null
-                || UIBoard.Instance.diceMap.Length <= 0)
+            // UIBoard 자체는 씬에 상주하므로 null 검사를 지웠다. diceMap 은 UIBoard 가
+            // 보드를 만들기 전까지 비어 있을 수 있는 '데이터'라 검사를 남긴다.
+            if (battle.Board.diceMap == null
+                || battle.Board.diceMap.Length <= 0)
                 return;
 
 
@@ -78,7 +69,9 @@ namespace OJ
 
         public float GetFireCycleProgress01()
         {
-            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Wave)
+            // 이 메서드를 부르는 PlayerFireRateUI 도 BattleScene 에 산다. 창구가 채워진 뒤에만
+            // 도는 자리라 GameManager null 검사를 지웠다.
+            if (battle.Game.inGameState != InGameState.Wave)
                 return 0f;
 
             if (fireRate <= 0f)
@@ -91,7 +84,7 @@ namespace OJ
         {
             selectedDice = null;
 
-            UIDice[] map = UIBoard.Instance.diceMap;
+            UIDice[] map = battle.Board.diceMap;
             int total = map.Length;
             if (total <= 0)
                 return false;
@@ -123,7 +116,7 @@ namespace OJ
 
         private bool TryShootReadyDice()
         {
-            UIDice[] map = UIBoard.Instance.diceMap;
+            UIDice[] map = battle.Board.diceMap;
             int total = map.Length;
             if (total <= 0)
                 return false;
@@ -298,7 +291,9 @@ namespace OJ
 
             if (diceType == DiceType.Wind)
             {
-                bool casted = AttackContent.Instance != null && AttackContent.Instance.TryCastNoTarget(diceType, diceStar);
+                // AttackContent 는 씬 상주라 null 검사를 지웠다. 캐스트 실패(false)만 남긴다 —
+                // 그쪽은 자원 부족 같은 정상 실패라 의미가 다르다.
+                bool casted = battle.Attack.TryCastNoTarget(diceType, diceStar);
                 if (!casted)
                     return false;
 
@@ -307,7 +302,7 @@ namespace OJ
                 return true;
             }
 
-            Monster target = MonsterManager.Instance.GetClosestMonster(firePoint.position);
+            Monster target = battle.Monsters.GetClosestMonster(firePoint.position);
             if (target == null)
                 return false;
 
@@ -316,7 +311,7 @@ namespace OJ
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
             bowTransform.rotation = Quaternion.Euler(0, 0, angle);
 
-            Bullet bulletObj = BulletPool.Instance.GetBullet();
+            Bullet bulletObj = battle.Bullets.GetBullet();
             bulletObj.transform.position = firePoint.position;
             bulletObj.transform.rotation = Quaternion.identity;
             bulletObj.SetBulletStat(diceType, diceStar);

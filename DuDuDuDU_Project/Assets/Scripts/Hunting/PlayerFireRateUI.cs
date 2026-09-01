@@ -1,6 +1,8 @@
 using UnityEngine;
+using OJ.DI;
+using VContainer;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class PlayerFireRateUI : MonoBehaviour
     {
@@ -22,16 +24,17 @@ namespace OJ
         private RectTransform canvasRect;
         private CanvasGroup canvasGroup;
 
+        // 8.3b: 배틀 스코프가 씬을 훑으며 채운다.
+        [Inject] private IBattleRefs battle;
+
         private void Awake()
         {
             if (rootRect == null)
                 rootRect = transform as RectTransform;
 
-            if (playerController == null)
-                playerController = PlayerController.Instance;
-
-            if (followTarget == null && playerController != null)
-                followTarget = playerController.transform;
+            // 8.3b: 여기서 창구를 읽지 않는다. 스코프는 씬의 모든 Awake 뒤에 빌드되므로
+            // 이 시점에는 아직 null 이다. 아래 TryResolveReferences() 가 LateUpdate 에서
+            // 같은 일을 하고, 그때는 이미 채워져 있다.
 
             if (targetCanvas == null)
                 targetCanvas = GetComponentInParent<Canvas>();
@@ -50,7 +53,7 @@ namespace OJ
                 return;
 
             bool visible = !hideOutsideWave
-                || (GameManager.Instance != null && GameManager.Instance.inGameState == InGameState.Wave);
+                || (battle.IsActive && battle.Game.inGameState == InGameState.Wave);
 
             SetVisible(visible);
             if (!visible)
@@ -63,7 +66,7 @@ namespace OJ
         private bool TryResolveReferences()
         {
             if (playerController == null)
-                playerController = PlayerController.Instance;
+                playerController = battle.Player;
 
             if (followTarget == null && playerController != null)
                 followTarget = playerController.transform;

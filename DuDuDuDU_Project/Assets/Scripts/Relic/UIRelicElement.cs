@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace OJ
+namespace OJ.Relic
 {
     public class UIRelicElement : MonoBehaviour
     {

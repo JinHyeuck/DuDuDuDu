@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Object = UnityEngine.Object;
+using OJ.DI;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Relic
 {
-    public class UIRelicDialog : IDialog
+    public class UIRelicDialog : DialogBase
     {
         [Header("List")]
         [SerializeField] private Transform relicRoot;
@@ -33,9 +34,7 @@ namespace OJ
         [SerializeField] private TMP_Text summonButtonText;
         [SerializeField] private TMP_Text goldCostText;
         [SerializeField] private TMP_Text ticketCostText;
-        [SerializeField] private UIRelicSummonDialog summonDialog;
 
-        [SerializeField] private LobbyLayoutController lobbyLayoutController;
 
         private RelicDefinition selectedDefinition;
         private bool deferRelicRefresh;
@@ -101,11 +100,6 @@ namespace OJ
             RefreshAll();
         }
 
-        public override void BackKeyCall()
-        {
-            lobbyLayoutController?.ShowTab(LobbyTab.Home);
-        }
-
         protected override void OnExit()
         {
             deferRelicRefresh = false;
@@ -152,17 +146,26 @@ namespace OJ
             RefreshSelection();
         }
 
+        /// <summary>
+        /// 카탈로그에서 꺼내 띄운다. (10.4)
+        ///
+        /// 예전에는 씬 인스턴스를 <c>[SerializeField]</c> 로 가리키고, 비면 씬을 뒤져 때웠다.
+        /// 두 경로 다 <b>실패가 조용하다</b> — 참조가 <c>None</c> 이면 아무 로그 없이 안 열린다.
+        /// 게다가 그 탐색은 자기 하위에 딸려 들어온 인스턴스를 골라내야 했는데,
+        /// 프리팹을 꺼내 쓰면 그 자리 문제 자체가 없다.
+        ///
+        /// <c>Show</c> 가 아니라 <c>Get</c> 인 이유는 <c>Open</c> 이 결과를 넣은 뒤에
+        /// 스스로 <c>Enter</c> 를 부르기 때문이다. 확인이 뽑기보다 앞서는 순서도 그대로다 —
+        /// <b>못 열면 소모도 없어야 한다.</b>
+        /// </summary>
         private void HandleSummonClick()
         {
             if (RelicManager.Instance == null)
                 return;
 
-            ResolveSummonDialogIfNeeded();
+            UIRelicSummonDialog summonDialog = GameContainer.UI?.Get<UIRelicSummonDialog>();
             if (summonDialog == null)
-            {
-                Debug.LogWarning("UIRelicDialog: Scene에 UIRelicSummonDialog가 배치되어 있지 않습니다.");
                 return;
-            }
 
             deferRelicRefresh = true;
             if (!RelicManager.Instance.TrySummon(out RelicSummonResult result))
@@ -559,34 +562,6 @@ namespace OJ
 
             SetAnchor(rt, new Vector2(0.5f, 0.56f), new Vector2(0.5f, 0.56f), new Vector2(160f, 190f), Vector2.zero);
             rt.localScale = Vector3.one * 2.35f;
-        }
-
-        private void ResolveSummonDialogIfNeeded()
-        {
-            if (summonDialog != null && !summonDialog.transform.IsChildOf(transform))
-                return;
-
-            if (summonDialog != null)
-            {
-                summonDialog.gameObject.SetActive(false);
-                summonDialog = null;
-            }
-
-#if UNITY_2023_1_OR_NEWER
-            UIRelicSummonDialog[] dialogs = Object.FindObjectsByType<UIRelicSummonDialog>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-            UIRelicSummonDialog[] dialogs = Object.FindObjectsOfType<UIRelicSummonDialog>(true);
-#endif
-
-            for (int i = 0; i < dialogs.Length; i++)
-            {
-                UIRelicSummonDialog dialog = dialogs[i];
-                if (dialog == null || dialog.transform.IsChildOf(transform))
-                    continue;
-
-                summonDialog = dialog;
-                return;
-            }
         }
 
         private void HideLegacyDetailObjects()

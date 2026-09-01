@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OJ
+namespace OJ.Utils
 {
     [DisallowMultipleComponent]
     public class SimpleSpriteAnimator : MonoBehaviour

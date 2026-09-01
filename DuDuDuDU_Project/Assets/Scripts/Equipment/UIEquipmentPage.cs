@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.DI;
+using OJ.Point;
+using OJ.UI;
 
-namespace OJ
+namespace OJ.Equipment
 {
-    public class UIEquipmentPage : IDialog
+    public class UIEquipmentPage : DialogBase
     {
         private enum EquipmentPageTab
         {
@@ -51,8 +54,6 @@ namespace OJ
 
         [Header("Dialogs")]
         [SerializeField] private UIEquipmentConfirmDialog confirmDialog;
-        [SerializeField] private UIMergePopup mergePopup;
-        [SerializeField] private LobbyLayoutController lobbyLayoutController;
 
         public event Action OnDataChanged;
 
@@ -95,11 +96,6 @@ namespace OJ
             Unsubscribe();
 
             confirmDialog?.Exit();
-        }
-
-        public override void BackKeyCall()
-        {
-            lobbyLayoutController?.ShowTab(LobbyTab.Home);
         }
 
         public void RefreshAll()
@@ -462,12 +458,22 @@ namespace OJ
             RefreshMergeButton();
         }
 
+        /// <summary>
+        /// 카탈로그에서 꺼내 띄운다. (10.4)
+        ///
+        /// 예전에는 씬 인스턴스를 <c>[SerializeField]</c> 로 직접 가리켰고, 그 참조가 <c>None</c> 이면
+        /// 여기 있던 널 가드가 <b>아무 로그 없이</b> 그냥 돌아갔다 — 창이 안 떠도 이유를 알 수 없었다.
+        /// <see cref="UIService"/> 는 못 열면 사유를 로그로 남긴다.
+        ///
+        /// <c>Show</c> 가 아니라 <c>Get</c> 인 이유는 <c>Open</c> 이 대상 장비와 콜백을 넣은 뒤
+        /// 스스로 <c>Enter</c> 를 부르기 때문이다. <c>Show</c> 로 열면 <c>Enter</c> 가 두 번 불린다.
+        /// </summary>
         private void OnClickMergeAll()
         {
-            if (mergePopup == null || confirmDialog == null || !confirmDialog.isEnter)
+            if (confirmDialog == null || !confirmDialog.isEnter)
                 return;
 
-            mergePopup.Open(selectedEquipmentType, OnMergeCompleted);
+            GameContainer.UI?.Get<UIMergePopup>()?.Open(selectedEquipmentType, OnMergeCompleted);
         }
 
         private void OnMergeCompleted(IReadOnlyList<string> resultGemIds)

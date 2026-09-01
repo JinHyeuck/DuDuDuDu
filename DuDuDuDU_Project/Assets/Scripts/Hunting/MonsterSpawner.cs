@@ -1,11 +1,25 @@
 using UnityEngine;
 using System.Collections.Generic;
+using VContainer;
+using VContainer.Unity;
+using OJ.DI;
+using OJ.Stage;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class MonsterSpawner : MonoBehaviour
     {
-        public static MonsterSpawner Instance;
+        // 8.3b: 배틀 스코프가 채운다. 이 스포너는 BattleScene 에만 사는 매니저이고
+        // 스코프 빌드는 씬의 모든 Start 앞이므로, Start 이후 코드에서는 null 이 될 수 없다.
+        // 그래서 아래 호출부에 매니저 존재 여부를 묻는 null 검사를 남기지 않는다 —
+        // 남기면 "전투 씬인데 GameManager 가 없다"는 사고를 조용히 삼킨다.
+        [Inject] private IBattleRefs battle;
+
+        // 8.3b: 몬스터는 런타임에 찍히므로 스코프가 씬을 훑던 시점에는 존재하지 않는다.
+        // 리졸버로 찍어야 Monster 쪽 [Inject] 가 채워진다. 주입 시점이 Awake 뒤라
+        // 이 필드는 Start 이후(ConfigureTheme/SpawnNext)에서만 쓴다.
+        [Inject] private IObjectResolver resolver;
 
         public int poolSize = 20;
 
@@ -35,13 +49,6 @@ namespace OJ
 
         void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
             defaultMonsterPrefabs = monsterPrefab != null
                 ? new List<Monster>(monsterPrefab)
                 : new List<Monster>();
@@ -50,17 +57,14 @@ namespace OJ
                 : new List<Monster>();
         }
 
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
-
         private void Start()
         {
             CacheSpawnCamera();
-            StageTheme theme = GameManager.Instance != null && GameManager.Instance.CurrentStageData != null
-                ? GameManager.Instance.CurrentStageData.theme
+            // 남긴 null 검사는 매니저가 아니라 데이터에 대한 것이다. 스테이지가 아직
+            // 정해지지 않은 시점에 Start 가 돌 수 있고, 그때 DarkForest 로 시작하는 것은
+            // 기존 동작이다.
+            StageTheme theme = battle.Game.CurrentStageData != null
+                ? battle.Game.CurrentStageData.theme
                 : StageTheme.DarkForest;
             ConfigureTheme(theme);
         }
@@ -70,7 +74,12 @@ namespace OJ
             if (poolsInitialized && configuredTheme == theme)
                 return;
 
-            StageThemeResource resource = StaticResource.Instance.GetStageThemeResource(theme);
+            // ConfigureTheme 은 GameManager.InitializeStage 안에서 불린다. 여기서 터지면
+            // 스테이지 초기화가 통째로 끊긴다. StaticResource 부재는 MonoSingleton 이 운다.
+            StaticResource staticResource = StaticResource.Instance;
+            StageThemeResource resource = staticResource != null
+                ? staticResource.GetStageThemeResource(theme)
+                : null;
             monsterPrefab = BuildRegularPrefabList(resource);
             bossMonsterPrefab = BuildBossPrefabList(resource);
 
@@ -88,7 +97,8 @@ namespace OJ
 
         void Update()
         {
-            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Wave)
+            // Update 는 Start 뒤에만 돌고 주입은 Start 앞에 끝난다. battle.Game 은 여기서 산다.
+            if (battle.Game.inGameState != InGameState.Wave)
                 return;
 
             if (IsWaveSpawnCompleted())
@@ -121,7 +131,13 @@ namespace OJ
                 return queuebullet;
             }
 
-            GameObject obj = Instantiate(monsterPrefab.Find(x => x.MonsterID == monsterIdx).gameObject);
+            // 부모를 스포너 자신으로 준다. 부모 없는 오버로드는 resolver.ApplicationOrigin 의
+            // IsRoot 를 보고 갈라지는데, VContainerSettings 에셋이 생기는 순간 그 분기가
+            // DontDestroyOnLoad 로 넘어가 몬스터가 로비까지 따라온다(BattleScope 주석 참고).
+            // 부모를 넘기는 오버로드는 그 분기를 아예 타지 않으므로 에셋 유무에 흔들리지 않는다.
+            // 스포너는 씬 루트에 회전 0 / 스케일 1 로 있고, 아래 SpawnRegularMonster 가
+            // 월드 position·rotation 을 곧바로 덮어쓰므로 몬스터가 서는 자리는 그대로다.
+            GameObject obj = resolver.Instantiate(monsterPrefab.Find(x => x.MonsterID == monsterIdx).gameObject, transform);
             return obj.GetComponent<Monster>();
         }
 
@@ -140,7 +156,9 @@ namespace OJ
                 return bossMonster;
             }
 
-            GameObject obj = Instantiate(bossMonsterPrefab.Find(x => x.MonsterID == monsterIdx).gameObject);
+            // 위와 같은 이유로 스포너를 부모로 준다. 보스 스케일은 SetCombatStats 가
+            // localScale 로 따로 먹이는데 부모 스케일이 1 이라 lossyScale 도 그대로다.
+            GameObject obj = resolver.Instantiate(bossMonsterPrefab.Find(x => x.MonsterID == monsterIdx).gameObject, transform);
             Monster spawnedBoss = obj.GetComponent<Monster>();
             bossMonsterInstances.Add(spawnedBoss);
             return spawnedBoss;
@@ -187,8 +205,10 @@ namespace OJ
             monster.OnSpawn();
             monster.transform.position = spawnPos;
             monster.transform.rotation = Quaternion.identity;
-            int monsterHp = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveMonsterHp() : 1;
-            int monsterDefense = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveMonsterDefense() : 0;
+            // 폴백 1/0 은 GameManager 가 없을 때만 쓰이던 값이다. 전투 씬에서 그 상황은
+            // 성립하지 않으므로 폴백을 지운다 — 남기면 스탯 0 짜리 몬스터로 조용히 굴러간다.
+            int monsterHp = battle.Game.GetCurrentWaveMonsterHp();
+            int monsterDefense = battle.Game.GetCurrentWaveMonsterDefense();
             monster.SetCombatStats(monsterHp, monsterDefense);
 
             regularSpawnCount++;
@@ -204,9 +224,11 @@ namespace OJ
             monster.OnSpawn();
             monster.transform.position = spawnPos;
             monster.transform.rotation = Quaternion.identity;
-            int monsterHp = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveBossHp() : 1;
-            int monsterDefense = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveBossDefense() : 0;
-            float monsterScale = GameManager.Instance != null ? GameManager.Instance.GetCurrentWaveBossScale() : 1.45f;
+            // 위와 같은 이유로 폴백(1/0/1.45)을 지운다. 보스가 스탯 없이 나오는 것보다
+            // GameManager 가 없다는 사실이 그 자리에서 터지는 편이 낫다.
+            int monsterHp = battle.Game.GetCurrentWaveBossHp();
+            int monsterDefense = battle.Game.GetCurrentWaveBossDefense();
+            float monsterScale = battle.Game.GetCurrentWaveBossScale();
             monster.SetCombatStats(monsterHp, monsterDefense, monsterScale);
             bossSpawnedInWave = true;
         }
@@ -231,7 +253,12 @@ namespace OJ
 
                 for (int j = 0; j < poolSize; j++)
                 {
-                    GameObject obj = Instantiate(monster.gameObject);
+                    // 풀에 재워두는 몬스터도 리졸버로 찍는다. 나중에 꺼내 쓸 때만의 문제가
+                    // 아니라 바로 아래 SetActive(false) 가 Monster.OnDisable 을 돌리는데,
+                    // 거기서 battle.Monsters 를 만진다 — 주입 없이 찍으면 그 자리에서 터진다.
+                    // 부모는 스포너 — 위 GetMonster 와 같은 이유이고, 위치는 꺼내 쓰는
+                    // 쪽(SpawnRegular/BossMonster)이 정하므로 여기선 상관없다.
+                    GameObject obj = resolver.Instantiate(monster.gameObject, transform);
                     obj.SetActive(false);
                     Monster instance = obj.GetComponent<Monster>();
                     pools[monster.MonsterID].Enqueue(instance);
@@ -308,8 +335,10 @@ namespace OJ
             if (!IsBossWave() || bossSpawnedInWave)
                 return false;
 
-            int threshold = GameManager.Instance != null && GameManager.Instance.CurrentStageData != null
-                ? GameManager.Instance.CurrentStageData.GetBossSpawnThreshold()
+            // CurrentStageData 는 매니저가 아니라 데이터다. 아직 안 정해졌을 수 있으므로
+            // 계산식 폴백은 그대로 둔다.
+            int threshold = battle.Game.CurrentStageData != null
+                ? battle.Game.CurrentStageData.GetBossSpawnThreshold()
                 : Mathf.Max(1, Mathf.CeilToInt(GetRegularSpawnTarget() * 0.5f));
 
             return regularSpawnCount >= threshold;
@@ -317,15 +346,16 @@ namespace OJ
 
         private bool IsBossWave()
         {
-            return GameManager.Instance != null && GameManager.Instance.IsBossWave();
+            return battle.Game.IsBossWave();
         }
 
         private int GetRegularSpawnTarget()
         {
-            if (GameManager.Instance == null || GameManager.Instance.CurrentStageData == null)
+            // 스테이지 데이터가 없으면 0 을 돌려 스폰을 멈추는 기존 동작은 유지한다.
+            if (battle.Game.CurrentStageData == null)
                 return 0;
 
-            return Mathf.Max(1, GameManager.Instance.CurrentStageData.monstersPerWave);
+            return Mathf.Max(1, battle.Game.CurrentStageData.monstersPerWave);
         }
 
         private Vector2 GetSpawnPosition()

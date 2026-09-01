@@ -2,12 +2,19 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
+using VContainer;
+using OJ.Analytics;
+using OJ.DI;
+using OJ.Hunting;
+using OJ.Relic;
 
-namespace OJ
+namespace OJ.Dice
 {
     public class UIDiceSummonSystem : MonoBehaviour
     {
-        public static UIDiceSummonSystem Instance;
+        // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
+        // 단 Awake 시점에는 아직 비어 있다 — 스코프는 씬의 모든 Awake 뒤에 빌드된다.
+        [Inject] private IBattleRefs battle;
 
         [Header("References")]
         public UIBoard board;
@@ -36,23 +43,11 @@ namespace OJ
             DiceType.Time
         };
 
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-        }
-
         private void OnDestroy()
         {
             if (summonButton != null)
                 summonButton.onClick.RemoveListener(OnSummonButton);
 
-            if (Instance == this)
-                Instance = null;
         }
 
         private void Start()
@@ -86,7 +81,7 @@ namespace OJ
 
         private void OnSummonButton()
         {
-            if (GameManager.Instance.inGameState == InGameState.Wave)
+            if (battle.Game.inGameState == InGameState.Wave)
                 return;
 
             if (currentSP < summonCost)
@@ -128,10 +123,14 @@ namespace OJ
 
             DiceType type = summonable[Random.Range(0, summonable.Count)];
             int star = RelicManager.Instance != null ? RelicManager.Instance.RollSummonStar() : 1;
-            DiceTypeStarManager.Instance.OnDiceSpawn(type, star);
+            battle.DiceStars.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
             RelicManager.Instance?.TrySpawnTwinDice(type);
-            RunHistoryManager.Instance?.RecordSummon(type, star, GameManager.Instance != null ? GameManager.Instance.CurrentWaveIndex : 0, spentCost, currentSP);
+            // GameManager 의 null 검사를 지운다. 소환 버튼은 BattleScene 에서만 눌리고
+            // 그 안에서 battle.Game 이 null 이면 그것은 사고다 — 0 웨이브로 조용히
+            // 기록해서 덮으면 안 된다. RelicManager·RunHistoryManager 는 루트 서비스라
+            // 로비에서도 살아 있어야 하므로 ?. 를 그대로 둔다.
+            RunHistoryManager.Instance?.RecordSummon(type, star, battle.Game.CurrentWaveIndex, spentCost, currentSP);
         }
 
         private int GetRandomEmptySlot()

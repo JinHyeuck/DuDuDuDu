@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace OJ
+namespace OJ.Equipment
 {
     public static class UIEquipmentEffectTextFormatter
     {

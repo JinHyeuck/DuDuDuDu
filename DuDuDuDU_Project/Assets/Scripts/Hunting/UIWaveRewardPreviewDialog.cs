@@ -2,10 +2,13 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Point;
+using OJ.UI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Hunting
 {
-    public class UIWaveRewardPreviewDialog : IDialog
+    public class UIWaveRewardPreviewDialog : DialogBase
     {
         [Header("UI")]
         [SerializeField] private RectTransform panelRect;

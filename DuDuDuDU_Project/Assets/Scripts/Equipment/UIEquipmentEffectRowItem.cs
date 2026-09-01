@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-namespace OJ
+namespace OJ.Equipment
 {
     public class UIEquipmentEffectRowItem : MonoBehaviour
     {

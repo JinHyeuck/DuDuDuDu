@@ -3,11 +3,29 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 using Cysharp.Threading.Tasks;
+using OJ.DI;
+using OJ.Hunting;
+using VContainer;
 
-namespace OJ
+namespace OJ.Dice
 {
     public class UIDice : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
+        // 8.3b: 배틀 스코프가 채운다. 이 다이스는 UIBoard.SpawnDice 가 런타임에 찍는
+        // 프리팹이라 스코프의 씬 순회에는 잡히지 않고, 생성부의 resolver.Instantiate 가
+        // 찍는 그 순간에 주입된다.
+        //
+        // <b>이 경로는 Awake 에서도 안전하다.</b> VContainer 의 부모 있는 Instantiate 는
+        // 프리팹을 SetActive(false) 로 껐다 찍고, 주입한 뒤에 다시 켠다
+        // (ObjectResolverUnityExtensions.cs:78-91). 클론이 꺼진 채로 태어나므로
+        // Awake 는 주입이 끝난 뒤에야 돈다.
+        //
+        // <b>씬에 놓인 컴포넌트는 반대다</b> — 그쪽은 스코프가 sceneLoaded 에서 훑으므로
+        // 자기 Awake 뒤에 채워진다. 같은 [Inject] 라도 태어난 경로에 따라 시점이 갈린다.
+        // 여기 사용처는 전부 Init·Update·드래그/클릭 핸들러라 어느 쪽이든 지난 뒤다.
+        // null 이면 그것은 사고이니 ?. 를 새로 붙이지 않는다.
+        [Inject] private IBattleRefs battle;
+
         private const float DoubleTapThreshold = 0.35f;
 
         public Image BGImage;
@@ -54,14 +72,19 @@ namespace OJ
 
         private void OnDestroy()
         {
-            if (UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+            // 원래도 null 을 봤다. 창구가 비어서가 아니라 씬을 나갈 때 UIBoard 가 나보다
+            // 먼저 파괴되는 정상적인 종료 순서가 있기 때문이다. 그 검사는 그대로 둔다.
+            // 한 번만 읽어 지역에 담는 것은, 종료 중에 창구가 비워지면 같은 식이
+            // 줄마다 다른 답을 낼 수 있어서다.
+            UIBoard board = battle.Board;
+            if (board == null || board.diceMap == null)
                 return;
 
-            if (SlotIndex < 0 || SlotIndex >= UIBoard.Instance.diceMap.Length)
+            if (SlotIndex < 0 || SlotIndex >= board.diceMap.Length)
                 return;
 
-            if (UIBoard.Instance.diceMap[SlotIndex] == this)
-                UIBoard.Instance.diceMap[SlotIndex] = null;
+            if (board.diceMap[SlotIndex] == this)
+                board.diceMap[SlotIndex] = null;
         }
 
         public void Refresh()
@@ -146,10 +169,14 @@ namespace OJ
 
             float fill = 0f;
             float remain = 0f;
-            if (PlayerController.Instance != null)
+
+            // Update 마다 도는 자리다. 원래 있던 null 검사는 유지한다 — Init 이 부르는
+            // Refresh 경로와 씬 종료 프레임이 이 검사에 기대고 있다.
+            PlayerController player = battle.Player;
+            if (player != null)
             {
-                fill = PlayerController.Instance.GetDiceCooldownFill(this);
-                remain = PlayerController.Instance.GetDiceCooldownRemaining(this);
+                fill = player.GetDiceCooldownFill(this);
+                remain = player.GetDiceCooldownRemaining(this);
             }
 
             CooldownFill.fillAmount = fill;
@@ -168,7 +195,7 @@ namespace OJ
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (GameManager.Instance.inGameState == InGameState.Wave)
+            if (battle.Game.inGameState == InGameState.Wave)
                 return;
 
             originalParent = transform.parent;
@@ -180,7 +207,7 @@ namespace OJ
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (GameManager.Instance.inGameState == InGameState.Wave)
+            if (battle.Game.inGameState == InGameState.Wave)
                 return;
 
             if (canvas == null) return;
@@ -191,7 +218,7 @@ namespace OJ
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (GameManager.Instance.inGameState == InGameState.Wave)
+            if (battle.Game.inGameState == InGameState.Wave)
                 return;
 
             canvasGroup.blocksRaycasts = true;
@@ -206,21 +233,24 @@ namespace OJ
                     return;
                 }
 
+                // 원래 있던 board null 검사를 유지하려고 한 번만 읽어 지역에 담는다.
+                UIBoard board = battle.Board;
+
                 UIDice targetDice = hitObj.GetComponentInParent<UIDice>();
                 if (targetDice != null && targetDice != this)
                 {
-                    bool merged = MergeSystem.Instance.TryMerge(this, targetDice);
+                    bool merged = battle.Merge.TryMerge(this, targetDice);
                     if (merged)
                         return;
 
-                    if (UIBoard.Instance != null && UIBoard.Instance.TrySwapDice(this, targetDice))
+                    if (board != null && board.TrySwapDice(this, targetDice))
                         return;
                 }
 
-                if (UIBoard.Instance != null)
+                if (board != null)
                 {
-                    int slotIndex = UIBoard.Instance.GetSlotIndexFromObject(hitObj);
-                    if (slotIndex >= 0 && UIBoard.Instance.TryMoveDiceToSlot(this, slotIndex))
+                    int slotIndex = board.GetSlotIndexFromObject(hitObj);
+                    if (slotIndex >= 0 && board.TryMoveDiceToSlot(this, slotIndex))
                         return;
                 }
             }
@@ -234,11 +264,12 @@ namespace OJ
             if (eventData.button != PointerEventData.InputButton.Left)
                 return;
 
-            InGameState state = GameManager.Instance != null ? GameManager.Instance.inGameState : InGameState.None;
+            GameManager game = battle.Game;
+            InGameState state = game != null ? game.inGameState : InGameState.None;
 
             if (state == InGameState.Wave)
             {
-                UIBoard.Instance?.OpenBattleDiceDetail(this);
+                battle.Board?.OpenBattleDiceDetail(this);
                 return;
             }
 
@@ -261,10 +292,13 @@ namespace OJ
 
         private void TryAutoMergeSameDice()
         {
-            if (GameManager.Instance.inGameState == InGameState.Wave)
+            if (battle.Game.inGameState == InGameState.Wave)
                 return;
 
-            if (MergeSystem.Instance == null || UIBoard.Instance == null || UIBoard.Instance.diceMap == null)
+            MergeSystem merge = battle.Merge;
+            UIBoard board = battle.Board;
+
+            if (merge == null || board == null || board.diceMap == null)
                 return;
 
             if (!DiceMetaDataProvider.CanMerge(Type))
@@ -275,7 +309,7 @@ namespace OJ
 
             DiceType myType = Type;
             UIDice target = null;
-            UIDice[] map = UIBoard.Instance.diceMap;
+            UIDice[] map = board.diceMap;
 
             for (int i = 0; i < map.Length; i++)
             {
@@ -294,7 +328,7 @@ namespace OJ
             }
 
             if (target != null)
-                MergeSystem.Instance.TryMerge(this, target);
+                merge.TryMerge(this, target);
         }
 
         private async UniTaskVoid HandleSingleClick(int sequence)
@@ -307,10 +341,13 @@ namespace OJ
             if (sequence != clickSequence)
                 return;
 
-            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Setting)
+            // 0.35초를 기다린 뒤라 그 사이 씬이 내려갔을 수 있다. 원래의 null 검사가
+            // 그 경우를 막고 있었으니 창구 뒤를 보는 형태로만 옮긴다.
+            GameManager game = battle.Game;
+            if (game == null || game.inGameState != InGameState.Setting)
                 return;
 
-            UIBoard.Instance?.OpenBattleDiceDetail(this);
+            battle.Board?.OpenBattleDiceDetail(this);
         }
 
         #endregion

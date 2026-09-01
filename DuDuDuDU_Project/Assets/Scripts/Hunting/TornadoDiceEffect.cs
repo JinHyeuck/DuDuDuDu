@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using OJ.Dice;
+using OJ.DI;
+using OJ.Relic;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class TornadoDiceEffect : DiceEffectBase
     {
@@ -10,6 +13,18 @@ namespace OJ
         private const int MaxTargets = 10;
         private const float PullDistancePerHit = 1.2f;
         private const float MinimumLoopTime = 0.05f;
+
+        /// <summary>
+        /// 이 클래스는 컨테이너가 만들지 않고 <c>AttackContent</c> 가 <c>new</c> 하는 순수 C# 이다.
+        /// 그래서 <c>[Inject]</c> 필드가 아니라 생성자로 창구를 받아 기반 클래스에 넘긴다.
+        ///
+        /// 창구 필드를 여기서 새로 만들지 않는 이유: <c>DiceEffectBase</c> 가 이미
+        /// <c>protected readonly IBattleRefs battle</c> 을 들고 있다. 같은 이름을 다시 선언하면
+        /// 기반 필드를 가리기만 할 뿐 얻는 게 없다 — 그냥 물려받은 것을 쓴다.
+        /// </summary>
+        public TornadoDiceEffect(IBattleRefs battle) : base(battle)
+        {
+        }
 
         public override DiceType DiceType => DiceType.Tornado;
 
@@ -83,7 +98,10 @@ namespace OJ
 
         private BulletEffect GetEffect(Vector2 center, EffectID effectId)
         {
-            BulletEffect effect = BulletEffectPool.Instance.GetBullet(DiceType, effectId);
+            // 창구에는 ?. 를 붙이지 않는다. 이 효과는 AttackContent 가 BattleScene 안에서만 만들고
+            // 그 수명 동안 battle.BulletEffects 는 살아 있다 — 비어 있다면 조용히 넘어갈 게 아니라 울어야 한다.
+            // 반면 아래 null 검사는 풀이 고갈돼 빌려줄 이펙트가 없는 경우를 막는 것이라 그대로 둔다.
+            BulletEffect effect = battle.BulletEffects.GetBullet(DiceType, effectId);
             if (effect == null)
                 return null;
 

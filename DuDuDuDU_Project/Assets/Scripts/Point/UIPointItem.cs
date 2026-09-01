@@ -1,8 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Point
 {
     public class UIPointItem : MonoBehaviour
     {

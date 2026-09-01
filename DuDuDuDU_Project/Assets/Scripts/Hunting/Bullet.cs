@@ -1,9 +1,22 @@
 using UnityEngine;
+using OJ.DI;
+using OJ.Dice;
+using VContainer;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class Bullet : MonoBehaviour
     {
+        // 8.3b: 배틀 스코프가 채운다. 이 총알은 BulletPool 이 런타임에 찍는 프리팹이라
+        // 씬 순회로는 안 잡히고, 생성부의 resolver.Instantiate 가 찍는 그 순간에 주입된다.
+        // 이 경로는 Awake 에서도 안전하다 — VContainer 의 부모 있는 Instantiate 가
+        // 프리팹을 껐다 찍고 주입한 뒤에 켜므로(ObjectResolverUnityExtensions.cs:78-91)
+        // 클론의 Awake 는 주입 뒤에 돈다. (씬에 놓인 컴포넌트는 반대로 자기 Awake 뒤에
+        // 채워진다 — 같은 [Inject] 라도 태어난 경로에 따라 시점이 갈린다.)
+        // 아래 사용처는 전부 Update·OnTriggerEnter2D 라 어느 쪽이든 지난 뒤다.
+        // null 이면 그것은 사고이니 ?. 를 쓰지 않는다.
+        [Inject] private IBattleRefs battle;
+
         private const float HitSweepRadius = 0.12f;
 
         public SpriteRenderer bulletImage;
@@ -47,7 +60,7 @@ namespace OJ
             transform.position = endPos;
 
             if (Mathf.Abs(transform.position.x) > 10f || Mathf.Abs(transform.position.y) > 10f)
-                BulletPool.Instance.PoolBullet(this);
+                battle.Bullets.PoolBullet(this);
         }
 
         void OnTriggerEnter2D(Collider2D col)
@@ -116,8 +129,8 @@ namespace OJ
                 return;
 
             _hasImpacted = true;
-            AttackContent.Instance.PlayHit(monster, _diceType, _diceStar);
-            BulletPool.Instance.PoolBullet(this);
+            battle.Attack.PlayHit(monster, _diceType, _diceStar);
+            battle.Bullets.PoolBullet(this);
         }
 
         private void OnDisable()

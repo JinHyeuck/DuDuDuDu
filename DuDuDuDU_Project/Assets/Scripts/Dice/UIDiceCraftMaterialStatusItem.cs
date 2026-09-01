@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace OJ
+namespace OJ.Dice
 {
     public class UIDiceCraftMaterialStatusItem : MonoBehaviour
     {

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using OJ.Stage;
 
-namespace OJ
+namespace OJ.StageReward
 {
     [CreateAssetMenu(fileName = "StageRewardDatabase", menuName = "Stage Reward/Database")]
     public class StageRewardDatabase : ScriptableObject

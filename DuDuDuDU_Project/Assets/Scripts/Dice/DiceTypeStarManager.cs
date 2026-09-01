@@ -1,12 +1,20 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
+using OJ.DI;
+// OJ.Hunting 은 PlayerController.Instance 를 이름으로 부를 때만 필요했다.
+// 이제 battle.Player 로 받으므로 이 파일에서 그 네임스페이스의 이름을 쓰지 않는다.
 
-namespace OJ
+namespace OJ.Dice
 {
     public class DiceTypeStarManager : MonoBehaviour
     {
-        public static DiceTypeStarManager Instance;
         public event System.Action OnDiceInventoryChanged;
+
+        // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
+        // 이 매니저 자체가 BattleScene 에서만 사는 놈이라, 이 코드가 도는 시점에는
+        // 스코프 빌드가 이미 끝나 있다(스코프는 모든 Awake 뒤·모든 Start 앞에 빌드된다).
+        [Inject] private IBattleRefs battle;
 
         public Dictionary<DiceType, int> typeCountTotals = new Dictionary<DiceType, int>();
         private Dictionary<DiceType, int> typeStarTotals = new Dictionary<DiceType, int>();
@@ -14,13 +22,6 @@ namespace OJ
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-
             foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
             {
                 if (type == DiceType.Max)
@@ -33,25 +34,21 @@ namespace OJ
             }
         }
 
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
-
         public void OnDiceSpawn(DiceType type, int star)
         {
             AddStars(type, star);
-            UIDiceBoardUI.Instance?.UpdateTypeStars();
-            PlayerController.Instance?.RefreshDice();
+            // 창구가 주는 참조는 씬 안에서 null 이 될 수 없으므로 ?. 를 지웠다.
+            // 여기서 터진다면 그것은 배선 사고이고, 조용히 넘어가는 대신 울어야 한다.
+            battle.BoardUI.UpdateTypeStars();
+            battle.Player.RefreshDice();
             OnDiceInventoryChanged?.Invoke();
         }
 
         public void OnDiceRemove(DiceType type, int star)
         {
             RemoveStars(type, star);
-            UIDiceBoardUI.Instance?.UpdateTypeStars();
-            PlayerController.Instance?.RefreshDice();
+            battle.BoardUI.UpdateTypeStars();
+            battle.Player.RefreshDice();
             OnDiceInventoryChanged?.Invoke();
         }
 
@@ -180,7 +177,7 @@ namespace OJ
             foreach (var key in typeStarCounts.Keys)
                 typeStarCounts[key] = 0;
 
-            UIDiceBoardUI.Instance?.UpdateTypeStars();
+            battle.BoardUI.UpdateTypeStars();
             OnDiceInventoryChanged?.Invoke();
         }
 
