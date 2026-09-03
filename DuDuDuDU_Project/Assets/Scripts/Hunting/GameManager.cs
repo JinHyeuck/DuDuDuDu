@@ -157,15 +157,10 @@ namespace OJ.Hunting
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
             WaveText?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
 
-            // (10.4) 이 파일이 여는 팝업 셋은 예전에 씬 인스턴스였고 [SerializeField] 로 직접
-            // 가리켰다. 그 참조가 None 이 되면 아무 로그 없이 창이 안 열렸다 — 실패가 조용했다.
-            // UIService 는 못 열면 사유를 로그로 남긴다.
-            // 닫을 때 Hide 인 이유는 이미 만들어 둔 것만 건드리기 때문이다 —
-            // 닫으려고 프리팹을 새로 찍는 일이 없다.
-            if (state == InGameState.Setting)
-                GameContainer.UI?.Show<UIDiceCraftProgressDialog>();
-            else
-                GameContainer.UI?.Hide<UIDiceCraftProgressDialog>();
+            // 관리 단계마다 자동으로 뜨던 조합 진행도 창(UIDiceCraftProgressDialog)은
+            // 조합식과 함께 사라졌다. 상위 다이스로 가는 길은 이제 목록을 띄워 재고를
+            // 세는 것이 아니라, 다이스를 눌러 그 자리에서 진화시키는 것이다 —
+            // UIBattleDiceDetailPanel 참조.
 
             if (state == InGameState.Wave)
             {
@@ -358,7 +353,7 @@ namespace OJ.Hunting
 
         private void HandleWaveCompleted()
         {
-            PointManager.Instance?.Add(PointType.Coin, 1);
+            PointManager.Instance?.Add(PointType.BattleEnhanceStone, 1);
             RelicManager.Instance?.ApplyWaveClearRelics(wall);
 
             if (CurrentStageData != null)

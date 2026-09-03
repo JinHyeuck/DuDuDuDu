@@ -16,14 +16,6 @@ namespace OJ.Dice
         }
 
         [Serializable]
-        public class DiceRecipeMaterial
-        {
-            public DiceType diceType;
-            public int star = 1;
-            public int count = 1;
-        }
-
-        [Serializable]
         public class DiceMeta
         {
             public DiceType diceType;
@@ -39,7 +31,11 @@ namespace OJ.Dice
             public bool summonable = true;
             public bool canMerge = true;
             public bool showStarUI = true;
-            public List<DiceRecipeMaterial> recipeMaterials = new List<DiceRecipeMaterial>();
+
+            // 조합식(recipeMaterials)은 진화 개편에서 사라졌다. 상위 다이스는 이제 재료를
+            // 모아 만드는 것이 아니라 하위 다이스 하나가 재화를 내고 올라간다 —
+            // 그 배선은 데이터가 아니라 OJ.Dice.DiceEvolution 의 표에 있다.
+            // 에셋 YAML 에 남은 recipeMaterials 키는 Unity 가 다음 저장 때 떨군다.
 
             [Header("Damage")]
             public int baseAttack;

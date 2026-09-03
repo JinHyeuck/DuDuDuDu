@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,7 +27,10 @@ namespace OJ.Dice
         [SerializeField] private Transform milestoneListRoot;
         [SerializeField] private UIMilestoneElement milestoneElementPrefab;
 
-        [Header("Craft Recipe")]
+        // 조합식 칸이던 자리다. 프리팹의 필드 이름·배선은 그대로 두고 <b>보여 주는 것만</b>
+        // 바꿨다 — 이름을 바꾸면 프리팹의 직렬화 참조가 끊어져 에디터에서 다시 끌어다
+        // 놓아야 하고, 이 화면은 로비에 이미 배선이 끝나 있다.
+        [Header("Evolve Path")]
         [SerializeField] private GameObject recipeSectionRoot;
         [SerializeField] private Transform recipeListRoot;
         [SerializeField] private UIDiceCraftMaterialStatusItem recipeItemPrefab;
@@ -128,7 +132,7 @@ namespace OJ.Dice
             if (scrollIcon != null) scrollIcon.sprite = metadata != null ? metadata.icon : null;
             RefreshMilestoneRows(meta, level);
 
-            RefreshRecipeSection();
+            RefreshEvolvePath();
         }
 
         private void OnClickUpgrade()
@@ -149,49 +153,53 @@ namespace OJ.Dice
                 Refresh();
         }
 
-        private void RefreshRecipeSection()
+        /// <summary>
+        /// 진화 경로 칸. 예전에는 조합식 재료를 늘어놓던 자리다.
+        ///
+        /// 조합식이 사라지면서 보여 줄 것이 <b>재료 목록에서 한 줄짜리 계보</b>로 바뀌었다.
+        /// 이 다이스가 무엇에서 왔고 무엇이 되는지, 아이콘 두 칸으로 말한다.
+        ///
+        /// <list type="bullet">
+        /// <item>기본 다이스: [4성 자기 자신] → [특수]</item>
+        /// <item>특수 다이스: [특수 자기 자신] → [킹]</item>
+        /// <item>킹 다이스: 최종이라 칸을 통째로 숨긴다</item>
+        /// </list>
+        ///
+        /// <b>"보유" 표시를 끈다</b>(showState: false). 재고를 세어 조합 가능 여부를 말하던
+        /// 칸이었지만, 진화는 보드 위의 그 다이스 하나와 재화만 보므로 로비에서 셀 재고가
+        /// 없다. 켜 두면 항상 "미보유"라고 빨갛게 거짓말을 한다.
+        /// </summary>
+        private void RefreshEvolvePath()
         {
-            IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe = DiceMetaDataProvider.GetRecipeMaterials(currentDiceType);
-            bool hasRecipe = recipe != null && recipe.Count > 0;
+            bool hasPath = DiceEvolution.TryGetEvolveTarget(currentDiceType, out DiceType evolveTarget);
 
             if (recipeSectionRoot != null)
-                recipeSectionRoot.SetActive(hasRecipe);
+                recipeSectionRoot.SetActive(hasPath);
 
-            if (!hasRecipe)
+            if (!hasPath)
             {
                 HideRecipeSlotsFrom(0);
                 return;
             }
 
-            int slot = 0;
-            for (int i = 0; i < recipe.Count; i++)
-            {
-                DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
-                // 8.3b: 예전 DiceTypeStarManager.Instance == null 검사를 그대로 옮긴 것이다.
-                // 그 매니저는 전투 씬에만 사는 물건이라 "Instance 가 null" 은 곧 "전투가
-                // 없다"는 뜻이었고, 창구에서 같은 것을 묻는 이름이 IsActive 다. 이 패널은
-                // 로비에서도 열리므로 그때 보유 개수가 0 으로 보이던 동작이 그대로 산다.
-                //
-                // battle 이나 battle.DiceStars 를 대신 검사하지 않았다. UIService 가
-                // 루트 리졸버로 찍으므로 창구 자체는 항상 채워지고, 전투 중에 그 뒤가
-                // null 이면 조용히 0 을 그릴 상황이 아니라 주입이 빠진 사고다.
-                int have = battle.IsActive
-                    ? battle.DiceStars.GetTypeStarCount(req.diceType, req.star)
-                    : 0;
+            // 진화의 재료는 자기 자신이다. 기본 다이스만 성급 조건이 붙는다.
+            int fromStar = DiceEvolution.GetTier(currentDiceType) == DiceTier.Base
+                ? DiceEvolution.EvolveRequiredStar
+                : 1;
 
-                for (int unit = 0; unit < req.count; unit++)
-                {
-                    UIDiceCraftMaterialStatusItem item = GetOrCreateRecipeItem(slot);
-                    if (item == null)
-                        continue;
+            BindEvolveSlot(0, currentDiceType, fromStar);
+            BindEvolveSlot(1, evolveTarget, 1);
+            HideRecipeSlotsFrom(2);
+        }
 
-                    item.gameObject.SetActive(true);
-                    item.Bind(req.diceType, req.star, have > unit, false);
-                    slot++;
-                }
-            }
+        private void BindEvolveSlot(int index, DiceType diceType, int star)
+        {
+            UIDiceCraftMaterialStatusItem item = GetOrCreateRecipeItem(index);
+            if (item == null)
+                return;
 
-            HideRecipeSlotsFrom(slot);
+            item.gameObject.SetActive(true);
+            item.Bind(diceType, star, true, false);
         }
 
         private UIDiceCraftMaterialStatusItem GetOrCreateRecipeItem(int index)
@@ -259,19 +267,45 @@ namespace OJ.Dice
             return created;
         }
 
+        /// <summary>
+        /// 설명 칸. <b>문장은 에셋에서, 숫자는 공식에서</b> 온다.
+        ///
+        /// 예전에는 에셋의 <c>description</c> 안에 "적 1명에게 110 + (레벨 x 22) 대미지"처럼
+        /// 수치가 박혀 있었다. 그래서 밸런스를 만질 때마다 그 문장이 조용히 낡았고, 실제로
+        /// 킹 4종의 설명이 <c>baseAttack</c> 과 어긋난 채 한동안 떠 있었다. 문자열은
+        /// 컴파일러도 테스트도 검사하지 않으므로 그 어긋남은 눈으로 찾을 수밖에 없다.
+        ///
+        /// 이제 <c>description</c> 은 <b>동작만</b> 말하고 수치를 담지 않는다. 공격력은
+        /// 아래에서 실제 데미지 공식(<see cref="DiceMetaDataProvider.CalculateDamage"/>)으로
+        /// 뽑고, 효과 수치는 <see cref="DiceTraitText"/> 가 각 공식을 불러 채운다.
+        /// 그러면 밸런스를 고치는 순간 화면이 따라온다.
+        ///
+        /// 공격력을 <b>1성 기준</b>으로 뽑는 이유는 이 화면이 쿨타임도 그렇게 보여 주기
+        /// 때문이다(<c>GetCooldown(type, 1)</c>). 성급은 보드 위에서 정해지는 값이라
+        /// 로비에는 없다. 장비 보정은 들어간다 — 장비는 전투 밖에서도 끼고 있다.
+        /// </summary>
         private string BuildDescriptionText(DiceMetaDataDatabase.DiceMeta meta, int level)
         {
             if (meta == null)
                 return string.Empty;
 
-            if (currentDiceType == DiceType.Poison || currentDiceType == DiceType.KingPoison)
+            var builder = new StringBuilder();
+
+            if (!string.IsNullOrEmpty(meta.description))
+                builder.AppendLine(meta.description);
+
+            const int lobbyStar = 1;
+            builder.AppendFormat("공격력 {0}",
+                DiceMetaDataProvider.CalculateDamage(currentDiceType, lobbyStar, level));
+
+            string trait = DiceTraitText.Detailed(currentDiceType, level, battle);
+            if (!string.IsNullOrEmpty(trait))
             {
-                float poisonMultiplier = DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType.Poison, level);
-                float poisonDuration = DiceMetaDataProvider.GetPoisonDuration(DiceType.Poison);
-                return $"{meta.description}\n중독: 0.5초마다 현재 체력의 10% x {poisonMultiplier:0.##} 피해 ({poisonDuration:0.#}초)";
+                builder.AppendLine();
+                builder.Append(trait);
             }
 
-            return meta.description;
+            return builder.ToString();
         }
     }
 }

@@ -278,15 +278,34 @@ namespace OJ.Hunting
             }
             int diceStar = sourceDice.Star;
 
+            // 타임 다이스는 <b>쿨감을 먼저 하고 총알 경로로 흘러간다.</b> (진화 개편)
+            //
+            // 예전에는 여기서 쿨감만 하고 return true 로 끝냈다 — 피해가 0 인 순수 유틸이라
+            // 쏠 것이 없었기 때문이다. 지금은 4성 썬더가 진화해 도달하는 상위 단계라
+            // 피해가 있어야 한다(바람 다이스와 같은 사정이다. WindDiceEffect 주석 참조).
+            //
+            // <b>쿨감을 사거리 안에 적이 있을 때만 하는 이유.</b> 아래 총알 경로는 대상이
+            // 없으면 <c>return false</c> 로 빠지고, 그러면 이 다이스는 쿨타임을 소모하지
+            // 않아 <b>다음 프레임에 다시 들어온다.</b> 쿨감을 먼저 해 두면 그 재시도마다
+            // 쿨감이 또 걸려서, 적이 없는 동안 보드 전체 쿨타임이 프레임마다 깎인다.
+            // 그래서 대상 유무를 먼저 확인하고, 없으면 예전처럼 쿨감만 하고 끝낸다.
             if (diceType == DiceType.Time)
             {
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Time) : 1;
                 float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(DiceType.Time, level);
                 int targetCount = DiceMetaDataProvider.GetTimeTargetCount(level);
                 ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount, sourceDice);
-                characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
-                bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
-                return true;
+
+                if (battle.Monsters.GetClosestMonster(firePoint.position) == null)
+                {
+                    characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                    bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                    return true;
+                }
+
+                // 대상이 있으면 아래 일반 경로로 내려간다. TimeDiceEffect.ApplyOnHit 는
+                // 쿨감을 하지 않는다 — 여기서 이미 했고, 거기서는 sourceDice 를 몰라
+                // 자기 자신의 쿨타임까지 깎아 버린다.
             }
 
             if (diceType == DiceType.Wind)

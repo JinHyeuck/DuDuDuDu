@@ -19,6 +19,21 @@ namespace OJ.Hunting
         }
 
         public override DiceType DiceType => DiceType.Wind;
+
+        /// <summary>
+        /// <b>"바람은 피해가 없다"는 뜻이 아니다.</b> 진화 개편 이후 바람 다이스는 피해를 준다 —
+        /// <see cref="TryCastWithoutTarget"/> 이 직접 <c>HitMonster</c> 를 부른다.
+        ///
+        /// 이 플래그가 그대로 <c>false</c> 인 것은 <b>그것을 읽는 자리가 총알 경로뿐</b>이기
+        /// 때문이다(<c>AttackContent.PlayHit</c>). 바람은 대상 없이 캐스트되어 총알을 아예
+        /// 쏘지 않으므로 그 경로를 지나지 않고, 따라서 이 값은 바람에게 조회되지 않는다.
+        /// <c>true</c> 로 바꿔도 동작은 같지만, 그러면 "총알이 맞으면 피해를 준다"는 약속을
+        /// 지킬 수 없는 다이스가 참이라고 말하게 된다.
+        ///
+        /// <b>형제인 타임 다이스는 반대다.</b> 그쪽은 총알을 쏘도록 바꿨으므로
+        /// <c>ShouldApplyDamage</c> 가 <c>true</c> 여야 실제로 피해가 들어간다.
+        /// 두 다이스가 같은 목적(상위 단계다운 피해)을 <b>다른 경로로</b> 달성한다.
+        /// </summary>
         public override bool ShouldApplyDamage => false;
 
         public override bool TryCastWithoutTarget(AttackContent attackContent, int shotDicePip)
@@ -50,10 +65,32 @@ namespace OJ.Hunting
 
             Shuffle(candidates);
             int castCount = Mathf.Min(targetCount, candidates.Count);
-            bool pushedAny = false;
+
+            // 진화 개편에서 바람 다이스가 <b>피해를 주기 시작했다.</b>
+            //
+            // 예전에는 baseAttack 이 0 이었고 ShouldApplyDamage 도 false 라 순수 유틸이었다.
+            // 그래도 됐던 것은 특수 다이스가 ★2 두 개로 만드는 <b>곁가지</b>였기 때문이다.
+            // 지금은 4성 아이스가 진화해 도달하는 <b>상위 단계</b>다 — 피해가 0 이면
+            // 재화 10 개를 내고 딜을 통째로 잃는 셈이라, 아무도 아이스를 진화시키지 않는다.
+            //
+            // <b>총알 경로를 타지 않는다.</b> 이 다이스는 PlayerController 에서 대상 없이
+            // 캐스트되고(벽 앞 띠 전체를 민다) 그래서 AttackContent.PlayHit 를 지나지 않는다.
+            // 그 구조를 바꾸는 대신 여기서 직접 때린다 — 미는 대상이 곧 맞는 대상이다.
+            //
+            // 피해는 <b>밀기 판정과 무관하게</b> 들어간다. 밀기는 확률이라, 피해까지 거기
+            // 묶으면 같은 다이스가 어떤 발사에서는 0 딜이 되어 표시 수치를 신뢰할 수 없다.
+            int damage = DiceMetaDataProvider.CalculateDamage(DiceType, Mathf.Max(1, shotDicePip), level);
+
+            bool castAny = false;
             for (int i = 0; i < castCount; i++)
             {
                 Monster monster = candidates[i];
+
+                if (damage > 0)
+                    attackContent.HitMonster(monster, DiceType, damage);
+
+                castAny = true;
+
                 if (Random.value * 100f > chancePercent)
                     continue;
 
@@ -63,10 +100,9 @@ namespace OJ.Hunting
                 if (RelicManager.Instance != null)
                     monster.ApplyRelicDamageTakenBonus(RelicManager.Instance.GetWindDamageTakenBonusPercent(), 3f);
                 PlayEffectAt(DiceType, effectPosition);
-                pushedAny = true;
             }
 
-            return pushedAny;
+            return castAny;
         }
 
         private List<Monster> GetWallFrontTargets(AttackContent attackContent, Wall wall, int maxTargets)

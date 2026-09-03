@@ -348,7 +348,7 @@ namespace OJ.Relic
                 && PointManager.Instance != null
                 && UnityEngine.Random.value * 100f <= GetPrimaryValue(RelicId.BattleVault))
             {
-                PointManager.Instance.Add(PointType.Coin, 1);
+                PointManager.Instance.Add(PointType.BattleEnhanceStone, 1);
             }
 
             if (wall != null && HasRelic(RelicId.RepairHammer))

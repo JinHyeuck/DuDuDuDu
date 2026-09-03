@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>무한의 탑 콘텐츠 기획서</title>
+<style>
+:root{
+  --ink:#15181f; --ink2:#333a47; --muted:#6b7482; --line:#e3e7ee; --line2:#f0f3f7;
+  --soft:#f7f9fc; --primary:#4338ca; --primary-l:#eef0fe; --accent:#c2660b; --accent-l:#fdf3e3;
+  --ok:#0f766e; --ok-l:#e6f4f2; --bad:#b91c1c; --bad-l:#fdeceb;
+  --n:#6b7280; --f:#e04141; --i:#2f9fd8; --t:#e0a020; --p:#9b4fd0; --s:#10a37f; --k:#b8860b;
+}
+@page{ size:A4; margin:14mm 13mm 14mm; }
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:"Malgun Gothic","맑은 고딕","Noto Sans KR","Segoe UI",sans-serif;
+  color:var(--ink); font-size:10.2pt; line-height:1.62; -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+p{ margin:.45em 0 .75em; }
+small{ font-size:8.6pt; }
+.mono{ font-family:Consolas,"D2Coding",monospace; }
+
+/* ---------- 표지 ---------- */
+.cover{ page-break-after:always; height:267mm; display:flex; flex-direction:column; }
+.cover-hero{
+  background:linear-gradient(155deg,#211d4a 0%,#3b2f8f 48%,#4338ca 100%);
+  color:#fff; padding:26mm 16mm 18mm; border-radius:4mm; position:relative; overflow:hidden;
+}
+.cover-hero::after{
+  content:""; position:absolute; right:-30mm; bottom:-40mm; width:110mm; height:110mm;
+  border:1.2mm solid rgba(255,255,255,.13); border-radius:50%;
+}
+.cover-hero::before{
+  content:""; position:absolute; right:-8mm; top:-32mm; width:70mm; height:70mm;
+  border:1.2mm solid rgba(255,255,255,.10); border-radius:50%;
+}
+.eyebrow{ font-size:9pt; letter-spacing:.32em; color:#b9b2ff; margin-bottom:6mm; }
+.cover-hero h1{ font-size:34pt; line-height:1.15; margin:0 0 5mm; letter-spacing:-.02em; }
+.cover-hero .lead{ font-size:11.5pt; color:#ded9ff; max-width:120mm; line-height:1.7; margin:0; }
+.cover-tag{ display:inline-block; margin-top:8mm; padding:2mm 5mm; border:.4mm solid rgba(255,255,255,.4);
+  border-radius:20mm; font-size:9.4pt; color:#fff; }
+.cover-body{ flex:1; padding:9mm 2mm 0; }
+.cover-meta{ display:grid; grid-template-columns:repeat(4,1fr); gap:3mm; margin-bottom:8mm; }
+.cover-meta div{ background:var(--soft); border:.3mm solid var(--line); border-radius:2.5mm; padding:4mm; }
+.cover-meta dt{ font-size:8.4pt; color:var(--muted); margin-bottom:1.5mm; }
+.cover-meta dd{ margin:0; font-size:11pt; font-weight:700; color:var(--primary); }
+.toc{ border-top:.5mm solid var(--ink); padding-top:5mm; }
+.toc h4{ margin:0 0 4mm; font-size:9pt; letter-spacing:.2em; color:var(--muted); }
+.toc ol{ list-style:none; margin:0; padding:0; columns:2; column-gap:12mm; }
+.toc li{ padding:1.6mm 0; border-bottom:.25mm dotted var(--line); font-size:9.6pt; break-inside:avoid; }
+.toc li b{ display:inline-block; width:7mm; color:var(--primary); }
+.cover-foot{ margin-top:auto; padding-top:6mm; border-top:.3mm solid var(--line);
+  display:flex; justify-content:space-between; font-size:8.6pt; color:var(--muted); }
+
+/* ---------- 섹션 ---------- */
+section{ page-break-before:always; }
+h2{
+  font-size:16pt; margin:0 0 5mm; padding-bottom:3mm; border-bottom:.6mm solid var(--ink);
+  display:flex; align-items:baseline; gap:4mm; letter-spacing:-.01em;
+}
+h2 .num{
+  font-size:9pt; font-weight:700; color:#fff; background:var(--primary);
+  border-radius:1.5mm; padding:1mm 2.6mm; letter-spacing:.05em;
+}
+h3{ font-size:11.6pt; margin:7mm 0 2.5mm; padding-left:2.6mm; border-left:1mm solid var(--primary); }
+h4{ font-size:10pt; margin:5mm 0 2mm; color:var(--ink2); }
+.sub{ color:var(--muted); font-size:9.4pt; margin:-3mm 0 5mm; }
+
+/* ---------- 표 ---------- */
+table{ width:100%; border-collapse:collapse; margin:3mm 0 5mm; font-size:9.4pt; page-break-inside:avoid; }
+th,td{ border-bottom:.25mm solid var(--line); padding:2.4mm 3mm; text-align:left; vertical-align:top; }
+thead th{ background:var(--soft); border-bottom:.5mm solid var(--ink2); font-size:8.8pt; color:var(--ink2); letter-spacing:.02em; }
+tbody tr:last-child td{ border-bottom:.4mm solid var(--line); }
+td.c,th.c{ text-align:center; }
+table.compact th,table.compact td{ padding:1.8mm 2.6mm; }
+tr.total td{ background:var(--primary-l); font-weight:700; border-bottom:none; }
+
+/* ---------- 카드 / 콜아웃 ---------- */
+.cards{ display:grid; grid-template-columns:repeat(2,1fr); gap:4mm; margin:4mm 0 6mm; }
+.cards.c4{ grid-template-columns:repeat(4,1fr); }
+.card{ border:.3mm solid var(--line); border-radius:2.5mm; padding:4.5mm; background:#fff; page-break-inside:avoid; }
+.card .idx{ font-size:8.4pt; font-weight:700; color:var(--primary); letter-spacing:.12em; }
+.card h5{ margin:1.5mm 0 2mm; font-size:10.6pt; }
+.card p{ margin:0; font-size:9.2pt; color:var(--ink2); line-height:1.6; }
+
+.callout{ border-left:1.2mm solid var(--accent); background:var(--accent-l); padding:4mm 5mm; border-radius:0 2mm 2mm 0; margin:4mm 0 6mm; page-break-inside:avoid; }
+.callout .lbl{ font-size:8.4pt; font-weight:700; color:var(--accent); letter-spacing:.14em; display:block; margin-bottom:1.5mm; }
+.callout p{ margin:0; font-size:11pt; font-weight:700; line-height:1.55; }
+.note{ border:.3mm solid var(--line); background:var(--soft); border-radius:2mm; padding:3.5mm 4.5mm; margin:4mm 0; font-size:9.2pt; color:var(--ink2); page-break-inside:avoid; }
+.note b{ color:var(--primary); }
+
+.rules{ list-style:none; margin:3mm 0 5mm; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:1.5mm 5mm; }
+.rules li{ font-size:9.4pt; padding-left:6mm; position:relative; }
+.rules li::before{ content:"✓"; position:absolute; left:0; color:var(--ok); font-weight:700; }
+.rules.no li::before{ content:"✕"; color:var(--bad); }
+.checks{ list-style:none; margin:3mm 0; padding:0; }
+.checks li{ font-size:9.6pt; padding:2mm 0 2mm 7mm; border-bottom:.25mm dotted var(--line); position:relative; }
+.checks li::before{ content:""; position:absolute; left:0; top:2.6mm; width:3.4mm; height:3.4mm;
+  border:.35mm solid var(--muted); border-radius:.8mm; }
+
+/* ---------- 플로우 ---------- */
+.flow{ display:flex; align-items:stretch; gap:0; margin:4mm 0 6mm; page-break-inside:avoid; }
+.flow .step{ flex:1; background:var(--soft); border:.3mm solid var(--line); padding:3.5mm 3mm; text-align:center; position:relative; }
+.flow .step:not(:last-child){ margin-right:3.4mm; }
+.flow .step:not(:last-child)::after{
+  content:""; position:absolute; right:-3.4mm; top:50%; transform:translateY(-50%);
+  border-left:2.2mm solid var(--primary); border-top:1.8mm solid transparent; border-bottom:1.8mm solid transparent;
+}
+.flow .step b{ display:block; font-size:9.4pt; margin-bottom:.8mm; }
+.flow .step span{ font-size:8.2pt; color:var(--muted); }
+.flow .step.hi{ background:var(--primary-l); border-color:#c7cbf7; }
+
+.loop{ display:grid; grid-template-columns:repeat(5,1fr); gap:3mm; margin:4mm 0; page-break-inside:avoid; }
+.loop div{ border:.3mm solid var(--line); border-radius:2mm; padding:3.5mm 3mm; text-align:center; font-size:9pt; background:#fff; }
+.loop div b{ display:block; font-size:8pt; color:var(--primary); margin-bottom:1mm; letter-spacing:.1em; }
+.loop-back{ text-align:center; font-size:8.6pt; color:var(--primary); margin:2mm 0 6mm; }
+
+/* ---------- 다이스 칩 ---------- */
+.dice{ display:inline-flex; flex-direction:column; align-items:center; gap:.8mm; width:13mm; }
+.dice .face{
+  width:10mm; height:10mm; border-radius:2mm; display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:7.6pt; font-weight:700; border:.3mm solid rgba(0,0,0,.12); position:relative;
+}
+.dice .cap{ font-size:6.4pt; color:var(--muted); letter-spacing:-.02em; }
+.f-n{ background:var(--n);} .f-f{ background:var(--f);} .f-i{ background:var(--i);}
+.f-t{ background:var(--t);} .f-p{ background:var(--p);} .f-s{ background:var(--s);}
+.f-k{ background:linear-gradient(140deg,#e8b53a,#a9740c); }
+.dice.lock .face{ filter:grayscale(1) brightness(1.35); opacity:.55; }
+.dice.lock .face::after{ content:"🔒"; position:absolute; right:-1mm; bottom:-1mm; font-size:5.6pt; }
+.dice.sel .face{ box-shadow:0 0 0 .7mm var(--primary); }
+.dice.sel .face::before{ content:"✓"; position:absolute; right:-1.4mm; top:-1.4mm; width:3.6mm; height:3.6mm;
+  background:var(--primary); color:#fff; border-radius:50%; font-size:5.4pt; display:flex; align-items:center; justify-content:center; }
+.dice.new .face::after{ content:"NEW"; position:absolute; left:50%; transform:translateX(-50%); bottom:-2.2mm;
+  background:var(--accent); color:#fff; font-size:4.6pt; padding:0 .8mm; border-radius:.6mm; }
+.dice-row{ display:flex; gap:1.5mm; align-items:flex-start; }
+.legend-chips{ display:flex; gap:6mm; flex-wrap:wrap; margin:2mm 0 5mm; font-size:8.6pt; color:var(--muted); }
+.legend-chips i{ display:inline-block; width:3mm; height:3mm; border-radius:.8mm; margin-right:1.4mm; vertical-align:-.3mm; }
+
+/* ---------- UI 목업 ---------- */
+.mock-block{ display:flex; gap:7mm; margin:4mm 0 7mm; page-break-inside:avoid; align-items:flex-start; }
+.phone{
+  width:66mm; flex:0 0 66mm; border:1.1mm solid #262b36; border-radius:5mm; background:#1a1e28;
+  padding:2mm 1.6mm;
+}
+.screen{ background:#f4f6fa; border-radius:3mm; overflow:hidden; display:flex; flex-direction:column; height:117mm; }
+.screen.tall{ height:128mm; }
+.sc-top{ background:#252a38; color:#fff; padding:2mm 2.6mm; display:flex; justify-content:space-between; align-items:center; font-size:7pt; }
+.sc-top .t{ font-weight:700; font-size:8pt; }
+.sc-body{ flex:1; padding:2.4mm; display:flex; flex-direction:column; gap:2mm; overflow:hidden; }
+.sc-foot{ padding:2mm 2.4mm; background:#fff; border-top:.3mm solid #e0e4ec; display:flex; gap:1.6mm; }
+.btn{ flex:1; text-align:center; padding:2.2mm 0; border-radius:1.6mm; font-size:7.6pt; font-weight:700;
+  background:#e8ebf2; color:#4a5262; }
+.btn.pri{ background:var(--primary); color:#fff; }
+.blk{ background:#fff; border:.3mm solid #e2e6ee; border-radius:1.8mm; padding:2mm; position:relative; }
+.blk .cap{ font-size:6.6pt; color:#8b94a3; letter-spacing:.04em; }
+.blk .val{ font-size:8.4pt; font-weight:700; }
+.pin{ position:absolute; left:-2.6mm; top:-2.2mm; width:4.2mm; height:4.2mm; background:var(--primary);
+  color:#fff; border-radius:50%; font-size:5.8pt; font-weight:700; display:flex; align-items:center; justify-content:center;
+  border:.3mm solid #fff; }
+.slotbar{ display:flex; gap:1.2mm; }
+.slot{ flex:1; height:7.6mm; border-radius:1.4mm; border:.3mm dashed #b9c0cd; background:#eef1f6;
+  display:flex; align-items:center; justify-content:center; font-size:5.4pt; color:#aab1bd; }
+.slot.on{ border:.35mm solid var(--primary); background:#fff; padding:.4mm; }
+.slot .mini{ width:100%; height:100%; border-radius:1.2mm; display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:5.6pt; font-weight:700; }
+.grid-row{ display:flex; align-items:center; gap:1.4mm; }
+.grid-row .rl{ width:11mm; flex:0 0 11mm; font-size:6.4pt; color:#5c6474; }
+.grid-row .rl b{ display:block; font-size:6pt; color:#98a0ae; font-weight:400; }
+.grid-row .cells{ display:flex; gap:1.2mm; flex:1; }
+.cell{ flex:1; height:6.6mm; border-radius:1.3mm; display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:5.6pt; font-weight:700; position:relative; }
+.cell.lk{ filter:grayscale(1) brightness(1.5); opacity:.5; }
+.cell.se{ box-shadow:0 0 0 .55mm var(--primary), 0 0 0 .9mm #fff; }
+.cell.dim{ opacity:.32; }
+.floorcard{ display:flex; gap:1.6mm; align-items:center; padding:1.8mm 2mm; background:#fff;
+  border:.3mm solid #e2e6ee; border-radius:1.8mm; }
+.floorcard .fno{ width:9mm; flex:0 0 9mm; text-align:center; font-size:8.4pt; font-weight:700; color:var(--primary); }
+.floorcard .fin{ flex:1; }
+.floorcard .fin .n{ font-size:7.4pt; font-weight:700; }
+.floorcard .fin .d{ font-size:6.4pt; color:#8b94a3; }
+.floorcard .go{ font-size:6.4pt; background:var(--primary); color:#fff; padding:1.2mm 2.2mm; border-radius:1.2mm; }
+.floorcard.locked{ opacity:.45; }
+.floorcard.clear .fno{ color:var(--ok); }
+.bar{ height:2.2mm; border-radius:1.1mm; background:#e4e8ef; overflow:hidden; }
+.bar i{ display:block; height:100%; background:var(--primary); }
+.tags{ display:flex; gap:1.2mm; flex-wrap:wrap; }
+.tag{ font-size:5.8pt; padding:.6mm 1.4mm; border-radius:.9mm; background:#eef1f6; color:#5c6474; }
+.tag.w{ background:var(--bad-l); color:var(--bad); }
+.tag.g{ background:var(--ok-l); color:var(--ok); }
+.mock-desc{ flex:1; }
+.mock-desc h4{ margin-top:0; }
+.pinlist{ list-style:none; margin:0; padding:0; }
+.pinlist li{ position:relative; padding:1.6mm 0 1.6mm 8mm; font-size:9pt; border-bottom:.25mm dotted var(--line); }
+.pinlist li b{ position:absolute; left:0; top:1.9mm; width:4.6mm; height:4.6mm; background:var(--primary); color:#fff;
+  border-radius:50%; font-size:6.4pt; display:flex; align-items:center; justify-content:center; }
+.pinlist li span{ display:block; color:var(--muted); font-size:8.4pt; }
+.screen-flow{ display:flex; gap:2mm; align-items:center; margin:3mm 0 6mm; font-size:8.6pt; }
+.screen-flow .s{ flex:1; text-align:center; border:.3mm solid var(--line); border-radius:2mm; padding:2.6mm 1mm; background:#fff; }
+.screen-flow .s b{ display:block; font-size:8.8pt; }
+.screen-flow .s span{ font-size:7.4pt; color:var(--muted); }
+.screen-flow .a{ color:var(--primary); font-size:10pt; }
+.screen-flow .s.new{ background:var(--primary-l); border-color:#c7cbf7; }
+.two{ display:grid; grid-template-columns:1fr 1fr; gap:6mm; }
+.foot-note{ font-size:8.4pt; color:var(--muted); border-top:.25mm solid var(--line); padding-top:2.5mm; margin-top:5mm; }
+</style>
+</head>
+<body>
+
+<!-- ============ 표지 ============ -->
+<div class="cover">
+  <div class="cover-hero">
+    <div class="eyebrow">DUDUDUDU · CONTENT DESIGN</div>
+    <h1>무한의 탑<br>콘텐츠 기획서</h1>
+    <p class="lead">보유한 다이스로 단 하나의 웨이브에 도전하고,<br>지금 내 성장 수준을 30초 안에 확인하는 전투 콘텐츠</p>
+    <span class="cover-tag">적 구성을 보고, 보유 다이스로 7칸의 답을 만드는 짧은 편성 퍼즐</span>
+  </div>
+
+  <div class="cover-body">
+    <div class="cover-meta">
+      <div><dt>전체 규모</dt><dd>약 300층</dd></div>
+      <div><dt>전투 구성</dt><dd>층당 1웨이브</dd></div>
+      <div><dt>편성 슬롯</dt><dd>최대 7개</dd></div>
+      <div><dt>SP · 소환 · 머지</dt><dd>미사용</dd></div>
+    </div>
+
+    <div class="toc">
+      <h4>C O N T E N T S</h4>
+      <ol>
+        <li><b>1</b> 콘텐츠 의도</li>
+        <li><b>2</b> 기존 스테이지와의 차이</li>
+        <li><b>3</b> 플레이 루프와 전투 규칙</li>
+        <li><b>4</b> 다이스 편성 규칙</li>
+        <li><b>5</b> UI 레이아웃</li>
+        <li><b>6</b> 층 구성과 기믹 설계</li>
+        <li><b>7</b> 보상과 성장 순환</li>
+        <li><b>8</b> 난이도 설계 원칙</li>
+        <li><b>9</b> 추가 결정 필요 항목</li>
+        <li><b>10</b> 최종 요약</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <span>DuDuDuDu · 무한의 탑 (Infinite Tower)</span>
+    <span>기준 해상도 1080 × 1920 (Portrait)</span>
+  </div>
+</div>
+
+<!-- ============ 1. 콘텐츠 의도 ============ -->
+<section>
+  <h2><span class="num">01</span>콘텐츠 의도</h2>
+  <p class="sub">왜 이 콘텐츠를 만드는가 — 기존 스테이지가 채우지 못하는 경험을 정의한다.</p>
+
+  <h3>1.1 해결하려는 문제</h3>
+  <table>
+    <thead><tr><th style="width:34%">현재 스테이지의 한계</th><th style="width:32%">유저가 겪는 상황</th><th>무한의 탑의 해답</th></tr></thead>
+    <tbody>
+      <tr><td>여러 웨이브를 소화해야 결과가 나온다</td><td>성장했는지 확인하려면 긴 플레이가 필요하다</td><td>1층 = 1웨이브. 짧은 전투로 즉시 판정</td></tr>
+      <tr><td>SP 소환·머지의 무작위성이 결과를 흐린다</td><td>이긴 이유가 스펙인지 운인지 모호하다</td><td>편성 확정 → 무작위 제거. 결과가 곧 스펙</td></tr>
+      <tr><td>새로 얻은 다이스를 바로 써보기 어렵다</td><td>획득의 즉각적인 보람이 약하다</td><td>획득 즉시 편성 → 막힌 층 재도전</td></tr>
+      <tr><td>수집한 다이스의 가치가 체감되지 않는다</td><td>보유량이 늘어도 강해진 느낌이 없다</td><td>미보유 = 빈 슬롯. 보유량이 곧 출전 인원</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.2 핵심 목표</h3>
+  <div class="cards c4">
+    <div class="card"><div class="idx">GOAL 01</div><h5>빠른 결과 제공</h5>
+      <p>한 층을 1웨이브로 구성해 성공·실패를 즉시 확인한다. 도전 부담을 낮춰 반복 시도를 유도한다.</p></div>
+    <div class="card"><div class="idx">GOAL 02</div><h5>명확한 성장 체감</h5>
+      <p>새 다이스를 구매·해금한 즉시 편성하고, 이전에 막힌 층에 다시 도전해 차이를 눈으로 확인한다.</p></div>
+    <div class="card"><div class="idx">GOAL 03</div><h5>보유 다이스의 가치</h5>
+      <p>미보유 스페셜·신화 자리는 비워 둔다. 다이스 획득 자체가 곧 전투력 확장으로 이어진다.</p></div>
+    <div class="card"><div class="idx">GOAL 04</div><h5>편성 전략 제공</h5>
+      <p>층의 적 구성과 특성을 확인한 뒤 공격·범위·군중 제어·방어 감소를 조합해 답을 찾는다.</p></div>
+  </div>
+
+  <h3>1.3 목표하는 플레이 감정</h3>
+  <div class="two">
+    <div>
+      <h4>도전 전 — 계획의 재미</h4>
+      <p style="font-size:9.4pt">“이 층은 빠른 적이 많네. 둔화랑 기절을 넣고 화력을 조금 포기해 볼까?”<br><strong>적 정보를 읽고 조합을 설계하는 단계</strong></p>
+    </div>
+    <div>
+      <h4>도전 후 — 성장의 재미</h4>
+      <p style="font-size:9.4pt">“어제는 보스 체력 18% 남기고 실패했는데, KingFire 넣으니까 42초 컷.”<br><strong>수치로 확인되는 성장의 단계</strong></p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="lbl">ONE LINE DEFINITION</span>
+    <p>적 구성을 보고, 내가 보유한 다이스로 7칸의 답을 만드는 짧은 덱 편성 퍼즐</p>
+  </div>
+</section>
+
+<!-- ============ 2. 차이 ============ -->
+<section>
+  <h2><span class="num">02</span>기존 스테이지와의 차이</h2>
+  <p class="sub">같은 다이스, 정반대의 플레이 문법. 두 콘텐츠가 서로를 대체하지 않도록 축을 분리한다.</p>
+
+  <table>
+    <thead><tr><th style="width:20%">구분</th><th style="width:40%">기존 스테이지</th><th>무한의 탑</th></tr></thead>
+    <tbody>
+      <tr><td><b>진행 길이</b></td><td>여러 웨이브</td><td>1웨이브</td></tr>
+      <tr><td><b>다이스 획득</b></td><td>전투 중 SP로 소환</td><td>전투 전에 직접 편성</td></tr>
+      <tr><td><b>다이스 성장</b></td><td>같은 종류·성급을 머지</td><td>전투 중 성장 없음 (편성 시 확정)</td></tr>
+      <tr><td><b>무작위성</b></td><td>소환 및 머지 결과에 존재</td><td>편성 단계에서 최소화</td></tr>
+      <tr><td><b>핵심 재미</b></td><td>주어진 결과에 대응하는 운영</td><td>보유 다이스로 정답 조합 구성</td></tr>
+      <tr><td><b>성장 확인</b></td><td>비교적 긴 플레이 후 확인</td><td>한 층의 짧은 전투로 확인</td></tr>
+      <tr><td><b>실력의 정의</b></td><td>실시간 판단과 운영 숙련도</td><td>적 특성 해석과 편성 설계력</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>설계 원칙 —</b> 기존 스테이지는 <b>“대응”</b>의 콘텐츠, 무한의 탑은 <b>“준비”</b>의 콘텐츠다.
+    무한의 탑에 SP·소환·머지를 추가하면 두 콘텐츠의 차별점이 사라지므로, 이 세 요소는 어떤 확장에서도 도입하지 않는다.
+  </div>
+
+  <h3>2.1 콘텐츠 포지셔닝</h3>
+  <div class="cards">
+    <div class="card"><div class="idx">기존 스테이지</div><h5>세션당 3~10분 · 운영형</h5>
+      <p>메인 진행, 스토리, 재화 수급의 축. 실시간 조작과 운 요소가 매 판의 변주를 만든다.</p></div>
+    <div class="card"><div class="idx">무한의 탑</div><h5>세션당 30~60초 · 검증형</h5>
+      <p>스펙 검증과 수집 동기의 축. 짧은 도전을 반복하며 “다음 다이스”를 향한 장기 목표를 제공한다.</p></div>
+  </div>
+
+  <h3>2.2 유저가 얻는 것</h3>
+  <table class="compact">
+    <thead><tr><th style="width:24%">유저 유형</th><th style="width:38%">무한의 탑에서 얻는 가치</th><th>주요 행동</th></tr></thead>
+    <tbody>
+      <tr><td><b>신규 유저</b></td><td>다이스별 역할 차이를 짧게 학습</td><td>초반 20층을 순서대로 클리어</td></tr>
+      <tr><td><b>진행 중 유저</b></td><td>현재 스펙의 상한선을 확인</td><td>막힌 층 기록 후 성장 → 재도전</td></tr>
+      <tr><td><b>수집 유저</b></td><td>신규 다이스의 성능을 즉시 검증</td><td>획득 직후 편성 교체 · 기록 갱신</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 3. 플레이 루프 ============ -->
+<section>
+  <h2><span class="num">03</span>플레이 루프와 전투 규칙</h2>
+  <p class="sub">선택 → 확인 → 편성 → 전투 → 판정. 한 사이클이 1분을 넘지 않도록 설계한다.</p>
+
+  <h3>3.1 기본 진행 흐름</h3>
+  <div class="flow">
+    <div class="step"><b>층 선택</b><span>도전할 층 결정</span></div>
+    <div class="step hi"><b>적 정보 확인</b><span>구성 · 층 특성</span></div>
+    <div class="step hi"><b>다이스 편성</b><span>최대 7슬롯</span></div>
+    <div class="step"><b>단일 웨이브</b><span>전투 진행</span></div>
+    <div class="step"><b>결과 판정</b><span>클리어 / 실패</span></div>
+    <div class="step"><b>보상 · 재도전</b><span>편성 변경</span></div>
+  </div>
+
+  <h3>3.2 전투 규칙</h3>
+  <h4>허용</h4>
+  <ul class="rules">
+    <li>각 층은 1개의 웨이브만 제공한다</li>
+    <li>전투 전에 선택한 다이스만 사용한다</li>
+    <li>다이스가 7개보다 적어도 출전할 수 있다</li>
+    <li>층을 클리어하면 다음 층이 열린다</li>
+  </ul>
+  <h4>금지</h4>
+  <ul class="rules no">
+    <li>SP를 사용하지 않는다</li>
+    <li>전투 중 다이스를 추가 소환하지 않는다</li>
+    <li>전투 중 다이스를 머지하지 않는다</li>
+    <li>전투 중 성급·능력치가 변하지 않는다</li>
+  </ul>
+
+  <div class="note">
+    <b>확정 시점 —</b> 기본 다이스의 성급은 <b>편성 시 확정</b>된다. 예를 들어 <span class="mono">4성 Fire</span>를 선택했다면
+    전투가 끝날 때까지 4성 Fire로 동작한다. 전투 중 성장이 없으므로 <b>“편성 = 최종 전투력”</b>이 성립하고,
+    이 때문에 결과가 그대로 스펙 판정이 된다.
+  </div>
+</section>
+
+<!-- ============ 4. 편성 규칙 ============ -->
+<section>
+  <h2><span class="num">04</span>다이스 편성 규칙</h2>
+  <p class="sub">등급별 고정 슬롯 구조. 보유량이 곧 출전 인원이 되는 것이 이 규칙의 핵심이다.</p>
+
+  <h3>4.1 편성 슬롯 구성</h3>
+  <table class="compact">
+    <thead><tr><th style="width:14%">분류</th><th class="c" style="width:14%">선택 수</th><th>후보</th></tr></thead>
+    <tbody>
+      <tr><td><b>신화</b></td><td class="c">최대 1개</td><td>보유한 KingNormal · KingFire · KingIce · KingThunder · KingPoison</td></tr>
+      <tr><td><b>스페셜</b></td><td class="c">최대 2개</td><td>보유한 Tornado · Stun · ArmorBreak · Wind · Time</td></tr>
+      <tr><td><b>4성</b></td><td class="c">1개</td><td>Normal · Fire · Ice · Thunder · Poison</td></tr>
+      <tr><td><b>3성</b></td><td class="c">1개</td><td>Normal · Fire · Ice · Thunder · Poison</td></tr>
+      <tr><td><b>2성</b></td><td class="c">1개</td><td>Normal · Fire · Ice · Thunder · Poison</td></tr>
+      <tr><td><b>1성</b></td><td class="c">1개</td><td>Normal · Fire · Ice · Thunder · Poison</td></tr>
+      <tr class="total"><td>합계</td><td class="c">최대 7개</td><td>기본 4 (고정) + 스페셜 2 + 신화 1</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 미보유 다이스 처리</h3>
+  <p>미보유 스페셜·신화 다이스에는 <strong>대체 다이스나 능력치 보정을 제공하지 않는다.</strong></p>
+  <ul class="rules" style="grid-template-columns:1fr">
+    <li>미보유 다이스는 선택할 수 없고, 해당 슬롯은 비워 둔다</li>
+    <li>빈 슬롯은 다른 등급의 다이스로 대체할 수 없다</li>
+    <li>빈 슬롯이 있어도 그대로 출전할 수 있다</li>
+  </ul>
+
+  <table class="compact">
+    <thead><tr><th style="width:44%">보유 상태</th><th class="c" style="width:16%">실제 출전 수</th><th>편성 이미지</th></tr></thead>
+    <tbody>
+      <tr><td>기본 다이스만 사용 가능</td><td class="c"><b>4 / 7</b></td>
+        <td><span class="tag">기본 4</span> <span class="tag w">빈 슬롯 3</span></td></tr>
+      <tr><td>스페셜 1개 보유</td><td class="c"><b>5 / 7</b></td>
+        <td><span class="tag">기본 4</span> <span class="tag g">스페셜 1</span> <span class="tag w">빈 슬롯 2</span></td></tr>
+      <tr><td>스페셜 2개 보유</td><td class="c"><b>6 / 7</b></td>
+        <td><span class="tag">기본 4</span> <span class="tag g">스페셜 2</span> <span class="tag w">빈 슬롯 1</span></td></tr>
+      <tr><td>스페셜 2개 + 신화 1개 이상 보유</td><td class="c"><b>7 / 7</b></td>
+        <td><span class="tag">기본 4</span> <span class="tag g">스페셜 2</span> <span class="tag g">신화 1</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <span class="lbl">DESIGN INTENT</span>
+    <p>다이스 보유량 자체가 유저의 스펙으로 작동한다. 새 스페셜·신화를 획득하면 비어 있던 슬롯이 즉시 채워지므로,
+    성장 차이를 별도 설명 없이 직관적으로 느낄 수 있다.</p>
+  </div>
+
+  <h3>4.3 동일 속성 중복 편성</h3>
+  <p>서로 다른 성급의 같은 기본 다이스는 함께 편성할 수 있다. 이를 통해 화염 집중, 빙결 중심, 중독 중심 등 속성 특화 편성이 성립한다.</p>
+
+  <div class="note" style="padding:4mm 5mm">
+    <div style="font-size:8.6pt;color:var(--muted);margin-bottom:2.5mm">편성 예시 — 화염 특화 (7 / 7)</div>
+    <div class="dice-row">
+      <div class="dice"><div class="face f-k">王火</div><div class="cap">신화</div></div>
+      <div class="dice"><div class="face f-s">회오리</div><div class="cap">스페셜</div></div>
+      <div class="dice"><div class="face f-s">기절</div><div class="cap">스페셜</div></div>
+      <div class="dice"><div class="face f-f">火 4</div><div class="cap">4성</div></div>
+      <div class="dice"><div class="face f-f">火 3</div><div class="cap">3성</div></div>
+      <div class="dice"><div class="face f-p">毒 2</div><div class="cap">2성</div></div>
+      <div class="dice"><div class="face f-i">氷 1</div><div class="cap">1성</div></div>
+    </div>
+  </div>
+  <p style="font-size:9.2pt;color:var(--muted)">특정 속성 중첩이 지나치게 강한지는 밸런스 테스트를 통해 별도로 조정한다.</p>
+
+  <div class="legend-chips">
+    <span><i style="background:var(--n)"></i>Normal 일반</span>
+    <span><i style="background:var(--f)"></i>Fire 화염</span>
+    <span><i style="background:var(--i)"></i>Ice 냉기</span>
+    <span><i style="background:var(--t)"></i>Thunder 전기</span>
+    <span><i style="background:var(--p)"></i>Poison 독</span>
+    <span><i style="background:var(--s)"></i>Special</span>
+    <span><i style="background:linear-gradient(140deg,#e8b53a,#a9740c)"></i>Mythic</span>
+  </div>
+</section>
+
+<!-- ============ 5. UI 레이아웃 ============ -->
+<section>
+  <h2><span class="num">05</span>UI 레이아웃</h2>
+  <p class="sub">기준 해상도 1080 × 1920 (Portrait) · 신규 화면 3종 + 결과 화면 확장</p>
+
+  <h3>5.1 화면 전환 구조</h3>
+  <div class="screen-flow">
+    <div class="s"><b>로비</b><span>탑 입장</span></div><div class="a">›</div>
+    <div class="s new"><b>층 선택</b><span>진행도 · 보상</span></div><div class="a">›</div>
+    <div class="s new"><b>다이스 편성</b><span>적 정보 + 7슬롯</span></div><div class="a">›</div>
+    <div class="s"><b>전투</b><span>단일 웨이브</span></div><div class="a">›</div>
+    <div class="s new"><b>결과</b><span>기록 비교</span></div>
+  </div>
+  <p style="font-size:9.2pt;color:var(--muted)">적 정보는 별도 화면으로 분리하지 않고 <strong>편성 화면 상단에 상시 노출</strong>한다. 편성 중 전제를 다시 확인하러 되돌아가는 동선을 없애기 위함이다.</p>
+
+  <!-- 5.2 층 선택 -->
+  <h3>5.2 층 선택 화면</h3>
+  <div class="mock-block">
+    <div class="phone"><div class="screen">
+      <div class="sc-top"><span class="t">무한의 탑</span><span>최고 25층</span></div>
+      <div class="sc-body">
+        <div class="blk"><span class="pin">1</span>
+          <div class="cap">현재 진행</div>
+          <div class="val">26층 · 고방어 부대 구간</div>
+          <div class="bar" style="margin-top:1.6mm"><i style="width:20%"></i></div>
+          <div class="cap" style="margin-top:1mm">구간 보상까지 4층</div>
+        </div>
+        <div class="blk" style="padding:1.6mm"><span class="pin">2</span>
+          <div class="tags"><span class="tag g">30층 · KingFire 해금</span><span class="tag">5층 단위 희귀 보상</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1.4mm;position:relative"><span class="pin" style="top:-2mm">3</span>
+          <div class="floorcard"><div class="fno">27</div><div class="fin"><div class="n">? ? ?</div><div class="d">이전 층 클리어 필요</div></div></div>
+          <div class="floorcard"><div class="fno">26</div><div class="fin"><div class="n">고방어 부대</div><div class="d">방어력 감소 권장</div></div><div class="go">도전</div></div>
+          <div class="floorcard clear"><div class="fno">25</div><div class="fin"><div class="n">고체력 정예 ×3</div><div class="d">42.3초 · 최고 기록</div></div><div class="go" style="background:#e8ebf2;color:#5c6474">재도전</div></div>
+          <div class="floorcard clear"><div class="fno">24</div><div class="fin"><div class="n">초고속 돌진</div><div class="d">31.0초 · 클리어</div></div><div class="go" style="background:#e8ebf2;color:#5c6474">재도전</div></div>
+        </div>
+      </div>
+      <div class="sc-foot"><div class="btn">보상 목록</div><div class="btn pri">26층 도전</div></div>
+    </div></div>
+    <div class="mock-desc">
+      <h4>구성 의도</h4>
+      <p style="font-size:9.2pt">“다음 한 층”에 시선이 고정되도록 <strong>현재 도전 층을 목록 상단에 고정</strong>하고, 아래로 클리어한 층이 쌓이는 구조를 사용한다. 위로 갈수록 미해금(? ? ?)이므로 탑을 올라가는 방향과 목록의 방향이 일치한다.</p>
+      <ul class="pinlist">
+        <li><b>1</b>현재 진행 요약<span>도전 층 번호 · 구간 콘셉트 · 5층 단위 구간 보상까지 남은 층 수를 게이지로 표시</span></li>
+        <li><b>2</b>목표 배너<span>다이스 해금 미션과 연동된 층을 태그로 강조해 장기 목표를 상시 노출</span></li>
+        <li><b>3</b>층 카드 리스트<span>층 번호 · 주요 적 콘셉트 · 개인 최고 기록. 미해금 층은 정보를 숨겨 다음 목표의 궁금증을 유지</span></li>
+      </ul>
+      <div class="note" style="margin-top:4mm">클리어한 층 카드는 <b>재도전</b> 버튼을 유지해, 신규 다이스 획득 후 기록 갱신 플레이를 유도한다. (반복 보상 지급 여부는 9장 미결정 항목)</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5.3 편성 화면 -->
+<section>
+  <h2><span class="num">05</span>UI 레이아웃 — 다이스 편성</h2>
+
+  <h3>5.3 다이스 편성 화면 (핵심 화면)</h3>
+  <p class="sub">모든 후보 다이스를 한 화면에 등급별로 나열한다. 가로 5칸 × 세로 6줄로 전체 후보가 스크롤 없이 들어온다.</p>
+
+  <div class="mock-block">
+    <div class="phone"><div class="screen tall">
+      <div class="sc-top"><span class="t">26층 · 다이스 편성</span><span>2 / 7</span></div>
+      <div class="sc-body">
+        <div class="blk" style="background:#fff5f3;border-color:#f3c9c2"><span class="pin">1</span>
+          <div class="cap">이 층의 적</div>
+          <div class="val" style="font-size:7.4pt">고방어 몬스터 ×1 · 받는 피해 대폭 감소</div>
+          <div class="tags" style="margin-top:1.2mm"><span class="tag w">방어력 감소 권장</span><span class="tag w">단일 고화력</span></div>
+        </div>
+
+        <div class="blk"><span class="pin">2</span>
+          <div class="cap" style="margin-bottom:1.4mm">선택한 다이스</div>
+          <div class="slotbar">
+            <div class="slot on"><div class="mini f-k">王普</div></div>
+            <div class="slot on"><div class="mini f-s">기절</div></div>
+            <div class="slot">＋</div><div class="slot">＋</div>
+            <div class="slot">＋</div><div class="slot">＋</div><div class="slot">＋</div>
+          </div>
+        </div>
+
+        <div class="blk" style="padding:2.2mm 2mm"><span class="pin">3</span>
+          <div style="display:flex;flex-direction:column;gap:1.5mm">
+            <div class="grid-row"><div class="rl">신화<b>1 / 1</b></div><div class="cells">
+              <div class="cell f-k se">王普</div><div class="cell f-k lk">王火</div><div class="cell f-k dim">王氷</div><div class="cell f-k lk">王雷</div><div class="cell f-k lk">王毒</div></div></div>
+            <div class="grid-row"><div class="rl">스페셜<b>1 / 2</b></div><div class="cells">
+              <div class="cell f-s">회오리</div><div class="cell f-s se">기절</div><div class="cell f-s lk">방깎</div><div class="cell f-s">바람</div><div class="cell f-s lk">시간</div></div></div>
+            <div class="grid-row"><div class="rl">4성<b>0 / 1</b></div><div class="cells">
+              <div class="cell f-n">普</div><div class="cell f-f">火</div><div class="cell f-i">氷</div><div class="cell f-t">雷</div><div class="cell f-p">毒</div></div></div>
+            <div class="grid-row"><div class="rl">3성<b>0 / 1</b></div><div class="cells">
+              <div class="cell f-n">普</div><div class="cell f-f">火</div><div class="cell f-i">氷</div><div class="cell f-t">雷</div><div class="cell f-p">毒</div></div></div>
+            <div class="grid-row"><div class="rl">2성<b>0 / 1</b></div><div class="cells">
+              <div class="cell f-n">普</div><div class="cell f-f">火</div><div class="cell f-i">氷</div><div class="cell f-t">雷</div><div class="cell f-p">毒</div></div></div>
+            <div class="grid-row"><div class="rl">1성<b>0 / 1</b></div><div class="cells">
+              <div class="cell f-n">普</div><div class="cell f-f">火</div><div class="cell f-i">氷</div><div class="cell f-t">雷</div><div class="cell f-p">毒</div></div></div>
+          </div>
+        </div>
+
+        <div class="blk" style="padding:1.6mm 2mm"><span class="pin">4</span>
+          <div class="tags"><span class="tag">최근 편성 불러오기</span><span class="tag">전체 해제</span><span class="tag g">NEW 2</span></div>
+        </div>
+      </div>
+      <div class="sc-foot"><div class="btn">추천 편성</div><div class="btn pri">전투 시작</div></div>
+    </div></div>
+
+    <div class="mock-desc">
+      <h4>구성 의도</h4>
+      <p style="font-size:9.2pt">편성은 <strong>“적을 보고 → 답을 고른다”</strong>는 사고 순서 그대로 세로 배치한다. 적 정보(1) → 현재 답(2) → 후보 전체(3) 순이므로, 유저는 위에서 아래로 한 번 훑으며 판단을 마칠 수 있다.</p>
+      <ul class="pinlist">
+        <li><b>1</b>적 정보 요약<span>이 층의 적 구성·특성과 권장 대응 키워드를 상시 노출. 편성 중에도 전제를 잊지 않게 한다</span></li>
+        <li><b>2</b>선택 슬롯 바 (7칸)<span>현재 편성을 항상 보여 준다. 빈 칸은 점선으로 남겨 “아직 채울 자리가 있다”를 시각화</span></li>
+        <li><b>3</b>등급별 후보 그리드 (5 × 6)<span>신화 · 스페셜 · 4~1성 순으로 한 줄씩. 줄 좌측의 선택 한도(n / n) 표기가 규칙을 학습시킨다</span></li>
+        <li><b>4</b>편의 기능 바<span>최근 편성 불러오기 · 전체 해제 · 신규 다이스 강조를 한 줄로 모아 상시 접근</span></li>
+      </ul>
+      <div class="note" style="margin-top:4mm"><b>레이아웃 근거 —</b> 후보 30칸이 한 화면에 모두 보이므로 “무엇을 못 쓰는가(잠금)”와 “무엇을 더 얻어야 하는가”가 스크롤 없이 전달된다. 그리드를 접거나 탭으로 나누면 이 효과가 사라진다.</div>
+    </div>
+  </div>
+
+  <h3>5.4 다이스 셀 상태 정의</h3>
+  <table class="compact">
+    <thead><tr><th class="c" style="width:14%">상태</th><th style="width:26%">표시 규칙</th><th style="width:26%">인터랙션</th><th>목적</th></tr></thead>
+    <tbody>
+      <tr><td class="c"><div class="dice" style="width:auto"><div class="face f-f">火</div></div></td>
+        <td><b>보유</b> — 정상 색상</td><td>탭 → 선택</td><td>기본 상태</td></tr>
+      <tr><td class="c"><div class="dice sel" style="width:auto"><div class="face f-s">기절</div></div></td>
+        <td><b>선택됨</b> — 강조 테두리 + 체크</td><td>탭 → 해제</td><td>현재 답을 즉시 식별</td></tr>
+      <tr><td class="c"><div class="dice lock" style="width:auto"><div class="face f-k">王雷</div></div></td>
+        <td><b>미보유</b> — 어둡게 + 자물쇠</td><td>탭 → 획득처·해금 조건 안내</td><td>수집 목표를 자연스럽게 노출</td></tr>
+      <tr><td class="c"><div class="dice new" style="width:auto"><div class="face f-p">毒</div></div></td>
+        <td><b>신규</b> — NEW 배지</td><td>탭 → 선택 후 배지 소멸</td><td>획득 직후 사용을 유도</td></tr>
+      <tr><td class="c"><div class="dice" style="width:auto;opacity:.35"><div class="face f-n">普</div></div></td>
+        <td><b>한도 도달</b> — 흐리게</td><td>탭 불가 (안내 토스트)</td><td>슬롯 규칙을 즉시 이해시킴</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:9.2pt"><strong>다이스 상세</strong>는 셀 길게 누르기(Long Press)로 진입해 공격 방식과 주요 효과를 확인하게 한다. 짧은 탭은 항상 선택 / 해제로 고정해 편성 속도를 해치지 않는다.</p>
+
+  <h3>5.5 편의 기능</h3>
+  <div class="cards c4">
+    <div class="card"><h5>최근 편성 저장</h5><p>직전 출전 편성을 자동 저장한다.</p></div>
+    <div class="card"><h5>이전 편성 불러오기</h5><p>해당 층의 마지막 도전 편성을 복원한다.</p></div>
+    <div class="card"><h5>추천 편성</h5><p>층 특성 기반으로 자동 구성한다.</p></div>
+    <div class="card"><h5>전체 해제</h5><p>선택을 초기화하고 다시 구성한다.</p></div>
+  </div>
+  <div class="note">빈 슬롯이 있어도 <b>전투 시작</b> 버튼은 항상 활성화한다. 빈 슬롯 안내는 <b>최초 출전 시 1회만</b> 노출하고, 이후에는 반복 확인으로 흐름을 방해하지 않는다.</div>
+</section>
+
+<!-- 5.6 결과 화면 -->
+<section>
+  <h2><span class="num">05</span>UI 레이아웃 — 결과 화면</h2>
+
+  <h3>5.6 결과 화면</h3>
+  <p class="sub">성장 체감의 마지막 지점. “이겼다”가 아니라 <strong>“지난번보다 이만큼 나아졌다”</strong>를 보여주는 것이 목표다.</p>
+
+  <div class="mock-block">
+    <div class="phone"><div class="screen">
+      <div class="sc-top"><span class="t">25층 클리어</span><span>NEW RECORD</span></div>
+      <div class="sc-body">
+        <div class="blk" style="text-align:center;background:var(--primary-l);border-color:#c7cbf7"><span class="pin">1</span>
+          <div class="cap">클리어 시간</div>
+          <div style="font-size:15pt;font-weight:700;color:var(--primary);line-height:1.25">42.3초</div>
+          <div class="cap" style="color:var(--ok)">이전 기록 · 실패 (보스 체력 18% 잔여)</div>
+        </div>
+
+        <div class="blk"><span class="pin">2</span>
+          <div class="cap" style="margin-bottom:1.4mm">다이스별 피해 기여도</div>
+          <div style="display:flex;flex-direction:column;gap:1.2mm">
+            <div style="display:flex;align-items:center;gap:1.4mm"><div class="cell f-k" style="flex:0 0 6mm;height:4.4mm">王火</div><div class="bar" style="flex:1"><i style="width:37%;background:var(--k)"></i></div><span style="font-size:6.2pt;width:7mm;text-align:right">37%</span></div>
+            <div style="display:flex;align-items:center;gap:1.4mm"><div class="cell f-f" style="flex:0 0 6mm;height:4.4mm">火 4</div><div class="bar" style="flex:1"><i style="width:24%;background:var(--f)"></i></div><span style="font-size:6.2pt;width:7mm;text-align:right">24%</span></div>
+            <div style="display:flex;align-items:center;gap:1.4mm"><div class="cell f-s" style="flex:0 0 6mm;height:4.4mm">회오리</div><div class="bar" style="flex:1"><i style="width:19%;background:var(--s)"></i></div><span style="font-size:6.2pt;width:7mm;text-align:right">19%</span></div>
+            <div style="display:flex;align-items:center;gap:1.4mm"><div class="cell f-p" style="flex:0 0 6mm;height:4.4mm">毒 2</div><div class="bar" style="flex:1"><i style="width:11%;background:var(--p)"></i></div><span style="font-size:6.2pt;width:7mm;text-align:right">11%</span></div>
+          </div>
+        </div>
+
+        <div class="blk"><span class="pin">3</span>
+          <div class="cap">획득 보상</div>
+          <div class="tags" style="margin-top:1.2mm"><span class="tag g">기본 재화 ×120</span><span class="tag g">구간 보상 (25층)</span></div>
+          <div class="cap" style="margin-top:1.8mm">KingFire 해금 진행도</div>
+          <div class="bar" style="margin-top:.8mm"><i style="width:60%"></i></div>
+          <div class="cap" style="margin-top:.8mm">30층 클리어 시 해금 · 3 / 5</div>
+        </div>
+
+        <div class="blk" style="padding:1.6mm 2mm"><span class="pin">4</span>
+          <div class="cap">다음 층 미리보기</div>
+          <div class="val" style="font-size:7.4pt">26층 · 고방어 부대</div>
+        </div>
+      </div>
+      <div class="sc-foot"><div class="btn">편성 변경</div><div class="btn pri">26층 도전</div></div>
+    </div></div>
+
+    <div class="mock-desc">
+      <h4>구성 의도</h4>
+      <p style="font-size:9.2pt">결과 화면은 <strong>비교 → 원인 → 다음 목표</strong> 순서로 읽히도록 배치한다. 특히 (2)의 기여도는 “새로 얻은 다이스가 실제로 이 클리어를 만들었다”는 근거가 되어 획득의 가치를 확정한다.</p>
+      <ul class="pinlist">
+        <li><b>1</b>기록 비교 헤더<span>클리어 여부 · 클리어 시간 · 이전 최고 기록(실패 시 남은 적 체력)을 한 덩어리로 대비</span></li>
+        <li><b>2</b>다이스별 피해 기여도<span>편성한 다이스의 비율 막대. 어떤 선택이 정답이었는지 학습시킨다</span></li>
+        <li><b>3</b>보상 · 해금 진행도<span>획득 재화와 함께 연결된 다이스 해금 진행도를 노출해 다음 도전 동기를 만든다</span></li>
+        <li><b>4</b>다음 층 미리보기<span>다음 층 콘셉트를 미리 보여 주어 편성 변경 여부를 즉시 판단하게 한다</span></li>
+      </ul>
+      <div class="note" style="margin-top:4mm"><b>실패 시</b>에는 동일 레이아웃에서 (1)을 “보스 체력 12% 잔여 · 이전보다 6%p 개선”으로, (2)를 “부족했던 대응 : 방어력 감소 없음”으로 치환한다. <b>실패도 진척으로 읽히게</b> 만드는 것이 목적이다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. 층 구성 ============ -->
+<section>
+  <h2><span class="num">06</span>층 구성과 기믹 설계</h2>
+  <p class="sub">전체 약 300층. 기본적으로 5층마다 적 구성과 공략 핵심을 변경한다.</p>
+
+  <h3>6.1 초기 구간 (1~20층)</h3>
+  <table>
+    <thead><tr><th style="width:14%">구간</th><th style="width:44%">주요 적 구성</th><th>공략 의도</th></tr></thead>
+    <tbody>
+      <tr><td><b>1~5층</b></td><td>기본 몬스터 약 30마리부터 시작해 층마다 수 증가</td><td>기본 화력과 범위 공격 확인</td></tr>
+      <tr><td><b>6~10층</b></td><td>체력이 높은 중간 보스급 몬스터 2~5마리</td><td>단일 대상 지속 화력 확인</td></tr>
+      <tr><td><b>11~15층</b></td><td>이동 속도가 빠른 몬스터 약 10마리</td><td>둔화 · 기절 및 빠른 처치 요구</td></tr>
+      <tr><td><b>16~20층</b></td><td>방어력이 높은 몬스터 1마리</td><td>방어력 감소와 집중 화력 요구</td></tr>
+    </tbody>
+  </table>
+  <div class="note">초기 20층은 <b>학습 구간</b>으로 취급한다. 물량 → 단일 → 속도 → 방어 순서로 다이스의 역할 차이를 하나씩 익히게 한 뒤, 21층부터 조합을 요구한다.</div>
+
+  <h3>6.2 21층 이후 확장 기믹</h3>
+  <table class="compact">
+    <thead><tr><th style="width:20%">콘셉트</th><th style="width:42%">전투 특징</th><th>유효한 대응</th></tr></thead>
+    <tbody>
+      <tr><td><b>대규모 물량</b></td><td>약한 적이 매우 많이 등장</td><td>폭발 · 연쇄 · 범위 공격</td></tr>
+      <tr><td><b>초고속 돌진</b></td><td>짧은 시간 안에 경로를 통과</td><td>빙결 · 기절 · 넉백</td></tr>
+      <tr><td><b>고방어 부대</b></td><td>받는 피해를 크게 감소</td><td>방어력 감소 · 강한 단일 피해</td></tr>
+      <tr><td><b>고체력 정예</b></td><td>소수의 적이 긴 시간 생존</td><td>중독 · 지속 피해 · 집중 공격</td></tr>
+      <tr><td><b>혼합 부대</b></td><td>빠른 적과 단단한 적이 함께 등장</td><td>역할이 다른 다이스 조합</td></tr>
+      <tr><td><b>회복형 적</b></td><td>일정 시간마다 체력 회복</td><td>순간 화력 · 회복 차단 기믹</td></tr>
+      <tr><td><b>분열형 적</b></td><td>처치 시 작은 적으로 분열</td><td>단일 공격과 범위 공격의 균형</td></tr>
+      <tr><td><b>보호막 적</b></td><td>일정 피해를 막는 보호막 보유</td><td>다단 공격 · 보호막 파괴 기믹</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:9.4pt">새로운 기믹은 <strong>한 구간에 한 가지씩 먼저 소개</strong>하고, 이후 구간에서 기존 기믹과 조합한다.<br>
+  <span style="color:var(--muted)">예시 : 25층 고방어 단독 → 45층 고방어 + 회복 → 70층 고방어 + 분열 + 물량</span></p>
+</section>
+
+<!-- ============ 7. 보상 ============ -->
+<section>
+  <h2><span class="num">07</span>보상과 성장 순환</h2>
+  <p class="sub">보상은 단순 재화 지급이 아니라 “다음 도전을 만드는 장치”로 설계한다.</p>
+
+  <h3>7.1 기본 보상 원칙</h3>
+  <ul class="rules" style="grid-template-columns:1fr">
+    <li>각 층 <b>최초 클리어</b> 시 기본 재화를 제공한다</li>
+    <li><b>5층 단위 구간 마지막 층</b>에서는 더 희귀한 재화를 제공한다</li>
+    <li>특정 층 클리어를 <b>다이스 해금 조건이나 해금 미션</b>에 사용할 수 있다</li>
+    <li>막힌 층을 새로운 다이스 획득 후 다시 도전하도록 유도한다</li>
+  </ul>
+
+  <h3>7.2 성장 순환 구조</h3>
+  <div class="loop">
+    <div><b>STEP 1</b>탑 도전</div>
+    <div><b>STEP 2</b>특정 층에서 실패</div>
+    <div><b>STEP 3</b>다이스 성장 · 신규 획득</div>
+    <div><b>STEP 4</b>빈 슬롯 충원 · 편성 개선</div>
+    <div><b>STEP 5</b>같은 층 재도전 · 클리어</div>
+  </div>
+  <div class="loop-back">↻ 이전보다 빨라진 클리어 기록이 다음 층 도전 동기로 이어진다</div>
+
+  <h3>7.3 결과 화면에 표시할 정보</h3>
+  <div class="two">
+    <ul class="rules" style="grid-template-columns:1fr">
+      <li>클리어 여부</li><li>클리어 시간</li>
+      <li>남은 적 또는 적의 남은 체력</li><li>다이스별 피해 기여도</li>
+    </ul>
+    <ul class="rules" style="grid-template-columns:1fr">
+      <li>이전 최고 기록과의 비교</li><li>다음 층 보상</li>
+      <li>관련 다이스 해금 진행도</li><li>다음 층 적 콘셉트 미리보기</li>
+    </ul>
+  </div>
+  <div class="callout">
+    <span class="lbl">CORE FEEDBACK</span>
+    <p>새로 획득한 다이스가 클리어에 얼마나 기여했는지를 수치로 보여주면, 수집과 성장이 하나의 인과로 연결된다.</p>
+  </div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section>
+  <h2><span class="num">08</span>난이도 설계 원칙</h2>
+  <p class="sub">다이스 부족에 대한 직접적인 전투력 보정은 제공하지 않는다. 대신 진행 구간과 획득 시점이 순환 막힘을 만들지 않도록 설계한다.</p>
+
+  <h3>8.1 권장 진행 단계</h3>
+  <table class="compact">
+    <thead><tr><th style="width:14%">진행 구간</th><th style="width:30%">기대 편성 상태</th><th class="c" style="width:12%">출전 수</th><th>설계 포인트</th></tr></thead>
+    <tbody>
+      <tr><td><b>초반</b></td><td>기본 다이스 4개 중심</td><td class="c">4 / 7</td><td>기본 다이스의 역할 차이만으로 돌파 가능해야 한다</td></tr>
+      <tr><td><b>중반</b></td><td>스페셜 1개 이상 확보</td><td class="c">5 / 7</td><td>첫 스페셜 획득 시점이 첫 정체 구간과 맞물리게 한다</td></tr>
+      <tr><td><b>중후반</b></td><td>스페셜 슬롯 2개 활용</td><td class="c">6 / 7</td><td>스페셜 조합에 따라 공략 루트가 갈리기 시작한다</td></tr>
+      <tr><td><b>후반</b></td><td>신화를 포함한 7개 편성</td><td class="c">7 / 7</td><td>속성 특화 편성과 기믹 대응의 최적화 경쟁</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.2 반드시 피해야 할 설계</h3>
+  <ul class="rules no" style="grid-template-columns:1fr">
+    <li>특정 다이스를 해금하는 층이, 그 다이스 없이는 사실상 불가능한 구조 <small style="color:var(--muted)">— 순환 막힘 발생</small></li>
+    <li>모든 층이 단순 화력 검사로 끝나는 구성 <small style="color:var(--muted)">— 편성 퍼즐의 재미 소멸</small></li>
+    <li>특정 다이스 하나만으로 대부분의 층을 해결할 수 있는 상태 <small style="color:var(--muted)">— 수집 동기 붕괴</small></li>
+    <li>1~4성 기본 다이스가 성급 순서로만 강해지는 구성 <small style="color:var(--muted)">— 선택의 여지 소멸</small></li>
+    <li>실패 원인을 알 수 없는 결과 화면 <small style="color:var(--muted)">— 재도전 동기 상실</small></li>
+  </ul>
+
+  <h3>8.3 기대 효과</h3>
+  <div class="cards">
+    <div class="card"><h5>즉시 사용성</h5><p>신규 다이스 획득 직후 바로 편성해 성능을 확인할 수 있다.</p></div>
+    <div class="card"><h5>수집 성장의 시각화</h5><p>빈 슬롯이 채워지는 방식으로 수집의 결과를 직관적으로 보여준다.</p></div>
+    <div class="card"><h5>낮은 도전 부담</h5><p>짧은 플레이 시간으로 반복 도전의 심리적 비용을 낮춘다.</p></div>
+    <div class="card"><h5>명확한 차별화</h5><p>기존 스테이지의 소환·머지 중심 플레이와 문법이 분리된다.</p></div>
+    <div class="card"><h5>장기 목표 노출</h5><p>잠긴 다이스와 해금 조건을 자연스럽게 보여준다.</p></div>
+    <div class="card"><h5>연구 여지</h5><p>같은 보유 상태에서도 층 특성에 따라 다른 편성을 연구할 수 있다.</p></div>
+  </div>
+</section>
+
+<!-- ============ 9~10 ============ -->
+<section>
+  <h2><span class="num">09</span>추가 결정이 필요한 항목</h2>
+  <p class="sub">구현 착수 전 확정이 필요한 항목. 괄호 안은 본 문서의 제안값이다.</p>
+
+  <h4>플레이 규칙</h4>
+  <ul class="checks">
+    <li>한 층의 목표 플레이 시간 <span style="color:var(--muted);font-size:8.6pt">(제안 : 30~60초)</span></li>
+    <li>실패 및 재도전 비용 유무 <span style="color:var(--muted);font-size:8.6pt">(제안 : 무비용 — 반복 도전이 콘텐츠의 핵심)</span></li>
+    <li>클리어한 층의 반복 플레이 가능 여부</li>
+    <li>다이스 배치 순서가 공격 순서나 위치에 영향을 주는지 여부</li>
+  </ul>
+
+  <h4>보상</h4>
+  <ul class="checks">
+    <li>최초 클리어 보상과 반복 보상의 차이</li>
+    <li>5층 단위 희귀 보상의 종류와 수량</li>
+    <li>층별 추천 전투력 또는 추천 편성 표시 여부</li>
+  </ul>
+
+  <h4>확장</h4>
+  <ul class="checks">
+    <li>300층 이후 시즌제 · 초기화 · 추가 확장 여부</li>
+    <li>적 정보 노출 방식 <span style="color:var(--muted);font-size:8.6pt">(제안 : 편성 화면 상단 상시 노출)</span></li>
+  </ul>
+
+  <h2 style="margin-top:12mm"><span class="num">10</span>최종 요약</h2>
+  <p>무한의 탑은 최대 7개의 다이스를 직접 편성하여 하나의 웨이브를 공략하는 콘텐츠다. 기본 다이스는 1~4성별로 하나씩 선택하고, 스페셜은 최대 2개, 신화는 최대 1개를 선택한다.</p>
+  <p>미보유 스페셜·신화 슬롯에는 별도의 보정을 제공하지 않는다. 따라서 기본 다이스만 보유한 유저는 4개의 다이스로 출전하며, <strong>새 다이스를 획득할 때마다 빈 슬롯이 채워져 확실한 성장 차이를 경험한다.</strong></p>
+  <p>짧은 전투, 직접적인 편성, 층별 적 기믹, 명확한 결과 비교를 통해 기존 스테이지와 다른 <strong>빠른 성장 확인 경험</strong>을 제공하는 것이 이 콘텐츠의 핵심이다.</p>
+
+  <div class="foot-note">DuDuDuDu · 무한의 탑 콘텐츠 기획서 · 기준 해상도 1080 × 1920 (Portrait) · 본 문서의 UI 목업은 레이아웃 구조와 정보 우선순위를 정의하기 위한 것으로, 최종 아트 스타일은 별도 리소스 기준을 따른다.</div>
+</section>
+
+</body>
+</html>

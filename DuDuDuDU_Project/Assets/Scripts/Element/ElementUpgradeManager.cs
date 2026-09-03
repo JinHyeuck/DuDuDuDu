@@ -63,7 +63,7 @@ namespace OJ.Element
                 return false;
 
             int cost = GetNextUpgradeCost(elementType);
-            if (!PointManager.Instance.TrySpend(PointType.Coin, cost))
+            if (!PointManager.Instance.TrySpend(PointType.BattleEnhanceStone, cost))
                 return false;
 
             SetLevel(elementType, GetLevel(elementType) + 1);
@@ -75,7 +75,7 @@ namespace OJ.Element
             ResetAll();
 
             if (PointManager.Instance != null)
-                PointManager.Instance.Set(PointType.Coin, 0);
+                PointManager.Instance.Set(PointType.BattleEnhanceStone, 0);
             else
                 RefreshCoinUI();
         }
@@ -155,7 +155,7 @@ namespace OJ.Element
 
         private void OnPointChanged(PointType pointType, int value)
         {
-            if (pointType != PointType.Coin)
+            if (pointType != PointType.BattleEnhanceStone)
                 return;
 
             RefreshCoinUI();
@@ -164,11 +164,11 @@ namespace OJ.Element
         private void RefreshCoinUI()
         {
             if (coinAmountText != null)
-                coinAmountText.SetText("{0}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Coin) : 0);
+                coinAmountText.SetText("{0}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.BattleEnhanceStone) : 0);
 
             if (coinIconImage != null && StaticResource.Instance != null && StaticResource.Instance.PointMetadataDatabase != null)
             {
-                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.Coin);
+                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.BattleEnhanceStone);
                 coinIconImage.sprite = metadata != null ? metadata.icon : null;
             }
         }

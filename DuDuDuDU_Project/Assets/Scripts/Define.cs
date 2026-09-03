@@ -74,7 +74,7 @@ namespace OJ
         Gold = 0,
         Dia,
         Stamina,
-        Coin,
+        BattleEnhanceStone,
         RelicTicket,
         NormalScroll = 100,
         FireScroll,

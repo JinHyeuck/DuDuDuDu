@@ -113,59 +113,6 @@ namespace OJ.Dice
             return count;
         }
 
-        public int GetTypeBaseEquivalent(DiceType type)
-        {
-            int total = 0;
-            for (int star = 1; star <= MergeSystem.MaxStar; star++)
-            {
-                int count = GetTypeStarCount(type, star);
-                total += count * GetBaseUnitFromStar(star);
-            }
-
-            return total;
-        }
-
-        public bool CanCraft(IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe)
-        {
-            if (recipe == null || recipe.Count == 0)
-                return false;
-
-            for (int i = 0; i < recipe.Count; i++)
-            {
-                DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
-                if (GetTypeStarCount(req.diceType, req.star) < req.count)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public int GetRecipeProgressPercent(IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe)
-        {
-            if (recipe == null || recipe.Count == 0)
-                return 0;
-
-            long totalRequiredBase = 0;
-            long satisfiedBase = 0;
-
-            for (int i = 0; i < recipe.Count; i++)
-            {
-                DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
-                long requiredBase = (long)req.count * GetBaseUnitFromStar(req.star);
-                totalRequiredBase += requiredBase;
-
-                int haveExact = GetTypeStarCount(req.diceType, req.star);
-                int usedCount = Mathf.Min(haveExact, req.count);
-                satisfiedBase += (long)usedCount * GetBaseUnitFromStar(req.star);
-            }
-
-            if (totalRequiredBase <= 0)
-                return 0;
-
-            float ratio = (float)satisfiedBase / totalRequiredBase;
-            return Mathf.Clamp(Mathf.RoundToInt(ratio * 100f), 0, 100);
-        }
-
         public void ResetAll()
         {
             // 키 컬렉션을 순회하면서 그 딕셔너리를 건드리면 Mono 에서 열거자가 깨진다
@@ -192,12 +139,6 @@ namespace OJ.Dice
 
             battle.BoardUI.UpdateTypeStars();
             OnDiceInventoryChanged?.Invoke();
-        }
-
-        private static int GetBaseUnitFromStar(int star)
-        {
-            int s = Mathf.Max(1, star);
-            return 1 << (s - 1);
         }
 
     }

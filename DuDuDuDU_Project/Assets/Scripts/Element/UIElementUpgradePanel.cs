@@ -116,11 +116,11 @@ namespace OJ.Element
         private void RefreshHeader()
         {
             if (coinAmountText != null)
-                coinAmountText.SetText("{0}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Coin) : 0);
+                coinAmountText.SetText("{0}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.BattleEnhanceStone) : 0);
 
             if (coinIconImage != null && StaticResource.Instance != null && StaticResource.Instance.PointMetadataDatabase != null)
             {
-                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.Coin);
+                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.BattleEnhanceStone);
                 coinIconImage.sprite = metadata != null ? metadata.icon : null;
             }
         }
@@ -136,7 +136,7 @@ namespace OJ.Element
 
         private void OnPointChanged(PointType pointType, int value)
         {
-            if (pointType == PointType.Coin)
+            if (pointType == PointType.BattleEnhanceStone)
                 Refresh();
         }
 

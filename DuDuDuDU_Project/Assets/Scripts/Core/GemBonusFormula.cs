@@ -165,14 +165,23 @@ namespace OJ.Core
                     return DiceTypeThunder;
                 case DiceTypeTornado:
                     return DiceTypeNormal;
-                case DiceTypeStun:
-                    return DiceTypeThunder;
                 case DiceTypeArmorBreak:
                     return DiceTypeFire;
                 case DiceTypeWind:
                     return DiceTypeIce;
+                // Stun → Poison, Time → Thunder 로 고쳤다(조합식 폐기 · 진화 배선 정리).
+                // 예전 값은 Stun → Thunder, Time → Normal 이었는데, 같은 리포의 킹 조합식이
+                // KingPoison ← Stun · KingThunder ← Time 이라 두 표가 서로 다른 계통을
+                // 가리키고 있었다. 이제 진화 배선(OJ.Dice.DiceEvolution)이 정본이고
+                // 이 표와 DiceMetaDataProvider.GetBaseElementType 이 그것을 따른다.
+                //
+                // 골든 기준선도 같이 움직인다 — core.gemBonus 의 네 줄
+                // (baseDice/element[101], baseDice/element[104])이 바뀐 값으로 갱신돼 있다.
+                // match 격자는 안 바뀐다: GemMatchDice 축에 101·104 가 없다.
+                case DiceTypeStun:
+                    return DiceTypePoison;
                 case DiceTypeTime:
-                    return DiceTypeNormal;
+                    return DiceTypeThunder;
                 default:
                     return diceType;
             }

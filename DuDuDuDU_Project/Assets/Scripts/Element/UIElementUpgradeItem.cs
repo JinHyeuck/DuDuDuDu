@@ -59,7 +59,7 @@ namespace OJ.Element
             // 정상 화면처럼 그려서 덮어 버리므로 남기지 않는다.
             int level = battle.ElementUpgrade.GetLevel(elementType);
             int nextCost = battle.ElementUpgrade.GetNextUpgradeCost(elementType);
-            int ownedCoin = PointManager.Instance != null ? PointManager.Instance.Get(PointType.Coin) : 0;
+            int ownedCoin = PointManager.Instance != null ? PointManager.Instance.Get(PointType.BattleEnhanceStone) : 0;
             ElementResource resource = StaticResource.Instance != null ? StaticResource.Instance.GetElementResource(elementType) : null;
 
             if (iconImage != null)
@@ -82,7 +82,7 @@ namespace OJ.Element
 
             if (costIconImage != null && StaticResource.Instance != null && StaticResource.Instance.PointMetadataDatabase != null)
             {
-                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.Coin);
+                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.BattleEnhanceStone);
                 costIconImage.sprite = metadata != null ? metadata.icon : null;
             }
 

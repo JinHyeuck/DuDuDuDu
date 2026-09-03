@@ -239,10 +239,21 @@ namespace OJ.SceneFlow
                 sb.AppendLine($"dice[{diceType}].canMerge = {DiceMetaDataProvider.CanMerge(diceType)}");
                 sb.AppendLine($"dice[{diceType}].baseElement = {DiceMetaDataProvider.GetBaseElementType(diceType)}");
 
-                // 4단계 사전 조사에서 드러난 사각지대를 덮는다. 조합식·표시 텍스트·마일스톤·
+                // 4단계 사전 조사에서 드러난 사각지대를 덮는다. 진화 배선·표시 텍스트·마일스톤·
                 // 원소는 골든에 키가 하나도 없어서, MergeMeta 를 제거할 때 무엇이 바뀌는지
                 // 아무 증거도 남지 않았다. 수치가 아니라고 빼 두면 "조용히 바뀌는" 자리가 된다.
-                sb.AppendLine($"dice[{diceType}].recipe = {DescribeRecipe(DiceMetaDataProvider.GetRecipeMaterials(diceType))}");
+                //
+                // 조합식(recipe)이 있던 자리다. 조합을 진화로 갈아엎으면서 키 이름도 바뀐다 —
+                // 지키려는 것은 같다: <b>상위 다이스로 가는 길이 조용히 바뀌지 않을 것.</b>
+                // 이제 그 길은 에셋이 아니라 OJ.Dice.DiceEvolution 의 표에 있고, 비용까지
+                // 같이 찍는다(진화 개편에서 비용이 규칙의 일부가 됐다).
+                sb.AppendLine($"dice[{diceType}].tier = {DiceEvolution.GetTier(diceType)}");
+                sb.AppendLine($"dice[{diceType}].evolveTo = " +
+                              (DiceEvolution.TryGetEvolveTarget(diceType, out DiceType evolveTarget)
+                                  ? evolveTarget.ToString()
+                                  : "<none>"));
+                sb.AppendLine($"dice[{diceType}].evolveCost = {DiceEvolution.GetEvolveCost(diceType)}");
+                sb.AppendLine($"dice[{diceType}].exchangeCost = {DiceEvolution.GetExchangeCost(diceType)}");
 
                 var meta = DiceMetaDataProvider.GetMeta(diceType);
                 if (meta == null)
@@ -1658,23 +1669,6 @@ namespace OJ.SceneFlow
             sb.AppendLine("#    [stable] 의 dice.windPushChance / dice.timeCooldownReduce 와 값이 같다.");
             sb.AppendLine("#    ElementUpgradeManager 곱을 지우는 변이는 이 덤프로 안 잡힌다. 짝과 어긋나 있으면");
             sb.AppendLine("#    그건 검출이 아니라 '원소 레벨이 0 이 아닌 상태에서 떴다'는 경고다.");
-        }
-
-        private static string DescribeRecipe(IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe)
-        {
-            if (recipe == null || recipe.Count == 0)
-                return "<empty>";
-
-            var sb = new StringBuilder();
-            for (int i = 0; i < recipe.Count; i++)
-            {
-                if (i > 0)
-                    sb.Append(" + ");
-                sb.Append(recipe[i].diceType).Append('*').Append(recipe[i].star)
-                  .Append('x').Append(recipe[i].count);
-            }
-
-            return sb.ToString();
         }
 
         private static string DescribeElements(ElementType[] elements)
