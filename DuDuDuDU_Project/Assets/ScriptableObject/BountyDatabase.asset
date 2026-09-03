@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1078308649e82584d94f3a5431740483, type: 3}
+  m_Name: BountyDatabase
+  m_EditorClassIdentifier: OJ.Game::OJ.Bounty.BountyDatabase
+  definitions:
+  - grade: 1
+    displayName: "\uC880\uB3C4\uB451"
+    referenceWaveRatio: 0.1
+    hpMultiplier: 5
+    rewardKind: 0
+    rewardAmount: 60
+    moveSpeedMultiplier: 0.3
+    scaleMultiplier: 1.15
+    tint: {r: 0.72, g: 0.78, b: 0.86, a: 1}
+    icon: {fileID: 0}
+    prefabOverride: {fileID: 0}
+  - grade: 2
+    displayName: "\uC545\uB355\uC0C1\uC778"
+    referenceWaveRatio: 0.3
+    hpMultiplier: 6
+    rewardKind: 1
+    rewardAmount: 8
+    moveSpeedMultiplier: 0.3
+    scaleMultiplier: 1.25
+    tint: {r: 0.55, g: 0.85, b: 0.62, a: 1}
+    icon: {fileID: 0}
+    prefabOverride: {fileID: 0}
+  - grade: 3
+    displayName: "\uD574\uC801\uC655"
+    referenceWaveRatio: 0.5
+    hpMultiplier: 8
+    rewardKind: 0
+    rewardAmount: 150
+    moveSpeedMultiplier: 0.3
+    scaleMultiplier: 1.35
+    tint: {r: 0.45, g: 0.7, b: 0.98, a: 1}
+    icon: {fileID: 0}
+    prefabOverride: {fileID: 0}
+  - grade: 4
+    displayName: "\uAE30\uC0AC\uB2E8\uC7A5"
+    referenceWaveRatio: 0.75
+    hpMultiplier: 10
+    rewardKind: 1
+    rewardAmount: 20
+    moveSpeedMultiplier: 0.3
+    scaleMultiplier: 1.45
+    tint: {r: 0.8, g: 0.55, b: 0.95, a: 1}
+    icon: {fileID: 0}
+    prefabOverride: {fileID: 0}
+  - grade: 5
+    displayName: "\uB300\uB9C8\uBC95\uC0AC"
+    referenceWaveRatio: 1
+    hpMultiplier: 14
+    rewardKind: 1
+    rewardAmount: 40
+    moveSpeedMultiplier: 0.3
+    scaleMultiplier: 1.6
+    tint: {r: 1, g: 0.72, b: 0.32, a: 1}
+    icon: {fileID: 0}
+    prefabOverride: {fileID: 0}

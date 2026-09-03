@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using OJ.Bounty;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.Hunting;
@@ -68,6 +69,9 @@ namespace OJ.Utils
         public StageDatabase StageDatabase;
         [FormerlySerializedAs("ChapterRewardDatabase")]
         public StageRewardDatabase StageRewardDatabase;
+
+        /// <summary>현상금 5등급의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
+        public BountyDatabase BountyDatabase;
 
         /// <summary>팝업 프리팹 목록. (10.1) 비면 팝업이 하나도 열리지 않는다.</summary>
         public DialogCatalog DialogCatalog;

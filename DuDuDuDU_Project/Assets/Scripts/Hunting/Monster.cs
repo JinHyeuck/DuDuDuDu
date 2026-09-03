@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using OJ.Bounty;
 using OJ.Core;
 using OJ.DI;
 using OJ.Dice;
@@ -41,6 +42,20 @@ namespace OJ.Hunting
         private bool isAttacking = false;
 
         public CharacterAnimation characterAnimation;
+
+        /// <summary>
+        /// 이 개체가 현상금 몬스터인가. <c>MonsterSpawner</c> 가 <see cref="ConfigureAsBounty"/>
+        /// 로 켜고 <c>OnSpawn</c>/<c>OnDisable</c> 이 끈다.
+        ///
+        /// <b>켜지면 이동을 막는 효과가 전부 무효가 된다</b> — 슬로우·스턴·밀기·당기기.
+        /// 연출이 아니라 <b>안전장치</b>다. 웨이브 종료 조건이 "현상금이 정리될 때까지"
+        /// 인데, 붙잡혀서 벽에 못 닿으면 웨이브가 영영 끝나지 않는다.
+        ///
+        /// <b>피해증가 디버프는 그대로 걸린다.</b> 막는 것은 이동뿐이다 — 전부 막으면
+        /// 킹아이스처럼 슬로우와 피해증가를 한 세트로 거는 다이스가 현상금 앞에서
+        /// 통째로 무용지물이 된다.
+        /// </summary>
+        public bool IsBounty { get; private set; }
 
         private readonly WaitForSeconds poisonDelay = new WaitForSeconds(0.5f);
         private int _baseDefense;
@@ -109,6 +124,9 @@ namespace OJ.Hunting
             _relicDamageTakenBonusUntil = -1f;
             RecalculateDefense();
 
+            IsBounty = false;
+            _bountyWallHitDone = false;
+
             battle.Monsters.RegisterMonster(this);
             ApplyMoveSpeed = moveSpeed;
             characterAnimation.PlayAnimation(CharacterState.Run);
@@ -145,6 +163,19 @@ namespace OJ.Hunting
             _pullUntilTime = -1f;
             ApplyMoveSpeed = moveSpeed;
             RecalculateDefense();
+
+            // 현상금이 어떤 경로로 사라지든 여기를 지난다 — 벽을 때리고 스스로 물러난
+            // 경우, 화면 밖으로 빠진 경우, 씬이 내려간 경우. 그래서 "정리됨" 통보를
+            // 벽 처리부가 아니라 <b>여기</b>에 둔다. 경로마다 따로 적으면 하나를
+            // 빠뜨렸을 때 웨이브가 끝나지 않는 형태로만 드러난다.
+            //
+            // 죽어서 사라진 경우에는 TakeDamage 가 이미 NotifyDefeated 를 불러
+            // 대상 참조를 비웠으므로 이 호출은 그냥 지나간다 — 보상이 두 번 서지 않는다.
+            if (IsBounty)
+                battle.Bounty?.NotifyEscaped(this);
+
+            IsBounty = false;
+            _bountyWallHitDone = false;
 
             // 여기 ?. 는 새로 넣은 것이 아니라 원래 MonsterManager.Instance 뒤에 붙어 있던
             // 것을 그대로 옮긴 것이다. OnDisable 은 씬을 내릴 때도 도는데 그때는 배틀 스코프가
@@ -233,7 +264,18 @@ namespace OJ.Hunting
                     EquipmentManager.Instance?.OnMonsterKilled(
                         battle.Game != null ? battle.Game.wall : null);
                     RelicManager.Instance?.OnMonsterKilled(this, wasPoisoned, deathPosition);
-                    battle.Monsters.UnregisterMonster(this, true);
+                    // 현상금은 웨이브 목표 수에 들어가지 않으므로 처치 수로 세지 않는다.
+                    // true 로 넘기면 웨이브가 한 마리 일찍 끝난다.
+                    if (IsBounty)
+                    {
+                        battle.Bounty?.NotifyDefeated(this);
+                        battle.Monsters.UnregisterMonster(this, false);
+                    }
+                    else
+                    {
+                        battle.Monsters.UnregisterMonster(this, true);
+                    }
+
                     battle.Spawner.PoolMonster(this);
                 }
             }
@@ -264,7 +306,14 @@ namespace OJ.Hunting
             if (!IsAlive)
                 return;
 
+            // <b>상태는 걸고 속도만 안 깎는다.</b> 둘을 함께 막으면 IsSlowed() 가 false 로
+            // 남아 킹아이스의 피해증가(TakeDamage 의 stateBonusPercent)까지 같이 죽는다 —
+            // 현상금 앞에서만 특정 다이스가 조용히 약해지는, 화면으로는 알 수 없는 손실이다.
             _slowUntilTime = Mathf.Max(_slowUntilTime, Clock.GameTime + Mathf.Max(0.1f, duration));
+
+            if (IsBounty)
+                return;
+
             ApplyMoveSpeed = Mathf.Max(moveSpeed * 0.2f, ApplyMoveSpeed * Mathf.Clamp(multiplier, 0.1f, 1f));
         }
 
@@ -283,6 +332,12 @@ namespace OJ.Hunting
         public void ApplyStun(float duration)
         {
             if (!IsAlive)
+                return;
+
+            // 스턴은 Update 를 통째로 멈춘다. 현상금에 걸리면 벽까지 가는 시간이
+            // 다이스 구성에 따라 무한정 늘어나고, 그것이 곧 안 끝나는 웨이브다.
+            // 피해증가(ApplyStunDamageTakenBonus)는 별도 경로라 그대로 걸린다.
+            if (IsBounty)
                 return;
 
             float validDuration = Mathf.Max(0.1f, duration);
@@ -349,6 +404,11 @@ namespace OJ.Hunting
             if (!IsAlive)
                 return;
 
+            // 밀기는 현상금을 위로 되돌린다. 윈드 장판 위에 서 있는 동안 영영
+            // 벽에 못 닿는 형태가 되므로 무효로 둔다.
+            if (IsBounty)
+                return;
+
             if (direction.sqrMagnitude <= 0.0001f)
                 return;
 
@@ -358,6 +418,9 @@ namespace OJ.Hunting
         public void PullTowards(Vector2 center, float distance)
         {
             if (!IsAlive)
+                return;
+
+            if (IsBounty)
                 return;
 
             Vector2 direction = center - (Vector2)transform.position;
@@ -370,6 +433,11 @@ namespace OJ.Hunting
         public void AddSmoothPull(Vector2 center, float distance, float duration)
         {
             if (!IsAlive)
+                return;
+
+            // 토네이도는 당기는 동안 Update 의 이동을 통째로 건너뛴다(IsBeingPulled).
+            // 현상금에 걸리면 하강이 멈추므로 여기서 끊는다.
+            if (IsBounty)
                 return;
 
             float addDistance = Mathf.Max(0f, distance);
@@ -413,6 +481,12 @@ namespace OJ.Hunting
 
         IEnumerator AttackWall(Wall wall)
         {
+            if (IsBounty)
+            {
+                HitWallOnceAndLeave(wall);
+                yield break;
+            }
+
             while (wall != null && wall.CurrentHp > 0)
             {
                 if (!IsTouchingWall(wall))
@@ -545,6 +619,13 @@ namespace OJ.Hunting
 
         private void UpdateTimedStates()
         {
+            // 현상금은 여기서 빠진다. 이 줄은 "슬로우가 풀렸으면 원래 속도로" 인데,
+            // 현상금의 느린 걸음은 슬로우가 아니라 <b>기본 속도</b>다. 걸러 내지 않으면
+            // _slowUntilTime 이 -1 인 첫 프레임에 조건이 참이 되어 느린 걸음이
+            // 그 자리에서 지워진다 — 화면에서는 "왜 안 느리지" 로만 보인다.
+            if (IsBounty)
+                return;
+
             if (Clock.GameTime >= _slowUntilTime && ApplyMoveSpeed != moveSpeed)
                 ApplyMoveSpeed = moveSpeed;
         }
@@ -558,6 +639,44 @@ namespace OJ.Hunting
             _attackWall = wall;
             _attackRoutine = StartCoroutine(AttackWall(wall));
         }
+
+        /// <summary>
+        /// 현상금이 벽에 닿았을 때. <b>한 대 때리고 그대로 사라진다.</b>
+        ///
+        /// 피해는 <see cref="BountyFormula.WallDamage"/> — 남은 벽 체력의 1/3 이다.
+        /// 그 식은 벽을 0 으로 만들지 못하므로 현상금 때문에 판이 끝나는 일은 없고,
+        /// 대가는 <b>클리어 등급</b>으로만 치른다(<c>StageRewardFormula.ClearGradeTier</c>
+        /// 가 벽 체력 비율을 그대로 읽는다).
+        ///
+        /// 사라지는 것은 풀로 돌아가는 것이고, 그 <c>OnDisable</c> 이 웨이브에게
+        /// "정리됐다"를 알린다 — 그래야 웨이브가 끝날 수 있다.
+        /// </summary>
+        private void HitWallOnceAndLeave(Wall wall)
+        {
+            if (_bountyWallHitDone)
+                return;
+
+            _bountyWallHitDone = true;
+
+            if (wall != null)
+            {
+                int damage = BountyFormula.WallDamage(wall.CurrentHp);
+                if (damage > 0)
+                {
+                    wall.TakeDamage(damage);
+
+                    GameObject dtObj = battle.DamageTexts.GetDamageText();
+                    dtObj.transform.position = transform.position;
+                    dtObj.transform.ResetLocalZ();
+                    dtObj.GetComponent<DamageText>().SetText(damage * -1, Color.red);
+                }
+            }
+
+            StopAttack();
+            battle.Spawner.PoolMonster(this);
+        }
+
+        private bool _bountyWallHitDone;
 
         private void StopAttack()
         {
@@ -588,6 +707,22 @@ namespace OJ.Hunting
         public void SetHp(int hp)
         {
             _hp = hp;
+        }
+
+        /// <summary>
+        /// 이 개체를 현상금으로 만든다. <b><c>OnSpawn</c> 뒤에 불러야 한다</b> —
+        /// <c>OnSpawn</c> 이 <c>ApplyMoveSpeed</c> 를 원래 속도로 되돌리므로
+        /// 먼저 부르면 느린 걸음이 그 자리에서 지워진다.
+        /// </summary>
+        public void ConfigureAsBounty(float moveSpeedMultiplier)
+        {
+            IsBounty = true;
+            _bountyWallHitDone = false;
+
+            // moveSpeed 자체는 건드리지 않는다. 그것은 프리팹 값이고, 풀에서 재사용될 때
+            // OnSpawn 이 ApplyMoveSpeed 를 여기로 되돌리는 기준점이다 — 깎아 두면
+            // 같은 인스턴스가 일반 보스로 나왔을 때 느려진 채로 나온다.
+            ApplyMoveSpeed = Mathf.Max(0.05f, moveSpeed * Mathf.Max(0.05f, moveSpeedMultiplier));
         }
 
         public void SetCombatStats(int hp, int baseDefenseValue, float scaleMultiplier = 1f)

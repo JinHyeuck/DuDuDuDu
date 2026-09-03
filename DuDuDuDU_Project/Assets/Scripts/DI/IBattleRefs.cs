@@ -1,3 +1,4 @@
+using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
 using OJ.Hunting;
@@ -46,5 +47,14 @@ namespace OJ.DI
         BulletPool Bullets { get; }
         BulletEffectPool BulletEffects { get; }
         DamageTextPool DamageTexts { get; }
+
+        /// <summary>
+        /// 현상금. <b>씬 컴포넌트가 아닌 유일한 항목</b>이라 배틀 스코프가 코드로 만들어 넘긴다.
+        ///
+        /// 그래도 여기 두는 이유는 <c>UIService</c> 가 찍는 다이얼로그 때문이다.
+        /// 그 프리팹들은 <b>루트</b> 리졸버로 태어나므로 배틀 스코프의 등록을 영원히 못 본다
+        /// (해석은 자식 → 부모 단방향이다). 창구에 얹어야 배너와 선택 창이 닿는다.
+        /// </summary>
+        BountyManager Bounty { get; }
     }
 }

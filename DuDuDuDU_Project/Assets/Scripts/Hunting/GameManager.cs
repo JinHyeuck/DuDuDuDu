@@ -7,6 +7,7 @@ using System;
 using VContainer;
 using OJ.Core;
 using OJ.Analytics;
+using OJ.Bounty;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Element;
@@ -76,6 +77,11 @@ namespace OJ.Hunting
 
         private void OnDestroy()
         {
+            // 창구는 스코프가 파괴될 때 비워지는데 그 순서가 정해져 있지 않다.
+            // 이미 비었으면 뗄 것도 없으므로 ?. 를 쓴다 — 여기는 사고가 아니라 정리 경로다.
+            if (battle != null && battle.Bounty != null)
+                battle.Bounty.OnWaveResolved -= OnBountyResolved;
+
             if (PlayUI != null) PlayUI.onClick.RemoveListener(OnClick_PlayUI);
             if (Pause != null) Pause.onClick.RemoveListener(OnClick_Pause);
             if (Speed != null) Speed.onClick.RemoveListener(OnClick_Speed);
@@ -84,9 +90,23 @@ namespace OJ.Hunting
 
         private void Start()
         {
+            // 배틀 스코프는 모든 Start 앞에 빌드되므로 여기서 battle.Bounty 는 살아 있다.
+            // 구독을 Awake 로 올리면 그때는 아직 null 이다.
+            battle.Bounty.OnWaveResolved += OnBountyResolved;
+
             InitializeStage();
             ChangeState(InGameState.Setting);
             StartCoroutine(CoApplyStageStartRelics());
+        }
+
+        /// <summary>
+        /// 현상금이 정리됐다. <b>일반 몬스터를 먼저 다 잡은 웨이브</b>에서는 이것이
+        /// 웨이브를 끝내는 마지막 조각이다 — 그 순서에서는 아무도
+        /// <see cref="RemoveMonsterDeadCount"/> 를 다시 부르지 않기 때문이다.
+        /// </summary>
+        private void OnBountyResolved()
+        {
+            TryCompleteWave();
         }
 
         public void OnClick_PlayUI()
@@ -157,6 +177,24 @@ namespace OJ.Hunting
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
             WaveText?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
 
+            // 현상금 띠는 관리 단계에만 뜬다. 웨이브 중에는 바꿀 수도 없고 몬스터가
+            // 내려오는 길 한가운데를 가린다.
+            //
+            // <b>Show/Hide 를 여기 두는 이유.</b> 상태를 아는 곳이 여기 하나뿐이다.
+            // 띠가 스스로 판단하게 하면 매 프레임 inGameState 를 들여다보게 되고,
+            // 그것은 이벤트로 바꿔 놓은 것을 다시 폴링으로 되돌리는 일이다.
+            if (state == InGameState.Setting)
+            {
+                GameContainer.UI?.Show<UIBountyBanner>();
+            }
+            else
+            {
+                GameContainer.UI?.Hide<UIBountyBanner>();
+                // 선택 창이 열린 채 웨이브가 시작되는 경로는 지금 없지만(창이 화면을
+                // 덮어 시작 버튼을 누를 수 없다) 닫아 두는 편이 싸다.
+                GameContainer.UI?.Hide<UIBountySelectDialog>();
+            }
+
             // 관리 단계마다 자동으로 뜨던 조합 진행도 창(UIDiceCraftProgressDialog)은
             // 조합식과 함께 사라졌다. 상위 다이스로 가는 길은 이제 목록을 띄워 재고를
             // 세는 것이 아니라, 다이스를 눌러 그 자리에서 진화시키는 것이다 —
@@ -166,6 +204,9 @@ namespace OJ.Hunting
             {
                 Run.WaveIndex++;
                 RelicManager.Instance?.BeginWave(CurrentWaveIndex);
+                // 스포너가 첫 Update 를 돌기 전에 이번 웨이브의 현상금 등급을 확정한다.
+                // PlayWave 뒤로 미루면 그 사이에 ShouldSpawn 이 지난 웨이브 값을 답한다.
+                battle.Bounty.BeginWave(CurrentWaveIndex);
                 Run.WaveMonsterCount = GetWaveTargetCount();
                 UpdateWaveText();
                 SetRemainMonster(0);
@@ -192,13 +233,39 @@ namespace OJ.Hunting
                 return;
             WaveMonsterDeadCount++;
 
-            if (WaveMonsterDeadCount >= WaveMonsterCount)
-            {
-                HandleWaveCompleted();
+            if (TryCompleteWave())
                 return;
-            }
 
             SetRemainMonster(WaveMonsterDeadCount);
+        }
+
+        /// <summary>
+        /// 웨이브를 끝낼 수 있으면 끝낸다. <b>조건이 둘</b>이고 <b>계기도 둘</b>이라
+        /// 판정을 한 곳에 모은다 — 마지막 일반 몬스터가 죽었을 때와, 현상금이 나중에
+        /// 정리됐을 때. 두 곳에 같은 조건을 적으면 한쪽만 고치는 사고가 난다.
+        ///
+        /// <b>현상금은 처치 수에 세지 않지만 웨이브를 붙잡는다.</b> 카운트에 넣으면
+        /// 못 잡았을 때 목표를 채울 방법이 없어져 웨이브가 영영 안 끝나고, 아예 조건에서
+        /// 빼면 현상금이 화면에 남은 채로 다음 관리 단계가 열린다.
+        /// </summary>
+        private bool TryCompleteWave()
+        {
+            if (inGameState != InGameState.Wave)
+                return false;
+
+            if (WaveMonsterDeadCount < WaveMonsterCount)
+                return false;
+
+            if (!battle.Bounty.IsWaveResolved)
+            {
+                // 일반 몬스터는 다 잡았고 현상금만 남았다. 게이지는 가득 찬 채로 두고
+                // 현상금이 벽에 닿거나 죽기를 기다린다 — 면역 덕에 반드시 그중 하나로 끝난다.
+                SetRemainMonster(WaveMonsterDeadCount);
+                return false;
+            }
+
+            HandleWaveCompleted();
+            return true;
         }
 
         public void SetRemainMonster(int currentKillMonster)
@@ -310,6 +377,10 @@ namespace OJ.Hunting
                 initialSummonCost: 0);
 
             battle.ElementUpgrade.ResetRunState();
+            // 웨이브 범위 상태는 Run.BeginRun 이 못 지운다 — 매니저 안에 있기 때문이다.
+            // 지금은 배틀 스코프가 씬마다 새로 만들어 줘서 우연히 깨끗하지만,
+            // 씬을 다시 로드하지 않고 판을 다시 시작하게 되는 날 그 우연이 깨진다.
+            battle.Bounty.ResetWaveState();
             wall.SetInit(WallHp);
             int startSpBonus = RelicManager.Instance != null ? RelicManager.Instance.GetStageStartSpBonus() : 0;
             battle.Summon.SetStageStartSp(CurrentStageData.initialSP + startSpBonus);
@@ -355,6 +426,10 @@ namespace OJ.Hunting
         {
             PointManager.Instance?.Add(PointType.BattleEnhanceStone, 1);
             RelicManager.Instance?.ApplyWaveClearRelics(wall);
+
+            // 현상금 보상은 웨이브가 끝나는 이 자리에서만 들어온다. 잡은 순간 주면
+            // 전투 중에 SP 로 소환이 되어 "관리 단계에 쓰라"는 뜻이 무너진다.
+            battle.Bounty.GrantPendingRewards();
 
             if (CurrentStageData != null)
             {

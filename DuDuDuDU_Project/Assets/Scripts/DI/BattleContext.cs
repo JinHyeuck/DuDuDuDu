@@ -1,4 +1,5 @@
 using UnityEngine.Scripting;
+using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
 using OJ.Hunting;
@@ -36,6 +37,7 @@ namespace OJ.DI
         public BulletPool Bullets { get; private set; }
         public BulletEffectPool BulletEffects { get; private set; }
         public DamageTextPool DamageTexts { get; private set; }
+        public BountyManager Bounty { get; private set; }
 
         /// <summary>
         /// 배틀 스코프가 빌드된 직후 한 번 부른다.
@@ -58,7 +60,8 @@ namespace OJ.DI
             ElementUpgradeManager elementUpgrade,
             BulletPool bullets,
             BulletEffectPool bulletEffects,
-            DamageTextPool damageTexts)
+            DamageTextPool damageTexts,
+            BountyManager bounty)
         {
             Game = game;
             Player = player;
@@ -74,6 +77,7 @@ namespace OJ.DI
             Bullets = bullets;
             BulletEffects = bulletEffects;
             DamageTexts = damageTexts;
+            Bounty = bounty;
 
             IsActive = true;
         }
@@ -97,6 +101,7 @@ namespace OJ.DI
             Bullets = null;
             BulletEffects = null;
             DamageTexts = null;
+            Bounty = null;
         }
     }
 }

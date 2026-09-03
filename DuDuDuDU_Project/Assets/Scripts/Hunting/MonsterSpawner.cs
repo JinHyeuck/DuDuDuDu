@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using VContainer;
 using VContainer.Unity;
+using OJ.Bounty;
 using OJ.DI;
 using OJ.Stage;
 using OJ.Utils;
@@ -29,6 +30,11 @@ namespace OJ.Hunting
         private List<int> bossMonsterIdList = new List<int>();
         private readonly HashSet<Monster> bossMonsterInstances = new HashSet<Monster>();
 
+        // 현상금 전용 프리팹(prefabOverride)을 위한 풀. 보스를 빌려 쓰는 기본 경로는
+        // 보스 풀을 그대로 타므로 여기 들어오지 않는다.
+        private readonly Dictionary<int, Queue<Monster>> bountyMonsterPools = new Dictionary<int, Queue<Monster>>();
+        private readonly HashSet<Monster> bountyMonsterInstances = new HashSet<Monster>();
+
         public List<Monster> monsterPrefab;
         public List<Monster> bossMonsterPrefab;
         public float spawnInterval = 2f;
@@ -42,6 +48,15 @@ namespace OJ.Hunting
 
         private int regularSpawnCount = 0;
         private bool bossSpawnedInWave = false;
+
+        /// <summary>
+        /// 현상금이 나오기 전에 먼저 내보낼 일반 몬스터 수.
+        ///
+        /// 웨이브가 열리자마자 현상금이 나오면 화면이 "이걸 잡으라는 건가" 로만 읽히고,
+        /// 보스처럼 절반 지점(<c>GetBossSpawnThreshold</c>)까지 미루면 느린 걸음으로
+        /// 벽까지 가는 시간이 웨이브를 넘어간다. 둘 사이의 값이다.
+        /// </summary>
+        [SerializeField, Min(0)] private int bountySpawnAfterRegularCount = 2;
         private List<Monster> defaultMonsterPrefabs;
         private List<Monster> defaultBossMonsterPrefabs;
         private bool poolsInitialized;
@@ -171,6 +186,18 @@ namespace OJ.Hunting
 
             monster.gameObject.SetActive(false);
 
+            if (bountyMonsterInstances.Contains(monster))
+            {
+                if (!bountyMonsterPools.TryGetValue(monster.MonsterID, out Queue<Monster> bountyPool))
+                {
+                    bountyPool = new Queue<Monster>();
+                    bountyMonsterPools.Add(monster.MonsterID, bountyPool);
+                }
+
+                bountyPool.Enqueue(monster);
+                return;
+            }
+
             if (bossMonsterPools.TryGetValue(monster.MonsterID, out Queue<Monster> bossPool)
                 && bossMonsterInstances.Contains(monster))
             {
@@ -184,6 +211,15 @@ namespace OJ.Hunting
 
         private void SpawnNext()
         {
+            // 현상금을 보스보다 먼저 본다. 보스 웨이브에는 현상금이 아예 나오지 않으므로
+            // (BountyFormula.CanSpawnOnWave) 둘이 같은 웨이브에서 겨루는 일은 없고,
+            // 순서를 이렇게 두면 그 사실이 코드에서도 한눈에 보인다.
+            if (ShouldSpawnBountyNow())
+            {
+                SpawnBountyMonster();
+                return;
+            }
+
             if (ShouldSpawnBossNow())
             {
                 SpawnBossMonster();
@@ -192,6 +228,74 @@ namespace OJ.Hunting
 
             if (regularSpawnCount < GetRegularSpawnTarget())
                 SpawnRegularMonster();
+        }
+
+        private bool ShouldSpawnBountyNow()
+        {
+            BountyManager bounty = battle.Bounty;
+            return bounty != null
+                && bounty.ShouldSpawn
+                && regularSpawnCount >= bountySpawnAfterRegularCount;
+        }
+
+        /// <summary>
+        /// 현상금을 내보낸다. <b>일반·보스와 달리 웨이브 목표 수를 늘리지 않는다</b> —
+        /// <c>regularSpawnCount</c> 를 건드리지 않는 것이 그 뜻이다.
+        ///
+        /// 프리팹은 정의에 따로 꽂아 두지 않았으면 그 테마의 보스를 빌려 쓴다.
+        /// 전용 아트가 붙기 전까지 크기로만 구분되는데, 아무것도 안 나오는 것보다는 낫고
+        /// 정의에 <c>prefabOverride</c> 를 꽂는 순간 이 경로는 지나가지 않는다.
+        /// </summary>
+        private void SpawnBountyMonster()
+        {
+            BountyManager bounty = battle.Bounty;
+            BountyDefinition definition = bounty.GetDefinition(bounty.ActiveGrade);
+            if (definition == null)
+            {
+                Debug.LogError("[현상금] 등급 " + bounty.ActiveGrade + " 의 정의가 없어 소환하지 않는다.");
+                return;
+            }
+
+            Monster monster = GetBountyMonster(definition);
+            if (monster == null)
+                return;
+
+            monster.OnSpawn();
+            monster.transform.position = GetSpawnPosition();
+            monster.transform.rotation = Quaternion.identity;
+
+            // 방어력은 0 이다. 값을 주면 아머브레이크 계통이 사실상 강제 채용이 되어
+            // "무엇을 잡을까" 가 "무엇을 뽑았나" 로 바뀐다.
+            monster.SetCombatStats(bounty.GetHp(bounty.ActiveGrade), 0, definition.scaleMultiplier);
+
+            // OnSpawn 이 ApplyMoveSpeed 를 되돌려 놓으므로 반드시 그 뒤다.
+            monster.ConfigureAsBounty(definition.moveSpeedMultiplier);
+
+            bounty.NotifySpawned(monster);
+        }
+
+        private Monster GetBountyMonster(BountyDefinition definition)
+        {
+            if (definition.prefabOverride == null)
+                return GetBossMonster();
+
+            int id = definition.prefabOverride.MonsterID;
+            if (bountyMonsterPools.TryGetValue(id, out Queue<Monster> pool) && pool.Count > 0)
+            {
+                Monster pooled = pool.Dequeue();
+                pooled.gameObject.SetActive(true);
+                return pooled;
+            }
+
+            // 풀에 없으면 그 자리에서 찍는다. 현상금은 웨이브당 한 마리라 예열 없이도
+            // 늘어나지 않는다 — 그래서 RebuildPools 가 미리 만들어 두지 않는다.
+            GameObject obj = resolver.Instantiate(definition.prefabOverride.gameObject, transform);
+            Monster spawned = obj.GetComponent<Monster>();
+            if (!bountyMonsterPools.ContainsKey(id))
+                bountyMonsterPools.Add(id, new Queue<Monster>());
+
+            bountyMonsterInstances.Add(spawned);
+            return spawned;
         }
 
         private void SpawnRegularMonster()
@@ -272,8 +376,11 @@ namespace OJ.Hunting
         {
             DestroyPooledMonsters(monsterPools);
             DestroyPooledMonsters(bossMonsterPools);
+            DestroyPooledMonsters(bountyMonsterPools);
             monsterPools.Clear();
             bossMonsterPools.Clear();
+            bountyMonsterPools.Clear();
+            bountyMonsterInstances.Clear();
             monsterIdList.Clear();
             bossMonsterIdList.Clear();
             bossMonsterInstances.Clear();
@@ -326,6 +433,13 @@ namespace OJ.Hunting
 
         private bool IsWaveSpawnCompleted()
         {
+            // 현상금을 아직 안 내보냈으면 완료가 아니다. 이 항을 빠뜨리면 일반 몬스터가
+            // 목표 수를 먼저 채운 웨이브에서 현상금이 <b>영영 안 나오고</b>, 그러면
+            // 나오지 않은 것을 기다리다 웨이브도 끝나지 않는다.
+            BountyManager bounty = battle.Bounty;
+            if (bounty != null && bounty.ShouldSpawn)
+                return false;
+
             int regularTarget = GetRegularSpawnTarget();
             return regularSpawnCount >= regularTarget && (!IsBossWave() || bossSpawnedInWave);
         }

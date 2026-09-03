@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using VContainer;
 using VContainer.Unity;
+using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
 using OJ.Hunting;
@@ -116,6 +117,17 @@ namespace OJ.DI
         private void Bind(IObjectResolver resolver)
         {
             context = resolver.Resolve<BattleContext>();
+
+            // 현상금 매니저만 씬에 없다. 씬 YAML 을 건드리지 않으려고 순수 객체로 두었고
+            // (절대 규칙 3), 그래서 컨테이너가 아니라 여기서 손으로 만든다.
+            //
+            // <b>창구 자신을 넘긴다.</b> 아직 Bind 전이라 context 의 프로퍼티는 전부 null 인데,
+            // BountyManager 는 생성자에서 참조를 들고만 있고 실제로 읽는 것은 웨이브가
+            // 시작된 뒤다. 컨테이너에 등록하지 않는 이유는 두 가지다 — 등록해도 루트에서
+            // 태어나는 다이얼로그가 못 보고(자식 → 부모 단방향), 그렇다고 루트에 등록하면
+            // 로비·타이틀에도 살아 있게 된다.
+            var bounty = new BountyManager(context);
+
             context.Bind(
                 resolver.Resolve<GameManager>(),
                 resolver.Resolve<PlayerController>(),
@@ -130,7 +142,8 @@ namespace OJ.DI
                 resolver.Resolve<ElementUpgradeManager>(),
                 resolver.Resolve<BulletPool>(),
                 resolver.Resolve<BulletEffectPool>(),
-                resolver.Resolve<DamageTextPool>());
+                resolver.Resolve<DamageTextPool>(),
+                bounty);
 
             // 등록한 14개 말고도 씬에는 창구가 필요한 컴포넌트가 있다
             // (Wall · PlayerFireRateUI · UIRemoveDice). 그것들은 다른 곳에서

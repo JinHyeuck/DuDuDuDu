@@ -59,6 +59,32 @@ namespace OJ.Core
         public bool IsGameOver { get; set; }
 
         /// <summary>
+        /// 이번 판에 켜 둔 현상금 등급. 0 이면 "소환 X".
+        ///
+        /// <b>토글은 판이 끝날 때까지 유지된다</b> — 1웨이브에서 켜면 2웨이브 준비
+        /// 단계에서 아무것도 누르지 않아도 계속 나온다. 그래서 이 값은 웨이브가 아니라
+        /// 런이 소유한다.
+        /// </summary>
+        public int SelectedBountyGrade { get; set; }
+
+        /// <summary>
+        /// 이번 판에 잡아낸 현상금 최고 등급. 0 이면 아직 하나도 못 잡았다.
+        /// 다음 등급 해금의 유일한 근거이며 <b>판이 끝나면 사라진다</b>.
+        /// </summary>
+        public int HighestDefeatedBountyGrade { get; set; }
+
+        /// <summary>
+        /// 이번 웨이브에 현상금을 잡아서 확정된 보상. 웨이브가 끝날 때 지급하고 0 으로 돌린다.
+        ///
+        /// <b>즉시 주지 않는 이유.</b> 현상금은 웨이브 초반에 죽는데, 그 순간 SP 가
+        /// 들어오면 전투 중에 소환이 되어 버린다. 관리 단계에서 쓰라고 주는 재화다.
+        /// </summary>
+        public int PendingBountySummonPoint { get; set; }
+
+        /// <summary>이번 웨이브에 확정된 현상금 강화석. <see cref="PendingBountySummonPoint"/> 와 같은 규칙.</summary>
+        public int PendingBountyEnhanceStone { get; set; }
+
+        /// <summary>
         /// 판을 시작한다. <b>모든 런 범위 필드를 여기서 한 번에</b> 세운다 —
         /// 필드를 늘리면 반드시 여기도 늘려야 하고, 그러지 않으면 이전 판 값이 새어 나간다.
         /// 그것이 이 클래스가 존재하는 이유다.
@@ -75,6 +101,10 @@ namespace OJ.Core
             SummonPoint = initialSummonPoint;
             SummonCost = initialSummonCost;
             IsGameOver = false;
+            SelectedBountyGrade = 0;
+            HighestDefeatedBountyGrade = 0;
+            PendingBountySummonPoint = 0;
+            PendingBountyEnhanceStone = 0;
         }
     }
 }
