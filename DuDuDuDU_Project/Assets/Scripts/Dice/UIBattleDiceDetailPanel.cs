@@ -341,11 +341,30 @@ namespace OJ.Dice
             return targetCount;
         }
 
+        /// <summary>
+        /// 연쇄 타격 수. <b>전투와 같은 함수를 부른다.</b>
+        ///
+        /// 예전에는 여기서 공식을 다시 적었고, 그 복사본이 세 가지를 놓쳤다.
+        ///
+        /// <list type="number">
+        /// <item><b>킹의 기본항은 <c>Thunder</c> 레벨이다.</b> 킹썬더 레벨이 아니다 —
+        ///       <c>KingThunderDiceEffect</c> 가 <c>GetThunderTargetCount(DiceType.Thunder)</c>
+        ///       를 부른다. 넘겨받은 <paramref name="level"/> 로 기본항을 뽑으면
+        ///       썬더만 올렸을 때 화면이 반응하지 않고, 킹썬더만 올리면 없는 연쇄가 표시된다.</item>
+        /// <item><b>유물 보정이 빠져 있었다.</b> '피뢰침 고리'를 끼면 실제로는 더 튀는데
+        ///       화면 숫자는 그대로였다. 킹뿐 아니라 <b>일반 썬더도</b> 같았다.</item>
+        /// <item>하한(<c>Max(0, ...)</c>)도 없었다.</item>
+        /// </list>
+        ///
+        /// 공식을 두 곳에 적으면 한쪽만 바뀌는 것은 시간 문제다. 그래서 <b>베끼지 않고
+        /// 부른다.</b> 여기는 강화에 돈을 쓸지 정하는 화면이라 숫자가 틀리면 그대로 손해다.
+        ///
+        /// 킹 전용 가산(+2, 3레벨에서 +2)만 여기 남는다 — 그것은 효과 쪽에도 상수로
+        /// 박혀 있어서 옮길 자리가 없다. <paramref name="level"/> 이 쓰이는 곳은 그 하나뿐이다.
+        /// </summary>
         private int GetThunderChainCount(bool isKing, int level)
         {
-            int targetCount = DiceMetaDataProvider.GetThunderTargetCount(level);
-            if (EquipmentManager.Instance != null)
-                targetCount += EquipmentManager.Instance.GetThunderChainExtraCount(DiceType.Thunder);
+            int targetCount = battle.Attack.GetThunderTargetCount(DiceType.Thunder);
             if (!isKing)
                 return targetCount;
 

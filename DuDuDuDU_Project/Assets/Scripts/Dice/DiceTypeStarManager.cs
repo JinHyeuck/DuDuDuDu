@@ -168,14 +168,27 @@ namespace OJ.Dice
 
         public void ResetAll()
         {
-            foreach (var key in typeCountTotals.Keys)
-                typeCountTotals[key] = 0;
+            // 키 컬렉션을 순회하면서 그 딕셔너리를 건드리면 Mono 에서 열거자가 깨진다
+            // (InvalidOperationException). 값만 바꿔도 마찬가지다 — .NET Core 는
+            // 봐주지만 Unity 가 쓰는 런타임은 아니다. 그래서 enum 을 돈다.
+            // Awake 가 채울 때 쓰는 방식과 같게 맞췄다.
+            foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
+            {
+                if (type == DiceType.Max)
+                    continue;
 
-            foreach (var key in typeStarTotals.Keys)
-                typeStarTotals[key] = 0;
+                typeCountTotals[type] = 0;
+                typeStarTotals[type] = 0;
+            }
 
-            foreach (var key in typeStarCounts.Keys)
-                typeStarCounts[key] = 0;
+            // (타입, 성급) 조합은 enum 으로 돌 수 없다. 성급이 몇까지 쓰였는지는
+            // 실행 중에만 알기 때문이다. 그래서 <b>키를 먼저 복사해</b> 순회한다 —
+            // 그냥 Clear() 하지 않는 이유는 이 딕셔너리가 "없는 키 = 0" 과
+            // "0 인 키" 를 구별하는 곳이 있어서다(GetTypeStarCount 의 TryGetValue).
+            // 키를 지우면 그 자리가 조용히 기본값으로 흐른다.
+            var starKeys = new List<(DiceType type, int star)>(typeStarCounts.Keys);
+            for (int i = 0; i < starKeys.Count; i++)
+                typeStarCounts[starKeys[i]] = 0;
 
             battle.BoardUI.UpdateTypeStars();
             OnDiceInventoryChanged?.Invoke();

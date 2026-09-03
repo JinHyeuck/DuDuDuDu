@@ -63,7 +63,6 @@ namespace OJ.Hunting
         public TMP_Text RemainMonster;
         public RectTransform RemainMonsterGauge;
         public float RemainMonsterGauge_Width = 705.0f;
-        private bool isPause = false;
 
         private float timeSpeed = 1.0f;
         [SerializeField] private float returnToLobbyDelay = 1.0f;
@@ -95,28 +94,38 @@ namespace OJ.Hunting
             ChangeState(InGameState.Wave);
         }
 
+        /// <summary>
+        /// 전투를 그만둘지 묻는다. <b>버튼 자체는 아무것도 끝내지 않는다.</b>
+        ///
+        /// 예전에는 누르는 즉시 <c>CoReturnToLobby()</c> 로 로비에 나갔다 — 확인도 없고
+        /// 보상도 없었다. 오조작 한 번에 판이 통째로 날아가는 자리였다.
+        ///
+        /// 확인을 받으면 <b>패배와 같은 경로</b>(<see cref="GameOver"/>)를 탄다. 새 종료 경로를
+        /// 만들지 않는 것이 중요하다 — 보상 계산·기록·결과창이 전부 거기 모여 있고,
+        /// 갈래를 늘리면 한쪽만 고치는 사고가 난다.
+        /// </summary>
         public void OnClick_Pause()
         {
-            StartCoroutine(CoReturnToLobby());
-            return;
+            UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (confirm == null)
+            {
+                // 창을 못 열었는데 조용히 넘어가면 버튼이 죽은 것처럼 보인다.
+                // 그렇다고 확인 없이 판을 끝낼 수는 없으므로 여기서 멈춘다.
+                Debug.LogError("[전투] 확인 창을 열지 못했다. 카탈로그에 UIConfirmDialog 가 있는지 볼 것.");
+                return;
+            }
 
-            if (isPause == false)
-            {
-                Time.timeScale = 0;
-                isPause = true;
-            }
-            else
-            {
-                Time.timeScale = timeSpeed;
-                isPause = false;
-            }
+            confirm.Open(
+                "전투를 마칠까요?",
+                "지금까지 클리어한 웨이브만큼 보상을 받고 나가요." + Environment.NewLine +
+                "사용한 스태미나는 돌아오지 않아요.",
+                "여기까지 할게요",
+                "더 해볼게요",
+                GameOver);
         }
 
         public void OnClick_Speed()
         {
-            if (isPause == true)
-                return;
-
             if (timeSpeed == 1)
                 timeSpeed = 2;
             else if (timeSpeed == 2)
@@ -140,7 +149,9 @@ namespace OJ.Hunting
 
             PlayUI?.gameObject.SetActive(state == InGameState.Setting);
             PlayUI_Field?.gameObject.SetActive(state == InGameState.Setting);
-            Pause?.gameObject.SetActive(state == InGameState.Wave);
+            // 관리 단계에서도 나갈 수 있어야 한다. 웨이브 사이에 그만두려는 사람이
+            // 다음 웨이브를 억지로 시작해야 했던 것이 예전 동작이다.
+            Pause?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
             Speed?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
@@ -158,7 +169,6 @@ namespace OJ.Hunting
 
             if (state == InGameState.Wave)
             {
-                isPause = false;
                 Run.WaveIndex++;
                 RelicManager.Instance?.BeginWave(CurrentWaveIndex);
                 Run.WaveMonsterCount = GetWaveTargetCount();
@@ -176,7 +186,6 @@ namespace OJ.Hunting
             }
             else
             {
-                isPause = false;
                 Time.timeScale = 1;
                 UpdateWaveText();
             }

@@ -110,8 +110,6 @@
 | 1.1 | `CombatPowerUIPrefabBuilder` 비활성화 | [x] | `[InitializeOnLoad]` + 자동 설치 경로 제거. 메뉴 항목은 유지 |
 | 1.2 | 인코딩 정규화 (UTF-8) | [x] | CP949 2파일 변환 + U+FFFD 2파일 처리. 138파일 전부 UTF-8 |
 | 1.3a | 평문 키스토어 비밀번호 **코드에서 제거** | [x] | 환경 변수 주입 + 미설정 시 빌드 중단 |
-| 1.3b | 히스토리 재작성 | [ ] | **사용자 결정 필요** — 이미 `origin/Refactory`에 푸시됨 |
-| 1.3c | 키스토어 비밀번호 로테이션 | [ ] | **사용자 조치 필요** — 파일 수정만으로는 사라지지 않는다 |
 | 1.4 | `.meta` 추적 / `.gitignore` 상태 확인 | [x] | 위반 0건. 아래 감사 결과 참조 |
 | 1.5 | **Missing script 기준선 기록** | [x] | **기준선 = 0건.** 11단계 게이트는 이 값과 비교한다 |
 
@@ -1506,11 +1504,15 @@ UI에도 새어 나간다(코드 판독, 실행 미확인) — `UIEquipmentEffec
 
 | 항목 | 비고 |
 |---|---|
+| ~~`KingThunder` 레벨 오독~~ | **기록이 틀렸다. 전투는 정상이었다.** 진짜 결함은 `UIBattleDiceDetailPanel` 의 연쇄 수 표시였다 — 공식을 전투와 따로 적어 두었고 그 복사본이 셋을 놓쳤다(킹의 기본항을 Thunder 가 아닌 KingThunder 레벨로, 유물 보정 누락, 하한 없음). 베끼지 않고 `AttackContent.GetThunderTargetCount` 를 부르게 고쳤다 (2026-09-02) |
+| ~~백키 한 번 먹힘 (B3)~~ | **고쳤다.** `DialogBase.Unload` 가 `_isEnter` 를 끄지 않아 파괴된 창이 스택에 살아 있었다. 폴백이 전부 주석이라 증상은 없었지만, 그 주석을 되살리는 순간 씬 전환 직후 첫 백키가 죽는다. 곁가지로 유물 상세 팝업이 백키로 안 닫히고 탭 전체가 홈으로 가던 것도 고쳤다 (2026-09-02) |
+| ~~시작 주사위 이중 적용~~ | **정리했다.** 실제로 2개가 놓인 적은 없다(가드가 막았다). 다만 호출부가 둘이라 `UIBoard.Start` 가 먼저 도는 판에서는 지난 판 가드가 살아 있어 **조용히 건너뛸** 수 있었다. `UIBoard` 쪽을 걷어내고 두 `Start` 뒤에 도는 `GameManager` 코루틴 하나로 모았다 (2026-09-02) |
+| ~~`DiceTypeStarManager.ResetAll()`~~ | **고쳤다.** 세 루프 전부 순회 중 수정이었다. 앞의 둘은 enum 순회로, `(타입,성급)` 키는 키를 복사해 돈다 — `Clear()` 는 "없는 키"와 "0 인 키"의 구별을 없애서 안 쓴다. 호출부는 아직 0곳 (2026-09-02) |
+| ~~`lockedRoot` 미할당~~ | **버그가 아니었다.** 가리킬 자물쇠 오브젝트가 프리팹에 애초에 없다 — 배선 실수가 아니라 미구현이다. 잠금은 이미 버튼 회색+"잠김"·빈 별로 표시된다. 별의 시련 카드 목록에서 보인다 |
 | **`UIDiceBoardUI` 서브시스템이 꺼져 있다** | BattleScene 에서 `m_IsActive: 0` 이고 켜는 코드가 없다. `Awake` 가 안 돌아 옛 `Instance` 는 **영구 null** 이었고 `Instance?.UpdateTypeStars()` 는 한 번도 실행되지 않았다. 8.3b 이후 `RegisterComponentInHierarchy` 가 비활성도 찾으므로 창구는 채워지고 호출도 **실제로 일어난다** — 다만 `Start` 가 안 돌아 `typeUIDict` 가 비어 무동작이다. **켜는 순간 `UpdateTypeStars` 가 진짜 일을 시작한다.** 쓸 계획이 없으면 `UIDiceBoardUI`·`TypeUIComponent` 를 정리 대상으로 |
 | ~~보석 효과 52개 사망~~ | **고쳤다.** 위 전용 절은 원인 기록용으로 남긴다 |
-| **키스토어 자격증명 노출 (1.3b/1.3c)** | 아래 별도 항목 참조. **사용자 조치 없이는 닫히지 않는다** |
 | ~~`UIDice.prefab`의 옛 `OnClick()`~~ | **지웠다. 그리고 "실제로 실행된다"는 이 기록이 틀렸다** — `UIDice` 에 `OnClick` 이라는 멤버가 **아예 없다**(리포 354 리비전 전수 확인). 바인딩할 대상이 없어 리스너 0개였고, 주사위 클릭은 `Button` 이 아니라 `IPointerClickHandler.OnPointerClick` 으로 처리된다. 검출 자체는 옳았다(인스펙터에 Missing 으로 뜨는 진짜 죽은 배선) — 틀린 것은 **검증 없이 쓴 "실행된다"** 였다. 도구 문구도 같이 고쳤다 |
-| `OnClick_Pause` 죽은 코드 | "일시정지인가 로비 복귀인가" 기획 확인 후 정리 |
+| ~~`OnClick_Pause` 죽은 코드~~ | **고쳤다 (2026-09-02).** 기획 판정: 로비 복귀가 맞되 **확인 창을 거친다.** 정지 버튼을 관리 단계에서도 노출하고, 확인을 받으면 패배와 같은 경로(`GameOver`)로 웨이브 비례 보상을 주고 끝낸다. 도달 불가였던 `isPause` 토글 11줄과 그 필드도 함께 제거 |
 | `BuildEnvironmentSelectAsset` | 서버 URL·GameChat 채널 GUID 하드코딩, **런타임 소비처 0**. 다만 **"유령 자산"은 틀렸다** — `Unity3dBuilder.cs:89` 가 이 에셋을 읽어 `DEV_DEFINE` 심볼을 가른다. 지우면 빌드 스크립트가 깨진다. 게다가 `Assets/Scripts/Build/` 에 asmdef 가 없어 런타임 어셈블리 `OJ.Game` 소속이다. `Unity3dBuilder.cs:90` 은 null 검사 없이 `asset.BuildElement` 를 읽는다 |
 | `Text (TMP).prefab` | `Assets/Prefab/Equipment/`의 고아 자산 |
 | **`MythicScroll`·`SpecialDiceCore` 아이콘** | `PointMetadataDatabase.asset` 의 105·106 이 각각 `LevelStone_Fire.png`(불꽃 빨간 보석) · `LevelStone_Ice.png`(눈꽃 파란 보석)를 가리킨다. 이름과 그림이 어긋난다. **`SpecialDiceCore` 는 일반 스테이지 클리어마다 지급되어 결과창에 상시 노출된다.** **기획 확인 완료 (2026-08-31): 플레이스홀더다.** 전용 아트가 나오면 105·106 의 icon 참조만 교체하면 된다 — 코드 수정 없는 데이터 문제 |
@@ -1518,43 +1520,3 @@ UI에도 새어 나간다(코드 판독, 실행 미확인) — `UIEquipmentEffec
 
 ---
 
-## 키스토어 자격증명 — 남은 조치 (1.3b / 1.3c)
-
-1.3a로 **소스에서는 사라졌지만 노출 자체는 아직 닫히지 않았다.** 코드 수정은
-"앞으로 새어 나가지 않게" 할 뿐, 이미 나간 것을 되돌리지 못한다.
-
-**현재 상태**
-
-| 사실 | 영향 |
-|---|---|
-| 비밀번호가 `0e8a2f8`(2026-03-23)부터 모든 커밋에 존재 | 파일을 고쳐도 히스토리에 그대로 남는다 |
-| `Keystore/osw.keystore` **자체가 git에 추적됨** | 키 파일 + 비밀번호가 한 리포에 같이 있다 = 완전 노출 |
-| `Refactory`가 `origin`(GitHub)에 이미 푸시됨 | 리포를 클론·포크한 누구나 서명할 수 있다 |
-
-**결정 (2026-08-28, 되묻지 말 것)**
-
-| 항목 | 결정 |
-|---|---|
-| 1.3b 히스토리 재작성 | **하지 않는다.** 재작성해도 GitHub의 dangling commit과 기존 클론은 못 지운다. 1.3c가 실질적 방어다 |
-| `Keystore/osw.keystore` 추적 | **유지한다.** 비공개 리포이고, 비밀번호가 로테이션되면 위험이 크게 준다. `KEYSTORE_PATH`도 현행 유지 |
-| 1.3c 로테이션 | **사용자가 직접 수행한다.** 아래 명령 참조. 끝나면 1.3c를 `[x]`로 갱신할 것 |
-
-**해야 할 일 — 순서가 중요하다**
-
-1. **비밀번호 로테이션 (1.3c) 먼저.** 히스토리 재작성보다 이게 앞이다. 재작성을 해도
-   GitHub는 dangling commit을 한동안 들고 있고, 이미 클론한 사본은 어차피 못 지운다.
-   ```
-   keytool -storepasswd -keystore Keystore/osw.keystore
-   keytool -keypasswd  -keystore Keystore/osw.keystore -alias osw
-   ```
-   > **서명 키 자체는 바꾸지 말 것.** 스토어에 올라간 앱은 같은 키로만 업데이트된다.
-   > 여기서 바꾸는 것은 **키스토어를 여는 비밀번호**지 키가 아니다.
-
-2. **새 비밀번호를 환경 변수로** — `OJ_KEYSTORE_PASS`, `OJ_KEYSTORE_ALIAS_PASS`.
-   빌드하는 사람·CI 모두. 미설정 시 빌드가 명시적으로 중단된다(디버그 키 서명 방지).
-
-3. **히스토리 재작성 (1.3b)** — 선택. `git filter-repo`로 비밀번호와 키스토어 파일을
-   제거한 뒤 force-push. **협업자가 있으면 전원 재클론이 필요하다.**
-
-4. **`Keystore/`를 추적에서 뺄지 결정** — 뺀다면 키 파일을 별도 경로로 옮기고
-   `KEYSTORE_PATH`도 환경 변수화해야 빌드가 깨지지 않는다.

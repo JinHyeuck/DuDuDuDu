@@ -83,7 +83,7 @@ ProjectP의 `Game.Core`는 BigDouble 때문에 UnityEngine을 열어뒀고 "순�
 
 | 대상 | 이유 |
 |---|---|
-| 6계층 asmdef | 138파일에 과함. `Core`/`Game` 2개로 시작 |
+| 6계층 asmdef | **ProjectP 자신이 근거다.** 아래 절 참조 |
 | 802줄 단일 `RootLifetimeScope` | ProjectP 스스로 "단일 실패점이자 최대 결합점"이라 기록. 콘텐츠별 Installer로 분할 |
 | `I{X}Context` 싱글톤 12종 | `ShowAsync<T>()`가 인스턴스를 안 돌려주는 대가로 생긴 우회 계층. **B는 `ShowAsync<T>(param)`이 인스턴스를 반환하게 설계해 이 12종을 아예 만들지 않는다** |
 | `DialogCatalog`의 `GetComponent` 선형 역매핑 | 등재 누락이 런타임 예외로만 드러남. 명시적 키 + 등재 검증 테스트로 |
@@ -96,6 +96,57 @@ ProjectP의 `Game.Core`는 BigDouble 때문에 UnityEngine을 열어뒀고 "순�
 
 **가져오는 것**: `Tools/ui/*.py` 정적 검증 5종(이미 이식 완료), `IUIService`/`DialogBase`/`UICanvasLayout`의
 설계 아이디어(코드가 아니라 개념), `MIGRATION_BASELINE.md`의 Phase 게이트 방식.
+
+---
+
+### 6계층 asmdef 를 안 가져오는 진짜 이유 (2026-09-02 조사)
+
+원래 근거는 "138파일에 과함" — **파일 수였고, 그건 약하다.** 지금 이미 190개고 계속 는다.
+파일 수를 근거로 두면 300개가 되는 날 판단이 뒤집힌다. 실제로 ProjectP 를 읽고 나온
+근거는 셋이며 **파일 수와 무관하게 유효하다.**
+
+**1. asmdef 가 실제로 막는 벽이 ProjectP 에도 딱 하나다.**
+`Game.Presentation.asmdef` 의 references 25개에 `Game.Infrastructure` 가 없다 —
+UI 가 세이브·PlayerPrefs·씬로더·서버를 직접 못 만진다는 그 한 줄이 6계층의 전부다.
+나머지 경계는 **소스 규약이 한다**: `Presentation` 은 `Game.Domain` 을 참조할 수 있는데
+346파일 중 19개만 쓰고 나머지는 `Game.Core` 인터페이스를 주입받는다.
+
+**2. 우리에겐 그 하나의 벽조차 막을 대상이 없다.**
+ProjectP `Infrastructure` 31개 중 18개가 뒤끝(백엔드)이다. 우리는 네트워크 코드가 0줄이다.
+
+**3. 6계층은 우리가 문제 삼은 UI/로직 혼재를 <b>전혀 풀지 않는다.</b>**
+`Presentation` 346개 안에 UI 174개가 그대로 들어 있다 — 오히려 우리보다 섞여 있다.
+그걸 가른 것은 asmdef 가 아니라 **폴더**다.
+
+**그래서 트리거를 파일 수에서 포트 개수로 바꿔 적는다.**
+
+> `OJ.Core` 의 public 포트 인터페이스가 20개를 넘고, UI 가 그 포트만으로 도메인에
+> 닿을 수 있게 되면, 그때 `OJ.Game.Presentation` 을 잘라 인프라 참조를 컴파일러로
+> 끊는다. **그 전에는 자를 것이 없다.**
+
+지금 격차는 계층 수가 아니라 **포트 개수**다 — `OJ.Core` 의 public interface 는
+`IClock` **1개**이고 ProjectP `Game.Core` 는 **169개**다. ProjectP 가치의 본체는
+asmdef 6개가 아니라 "Core 에 포트를 모으고 바깥이 안쪽을 향해 구현하는 역전"이고,
+그것은 어셈블리 2개로도 표현된다. 우리가 못 하는 것은 계층을 안 나눠서가 아니라
+**역전할 포트가 없어서**다. 그 증거가 UI 파일 48개 안의 `.Instance` 호출 **262회**다.
+
+### 씬별 컴포지션 — 우리 방식이 ProjectP 보다 견고하다 (바꾸지 말 것)
+
+ProjectP `Game.Scenes` 는 씬 YAML 에 `LifetimeScope` 를 배치하고 **로드하는 쪽이**
+`LifetimeScope.EnqueueParent(_rootScope)` 로 부모를 밀어 넣는다. 그래서 라우터를 안 타는
+경로 — **에디터에서 씬을 직접 재생하는, 개발 중 가장 흔한 경로** — 에서 부모가 안 붙고,
+`App/AppEntry.cs:27-33` 에 그것을 위한 특수 분기가 생겼다.
+
+우리 `BattleScope` 는 (a) `FindParent() => GameContainer.Root` 로 부모를 스스로 찾고
+(b) 씬에 배치하지 않고 `sceneLoaded` 에서 코드로 만든다. 그래서 그 구멍이 없고,
+생성 시점이 **모든 `Awake` 뒤·모든 `Start` 앞**으로 공짜로 고정된다.
+
+부수적으로 `Game.Scenes` 는 참조 그래프의 완전한 잎이다 — 참조자가 `Game.App` 하나뿐인데
+그 참조는 코드 사용처가 0인 죽은 줄이고, 격리 탓에 테스트가 Scenes 를 타입으로 못 본다.
+
+> **폴더 재배치(`{Feature}/UI/` 분리, 58파일)는 검토했고 하지 않기로 했다 (2026-09-02).**
+> 기능 우선 구조가 원래 그랬고, 바꿔서 얻는 것이 탐색 편의뿐이다. 다시 꺼낼 때
+> 필요한 것은 위 트리거 조건이지 폴더 취향이 아니다.
 
 ---
 

@@ -52,7 +52,17 @@ namespace OJ.Dice
                 slots.Add(slot);
             }
 
-            RelicManager.Instance?.TryApplyStageStartDice();
+            // 시작 주사위(유물 '선제 배치')는 여기서 놓지 않는다.
+            //
+            // 놓으려면 두 가지가 이미 끝나 있어야 한다 — 보드가 만들어졌을 것,
+            // 그리고 <c>RelicManager.BeginStageRun()</c> 이 지난 판의 적용 표시를
+            // 지웠을 것. 뒤쪽은 <c>GameManager.Start</c> 에서 일어나는데
+            // <b>Start 끼리의 순서는 정해져 있지 않다.</b>
+            //
+            // 여기서 부르면 UIBoard 가 먼저 도는 판에서 <b>지난 판의 표시가 아직 살아
+            // 있어 조용히 건너뛴다</b> — 유물을 끼고도 시작 주사위가 안 나온다.
+            // 그래서 두 Start 가 모두 끝난 다음 프레임에 도는
+            // <c>GameManager.CoApplyStageStartRelics</c> 한 곳으로 모았다.
         }
 
         public void SpawnDice(DiceType type, int star, int slotIndex)

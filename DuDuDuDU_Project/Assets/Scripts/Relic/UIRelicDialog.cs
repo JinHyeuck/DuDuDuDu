@@ -100,8 +100,39 @@ namespace OJ.Relic
             RefreshAll();
         }
 
+        /// <summary>
+        /// 백키는 <b>상세 팝업이 열려 있으면 그것부터 닫는다.</b>
+        ///
+        /// 이 팝업은 <see cref="DialogBase"/> 가 아니라 이 창 안의 <c>GameObject</c> 라
+        /// 백키 스택에 올라가지 않는다. 그래서 예전에는 상세를 연 채 백키를 누르면
+        /// 상세가 아니라 <b>탭 전체가 홈으로 돌아갔고</b>, 다시 유물 탭을 열면 상세가
+        /// 그대로 떠 있었다 — "한 번에 너무 많이 닫히는" 쪽의 사고다.
+        ///
+        /// 계층이 있는 UI 는 안쪽부터 닫는 것이 사람이 기대하는 순서다.
+        /// </summary>
+        public override void BackKeyCall()
+        {
+            if (detailPopupRoot != null && detailPopupRoot.activeSelf)
+            {
+                HideDetailPopup();
+
+                // 스택은 이 메서드를 부르기 전에 이 항목을 이미 꺼냈다. 안쪽만 닫고
+                // 끝내면 유물 창이 스택에서 사라져 <b>다음 백키가 죽는다</b> —
+                // 창은 열려 있는데 Esc 가 아무 일도 안 하는 상태가 된다.
+                KeepOnBackStack();
+                return;
+            }
+
+            base.BackKeyCall();
+        }
+
         protected override void OnExit()
         {
+            // 창을 닫을 때 상세도 같이 닫는다. 안 그러면 다음에 유물 탭을 열었을 때
+            // 지난번 상세가 떠 있는 채로 시작한다 — 팝업이 이 창의 자식이라
+            // 창이 꺼져도 자기 activeSelf 는 true 로 남기 때문이다.
+            SetDetailPopupVisible(false);
+
             deferRelicRefresh = false;
             StopLandingAnimation();
         }
