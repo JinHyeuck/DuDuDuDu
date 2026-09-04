@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using VContainer;
 using VContainer.Unity;
 using OJ.Bounty;
+using OJ.Core;
 using OJ.DI;
 using OJ.Stage;
 using OJ.Utils;
@@ -233,9 +234,16 @@ namespace OJ.Hunting
         private bool ShouldSpawnBountyNow()
         {
             BountyManager bounty = battle.Bounty;
-            return bounty != null
-                && bounty.ShouldSpawn
-                && regularSpawnCount >= bountySpawnAfterRegularCount;
+            if (bounty == null || !bounty.ShouldSpawn)
+                return false;
+
+            // 기준선을 그 웨이브의 일반 몬스터 수로 눌러 준다. 안 그러면 몬스터가
+            // 기준보다 적은 웨이브에서 조건이 영영 참이 되지 않아, 나오지도 않은 현상금을
+            // 기다리며 웨이브가 멈춘다 — BountyFormula.SpawnThreshold 주석 참조.
+            int threshold = BountyFormula.SpawnThreshold(
+                bountySpawnAfterRegularCount, GetRegularSpawnTarget());
+
+            return regularSpawnCount >= threshold;
         }
 
         /// <summary>

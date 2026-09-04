@@ -46,6 +46,16 @@ namespace OJ.Bounty
         /// </summary>
         public event Action OnWaveResolved;
 
+        /// <summary>
+        /// 현상금이 화면에 나온 순간 운다. 등장 콜아웃(<see cref="UIBountyCallout"/>)이
+        /// 이걸 듣는다.
+        ///
+        /// <b>왜 알려야 하나.</b> 현상금은 일반 몬스터가 스무 마리 쏟아지는 틈에 섞여
+        /// 나온다. 느린 걸음과 큰 덩치로 구분은 되지만 <b>나온 순간</b>은 놓치기 쉽고,
+        /// 웨이브마다 반복되면 배경 소음이 된다. 한 번 짚어 주면 매번 환기된다.
+        /// </summary>
+        public event Action<BountyDefinition> OnSpawned;
+
         /// <summary>이번 웨이브에 실제로 나온(또는 나올) 등급. 0 이면 이번 웨이브엔 없다.</summary>
         public int ActiveGrade { get; private set; }
 
@@ -157,6 +167,8 @@ namespace OJ.Bounty
             activeMonster = monster;
             spawnedThisWave = true;
             resolvedThisWave = false;
+
+            OnSpawned?.Invoke(GetDefinition(ActiveGrade));
         }
 
         /// <summary>

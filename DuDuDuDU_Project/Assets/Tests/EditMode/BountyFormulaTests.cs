@@ -136,6 +136,39 @@ namespace OJ.Core.Tests
             Assert.IsFalse(BountyFormula.IsSelectable(6, 5));
         }
 
+        // ── 스폰 기준선 ──────────────────────────────────────────────
+
+        [TestCase(2, 20, 2)]
+        [TestCase(2, 3, 2)]
+        [TestCase(2, 2, 2)]
+        public void SpawnThreshold_KeepsDesiredWhenWaveIsLongEnough(
+            int desired, int target, int expected)
+        {
+            Assert.AreEqual(expected, BountyFormula.SpawnThreshold(desired, target));
+        }
+
+        /// <summary>
+        /// <b>웨이브가 멈추지 않게 하는 테스트다.</b> 일반 몬스터가 기준선보다 적으면
+        /// "N마리 뽑은 뒤에 현상금" 조건이 영영 참이 되지 않아 현상금이 안 나오고,
+        /// 웨이브 종료는 그 현상금을 기다리므로 판이 통째로 멈춘다.
+        /// 기준선이 목표를 넘지 못하게 눌러 그 상태를 성립하지 않게 한다.
+        /// </summary>
+        [TestCase(2, 1, 1)]
+        [TestCase(2, 0, 0)]
+        [TestCase(5, 3, 3)]
+        public void SpawnThreshold_NeverExceedsWaveMonsterCount(
+            int desired, int target, int expected)
+        {
+            Assert.AreEqual(expected, BountyFormula.SpawnThreshold(desired, target));
+        }
+
+        [Test]
+        public void SpawnThreshold_RejectsNegatives()
+        {
+            Assert.AreEqual(0, BountyFormula.SpawnThreshold(-3, 20));
+            Assert.AreEqual(0, BountyFormula.SpawnThreshold(2, -1));
+        }
+
         // ── 웨이브 판정 ──────────────────────────────────────────────
 
         /// <summary>

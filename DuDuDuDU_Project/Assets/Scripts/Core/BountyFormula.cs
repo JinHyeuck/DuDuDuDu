@@ -96,6 +96,24 @@ namespace OJ.Core
         }
 
         /// <summary>
+        /// 현상금을 내보내기 전에 먼저 뽑을 일반 몬스터 수.
+        ///
+        /// <b>이 함수가 있는 이유는 데드락이다.</b> 스포너는 "일반 몬스터를
+        /// <paramref name="desiredCount"/> 마리 뽑은 뒤에 현상금" 이라는 규칙으로 도는데,
+        /// 그 웨이브의 일반 몬스터가 그보다 적으면 조건이 <b>영영 참이 되지 않는다.</b>
+        /// 그러면 현상금이 안 나오고, 웨이브 종료 조건은 "현상금이 정리될 때까지" 이므로
+        /// <b>웨이브가 끝나지 않는다</b> — 나오지도 않은 것을 기다린다.
+        ///
+        /// 지금 데이터는 <c>monstersPerWave</c> 가 전부 20 이라 걸리지 않지만,
+        /// 그 값을 1 로 내리는 순간 판이 멈춘다. 스테이지 데이터가 아직 없어
+        /// 목표가 0 인 폴백 경로도 같다. 값 하나로 게임이 멈추는 규칙은 남겨 두지 않는다.
+        /// </summary>
+        public static int SpawnThreshold(int desiredCount, int regularSpawnTarget)
+        {
+            return OJMath.Clamp(desiredCount, 0, OJMath.Max(0, regularSpawnTarget));
+        }
+
+        /// <summary>
         /// 이 웨이브에 현상금이 나올 수 있는가.
         ///
         /// <b>보스 웨이브에는 나오지 않는다.</b> 보상이 SP·강화석이라 마지막 웨이브에

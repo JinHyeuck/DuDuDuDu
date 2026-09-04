@@ -80,7 +80,10 @@ namespace OJ.Hunting
             // 창구는 스코프가 파괴될 때 비워지는데 그 순서가 정해져 있지 않다.
             // 이미 비었으면 뗄 것도 없으므로 ?. 를 쓴다 — 여기는 사고가 아니라 정리 경로다.
             if (battle != null && battle.Bounty != null)
+            {
                 battle.Bounty.OnWaveResolved -= OnBountyResolved;
+                battle.Bounty.OnSpawned -= OnBountySpawned;
+            }
 
             if (PlayUI != null) PlayUI.onClick.RemoveListener(OnClick_PlayUI);
             if (Pause != null) Pause.onClick.RemoveListener(OnClick_Pause);
@@ -93,6 +96,7 @@ namespace OJ.Hunting
             // 배틀 스코프는 모든 Start 앞에 빌드되므로 여기서 battle.Bounty 는 살아 있다.
             // 구독을 Awake 로 올리면 그때는 아직 null 이다.
             battle.Bounty.OnWaveResolved += OnBountyResolved;
+            battle.Bounty.OnSpawned += OnBountySpawned;
 
             InitializeStage();
             ChangeState(InGameState.Setting);
@@ -107,6 +111,18 @@ namespace OJ.Hunting
         private void OnBountyResolved()
         {
             TryCompleteWave();
+        }
+
+        /// <summary>
+        /// 현상금이 화면에 나왔다. 알림 띠를 잠깐 띄운다.
+        ///
+        /// <c>Show</c> 가 아니라 <c>Get</c> 으로 받는 것은 <c>Play</c> 가 내용을 채우고
+        /// <c>Enter</c> 까지 스스로 부르기 때문이다 — <c>ShowWaveRewardPreview</c> 와 같은 이유다.
+        /// </summary>
+        private void OnBountySpawned(OJ.Bounty.BountyDefinition definition)
+        {
+            UIBountyCallout callout = GameContainer.UI?.Get<UIBountyCallout>();
+            callout?.Play(definition, battle.Bounty.GetHp(battle.Bounty.ActiveGrade));
         }
 
         public void OnClick_PlayUI()
@@ -186,6 +202,9 @@ namespace OJ.Hunting
             if (state == InGameState.Setting)
             {
                 GameContainer.UI?.Show<UIBountyBanner>();
+                // 등장 알림은 스스로 1.8초 뒤에 사라지지만, 그 전에 웨이브가 끝나면
+                // 관리 단계까지 따라 들어온다. 남은 시간을 기다리지 않고 여기서 거둔다.
+                GameContainer.UI?.Hide<UIBountyCallout>();
             }
             else
             {
@@ -194,6 +213,17 @@ namespace OJ.Hunting
                 // 덮어 시작 버튼을 누를 수 없다) 닫아 두는 편이 싸다.
                 GameContainer.UI?.Hide<UIBountySelectDialog>();
             }
+
+            // 속성강화도 관리 단계 전용이다. 소환·머지·진화가 전부 그런데 이것만
+            // 전투 중에 열려 있었다 — 같은 강화석을 쓰면서 규칙이 혼자 달랐다.
+            //
+            // 실제 차단은 ElementUpgradeManager.TryLevelUp 이 하고, 여기서는 버튼을
+            // 흐리게 만든다(치우지 않는다 — 빈 자리는 기능이 사라진 것처럼 보인다).
+            // 창이 열린 채 웨이브가 시작될 수 있으므로(그 창은 전체 화면을 덮지 않는다)
+            // 닫는 것까지 해야 한다.
+            battle.ElementUpgrade.SetUpgradeUIAvailable(state == InGameState.Setting);
+            if (state != InGameState.Setting)
+                GameContainer.UI?.Hide<UIElementUpgradePanel>();
 
             // 관리 단계마다 자동으로 뜨던 조합 진행도 창(UIDiceCraftProgressDialog)은
             // 조합식과 함께 사라졌다. 상위 다이스로 가는 길은 이제 목록을 띄워 재고를
@@ -248,6 +278,29 @@ namespace OJ.Hunting
         /// 못 잡았을 때 목표를 채울 방법이 없어져 웨이브가 영영 안 끝나고, 아예 조건에서
         /// 빼면 현상금이 화면에 남은 채로 다음 관리 단계가 열린다.
         /// </summary>
+        /// <summary>
+        /// 판이 끝났을 때 전투 단계 UI 를 거둔다. <see cref="GameOver"/> 와
+        /// <see cref="ClearStage"/> 가 부른다.
+        ///
+        /// <b>왜 따로 필요한가.</b> 그 둘은 <see cref="ChangeState"/> 를 거치지 않고
+        /// <c>inGameState</c> 에 <c>None</c> 을 <b>직접 대입한다.</b> 그래서 ChangeState 안에
+        /// 모여 있는 정리가 통째로 건너뛰어지고, 관리 단계에서 그만두면 현상금 배너가
+        /// 결과창 뒤에 그대로 남는다 — 결과창이 나중에 만들어져 위에 덮이는 바람에
+        /// 눈에 띄지 않았을 뿐이다.
+        ///
+        /// <b>ChangeState 의 정리와 합치지 않는다.</b> 저쪽은 웨이브 중에 등장 알림을
+        /// <b>남겨 둬야</b> 한다(그게 알림의 존재 이유다). 여기는 판이 끝난 자리라
+        /// 남길 것이 하나도 없다 — 조건이 반대라 한 함수로 묶으면 분기만 늘어난다.
+        /// </summary>
+        private void CloseBattlePhaseUI()
+        {
+            GameContainer.UI?.Hide<UIBountyBanner>();
+            GameContainer.UI?.Hide<UIBountySelectDialog>();
+            GameContainer.UI?.Hide<UIBountyCallout>();
+            GameContainer.UI?.Hide<UIElementUpgradePanel>();
+            battle.ElementUpgrade.SetUpgradeUIAvailable(false);
+        }
+
         private bool TryCompleteWave()
         {
             if (inGameState != InGameState.Wave)
@@ -286,6 +339,7 @@ namespace OJ.Hunting
             if (isGameOver) return;
             isGameOver = true;
             inGameState = InGameState.None;
+            CloseBattlePhaseUI();
             RelicManager.Instance?.EndWave();
 
             int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
@@ -500,6 +554,7 @@ namespace OJ.Hunting
 
             isGameOver = true;
             inGameState = InGameState.None;
+            CloseBattlePhaseUI();
 
             int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
             StageClearGrade clearGrade = StageRewardCalculator.GetClearGrade(wall.CurrentHp, wall.TotalHp);

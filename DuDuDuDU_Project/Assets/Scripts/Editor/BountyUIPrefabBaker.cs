@@ -7,8 +7,8 @@ using OJ.Bounty;
 namespace OJ.EditorTools
 {
     /// <summary>
-    /// 현상금 UI 두 개(<see cref="UIBountyBanner"/>·<see cref="UIBountySelectDialog"/>)를
-    /// 프리팹으로 굽는다.
+    /// 현상금 UI 셋(<see cref="UIBountyBanner"/>·<see cref="UIBountySelectDialog"/>·
+    /// <see cref="UIBountyCallout"/>)을 프리팹으로 굽는다.
     ///
     /// <b>왜 손으로 안 짜나.</b> 선택 창은 3x2 칸 여섯 개에 칸마다 글자 넷이라 손으로 놓으면
     /// 좌표 서른 개를 인스펙터에 옮겨 적게 된다. 값을 아는 것은 코드이고, 옮겨 적는 순간
@@ -25,6 +25,9 @@ namespace OJ.EditorTools
 
         private const string SelectPath =
             "Assets/Prefab/Refactory/BattleScene/UIBountySelectDialog.prefab";
+
+        private const string CalloutPath =
+            "Assets/Prefab/Refactory/BattleScene/UIBountyCallout.prefab";
 
         [MenuItem("OJ/개발/현상금/UI 프리팹 굽기")]
         private static void Bake()
@@ -44,7 +47,10 @@ namespace OJ.EditorTools
             BakeOne("__BountySelectBakeRoot", SelectPath, font,
                 (parent, f) => UIBountySelectDialog.Create(parent, f).gameObject);
 
-            Debug.Log("[굽기] 현상금 UI 두 개를 구웠다." + System.Environment.NewLine +
+            BakeOne("__BountyCalloutBakeRoot", CalloutPath, font,
+                (parent, f) => UIBountyCallout.Create(parent, f).gameObject);
+
+            Debug.Log("[굽기] 현상금 UI 세 개를 구웠다." + System.Environment.NewLine +
                       "  다음: OJ/개발/다이얼로그 카탈로그/훑어서 갱신 을 돌려 등재할 것.");
         }
 
