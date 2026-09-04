@@ -1,6 +1,7 @@
 using UnityEngine;
+using OJ.Stage;
 
-namespace OJ
+namespace OJ.StageStar
 {
     public static class StageStarUtility
     {

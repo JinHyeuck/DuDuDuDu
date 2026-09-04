@@ -1,8 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Stage;
 
-namespace OJ
+namespace OJ.StageStar
 {
     public class UIStageStarConditionRow : MonoBehaviour
     {

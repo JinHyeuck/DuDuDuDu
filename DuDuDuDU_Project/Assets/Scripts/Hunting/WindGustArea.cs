@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class WindGustArea : MonoBehaviour
     {

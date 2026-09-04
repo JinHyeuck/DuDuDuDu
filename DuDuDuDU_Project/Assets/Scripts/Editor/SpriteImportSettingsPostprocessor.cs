@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace OJ.Editor
+namespace OJ.EditorTools
 {
     public sealed class SpriteImportSettingsPostprocessor : AssetPostprocessor
     {

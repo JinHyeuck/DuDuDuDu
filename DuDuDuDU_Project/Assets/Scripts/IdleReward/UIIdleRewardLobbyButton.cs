@@ -1,8 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.DI;
 
-namespace OJ
+namespace OJ.IdleReward
 {
     public class UIIdleRewardLobbyButton : MonoBehaviour
     {
@@ -10,7 +11,6 @@ namespace OJ
         [SerializeField] private TMP_Text progressText;
         [SerializeField] private GameObject redDot;
 
-        private UIIdleRewardDialog dialog;
         private float nextRefreshTime;
 
         private void Awake()
@@ -51,18 +51,16 @@ namespace OJ
                 button.onClick.RemoveListener(Open);
         }
 
+        /// <summary>
+        /// 카탈로그에서 꺼내 띄운다. (10.5)
+        ///
+        /// 예전에는 이 버튼이 창을 <b>직접 지었다</b> — 부모 캔버스를 찾고, 코드로 계층을
+        /// 만들고, 폰트를 씬에서 주워 왔다. 캔버스를 못 찾으면 조용히 반환해서
+        /// 버튼이 먹통이 되고 아무 로그도 남지 않았다.
+        /// </summary>
         private void Open()
         {
-            if (dialog == null)
-            {
-                Canvas canvas = GetComponentInParent<Canvas>();
-                if (canvas == null)
-                    return;
-
-                dialog = UIIdleRewardDialog.Create(canvas.rootCanvas.transform);
-            }
-
-            dialog.Open();
+            GameContainer.UI?.Show<UIIdleRewardDialog>();
         }
 
         private void Refresh()

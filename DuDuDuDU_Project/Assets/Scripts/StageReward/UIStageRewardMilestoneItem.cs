@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-namespace OJ
+namespace OJ.StageReward
 {
     [RequireComponent(typeof(CanvasGroup))]
     public class UIStageRewardMilestoneItem : MonoBehaviour

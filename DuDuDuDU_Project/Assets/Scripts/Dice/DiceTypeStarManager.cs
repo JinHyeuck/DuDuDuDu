@@ -1,12 +1,20 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
+using OJ.DI;
+// OJ.Hunting 은 PlayerController.Instance 를 이름으로 부를 때만 필요했다.
+// 이제 battle.Player 로 받으므로 이 파일에서 그 네임스페이스의 이름을 쓰지 않는다.
 
-namespace OJ
+namespace OJ.Dice
 {
     public class DiceTypeStarManager : MonoBehaviour
     {
-        public static DiceTypeStarManager Instance;
         public event System.Action OnDiceInventoryChanged;
+
+        // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
+        // 이 매니저 자체가 BattleScene 에서만 사는 놈이라, 이 코드가 도는 시점에는
+        // 스코프 빌드가 이미 끝나 있다(스코프는 모든 Awake 뒤·모든 Start 앞에 빌드된다).
+        [Inject] private IBattleRefs battle;
 
         public Dictionary<DiceType, int> typeCountTotals = new Dictionary<DiceType, int>();
         private Dictionary<DiceType, int> typeStarTotals = new Dictionary<DiceType, int>();
@@ -14,13 +22,6 @@ namespace OJ
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-
             foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
             {
                 if (type == DiceType.Max)
@@ -33,25 +34,21 @@ namespace OJ
             }
         }
 
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
-
         public void OnDiceSpawn(DiceType type, int star)
         {
             AddStars(type, star);
-            UIDiceBoardUI.Instance?.UpdateTypeStars();
-            PlayerController.Instance?.RefreshDice();
+            // 창구가 주는 참조는 씬 안에서 null 이 될 수 없으므로 ?. 를 지웠다.
+            // 여기서 터진다면 그것은 배선 사고이고, 조용히 넘어가는 대신 울어야 한다.
+            battle.BoardUI.UpdateTypeStars();
+            battle.Player.RefreshDice();
             OnDiceInventoryChanged?.Invoke();
         }
 
         public void OnDiceRemove(DiceType type, int star)
         {
             RemoveStars(type, star);
-            UIDiceBoardUI.Instance?.UpdateTypeStars();
-            PlayerController.Instance?.RefreshDice();
+            battle.BoardUI.UpdateTypeStars();
+            battle.Player.RefreshDice();
             OnDiceInventoryChanged?.Invoke();
         }
 
@@ -116,78 +113,32 @@ namespace OJ
             return count;
         }
 
-        public int GetTypeBaseEquivalent(DiceType type)
-        {
-            int total = 0;
-            for (int star = 1; star <= MergeSystem.MaxStar; star++)
-            {
-                int count = GetTypeStarCount(type, star);
-                total += count * GetBaseUnitFromStar(star);
-            }
-
-            return total;
-        }
-
-        public bool CanCraft(IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe)
-        {
-            if (recipe == null || recipe.Count == 0)
-                return false;
-
-            for (int i = 0; i < recipe.Count; i++)
-            {
-                DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
-                if (GetTypeStarCount(req.diceType, req.star) < req.count)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public int GetRecipeProgressPercent(IReadOnlyList<DiceMetaDataDatabase.DiceRecipeMaterial> recipe)
-        {
-            if (recipe == null || recipe.Count == 0)
-                return 0;
-
-            long totalRequiredBase = 0;
-            long satisfiedBase = 0;
-
-            for (int i = 0; i < recipe.Count; i++)
-            {
-                DiceMetaDataDatabase.DiceRecipeMaterial req = recipe[i];
-                long requiredBase = (long)req.count * GetBaseUnitFromStar(req.star);
-                totalRequiredBase += requiredBase;
-
-                int haveExact = GetTypeStarCount(req.diceType, req.star);
-                int usedCount = Mathf.Min(haveExact, req.count);
-                satisfiedBase += (long)usedCount * GetBaseUnitFromStar(req.star);
-            }
-
-            if (totalRequiredBase <= 0)
-                return 0;
-
-            float ratio = (float)satisfiedBase / totalRequiredBase;
-            return Mathf.Clamp(Mathf.RoundToInt(ratio * 100f), 0, 100);
-        }
-
         public void ResetAll()
         {
-            foreach (var key in typeCountTotals.Keys)
-                typeCountTotals[key] = 0;
+            // 키 컬렉션을 순회하면서 그 딕셔너리를 건드리면 Mono 에서 열거자가 깨진다
+            // (InvalidOperationException). 값만 바꿔도 마찬가지다 — .NET Core 는
+            // 봐주지만 Unity 가 쓰는 런타임은 아니다. 그래서 enum 을 돈다.
+            // Awake 가 채울 때 쓰는 방식과 같게 맞췄다.
+            foreach (DiceType type in System.Enum.GetValues(typeof(DiceType)))
+            {
+                if (type == DiceType.Max)
+                    continue;
 
-            foreach (var key in typeStarTotals.Keys)
-                typeStarTotals[key] = 0;
+                typeCountTotals[type] = 0;
+                typeStarTotals[type] = 0;
+            }
 
-            foreach (var key in typeStarCounts.Keys)
-                typeStarCounts[key] = 0;
+            // (타입, 성급) 조합은 enum 으로 돌 수 없다. 성급이 몇까지 쓰였는지는
+            // 실행 중에만 알기 때문이다. 그래서 <b>키를 먼저 복사해</b> 순회한다 —
+            // 그냥 Clear() 하지 않는 이유는 이 딕셔너리가 "없는 키 = 0" 과
+            // "0 인 키" 를 구별하는 곳이 있어서다(GetTypeStarCount 의 TryGetValue).
+            // 키를 지우면 그 자리가 조용히 기본값으로 흐른다.
+            var starKeys = new List<(DiceType type, int star)>(typeStarCounts.Keys);
+            for (int i = 0; i < starKeys.Count; i++)
+                typeStarCounts[starKeys[i]] = 0;
 
-            UIDiceBoardUI.Instance?.UpdateTypeStars();
+            battle.BoardUI.UpdateTypeStars();
             OnDiceInventoryChanged?.Invoke();
-        }
-
-        private static int GetBaseUnitFromStar(int star)
-        {
-            int s = Mathf.Max(1, star);
-            return 1 << (s - 1);
         }
 
     }

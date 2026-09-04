@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace OJ
+namespace OJ.Equipment
 {
     public class UIGemInventoryItem : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
     {

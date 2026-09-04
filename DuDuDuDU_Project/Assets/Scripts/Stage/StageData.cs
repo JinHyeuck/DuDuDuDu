@@ -1,8 +1,9 @@
 using System;
+using OJ.Core;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace OJ
+namespace OJ.Stage
 {
     public enum StageTheme
     {
@@ -56,50 +57,40 @@ namespace OJ
         [Min(0.1f)] public float bossDefenseMultiplier = 2.5f;
         [Min(0.1f)] public float bossScaleMultiplier = 1.45f;
 
+        // 아래 성장식 6개는 OJ.Core.StageGrowthFormula 로 옮겼다. 여기 남은 것은 직렬화 필드를
+        // 기본형으로 풀어서 넘기는 얇은 위임뿐이다 — public 시그니처와 호출 순서는 그대로다.
+        // 식을 다시 여기로 인라인하지 말 것. 골든 기준선(Tests/Golden/formula_baseline.txt)이
+        // 정수값을 박제하고 있어 표현식이 한 글자만 달라져도 반올림이 어긋난다.
         public int GetMonsterHpForWave(int waveIndex)
         {
-            int validWave = Mathf.Max(1, waveIndex);
-            float waveOffset = validWave - 1;
-            float multiplier = 1f + (waveOffset * waveHpLinearFactor) + (waveOffset * waveOffset * waveHpQuadraticFactor);
-            return Mathf.Max(1, Mathf.RoundToInt(baseMonsterHp * multiplier));
+            return StageGrowthFormula.MonsterHp(baseMonsterHp, waveHpLinearFactor, waveHpQuadraticFactor, waveIndex);
         }
 
         public int GetMonsterDefenseForWave(int waveIndex)
         {
-            int validWave = Mathf.Max(1, waveIndex);
-            float waveOffset = validWave - 1;
-            float multiplier = 1f + (waveOffset * waveDefenseLinearFactor) + (waveOffset * waveOffset * waveDefenseQuadraticFactor);
-            return Mathf.Max(0, Mathf.RoundToInt(GetResolvedBaseMonsterDefense() * multiplier));
+            // 원본이 매 호출마다 GetResolvedBaseMonsterDefense() 를 다시 계산했으므로 캐시하지 않는다.
+            return StageGrowthFormula.MonsterDefense(GetResolvedBaseMonsterDefense(), waveDefenseLinearFactor, waveDefenseQuadraticFactor, waveIndex);
         }
 
         public int GetBossHpForWave(int waveIndex)
         {
-            return Mathf.Max(1, Mathf.RoundToInt(GetMonsterHpForWave(waveIndex) * bossHpMultiplier));
+            // 반올림된 정수 몬스터 체력을 넘긴다. 이 이중 반올림이 원본 동작이다.
+            return StageGrowthFormula.BossHp(GetMonsterHpForWave(waveIndex), bossHpMultiplier);
         }
 
         public int GetBossDefenseForWave(int waveIndex)
         {
-            return Mathf.Max(0, Mathf.RoundToInt(GetMonsterDefenseForWave(waveIndex) * bossDefenseMultiplier));
+            return StageGrowthFormula.BossDefense(GetMonsterDefenseForWave(waveIndex), bossDefenseMultiplier);
         }
 
         public int GetBossSpawnThreshold()
         {
-            return Mathf.Clamp(Mathf.CeilToInt(monstersPerWave * 0.5f), 1, Mathf.Max(1, monstersPerWave));
+            return StageGrowthFormula.BossSpawnThreshold(monstersPerWave);
         }
 
         private int GetResolvedBaseMonsterDefense()
         {
-            if (baseMonsterDefense > 0)
-                return baseMonsterDefense;
-
-            float stageOffset = Mathf.Max(0, stageIndex - 1);
-            float defenseValue = 4f + (stageOffset * 1.35f) + (Mathf.Pow(stageOffset, 1.12f) * 0.65f);
-            if (totalWaves == 10)
-                defenseValue *= 1.12f;
-            else if (totalWaves == 20)
-                defenseValue *= 0.96f;
-
-            return Mathf.Max(0, Mathf.RoundToInt(defenseValue));
+            return StageGrowthFormula.ResolvedBaseDefense(baseMonsterDefense, stageIndex, totalWaves);
         }
 
         public static string GetStageDisplayName(int stageIndex)

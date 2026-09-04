@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using OJ.Point;
 
-namespace OJ
+namespace OJ.StageReward
 {
     public enum StageRewardState
     {

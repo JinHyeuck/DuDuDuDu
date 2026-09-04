@@ -119,137 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &252337099
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 252337101}
-  - component: {fileID: 252337100}
-  m_Layer: 0
-  m_Name: StaticResource
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &252337100
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 252337099}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2cf07210e04905458656bbefca9a4cf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  PointMetadataDatabase: {fileID: 11400000, guid: eec03055750e845dba1fe7ef8d6973c0, type: 2}
-  DiceMetaDataDatabase: {fileID: 11400000, guid: ed8e5358960e45e0b3b37fa53e4d8c8f, type: 2}
-  GemDefinitionDatabase: {fileID: 11400000, guid: 3f2e8f0e2f9a4f63b9c35a1b96d4b77a, type: 2}
-  RelicDatabase: {fileID: 11400000, guid: 387975f379beb4142bf46dd0e54d3ea3, type: 2}
-  StageDatabase: {fileID: 11400000, guid: 3258d513b68c45ba92e1bbf71a7be08b, type: 2}
-  StageRewardDatabase: {fileID: 11400000, guid: d593afb3fde545e439997ad9cd555fa8, type: 2}
-  ElementResources:
-  - ElementType: 0
-    Icon: {fileID: 21300000, guid: c1abf173c229b4be497bbf52983ac985, type: 3}
-    Color: {r: 0.6509804, g: 0.6784314, b: 0.81960785, a: 1}
-  - ElementType: 1
-    Icon: {fileID: 21300000, guid: a491390c2ac884f32922b06d778dff52, type: 3}
-    Color: {r: 1, g: 0.07450981, b: 0.07450981, a: 1}
-  - ElementType: 2
-    Icon: {fileID: 21300000, guid: a428aba43abd04215b4ebe2d32457e06, type: 3}
-    Color: {r: 0, g: 1, b: 0.9647059, a: 1}
-  - ElementType: 3
-    Icon: {fileID: 21300000, guid: 762e70e6d715f480184b47c83b01f263, type: 3}
-    Color: {r: 1, g: 0.91764706, b: 0, a: 1}
-  - ElementType: 4
-    Icon: {fileID: 21300000, guid: 425e75a7551b042999c7dd3bafe0f4cd, type: 3}
-    Color: {r: 0, g: 1, b: 0.09411765, a: 1}
-  RarityResources: []
-  EquipmentResources:
-  - EquipmentType: 0
-    LargeIcon: {fileID: 21300000, guid: 319116a3bf945ac4cb44a6a8266fc394, type: 3}
-    SmallIcon: {fileID: 21300000, guid: 13b5e03b29a540a41896da77df5c7962, type: 3}
-  - EquipmentType: 1
-    LargeIcon: {fileID: 21300000, guid: d9d77e5c030e1ef44893a8dfa5715654, type: 3}
-    SmallIcon: {fileID: 21300000, guid: eb0e3c9e49cfb334a8161fc02f48da32, type: 3}
-  - EquipmentType: 2
-    LargeIcon: {fileID: 21300000, guid: 7270b02a14ccbe34bb576f30c4e40cbc, type: 3}
-    SmallIcon: {fileID: 21300000, guid: 9b1663646b67c314e8710acd1872434b, type: 3}
-  - EquipmentType: 3
-    LargeIcon: {fileID: 21300000, guid: 04365cfafd3820441a7a23452a337e4d, type: 3}
-    SmallIcon: {fileID: 21300000, guid: 7f9d266a33878224aa928719f208cf63, type: 3}
-  - EquipmentType: 4
-    LargeIcon: {fileID: 21300000, guid: 279a2c9159bbca5459d1d6bb22de86c2, type: 3}
-    SmallIcon: {fileID: 21300000, guid: 2f2a080f2e4ec0e47a8c7ecc111ec8c9, type: 3}
-  - EquipmentType: 5
-    LargeIcon: {fileID: 21300000, guid: d9de8e0097f97314db85016f9b55e865, type: 3}
-    SmallIcon: {fileID: 21300000, guid: e19005e81282def4ba1feba09c8d2364, type: 3}
-  StageThemeResources:
-  - Theme: 0
-    MapBackground: {fileID: 21300000, guid: ebc28d2ecd3fa534ea93f31d594b62f4, type: 3}
-    Monsters:
-    - {fileID: 881306225255906131, guid: 895d3cbeb928a6b489b0eae20ce20daf, type: 3}
-    - {fileID: 8880202767979408004, guid: d11ec37a0d41fa342b4dcda983fc473d, type: 3}
-    - {fileID: 8880202767979408004, guid: 511ed168af2e49244be1b02c8420405a, type: 3}
-    BossMonster: {fileID: 8880202767979408004, guid: 60053d1eb19fa67498eb940918e99bfe, type: 3}
-    MainBanner: {fileID: 21300000, guid: 2034270bc9f14664faa6d1113b7353d3, type: 3}
-    StarRewardBanner: {fileID: 21300000, guid: eba157443ee2a7f4699a54e2f2be56b7, type: 3}
-  - Theme: 1
-    MapBackground: {fileID: 21300000, guid: 95e6795a748692943b85798a4b225497, type: 3}
-    Monsters:
-    - {fileID: 8880202767979408004, guid: 911b92e7a782fae4fb083eb45121646c, type: 3}
-    - {fileID: 8880202767979408004, guid: cf4dd06b05181534a9bd912c0512b634, type: 3}
-    BossMonster: {fileID: 8880202767979408004, guid: 60053d1eb19fa67498eb940918e99bfe, type: 3}
-    MainBanner: {fileID: 21300000, guid: 631ff370ce705a441a25a61a027f82a6, type: 3}
-    StarRewardBanner: {fileID: 21300000, guid: 8985558ae0898354e95475fc6f0b34dc, type: 3}
-  - Theme: 2
-    MapBackground: {fileID: 21300000, guid: 0563e786c3bbc4d4dbf166ea1b080502, type: 3}
-    Monsters:
-    - {fileID: 8880202767979408004, guid: 511ed168af2e49244be1b02c8420405a, type: 3}
-    - {fileID: 8880202767979408004, guid: d11ec37a0d41fa342b4dcda983fc473d, type: 3}
-    - {fileID: 8880202767979408004, guid: 1cdb3b80e13f4bc47bb54cc074bb37a8, type: 3}
-    BossMonster: {fileID: 8880202767979408004, guid: a6e5e387ee885e547b302507729e5198, type: 3}
-    MainBanner: {fileID: 21300000, guid: 0fe8bf9177a6f3c4aaf0489b9b00062f, type: 3}
-    StarRewardBanner: {fileID: 21300000, guid: da4695959fd2f6941a02fea11df4bd1d, type: 3}
-  - Theme: 3
-    MapBackground: {fileID: 21300000, guid: dff8f2f863827f04dae5b9eadc042ab8, type: 3}
-    Monsters:
-    - {fileID: 8880202767979408004, guid: d11ec37a0d41fa342b4dcda983fc473d, type: 3}
-    - {fileID: 8880202767979408004, guid: 911b92e7a782fae4fb083eb45121646c, type: 3}
-    - {fileID: 8880202767979408004, guid: 1cdb3b80e13f4bc47bb54cc074bb37a8, type: 3}
-    BossMonster: {fileID: 8880202767979408004, guid: a6e5e387ee885e547b302507729e5198, type: 3}
-    MainBanner: {fileID: 21300000, guid: 631ff370ce705a441a25a61a027f82a6, type: 3}
-    StarRewardBanner: {fileID: 21300000, guid: 8985558ae0898354e95475fc6f0b34dc, type: 3}
-  - Theme: 4
-    MapBackground: {fileID: 21300000, guid: cc5a7c5c010830a4eae90fe42d39995f, type: 3}
-    Monsters:
-    - {fileID: 881306225255906131, guid: 895d3cbeb928a6b489b0eae20ce20daf, type: 3}
-    - {fileID: 8880202767979408004, guid: 1cdb3b80e13f4bc47bb54cc074bb37a8, type: 3}
-    - {fileID: 8880202767979408004, guid: cf4dd06b05181534a9bd912c0512b634, type: 3}
-    BossMonster: {fileID: 8880202767979408004, guid: a6e5e387ee885e547b302507729e5198, type: 3}
-    MainBanner: {fileID: 21300000, guid: 0fe8bf9177a6f3c4aaf0489b9b00062f, type: 3}
-    StarRewardBanner: {fileID: 21300000, guid: da4695959fd2f6941a02fea11df4bd1d, type: 3}
---- !u!4 &252337101
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 252337099}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &887810882
 GameObject:
   m_ObjectHideFlags: 0
@@ -745,7 +614,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.6367924, b: 0.6367924, a: 1}
+  m_Color: {r: 0.26415092, g: 0.26415092, b: 0.26415092, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -770,6 +639,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2033251232}
   m_CullTransparentMesh: 1
+--- !u!1001 &7128429290031226046
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4221624396558694917, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8474963813749685224, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
+      propertyPath: m_Name
+      value: StaticResource
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bbd9fc776e6327344a5e3a2c67fc8423, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -777,5 +703,5 @@ SceneRoots:
   - {fileID: 1710050143}
   - {fileID: 887810886}
   - {fileID: 1940984780}
-  - {fileID: 252337101}
+  - {fileID: 7128429290031226046}
   - {fileID: 1707008133}

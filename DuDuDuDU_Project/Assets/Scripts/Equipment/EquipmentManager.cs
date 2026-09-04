@@ -1,51 +1,39 @@
 using System;
 using System.Collections.Generic;
+using OJ.Core;
 using UnityEngine;
+using UnityEngine.Scripting;
+using OJ.DI;
+using OJ.Dice;
+using OJ.Hunting;
+using OJ.Point;
+using OJ.Save;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Equipment
 {
-    public class EquipmentManager : MonoSingleton<EquipmentManager>
+    /// <summary>
+    /// 장비 강화와 보석. (MIGRATION_BASELINE 8.3a)
+    ///
+    /// 씬·프리팹 어디에도 배치돼 있지 않은 순수 런타임 서비스다. 다만 보석 정의는
+    /// <c>StaticResource</c> 에서 읽으므로, 이 객체가 만들어졌다고 데이터까지 있는 것은
+    /// 아니다 — 그쪽은 2.2 에서 따로 운다.
+    ///
+    /// <b>전투 쪽으로 뻗던 손을 끊었다.</b> 예전 <c>OnMonsterKilled()</c> 는 인자 없이
+    /// <c>GameManager.Instance.wall</c> 을 직접 붙잡아 회복시켰다. 영구 메타 서비스가
+    /// 전투 씬 오브젝트를 이름으로 찾는 <b>거꾸로 된 방향</b>이라, 전투 밖에서는 의미가 없고
+    /// 테스트도 못 한다. 이제 벽을 인자로 받는다 — 부르는 쪽(<c>Monster</c>)이 전투 씬에
+    /// 있으니 거기서 넘기는 것이 맞다.
+    /// </summary>
+    // IL2CPP 스트리핑 대비. 이유는 GameContainer 주석 참고 — 에디터에서는 안 드러난다.
+    [Preserve]
+    // 7.5 이후 ISaveOnApplicationLifecycle 이 아니다. 각자 저장할 것이 없어졌기 때문이다 —
+    // 저장은 SaveService 가 파일 하나로 한다. 여기에 다시 붙이면 앱이 멈출 때 같은 파일을
+    // 한 번 더 쓴다.
+    public sealed class EquipmentManager : ISaveStateOwner
     {
-        [Serializable]
-        private class EquipmentLevelData
-        {
-            public EquipmentType equipmentType;
-            public int level;
-        }
-
-        [Serializable]
-        private class EquipmentSlotsData
-        {
-            public EquipmentType equipmentType;
-            public List<string> slots = new List<string>();
-        }
-
-        [Serializable]
-        private class GemInventoryData
-        {
-            public string gemId;
-            public int count;
-        }
-
-        [Serializable]
-        private class EquipmentSaveData
-        {
-            public List<EquipmentLevelData> levels = new List<EquipmentLevelData>();
-            public List<EquipmentSlotsData> slots = new List<EquipmentSlotsData>();
-            public List<GemInventoryData> inventory = new List<GemInventoryData>();
-        }
-
-        private struct EquipmentUpgradeRule
-        {
-            public int baseGold;
-            public int goldPerLevel;
-            public int baseScroll;
-            public int scrollPerLevel;
-            public int baseAttack;
-            public int attackPerLevel;
-        }
-
-        private const string SaveKey = "OJ.Equipment.Save";
+        // 7.5: JsonUtility 로 구 키에 넣던 DTO 4종과 그 키를 함께 지웠다.
+        // 같은 내용을 OJ.Core.EquipmentSave 가 담고, WriteTo/ReadFrom 이 그것을 다룬다.
 
         public event Action<EquipmentType> OnEquipmentChanged;
         public event Action OnGemChanged;
@@ -58,21 +46,36 @@ namespace OJ
         private GemDefinitionDatabase gemDefinitionDatabase;
 
 
-        protected override void Init()
+        /// <summary>
+        /// 과도기 다리. <b>대입은 <see cref="GameContainer"/> 에서만 한다.</b>
+        /// 호출부가 112곳(14개 파일)이라 한 번에 못 바꾼다.
+        /// </summary>
+        public static EquipmentManager Instance { get; internal set; }
+
+        private readonly PointManager points;
+
+        /// <summary>
+        /// <b>초기화가 로드 경로 밖에 있는 것이 핵심이다.</b> (7.5)
+        ///
+        /// 구조상 <c>ReadFrom</c> 은 <b>세이브 파일이 있을 때만</b> 불린다
+        /// (<c>SaveService.TryLoadAll</c> 이 파일이 없으면 소유자 루프 전에 돌아간다).
+        /// 그래서 컬렉션 생성과 초기 보석 지급이 로드 경로 안에 있으면 <b>신규 설치가
+        /// 통째로 깨진다</b> — 장비 6종이 빈 딕셔너리로 남고, 시작 보석이 0개가 되어
+        /// 조합도 장착도 시작할 수 없다. 그것도 조용히 깨진다. 예외는 한참 뒤
+        /// 보석을 장착하려는 순간에 터진다.
+        ///
+        /// 구 <c>LoadAll()</c> 이 그 둘을 겸하고 있었기 때문에, 구 키를 지우면서
+        /// 같이 지웠다면 그대로 사고가 됐다. 그래서 여기로 끌어올렸다.
+        /// 세이브가 있으면 <c>ReadFrom</c> 이 이 위를 덮는다.
+        /// </summary>
+        public EquipmentManager(PointManager points)
         {
+            this.points = points;
+
+            // 순서가 있다. 보석 정의를 먼저 읽어야 초기 지급이 무엇을 줄지 안다.
             BuildGemDefinitionsFromDatabase();
-            LoadAll();
-        }
-
-        private void OnApplicationPause(bool pauseStatus)
-        {
-            if (pauseStatus)
-                SaveAll();
-        }
-
-        private void OnApplicationQuit()
-        {
-            SaveAll();
+            InitializeCollections();
+            SeedInitialGemInventory();
         }
 
         public int GetLevel(EquipmentType equipmentType)
@@ -82,14 +85,14 @@ namespace OJ
 
         public int GetEquipmentAttack(EquipmentType equipmentType)
         {
-            EquipmentUpgradeRule rule = GetRule(equipmentType);
-            int level = GetLevel(equipmentType);
-            if (level <= 1)
-                return 0;
-
-            return Mathf.Max(0, rule.baseAttack + ((level - 1) * rule.attackPerLevel));
+            return EquipmentUpgradeFormula.AttackOf(ToRuleIndex(equipmentType), GetLevel(equipmentType));
         }
 
+        /// <summary>
+        /// 6종 합계. <b>순회만 여기 남고 항은 전부 순수 함수다.</b>
+        /// <c>Enum.GetValues</c> 는 EquipmentType 을 봐야 해서 OJ.Core 로 못 내려간다.
+        /// int 덧셈은 unchecked 에서도 순서에 무관하므로 순회 순서는 값에 영향이 없다.
+        /// </summary>
         public int GetTotalEquipmentAttack()
         {
             int sum = 0;
@@ -100,11 +103,9 @@ namespace OJ
 
         public (int goldCost, int scrollCost) GetUpgradeCost(EquipmentType equipmentType, int currentLevel)
         {
-            EquipmentUpgradeRule rule = GetRule(equipmentType);
-            int level = Mathf.Max(1, currentLevel);
-            int gold = Mathf.Max(0, rule.baseGold + ((level - 1) * rule.goldPerLevel));
-            int scroll = Mathf.Max(0, rule.baseScroll + ((level - 1) * rule.scrollPerLevel));
-            return (gold, scroll);
+            int ruleIndex = ToRuleIndex(equipmentType);
+            return (EquipmentUpgradeFormula.UpgradeGoldCostOf(ruleIndex, currentLevel),
+                    EquipmentUpgradeFormula.UpgradeScrollCostOf(ruleIndex, currentLevel));
         }
 
         public (int goldCost, int scrollCost) GetNextUpgradeCost(EquipmentType equipmentType)
@@ -114,11 +115,8 @@ namespace OJ
 
         public bool TryLevelUp(EquipmentType equipmentType)
         {
-            if (PointManager.Instance == null)
-                return false;
-
             (int goldCost, int scrollCost) = GetNextUpgradeCost(equipmentType);
-            if (!PointManager.Instance.TrySpendEquipmentUpgrade(equipmentType, goldCost, scrollCost))
+            if (!points.TrySpendEquipmentUpgrade(equipmentType, goldCost, scrollCost))
                 return false;
 
             levels[equipmentType] = GetLevel(equipmentType) + 1;
@@ -131,13 +129,8 @@ namespace OJ
 
         public int GetSlotUnlockLevel(int slotIndex)
         {
-            if (slotIndex < 0 || slotIndex >= Define.MaxEquipmentSlot)
-                return int.MaxValue;
-
-            if (Define.EquipmentSlotUnlockLevels != null && slotIndex < Define.EquipmentSlotUnlockLevels.Length)
-                return Define.EquipmentSlotUnlockLevels[slotIndex];
-
-            return (slotIndex * 10) + 1;
+            return EquipmentUpgradeFormula.SlotUnlockLevel(
+                slotIndex, Define.MaxEquipmentSlot, Define.EquipmentSlotUnlockLevels);
         }
 
         public bool IsSlotUnlocked(EquipmentType equipmentType, int slotIndex)
@@ -148,16 +141,9 @@ namespace OJ
             return GetLevel(equipmentType) >= GetSlotUnlockLevel(slotIndex);
         }
 
-        public int GetUnlockedSlotCount(EquipmentType equipmentType)
-        {
-            int count = 0;
-            for (int i = 0; i < Define.MaxEquipmentSlot; i++)
-            {
-                if (IsSlotUnlocked(equipmentType, i))
-                    count++;
-            }
-            return count;
-        }
+        // GetUnlockedSlotCount 는 여기 있었다. 호출처가 0개라 지웠다 (grep 확인, 5.2).
+        // 다시 필요해지면 IsSlotUnlocked 를 0..MaxEquipmentSlot 로 세면 된다 —
+        // 죽은 코드로 남겨 두면 "쓰이는 줄 알고" 유지보수 대상이 된다.
 
         public string GetEquippedGemId(EquipmentType equipmentType, int slotIndex)
         {
@@ -425,111 +411,143 @@ namespace OJ
             return Mathf.Max(0, sum);
         }
 
-        public void OnMonsterKilled()
+        /// <summary>
+        /// 몬스터가 죽었을 때 보석 효과를 적용한다.
+        ///
+        /// <paramref name="wall"/> 을 인자로 받는다. 예전에는 여기서
+        /// <c>GameManager.Instance.wall</c> 을 붙잡았는데, 그건 영구 메타 서비스가 전투 씬
+        /// 오브젝트를 이름으로 찾는 것이라 방향이 거꾸로였다. 부르는 쪽이 전투 안에 있으니
+        /// 거기서 넘기면 된다. 전투 밖에서는 null 을 넘기면 회복만 건너뛴다.
+        /// </summary>
+        public void OnMonsterKilled(Wall wall)
         {
             int heal = GetWellHpOnKill();
-            if (heal > 0 && GameManager.Instance != null && GameManager.Instance.wall != null)
-                GameManager.Instance.wall.Heal(heal);
+            if (heal > 0 && wall != null)
+                wall.Heal(heal);
 
             int gold = GetGoldOnKill();
-            if (gold > 0 && PointManager.Instance != null)
-                PointManager.Instance.Add(PointType.Gold, gold);
+            if (gold > 0)
+                points.Add(PointType.Gold, gold);
         }
 
-        public void SaveAll()
+        /// <summary>
+        /// 7.5: 구 키에 직접 쓰던 것을 통합 세이브 호출로 바꿨다.
+        /// <b>호출 지점(이 파일 안 5곳)은 그대로 두는 것이 중요하다</b> — 여기서 즉시
+        /// 저장하지 않으면 강화·보석 획득이 앱이 백그라운드로 갈 때까지 메모리에만 남고,
+        /// 모바일에서 OS 가 프로세스를 죽이는 것은 일상이다.
+        ///
+        /// <c>?.</c> 가 필요하다. 컨테이너가 이 매니저를 만든 <b>뒤에</b> SaveService 를
+        /// 해석하므로, 생성 도중에 간접적으로 불리면 아직 없다.
+        /// </summary>
+        public void SaveAll() => GameContainer.SaveService?.SaveAll();
+
+        /// <summary>이 매니저가 소유한 영구 상태를 <paramref name="state"/> 에 쓴다.</summary>
+        public void WriteTo(OJ.Core.SaveState state)
         {
-            EquipmentSaveData saveData = new EquipmentSaveData();
+            OJ.Core.EquipmentSave equipment = state.Equipment;
+
+            // 같은 state 에 두 번 쓰일 수 있다. 비우지 않고 채우면 그 사이에 소모된 보석이
+            // 지난 번 항목으로 남아 되살아난다.
+            equipment.Levels.Clear();
+            equipment.GemSlots.Clear();
+            equipment.GemInventory.Clear();
 
             foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
             {
-                saveData.levels.Add(new EquipmentLevelData
-                {
-                    equipmentType = equipmentType,
-                    level = GetLevel(equipmentType)
-                });
+                string typeName = equipmentType.ToString();
 
-                EquipmentSlotsData slotsData = new EquipmentSlotsData { equipmentType = equipmentType };
+                equipment.Levels[typeName] = GetLevel(equipmentType);
+
+                // 빈 슬롯도 빈 문자열로 자리를 채운다. 위치가 곧 슬롯 번호라 하나를 빼면
+                // 뒤가 전부 한 칸씩 당겨져 다른 슬롯에 낀 보석이 된다.
+                List<string> slotGemIds = new List<string>();
                 if (equippedGemSlots.TryGetValue(equipmentType, out string[] slots))
                 {
                     for (int i = 0; i < slots.Length; i++)
-                        slotsData.slots.Add(slots[i] ?? string.Empty);
+                        slotGemIds.Add(slots[i] ?? string.Empty);
                 }
 
-                saveData.slots.Add(slotsData);
+                equipment.GemSlots[typeName] = slotGemIds;
             }
 
             foreach (var pair in gemInventory)
             {
+                // 0개는 안 가진 것과 같다. 남겨 두면 한 번 만져 본 보석이 전부 세이브에
+                // 쌓여, 로드 때 되살아나는 값도 아닌데 파일만 계속 커진다.
                 if (pair.Value <= 0)
                     continue;
 
-                saveData.inventory.Add(new GemInventoryData
-                {
-                    gemId = pair.Key,
-                    count = pair.Value
-                });
+                equipment.GemInventory[pair.Key] = pair.Value;
             }
-
-            string json = JsonUtility.ToJson(saveData);
-            PlayerPrefs.SetString(SaveKey, json);
-            PlayerPrefs.Save();
         }
 
-        public void LoadAll()
+        /// <summary>영구 상태를 <paramref name="state"/> 에서 읽어 온다.</summary>
+        public void ReadFrom(OJ.Core.SaveState state)
         {
             InitializeCollections();
 
-            string json = PlayerPrefs.GetString(SaveKey, string.Empty);
-            if (string.IsNullOrEmpty(json))
+            // 기존 LoadAll() 의 "saveData == null" 자리다. 읽을 것이 없을 때 그냥 돌아가면
+            // 보석 인벤토리가 통째로 빈 채 시작해 조합도 장착도 못 하는 상태가 된다.
+            if (state == null)
             {
                 SeedInitialGemInventory();
                 return;
             }
 
-            EquipmentSaveData saveData = JsonUtility.FromJson<EquipmentSaveData>(json);
-            if (saveData == null)
+            OJ.Core.EquipmentSave equipment = state.Equipment;
+
+            // 셋 다 비어야 "이 칸을 한 번도 쓴 적 없는 세이브" 다 — LoadAll() 의 json 이
+            // 빈 경우와 같다. 인벤토리만 보고 판단하면 보석을 다 써 버린 사람에게
+            // 로드할 때마다 초기 보석을 다시 주게 된다.
+            if (equipment.Levels.Count == 0 &&
+                equipment.GemSlots.Count == 0 &&
+                equipment.GemInventory.Count == 0)
             {
                 SeedInitialGemInventory();
                 return;
             }
 
-            if (saveData.levels != null)
+            foreach (var pair in equipment.Levels)
             {
-                for (int i = 0; i < saveData.levels.Count; i++)
-                {
-                    EquipmentLevelData levelData = saveData.levels[i];
-                    if (levelData == null)
-                        continue;
+                // 없어진 EquipmentType 이름이 세이브에 남아 있을 수 있다. 그것 때문에
+                // 로드 전체가 죽으면 안 되므로 조용히 건너뛴다.
+                if (!Enum.TryParse(pair.Key, out EquipmentType equipmentType))
+                    continue;
+                // TryParse 는 "9" 같은 숫자 문자열도 통과시켜 정의에 없는 값을 만들어 낸다.
+                // InitializeCollections() 가 깔아 둔 실제 장비만 받는다.
+                if (!levels.ContainsKey(equipmentType))
+                    continue;
 
-                    levels[levelData.equipmentType] = Mathf.Max(1, levelData.level);
-                }
+                // 레벨 하한 1. 강화 비용·공격력 계산식이 레벨 1부터를 전제하고, GetLevel()
+                // 도 항상 1 이상을 돌려준다. 0 이 들어오면 표시와 계산이 어긋난다.
+                levels[equipmentType] = Mathf.Max(1, pair.Value);
             }
 
-            if (saveData.slots != null)
+            foreach (var pair in equipment.GemSlots)
             {
-                for (int i = 0; i < saveData.slots.Count; i++)
-                {
-                    EquipmentSlotsData slotsData = saveData.slots[i];
-                    if (slotsData == null)
-                        continue;
-                    if (!equippedGemSlots.TryGetValue(slotsData.equipmentType, out string[] slots))
-                        continue;
+                if (!Enum.TryParse(pair.Key, out EquipmentType equipmentType))
+                    continue;
+                if (!equippedGemSlots.TryGetValue(equipmentType, out string[] slots))
+                    continue;
 
-                    for (int slot = 0; slot < slots.Length && slot < slotsData.slots.Count; slot++)
-                        slots[slot] = slotsData.slots[slot] ?? string.Empty;
-                }
+                List<string> savedSlots = pair.Value;
+                if (savedSlots == null)
+                    continue;
+
+                // 겹치는 만큼만 옮긴다. Define.MaxEquipmentSlot 이 줄면 넘치는 보석은 버리고,
+                // 늘면 나머지는 InitializeCollections() 가 만든 빈 슬롯 그대로 남는다.
+                for (int slot = 0; slot < slots.Length && slot < savedSlots.Count; slot++)
+                    slots[slot] = savedSlots[slot] ?? string.Empty;
             }
 
-            if (saveData.inventory != null)
+            foreach (var pair in equipment.GemInventory)
             {
-                for (int i = 0; i < saveData.inventory.Count; i++)
-                {
-                    GemInventoryData inventoryData = saveData.inventory[i];
-                    if (inventoryData == null || string.IsNullOrEmpty(inventoryData.gemId))
-                        continue;
+                if (string.IsNullOrEmpty(pair.Key))
+                    continue;
 
-                    gemInventory[inventoryData.gemId] = Mathf.Max(0, inventoryData.count);
-                }
+                // 음수 개수는 GetGemCount() 가 0 으로 가려 주지만 저장된 값 자체는 음수로
+                // 남는다. 그 상태로 AddGem 하면 얻은 만큼이 음수를 메우는 데 먼저 쓰인다.
+                gemInventory[pair.Key] = Mathf.Max(0, pair.Value);
             }
         }
 
@@ -708,24 +726,39 @@ namespace OJ
             }
         }
 
-        private static EquipmentUpgradeRule GetRule(EquipmentType equipmentType)
+        /// <summary>
+        /// enum → OJ.Core 규칙표 인덱스. 42개 리터럴은
+        /// <see cref="EquipmentUpgradeFormula.Rule"/> 로 통째로 내려갔고, 여기 남은 것은
+        /// <b>이름 대 이름</b> 매핑뿐이다. (5.2)
+        ///
+        /// <c>(int)equipmentType</c> 캐스트로 쓰지 않은 것이 이 함수의 존재 이유다.
+        /// 캐스트는 <b>enum 선언 순서</b>에 값을 걸어 버린다 — 결정 2번으로 enum 리네임·
+        /// 재배열 금지 규약이 풀린 상태라, 누가 Weapon 과 Helmet 을 바꿔 적는 순간
+        /// 무기 골드가 조용히 투구 골드가 되고 컴파일러도 테스트도 아무 말을 안 한다.
+        /// 이름으로 매핑하면 재배열은 값에 영향이 없고, 새 장비가 늘면 여기서
+        /// <b>컴파일 경고 없이 default 로 떨어지는 것</b>이 유일한 위험으로 좁혀진다.
+        ///
+        /// default 는 원본 <c>GetRule</c> 의 <c>default:</c> 와 같은 자리다. 지금은
+        /// EquipmentType 이 6값뿐이라 도달하지 않는다.
+        /// </summary>
+        private static int ToRuleIndex(EquipmentType equipmentType)
         {
             switch (equipmentType)
             {
                 case EquipmentType.Weapon:
-                    return new EquipmentUpgradeRule { baseGold = 120, goldPerLevel = 52, baseScroll = 3, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return EquipmentUpgradeFormula.WeaponIndex;
                 case EquipmentType.Helmet:
-                    return new EquipmentUpgradeRule { baseGold = 95, goldPerLevel = 48, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return EquipmentUpgradeFormula.HelmetIndex;
                 case EquipmentType.Armor:
-                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 48, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return EquipmentUpgradeFormula.ArmorIndex;
                 case EquipmentType.Ring:
-                    return new EquipmentUpgradeRule { baseGold = 110, goldPerLevel = 50, baseScroll = 3, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return EquipmentUpgradeFormula.RingIndex;
                 case EquipmentType.Shoes:
-                    return new EquipmentUpgradeRule { baseGold = 90, goldPerLevel = 46, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return EquipmentUpgradeFormula.ShoesIndex;
                 case EquipmentType.Necklace:
-                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 50, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return EquipmentUpgradeFormula.NecklaceIndex;
                 default:
-                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 50, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return EquipmentUpgradeFormula.UnknownIndex;
             }
         }
 
@@ -752,14 +785,31 @@ namespace OJ
             if (gemDefinitionDatabase != null)
                 return gemDefinitionDatabase;
 
-            if (StaticResource.Instance != null && StaticResource.Instance.GemDefinitionDatabase != null)
+            StaticResource resource = StaticResource.Instance;
+            if (resource != null && resource.GemDefinitionDatabase != null)
             {
-                gemDefinitionDatabase = StaticResource.Instance.GemDefinitionDatabase;
+                gemDefinitionDatabase = resource.GemDefinitionDatabase;
                 return gemDefinitionDatabase;
             }
 
-            gemDefinitionDatabase = Resources.Load<GemDefinitionDatabase>("GemDefinitionDatabase");
-            return gemDefinitionDatabase;
+            // 예전에는 Resources.Load("GemDefinitionDatabase") 로 물러섰다. 그 에셋은
+            // Assets/ScriptableObject/ 에 있어 Resources 규약 밖이라 이 폴백은 한 번도
+            // 성공한 적이 없고, 그냥 null 을 돌려줘 보석 56종이 통째로 사라졌다. (2.2)
+            LogMissingGemDatabaseOnce();
+            return null;
+        }
+
+        private static bool missingGemDatabaseLogged;
+
+        private static void LogMissingGemDatabaseOnce()
+        {
+            if (missingGemDatabaseLogged)
+                return;
+
+            missingGemDatabaseLogged = true;
+            Debug.LogError(
+                "GemDefinitionDatabase 를 찾지 못했다. StaticResource 프리팹의 GemDefinitionDatabase " +
+                "슬롯이 비었거나 StaticResource 자체가 만들어지지 않았다. 장비 보석이 전부 사라진다.");
         }
 
         private void AddDefinition(GemDefinition definition)

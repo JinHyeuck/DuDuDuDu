@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OJ
+namespace OJ.Utils
 {
     [System.Serializable]
     public class CharacterAniData

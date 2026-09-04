@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VContainer;
+using OJ.Dice;
+using OJ.DI;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Hunting
 {
     public class PlayerController : MonoBehaviour
     {
-        public static PlayerController Instance;
-
         public CharacterAnimation characterAnimation;
         public CharacterAnimation bowAnimation;
         public Transform bowTransform;
@@ -23,21 +25,9 @@ namespace OJ
         private readonly List<UIDice> cooldownAdjustBuffer = new List<UIDice>();
         private bool wasWaveState = false;
 
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-        }
-
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
+        // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
+        // 스코프 빌드는 씬의 모든 Awake 뒤·모든 Start 앞이므로 Awake 에서는 아직 쓸 수 없다.
+        [Inject] private IBattleRefs battle;
 
         private void Start()
         {
@@ -47,7 +37,7 @@ namespace OJ
 
         void Update()
         {
-            bool isWaveState = GameManager.Instance.inGameState == InGameState.Wave;
+            bool isWaveState = battle.Game.inGameState == InGameState.Wave;
             if (!isWaveState)
             {
                 if (wasWaveState)
@@ -56,9 +46,10 @@ namespace OJ
             }
             wasWaveState = true;
 
-            if (UIBoard.Instance == null
-                || UIBoard.Instance.diceMap == null
-                || UIBoard.Instance.diceMap.Length <= 0)
+            // UIBoard 자체는 씬에 상주하므로 null 검사를 지웠다. diceMap 은 UIBoard 가
+            // 보드를 만들기 전까지 비어 있을 수 있는 '데이터'라 검사를 남긴다.
+            if (battle.Board.diceMap == null
+                || battle.Board.diceMap.Length <= 0)
                 return;
 
 
@@ -78,7 +69,9 @@ namespace OJ
 
         public float GetFireCycleProgress01()
         {
-            if (GameManager.Instance == null || GameManager.Instance.inGameState != InGameState.Wave)
+            // 이 메서드를 부르는 PlayerFireRateUI 도 BattleScene 에 산다. 창구가 채워진 뒤에만
+            // 도는 자리라 GameManager null 검사를 지웠다.
+            if (battle.Game.inGameState != InGameState.Wave)
                 return 0f;
 
             if (fireRate <= 0f)
@@ -91,7 +84,7 @@ namespace OJ
         {
             selectedDice = null;
 
-            UIDice[] map = UIBoard.Instance.diceMap;
+            UIDice[] map = battle.Board.diceMap;
             int total = map.Length;
             if (total <= 0)
                 return false;
@@ -123,7 +116,7 @@ namespace OJ
 
         private bool TryShootReadyDice()
         {
-            UIDice[] map = UIBoard.Instance.diceMap;
+            UIDice[] map = battle.Board.diceMap;
             int total = map.Length;
             if (total <= 0)
                 return false;
@@ -285,20 +278,41 @@ namespace OJ
             }
             int diceStar = sourceDice.Star;
 
+            // 타임 다이스는 <b>쿨감을 먼저 하고 총알 경로로 흘러간다.</b> (진화 개편)
+            //
+            // 예전에는 여기서 쿨감만 하고 return true 로 끝냈다 — 피해가 0 인 순수 유틸이라
+            // 쏠 것이 없었기 때문이다. 지금은 4성 썬더가 진화해 도달하는 상위 단계라
+            // 피해가 있어야 한다(바람 다이스와 같은 사정이다. WindDiceEffect 주석 참조).
+            //
+            // <b>쿨감을 사거리 안에 적이 있을 때만 하는 이유.</b> 아래 총알 경로는 대상이
+            // 없으면 <c>return false</c> 로 빠지고, 그러면 이 다이스는 쿨타임을 소모하지
+            // 않아 <b>다음 프레임에 다시 들어온다.</b> 쿨감을 먼저 해 두면 그 재시도마다
+            // 쿨감이 또 걸려서, 적이 없는 동안 보드 전체 쿨타임이 프레임마다 깎인다.
+            // 그래서 대상 유무를 먼저 확인하고, 없으면 예전처럼 쿨감만 하고 끝낸다.
             if (diceType == DiceType.Time)
             {
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Time) : 1;
                 float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(DiceType.Time, level);
                 int targetCount = DiceMetaDataProvider.GetTimeTargetCount(level);
                 ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount, sourceDice);
-                characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
-                bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
-                return true;
+
+                if (battle.Monsters.GetClosestMonster(firePoint.position) == null)
+                {
+                    characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                    bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);
+                    return true;
+                }
+
+                // 대상이 있으면 아래 일반 경로로 내려간다. TimeDiceEffect.ApplyOnHit 는
+                // 쿨감을 하지 않는다 — 여기서 이미 했고, 거기서는 sourceDice 를 몰라
+                // 자기 자신의 쿨타임까지 깎아 버린다.
             }
 
             if (diceType == DiceType.Wind)
             {
-                bool casted = AttackContent.Instance != null && AttackContent.Instance.TryCastNoTarget(diceType, diceStar);
+                // AttackContent 는 씬 상주라 null 검사를 지웠다. 캐스트 실패(false)만 남긴다 —
+                // 그쪽은 자원 부족 같은 정상 실패라 의미가 다르다.
+                bool casted = battle.Attack.TryCastNoTarget(diceType, diceStar);
                 if (!casted)
                     return false;
 
@@ -307,7 +321,7 @@ namespace OJ
                 return true;
             }
 
-            Monster target = MonsterManager.Instance.GetClosestMonster(firePoint.position);
+            Monster target = battle.Monsters.GetClosestMonster(firePoint.position);
             if (target == null)
                 return false;
 
@@ -316,7 +330,7 @@ namespace OJ
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f;
             bowTransform.rotation = Quaternion.Euler(0, 0, angle);
 
-            Bullet bulletObj = BulletPool.Instance.GetBullet();
+            Bullet bulletObj = battle.Bullets.GetBullet();
             bulletObj.transform.position = firePoint.position;
             bulletObj.transform.rotation = Quaternion.identity;
             bulletObj.SetBulletStat(diceType, diceStar);

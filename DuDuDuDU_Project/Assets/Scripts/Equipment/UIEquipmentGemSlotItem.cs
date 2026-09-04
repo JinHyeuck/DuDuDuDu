@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace OJ
+namespace OJ.Equipment
 {
     public class UIEquipmentGemSlotItem : MonoBehaviour
     {

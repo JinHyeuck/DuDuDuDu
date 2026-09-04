@@ -3,8 +3,12 @@ using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Dice;
+using OJ.Equipment;
+using OJ.Relic;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.CombatPower
 {
     /// <summary>
     /// Displays the current permanent combat power and a short-lived change notification.
@@ -163,9 +167,14 @@ namespace OJ
 
         private void Unsubscribe()
         {
-            if (DiceLevelManager.isAlive)
+            // isAlive 였던 자리다. MonoSingleton 시절에는 Instance 게터가 <b>없으면 만들어 냈기</b>
+            // 때문에, 구독을 푸는 것뿐인데 매니저가 새로 생기는 일을 막으려고 isAlive 를 썼다.
+            // 8.3a 에서 DiceLevelManager 가 순수 클래스가 되면서 Instance 는 그냥 읽기가 됐고,
+            // 부작용이 없으므로 평범한 null 검사가 정확히 같은 의미가 된다.
+            if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged -= HandleDiceLevelChanged;
-            if (EquipmentManager.isAlive)
+
+            if (EquipmentManager.Instance != null)
             {
                 EquipmentManager.Instance.OnEquipmentChanged -= HandleEquipmentChanged;
                 EquipmentManager.Instance.OnGemChanged -= HandleGemChanged;

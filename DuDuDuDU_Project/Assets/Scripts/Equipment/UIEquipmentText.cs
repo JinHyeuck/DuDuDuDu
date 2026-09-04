@@ -1,6 +1,7 @@
 using UnityEngine;
+using OJ.Utils;
 
-namespace OJ
+namespace OJ.Equipment
 {
     public static class UIEquipmentText
     {

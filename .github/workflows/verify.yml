@@ -1,0 +1,42 @@
+# 정적 검증 (MIGRATION_BASELINE 12.2)
+#
+# 여기서 도는 것은 Unity 없이 성립하는 검사뿐이다. 나머지는 왜 못 도는지 아래에 적어
+# 뒀다 — "CI 가 초록불이니 다 봤겠지"라고 오해하는 것이 검사가 없는 것보다 나쁘다.
+#
+# | 검사                       | CI | 이유                                                 |
+# |----------------------------|----|------------------------------------------------------|
+# | verify_encoding            | O  | 순수 파이썬. .cs 파일만 읽는다                       |
+# | verify_namespaces          | O  | 순수 파이썬. 폴더와 namespace 선언만 본다            |
+# | verify_missing_scripts     | X  | Library/PackageCache 가 있어야 한다 (gitignore 대상). |
+# |                            |    | 없으면 TMP·uGUI 참조가 전부 Missing 으로 오탐된다     |
+# | headless 테스트 3273개     | X  | 설치된 Unity 의 Mono 와 DLL 을 쓴다                  |
+#
+# 그 둘은 로컬에서 `Tools\verify-all.cmd` 로 돈다. 커밋 전에 한 번 돌리는 것이
+# 이 워크플로보다 훨씬 많이 잡는다.
+
+name: verify
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # 인코딩 사고는 조용하다. CP949 로 저장된 파일을 UTF-8 로 읽어 다시 저장하면
+      # 주석이 U+FFFD 로 파괴되는데 컴파일도 콘솔도 아무 말을 하지 않는다.
+      - name: 인코딩
+        run: python Tools/verify_encoding.py
+
+      # 11.4 에서 정한 폴더 <-> 네임스페이스 규약은 컴파일러가 강제하지 않는다.
+      # 문서에만 적힌 규약은 지켜지지 않는다.
+      - name: 네임스페이스 규약
+        run: python Tools/verify_namespaces.py

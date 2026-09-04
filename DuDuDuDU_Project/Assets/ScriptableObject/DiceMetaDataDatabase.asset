@@ -16,8 +16,7 @@ MonoBehaviour:
   - diceType: 0
     elementType: 00000000
     displayName: Normal Dice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 12 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
-      \uC90D\uB2C8\uB2E4."
+    description: "\uAC00\uC7A5 \uAC00\uAE4C\uC6B4 \uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD569\uB2C8\uB2E4. \uBD80\uAC00 \uD6A8\uACFC\uB294 \uC5C6\uC9C0\uB9CC \uCFE8\uD0C0\uC784\uC774 \uC9E7\uC544 \uAFB8\uC900\uD788 \uD53C\uD574\uB97C \uC313\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
@@ -28,16 +27,6 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    recipeMaterials:
-    - diceType: 0
-      star: 2
-      count: 1
-    - diceType: 2
-      star: 1
-      count: 2
-    - diceType: 4
-      star: 1
-      count: 1
     baseAttack: 12
     levelUpAttackIncrease: 3
     baseCooldown: 2.4
@@ -58,9 +47,7 @@ MonoBehaviour:
   - diceType: 1
     elementType: 01000000
     displayName: Fire Dice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 10 + (\uB808\uBCA8 x 4) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uC8FC\uBCC0 \uC801\uC5D0\uAC8C \uD3ED\uBC1C \uD53C\uD574\uB97C
-      \uC90D\uB2C8\uB2E4."
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uBA85\uC911 \uC9C0\uC810 \uC8FC\uBCC0\uC73C\uB85C \uD3ED\uBC1C\uC744 \uC77C\uC73C\uD0B5\uB2C8\uB2E4. \uC801\uC774 \uBAB0\uB824 \uC788\uC744\uC218\uB85D \uAC15\uD574\uC9D1\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
@@ -71,16 +58,6 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    recipeMaterials:
-    - diceType: 3
-      star: 2
-      count: 1
-    - diceType: 4
-      star: 1
-      count: 1
-    - diceType: 2
-      star: 1
-      count: 1
     baseAttack: 10
     levelUpAttackIncrease: 4
     baseCooldown: 3.1
@@ -101,8 +78,7 @@ MonoBehaviour:
   - diceType: 2
     elementType: 02000000
     displayName: Ice Dice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 9 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uB454\uD654\uB97C \uBD80\uC5EC\uD569\uB2C8\uB2E4."
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uB454\uD654\uB97C \uAC81\uB2C8\uB2E4. \uBCBD\uAE4C\uC9C0 \uC624\uB294 \uC2DC\uAC04\uC744 \uBC8C\uC5B4 \uC8FC\uB294 \uBC29\uC5B4\uD615 \uB2E4\uC774\uC2A4\uC785\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
@@ -113,13 +89,6 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    recipeMaterials:
-    - diceType: 1
-      star: 2
-      count: 1
-    - diceType: 4
-      star: 2
-      count: 1
     baseAttack: 9
     levelUpAttackIncrease: 3
     baseCooldown: 3.8
@@ -139,8 +108,7 @@ MonoBehaviour:
   - diceType: 3
     elementType: 03000000
     displayName: Thunder Dice
-    description: "\uC801 2\uBA85\uC5D0\uAC8C 11 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
-      \uC90D\uB2C8\uB2E4."
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uBA74 \uBC88\uAC1C\uAC00 \uC8FC\uBCC0\uC73C\uB85C \uC804\uC774\uB429\uB2C8\uB2E4. \uB113\uAC8C \uD37C\uC9C4 \uC801\uC744 \uD6D1\uB294 \uB370 \uC88B\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
     color: {r: 1, g: 0.8745098, b: 0, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
@@ -152,16 +120,6 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    recipeMaterials:
-    - diceType: 2
-      star: 2
-      count: 1
-    - diceType: 3
-      star: 1
-      count: 1
-    - diceType: 0
-      star: 1
-      count: 1
     baseAttack: 11
     levelUpAttackIncrease: 3
     baseCooldown: 2.7
@@ -173,7 +131,7 @@ MonoBehaviour:
     - level: 3
       description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
     - level: 6
-      description: "\uACF5\uACA9 \uB300\uC0C1 +1"
+      description: "\uC804\uC774 \uB300\uC0C1 +1"
     - level: 9
       description: "\uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
     - level: 12
@@ -182,8 +140,7 @@ MonoBehaviour:
   - diceType: 4
     elementType: 04000000
     displayName: Poison Dice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 8 + (\uB808\uBCA8 x 2) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uC911\uB3C5\uC744 \uBD80\uC5EC\uD569\uB2C8\uB2E4."
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uC911\uB3C5\uC744 \uAC81\uB2C8\uB2E4. \uC911\uB3C5\uC740 \uB0A8\uC740 \uCCB4\uB825\uC5D0 \uBE44\uB840\uD574 \uD53C\uD574\uB97C \uC8FC\uBBC0\uB85C \uCCB4\uB825\uC774 \uB450\uAEBC\uC6B4 \uC801\uC77C\uC218\uB85D \uC544\uD515\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
     color: {r: 0, g: 0.75686276, b: 0.03137255, a: 1}
     projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
@@ -194,16 +151,6 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    recipeMaterials:
-    - diceType: 0
-      star: 2
-      count: 1
-    - diceType: 3
-      star: 2
-      count: 1
-    - diceType: 2
-      star: 2
-      count: 1
     baseAttack: 8
     levelUpAttackIncrease: 2
     baseCooldown: 3.4
@@ -222,10 +169,9 @@ MonoBehaviour:
       description: "\uC911\uB3C5\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 10%
         \uC99D\uAC00"
   - diceType: 100
-    elementType: 0000000002000000
+    elementType: 00000000
     displayName: Tornado Dice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 9 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uC8FC\uBCC0 \uC801\uC744 \uB04C\uC5B4\uB2F9\uAE41\uB2C8\uB2E4."
+    description: "\uB178\uB9D0 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801\uC744 \uACF5\uACA9\uD558\uBA74\uC11C \uC8FC\uBCC0\uC758 \uC801\uB4E4\uC744 \uBA85\uC911 \uC9C0\uC810\uC73C\uB85C \uB04C\uC5B4\uB2F9\uACA8, \uB4A4\uC774\uC5B4 \uC624\uB294 \uAD11\uC5ED \uACF5\uACA9\uC774 \uD55C \uBC88\uC5D0 \uC4F8\uC5B4 \uB2F4\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: fce5978a8e2e642d1b9d797008f38bf2, type: 3}
     color: {r: 0.68, g: 0.78, b: 0.96, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
@@ -238,15 +184,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 0
-      star: 2
-      count: 1
-    - diceType: 2
-      star: 2
-      count: 1
-    baseAttack: 9
-    levelUpAttackIncrease: 3
+    baseAttack: 80
+    levelUpAttackIncrease: 10
     baseCooldown: 3
     baseGoldCost: 145
     goldCostPerLevel: 62
@@ -262,10 +201,9 @@ MonoBehaviour:
     - level: 12
       description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 30% \uC99D\uAC00"
   - diceType: 101
-    elementType: 0300000004000000
+    elementType: 04000000
     displayName: Stun Dice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 8 + (\uB808\uBCA8 x 2) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 40% \uD655\uB960\uB85C \uC2A4\uD134\uC2DC\uD0B5\uB2C8\uB2E4."
+    description: "\uD3EC\uC774\uC98C \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801 \uD558\uB098\uB97C \uAC15\uD558\uAC8C \uB54C\uB9AC\uACE0 \uD655\uB960\uB85C \uAE30\uC808\uC2DC\uCF1C \uBC1C\uC744 \uBB36\uC2B5\uB2C8\uB2E4. \uBCBD \uC55E\uAE4C\uC9C0 \uBC00\uB824\uC628 \uC801\uC744 \uB04A\uC5B4 \uB0BC \uB54C \uBBFF\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: f4ae75e80a9d34a74a31484109b782da, type: 3}
     color: {r: 0.62, g: 0.51, b: 0.97, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
@@ -277,15 +215,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 3
-      star: 2
-      count: 1
-    - diceType: 4
-      star: 2
-      count: 1
-    baseAttack: 8
-    levelUpAttackIncrease: 2
+    baseAttack: 87
+    levelUpAttackIncrease: 11
     baseCooldown: 3.5
     baseGoldCost: 140
     goldCostPerLevel: 58
@@ -302,10 +233,9 @@ MonoBehaviour:
       description: "\uC2A4\uD134\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 20%
         \uC99D\uAC00"
   - diceType: 102
-    elementType: 0100000004000000
+    elementType: 01000000
     displayName: Armor Break Dice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 10 + (\uB808\uBCA8 x 3) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uBC29\uC5B4\uB825\uC744 30% \uAC10\uC18C\uC2DC\uD0B5\uB2C8\uB2E4."
+    description: "\uD30C\uC774\uC5B4 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801\uC758 \uBC29\uC5B4\uB825\uC744 \uAE4E\uC544 \uADF8 \uB4A4\uB85C \uB4E4\uC5B4\uAC00\uB294 \uBAA8\uB4E0 \uACF5\uACA9\uC744 \uB354 \uC544\uD504\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4. \uB2E8\uB2E8\uD55C \uC801\uACFC \uBCF4\uC2A4\uC5D0\uAC8C \uD2B9\uD788 \uAC15\uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: b2cf1c4783c3f418fabea07364adc7f8, type: 3}
     color: {r: 0.93, g: 0.26, b: 0.18, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
@@ -316,15 +246,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 1
-      star: 2
-      count: 1
-    - diceType: 4
-      star: 2
-      count: 1
-    baseAttack: 10
-    levelUpAttackIncrease: 3
+    baseAttack: 78
+    levelUpAttackIncrease: 10
     baseCooldown: 3.2
     baseGoldCost: 150
     goldCostPerLevel: 64
@@ -341,10 +264,9 @@ MonoBehaviour:
       description: "\uBC29\uAE4E \uC0C1\uD0DC \uC801\uC774 \uBC1B\uB294 \uD53C\uD574
         10% \uC99D\uAC00"
   - diceType: 103
-    elementType: 0200000001000000
+    elementType: 02000000
     displayName: Wind Dice
-    description: "\uC801 2\uBA85\uC744 40 + (\uB808\uBCA8 x 1)% \uD655\uB960\uB85C
-      \uBC00\uC5B4\uB0C5\uB2C8\uB2E4. \uB300\uBBF8\uC9C0\uB294 \uC5C6\uC2B5\uB2C8\uB2E4."
+    description: "\uC544\uC774\uC2A4 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uBCBD \uC55E\uC5D0 \uBAB0\uB9B0 \uC801\uB4E4\uC744 \uD55C\uAEBC\uBC88\uC5D0 \uB54C\uB9AC\uACE0 \uD655\uB960\uB85C \uB4A4\uCABD\uAE4C\uC9C0 \uBC00\uC5B4\uB0C5\uB2C8\uB2E4. \uCD1D\uC54C\uC744 \uC3D8\uC9C0 \uC54A\uACE0 \uBCBD \uC55E \uC804\uCCB4\uB97C \uC9C1\uC811 \uCE69\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8409b8d4e7b75425c98a50fd4cef60b8, type: 3}
     color: {r: 0.56, g: 0.93, b: 0.9, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
@@ -355,15 +277,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 2
-      star: 2
-      count: 1
-    - diceType: 1
-      star: 2
-      count: 1
-    baseAttack: 0
-    levelUpAttackIncrease: 0
+    baseAttack: 40
+    levelUpAttackIncrease: 5
     baseCooldown: 2.9
     baseGoldCost: 135
     goldCostPerLevel: 56
@@ -380,11 +295,9 @@ MonoBehaviour:
     - level: 12
       description: "\uBC00\uC5B4\uB0B4\uB294 \uB300\uC0C1 +1"
   - diceType: 104
-    elementType: 0000000003000000
+    elementType: 03000000
     displayName: Time Dice
-    description: "\uB2E4\uB978 \uBB34\uC791\uC704 \uB2E4\uC774\uC2A4 2\uAC1C\uC758
-      \uB0A8\uC740 \uCFE8\uD0C0\uC784\uC744 10 + (\uB808\uBCA8 x 1)% \uAC10\uC18C\uC2DC\uD0B5\uB2C8\uB2E4.
-      \uB300\uBBF8\uC9C0\uB294 \uC5C6\uC2B5\uB2C8\uB2E4."
+    description: "\uC36C\uB354 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801\uC744 \uACF5\uACA9\uD558\uB294 \uB3D9\uC2DC\uC5D0 \uB2E4\uB978 \uB2E4\uC774\uC2A4\uC758 \uB0A8\uC740 \uCFE8\uD0C0\uC784\uC744 \uB2F9\uACA8, \uBCF4\uB4DC \uC804\uCCB4\uC758 \uD654\uB825\uC744 \uB04C\uC5B4\uC62C\uB9BD\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: eb3cbc299964142c0848fca7f35b4097, type: 3}
     color: {r: 1, g: 0.84, b: 0.48, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
@@ -395,15 +308,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 0
-      star: 2
-      count: 1
-    - diceType: 3
-      star: 2
-      count: 1
-    baseAttack: 0
-    levelUpAttackIncrease: 0
+    baseAttack: 85
+    levelUpAttackIncrease: 11
     baseCooldown: 4
     baseGoldCost: 170
     goldCostPerLevel: 70
@@ -421,8 +327,7 @@ MonoBehaviour:
   - diceType: 200
     elementType: 00000000
     displayName: King Normal
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 104 + (\uB808\uBCA8 x 20) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uC8FC\uBCC0 \uC801\uC744 \uCD94\uAC00 \uD0C0\uACA9\uD569\uB2C8\uB2E4."
+    description: "\uD1A0\uB124\uC774\uB3C4 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801\uACFC \uADF8 \uC8FC\uBCC0\uC744 \uCCAB \uD0C0 70%, \uC774\uC5B4\uC11C 0.2\uCD08 \uAC04\uACA9\uC73C\uB85C 10%\uC529 \uC138 \uBC88 \uB354 \uB450\uB4DC\uB9BD\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: e0417207cd18f4a47abbfee0c73b95ef, type: 3}
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
@@ -433,15 +338,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 0
-      star: 4
-      count: 1
-    - diceType: 100
-      star: 1
-      count: 1
-    baseAttack: 104
-    levelUpAttackIncrease: 20
+    baseAttack: 140
+    levelUpAttackIncrease: 27
     baseCooldown: 3
     baseGoldCost: 260
     goldCostPerLevel: 90
@@ -451,18 +349,18 @@ MonoBehaviour:
     - level: 3
       description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 30% \uC99D\uAC00"
     - level: 6
-      description: "NormalDice \uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
+      description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 NormalDice \uCD5C\uC885
+        \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 9
-      description: "\uBAA8\uB4E0 \uB2E4\uC774\uC2A4 \uD06C\uB9AC\uD2F0\uCEEC \uD655\uB960
-        10% \uC99D\uAC00"
+      description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 \uBAA8\uB4E0 \uB2E4\uC774\uC2A4
+        \uD06C\uB9AC\uD2F0\uCEEC \uD655\uB960 10% \uC99D\uAC00"
     - level: 12
-      description: "\uBAA8\uB4E0 \uB2E4\uC774\uC2A4 \uD06C\uB9AC\uD2F0\uCEEC \uB300\uBBF8\uC9C0
-        20% \uC99D\uAC00"
+      description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 \uBAA8\uB4E0 \uB2E4\uC774\uC2A4
+        \uD06C\uB9AC\uD2F0\uCEEC \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
   - diceType: 201
     elementType: 01000000
     displayName: King Fire
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 110 + (\uB808\uBCA8 x 22) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uAC15\uD654 \uD3ED\uBC1C\uC744 \uC77C\uC73C\uD0B5\uB2C8\uB2E4."
+    description: "\uC544\uBA38\uBE0C\uB808\uC774\uD06C \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC77C\uBC18 \uD3ED\uBC1C\uBCF4\uB2E4 \uD6E8\uC52C \uB113\uC740 \uAC15\uD654 \uD3ED\uBC1C\uB85C \uBB34\uB9AC\uB97C \uD1B5\uC9F8\uB85C \uD0DC\uC6C1\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8a5316ab16cef479ea73b9eba37c0f7c, type: 3}
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
@@ -473,15 +371,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 1
-      star: 4
-      count: 1
-    - diceType: 102
-      star: 1
-      count: 1
-    baseAttack: 110
-    levelUpAttackIncrease: 22
+    baseAttack: 148
+    levelUpAttackIncrease: 30
     baseCooldown: 3.3
     baseGoldCost: 270
     goldCostPerLevel: 92
@@ -491,17 +382,17 @@ MonoBehaviour:
     - level: 3
       description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 6
-      description: "FireDice \uD3ED\uBC1C \uBC94\uC704 20% \uC99D\uAC00"
+      description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 FireDice \uD3ED\uBC1C
+        \uBC94\uC704 20% \uC99D\uAC00"
     - level: 9
       description: "\uD3ED\uBC1C\uC774 30% \uD655\uB960\uB85C \uD55C \uBC88 \uB354
         \uBC1C\uC0DD"
     - level: 12
-      description: "\uD3ED\uBC1C \uD53C\uD574 30% \uC99D\uAC00"
+      description: "\uD3ED\uBC1C \uCD5C\uC885 \uD53C\uD574 30% \uC99D\uAC00"
   - diceType: 202
     elementType: 02000000
     displayName: King Ice
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 100 + (\uB808\uBCA8 x 20) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uAC15\uD55C \uB454\uD654\uB97C \uBD80\uC5EC\uD569\uB2C8\uB2E4."
+    description: "\uC708\uB4DC \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801\uACFC \uADF8 \uC8FC\uBCC0\uC744 \uD568\uAED8 \uB54C\uB9AC\uACE0 \uAC15\uD55C \uB454\uD654\uB97C \uAC81\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: f2c17ecc362ac4189bce91d992af2c63, type: 3}
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
@@ -512,15 +403,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 2
-      star: 4
-      count: 1
-    - diceType: 103
-      star: 1
-      count: 1
-    baseAttack: 100
-    levelUpAttackIncrease: 20
+    baseAttack: 135
+    levelUpAttackIncrease: 27
     baseCooldown: 3.5
     baseGoldCost: 255
     goldCostPerLevel: 88
@@ -539,8 +423,7 @@ MonoBehaviour:
   - diceType: 203
     elementType: 03000000
     displayName: King Thunder
-    description: "\uC801 4\uBA85\uC5D0\uAC8C 116 + (\uB808\uBCA8 x 24) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uB294 \uAC15\uD654 \uBC88\uAC1C \uACF5\uACA9\uC744 \uD569\uB2C8\uB2E4."
+    description: "\uD0C0\uC784 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uBC88\uAC1C\uAC00 \uB354 \uB9CE\uC740 \uC801\uC5D0\uAC8C \uC804\uC774\uB418\uC5B4 \uB113\uAC8C \uD37C\uC9C4 \uBB34\uB9AC\uB97C \uD55C \uBC88\uC5D0 \uD6D1\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 7379251cca103456b90508362193a5f4, type: 3}
     color: {r: 1, g: 0.8745099, b: 0, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
@@ -552,15 +435,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 3
-      star: 4
-      count: 1
-    - diceType: 104
-      star: 1
-      count: 1
-    baseAttack: 116
-    levelUpAttackIncrease: 24
+    baseAttack: 156
+    levelUpAttackIncrease: 32
     baseCooldown: 3
     baseGoldCost: 280
     goldCostPerLevel: 96
@@ -568,9 +444,10 @@ MonoBehaviour:
     scrollCostPerLevel: 3
     milestones:
     - level: 3
-      description: "\uACF5\uACA9 \uB300\uC0C1 +2"
+      description: "\uC804\uC774 \uB300\uC0C1 +2"
     - level: 6
-      description: "ThunderDice \uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
+      description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 ThunderDice \uCD5C\uC885
+        \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 9
       description: "30% \uD655\uB960\uB85C \uCD94\uAC00 1\uBA85\uC5D0\uAC8C 50% \uD53C\uD574"
     - level: 12
@@ -578,8 +455,7 @@ MonoBehaviour:
   - diceType: 204
     elementType: 04000000
     displayName: King Poison
-    description: "\uC801 1\uBA85\uC5D0\uAC8C 98 + (\uB808\uBCA8 x 20) \uB300\uBBF8\uC9C0\uB97C
-      \uC8FC\uACE0 \uC911\uB3C5\uACFC \uB454\uD654\uB97C \uBD80\uC5EC\uD569\uB2C8\uB2E4."
+    description: "\uC2A4\uD134 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801 \uD558\uB098\uB97C \uB54C\uB9AC\uACE0 \uC911\uB3C5\uACFC \uB454\uD654\uB97C \uD568\uAED8 \uAC78\uC5B4 \uC624\uB798 \uBD99\uC7A1\uC544 \uB461\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 5f060361b8d6a405f896c7747aadb085, type: 3}
     color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
     projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
@@ -590,15 +466,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    recipeMaterials:
-    - diceType: 4
-      star: 4
-      count: 1
-    - diceType: 101
-      star: 1
-      count: 1
-    baseAttack: 98
-    levelUpAttackIncrease: 20
+    baseAttack: 132
+    levelUpAttackIncrease: 27
     baseCooldown: 3.3
     baseGoldCost: 250
     goldCostPerLevel: 86
@@ -608,10 +477,11 @@ MonoBehaviour:
     - level: 3
       description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
     - level: 6
-      description: "PoisonDice \uC911\uB3C5 \uD53C\uD574\uB7C9 50% \uC99D\uAC00"
+      description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 PoisonDice \uC911\uB3C5
+        \uD53C\uD574\uB7C9 50% \uC99D\uAC00"
     - level: 9
-      description: "\uC911\uB3C5\uC774 \uC8FC\uBCC0 \uC801 1\uBA85\uC5D0\uAC8C 30%
-        \uD655\uB960\uB85C \uC804\uC774"
+      description: "\uC911\uB3C5 \uC801\uC6A9 \uC2DC 30% \uD655\uB960\uB85C \uC8FC\uBCC0
+        \uC801 1\uBA85\uC5D0\uAC8C \uC804\uC774"
     - level: 12
       description: "\uC911\uB3C5\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 15%
         \uC99D\uAC00"
