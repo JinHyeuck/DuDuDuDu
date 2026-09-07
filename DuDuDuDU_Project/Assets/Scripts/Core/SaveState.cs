@@ -52,6 +52,24 @@ namespace OJ.Core
         /// <summary><c>DiceType</c> 이름 → 레벨. (<c>OJ.Bullet.Level.*</c>)</summary>
         public SortedDictionary<string, int> DiceLevels { get; } = NewIntMap();
 
+        /// <summary>
+        /// 보유한 <c>DiceType</c> 이름 → 1. (다이스 언락)
+        ///
+        /// <b>기본 다이스는 여기 오지 않는다.</b> "기본 5종은 처음부터 쓸 수 있어 해금 대상이
+        /// 아니다"는 규칙이 이미 코드에 있고(<c>TowerProgressManager.IsDiceUnlocked</c>,
+        /// <c>TowerDatabase.Validate</c>), 세이브에 또 적으면 정본이 셋이 된다.
+        /// 덤으로 <b>세이브가 비거나 깨져도 기본 5종은 살아 있다</b> — 게임이 시작 불가 상태로
+        /// 떨어지지 않는다.
+        ///
+        /// 값이 항상 1인데 <c>List&lt;string&gt;</c> 이 아닌 이유는 위 클래스 주석의
+        /// <see cref="SortedDictionary{TKey,TValue}"/> 절 그대로다 — 출력이 넣은 순서와 무관하게
+        /// 항상 같아야 "저장→로드→저장이 바이트까지 같은지"를 테스트할 수 있다.
+        ///
+        /// <b>버전은 올리지 않는다.</b> 필드를 <i>더하는</i> 것이라 옛 세이브에는 이 키가 없고,
+        /// 그 상태는 "아직 아무것도 언락하지 않은 사람"과 정확히 같다.
+        /// </summary>
+        public SortedDictionary<string, int> OwnedDice { get; } = NewIntMap();
+
         /// <summary>유물. (<c>OJ.Relic.Save</c>)</summary>
         public RelicSave Relics { get; } = new RelicSave();
 

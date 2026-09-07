@@ -236,6 +236,8 @@ namespace OJ.Tower
 
         private void RefreshGrid(TowerProgressManager progress)
         {
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+
             for (int i = 0; i < cells.Count; i++)
             {
                 UITowerDiceCell cell = cells[i];
@@ -245,7 +247,7 @@ namespace OJ.Tower
                 DiceType diceType = cell.DiceType;
                 int star = cell.Star;
 
-                bool unlocked = progress == null || progress.IsDiceUnlocked(diceType);
+                bool unlocked = ownership == null || ownership.IsOwned(diceType);
                 bool selected = loadout.Contains(diceType, star);
                 bool tierFull = loadout.IsTierFull(diceType, star);
 
@@ -289,17 +291,19 @@ namespace OJ.Tower
 
         private void OnCellTapped(DiceType diceType, int star)
         {
-            TowerProgressManager progress = TowerProgressManager.Instance;
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
 
-            if (progress != null && !progress.IsDiceUnlocked(diceType))
+            if (ownership != null && !ownership.IsOwned(diceType))
             {
                 // 기획서 5.4 "미보유 — 탭 → 획득처·해금 조건 안내". 잠긴 칸의 탭이
                 // 아무 일도 안 하면 그 칸은 화면의 얼룩이 되고, 수집 목표를 노출한다는
                 // 이 화면의 목적(8.3)이 반만 이뤄진다.
-                int unlockFloor = TowerDatabaseProvider.Database.GetUnlockFloorOf(diceType);
-                ShowToast(unlockFloor > 0
-                    ? TowerDiceText.NameOf(diceType) + " 은(는) " + unlockFloor + "층을 클리어하면 열려요"
-                    : TowerDiceText.NameOf(diceType) + " 은(는) 아직 얻을 수 없어요");
+                //
+                // 이제 경로가 셋(별·스테이지·탑)이라 층 하나만 말하면 <b>가장 먼 길만</b>
+                // 알려 주는 셈이 된다. 문구는 DiceUnlockText 가 한곳에서 만든다.
+                ShowToast(DiceUnlockText.BuildLockedNotice(
+                    TowerDiceText.NameOf(diceType),
+                    DiceUnlockDatabaseProvider.Database.Get(diceType)));
                 return;
             }
 

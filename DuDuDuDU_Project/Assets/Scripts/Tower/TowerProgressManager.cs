@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using OJ.Core;
 using OJ.DI;
+using OJ.Dice;
 using OJ.Save;
 
 namespace OJ.Tower
@@ -67,6 +68,20 @@ namespace OJ.Tower
 
         /// <summary>진행도가 바뀌었다. 로비의 탑 버튼과 층 선택 화면이 구독한다.</summary>
         public event Action OnProgressChanged;
+
+        /// <summary>
+        /// 편성에 넣을 수 있는지 묻는 곳. <b>층 진행이 아니라 보유가 기준이다.</b>
+        ///
+        /// 생성자로 받는 것이 중요하다 — <c>.Instance</c> 로 잡으면 이 클래스가
+        /// <c>BeforeSceneLoad</c> 에서 만들어지는데 그때 다리가 아직 안 이어져 있을 수 있다.
+        /// 컨테이너는 의존 순서를 알아서 정하므로 여기서는 없을 수가 없다.
+        /// </summary>
+        private readonly DiceOwnershipManager ownership;
+
+        public TowerProgressManager(DiceOwnershipManager ownership)
+        {
+            this.ownership = ownership;
+        }
 
         private readonly Dictionary<int, TowerFloorRecord> records = new Dictionary<int, TowerFloorRecord>();
 
@@ -186,11 +201,10 @@ namespace OJ.Tower
             if (validFloor > highestClearedFloor)
                 highestClearedFloor = validFloor;
 
-            // 해금 목록을 여기서 갱신하지 않는다. IsDiceUnlocked 가 진행도에서
-            // 그때그때 계산하므로, highestClearedFloor 를 올린 이 줄이 곧 해금이다.
-            //
-            // 다만 <b>"방금 열렸다"</b> 는 계산으로 알 수 없다. 그것은 진행도가 아니라
-            // 사건이라, 편성 화면의 NEW 배지가 쓸 수 있도록 따로 남긴다.
+            // 층을 올린 것만으로는 다이스가 열리지 않는다. 보유는 진행도의 함수가 아니라
+            // 별개 상태이고, 실제 지급은 보상 배관(GameManager 의 탑 결과 처리)이 한다.
+            // 여기서는 편성 화면의 NEW 배지가 쓸 "방금 열렸다" 만 남긴다 —
+            // 그것은 계산으로 알 수 없는 <b>사건</b>이기 때문이다.
             if (firstClear)
             {
                 DiceType granted = GetUnlockGrantedByFloor(validFloor);
@@ -248,85 +262,26 @@ namespace OJ.Tower
         // ── 해금 ────────────────────────────────────────────────────────
 
         /// <summary>
-        /// 탑이 다이스를 잠그는가. <b>지금은 꺼 두었다 (2026-09-07 결정).</b>
+        /// 이 층을 클리어하면 열리는 다이스. 없으면 <c>DiceType.Max</c>.
         ///
-        /// 끈 이유는 <see cref="IsDiceUnlocked"/> 주석에 있다. 여기 스위치 하나로
-        /// 모아 둔 것은 <b>잠금과 그 잠금을 말하는 화면이 같이 켜지고 꺼져야</b> 하기
-        /// 때문이다 — 잠그지 않으면서 "30층 · KingFire 해금" 을 목표로 띄우면
-        /// 이미 쓰고 있는 다이스를 앞으로 얻을 것처럼 말하는 셈이 된다.
+        /// <b>사다리의 정본이 <c>DiceUnlockDatabase</c> 로 옮겨 갔다.</b> 가격과 세 컨텐츠의
+        /// 보상처가 한 목록에 있어야 중복 환급이 성립하기 때문이다 — 그쪽 클래스 주석 참조.
+        /// 여기 남은 것은 "탑이 그 목록의 층 칸을 읽는다" 는 사실뿐이다.
         ///
-        /// <c>const</c> 가 아니라 <c>static readonly</c> 인 것은 도달 불가 코드 경고
-        /// (CS0162)를 늘리지 않기 위해서다.
-        /// </summary>
-        private static readonly bool DiceLockEnabled = false;
-
-        /// <summary>
-        /// 잠금을 지금 걸 것인가. <b>지금은 걸지 않는다 (2026-09-07 결정).</b>
-        ///
-        /// <b>왜 껐나.</b> 기획서 4.2 의 잠금은 <b>다이스 보유</b>가 기준이다 —
-        /// "미보유 스페셜·신화 자리는 비워 둔다", "다이스 획득 자체가 곧 전투력 확장".
-        /// 그런데 이 게임에는 <b>아직 다이스를 영구히 보유한다는 개념이 없다</b>
-        /// (본편의 진화는 판 안에서 만들었다 판이 끝나면 사라진다). 그래서 구현할 때
-        /// 층 진행을 대신 기준으로 삼았는데, 그건 기획서가 말한 것과 <b>다른 규칙</b>이다.
-        ///
-        /// 층으로 잠그면 "탑을 올라서 여는 다이스" 가 되어, 4.2 가 만들려던
-        /// "수집한 다이스가 곧 출전 인원" 이라는 인과가 반대로 뒤집힌다.
-        /// 진짜 보유 개념(다이스 언락 시스템)이 들어오면 그때 <b>그것을</b> 기준으로
-        /// 잠근다 — 그때까지는 잠그지 않는 편이 낫다. 틀린 기준으로 잠가 두면
-        /// 그 상태에 맞춘 밸런스가 쌓이고, 나중에 기준을 바꿀 때 그것까지 되돌려야 한다.
-        ///
-        /// <b>되살리는 방법.</b> 아래 <c>return true</c> 를 지우면 층 기반 잠금이
-        /// 그대로 돌아온다. 해금 사다리(<c>TowerDatabase.DiceUnlocks</c>)와 그것을 읽는
-        /// 화면(목표 배너·해금 진행도·NEW 배지)은 <b>전부 그대로 두었다</b> —
-        /// 기준만 갈아 끼우면 되게 하려는 것이다.
-        /// </summary>
-        public bool IsDiceUnlocked(DiceType diceType)
-        {
-            if (diceType == DiceType.Max)
-                return false;
-
-            if (!DiceLockEnabled)
-                return true;
-
-            if (TowerLoadoutRules.TierOf(diceType) == TowerSlotTier.Base)
-                return true;
-
-            // <b>목록을 들고 있지 않고 그때그때 계산한다.</b> 진행도 하나가 정본이고
-            // 해금은 그 함수다 — 누적 목록을 따로 두면 둘이 어긋났을 때(세이브 손상,
-            // 해금 사다리 수정) 어느 쪽이 맞는지 판단할 근거가 없어진다.
-            //
-            // 여기서 데이터베이스를 만지므로 <b>씬이 선 뒤에만 불러야 한다.</b>
-            // 부르는 곳은 전부 UI 다(편성 화면·추천 편성·최근 편성 복원).
-            int unlockFloor = TowerDatabaseProvider.Database.GetUnlockFloorOf(diceType);
-            return unlockFloor > 0 && unlockFloor <= HighestClearedFloor;
-        }
-
-        /// <summary>
-        /// 이번 클리어로 새로 열린 다이스. 결과 화면이 그것을 알려 준다.
-        /// 없으면 <c>DiceType.Max</c>.
+        /// 에셋을 깨우므로 씬이 선 뒤에만 부를 것.
         /// </summary>
         public DiceType GetUnlockGrantedByFloor(int floor)
         {
-            // 잠그지 않으면 열어 줄 것도 없다. 여기서 걸러야 결과 화면의 "해금!" 과
-            // 편성 화면의 NEW 배지가 같이 조용해진다.
-            if (!DiceLockEnabled)
-                return DiceType.Max;
-
-            return TowerDatabaseProvider.Database.GetUnlockAtFloor(floor);
+            return DiceUnlockDatabaseProvider.Database.GetUnlockAtFloor(floor);
         }
 
         /// <summary>
-        /// 다음에 열릴 해금. 층 선택 화면의 목표 배너와 결과 화면의 진행도가 쓴다.
+        /// 다음에 열릴 탑 해금. 층 선택 화면의 목표 배너와 결과 화면의 진행도가 쓴다.
         /// 전부 열었으면 null.
         /// </summary>
-        public TowerDiceUnlock GetNextUnlock()
+        public DiceUnlockDefinition GetNextUnlock()
         {
-            // 잠그지 않으면 다음 해금도 없다. null 을 받은 화면은 "모든 다이스 사용 가능"
-            // 으로 그린다 — 잠금이 꺼진 지금도 참이고, 나중에 전부 열었을 때도 참이다.
-            if (!DiceLockEnabled)
-                return null;
-
-            return TowerDatabaseProvider.Database.GetNextUnlock(HighestClearedFloor);
+            return DiceUnlockDatabaseProvider.Database.GetNextTowerUnlock(HighestClearedFloor);
         }
 
         // ── 편성 ────────────────────────────────────────────────────────
@@ -344,7 +299,7 @@ namespace OJ.Tower
             // 고치면 생긴다. 그때 못 고르는 다이스가 편성에 남아 있으면, 화면에서는
             // 지울 수도 없는 칸으로 보인다.
             var copy = new TowerLoadout();
-            copy.LoadTokens(lastLoadoutTokens, IsDiceUnlocked);
+            copy.LoadTokens(lastLoadoutTokens, ownership.IsOwned);
             return copy;
         }
 
@@ -414,7 +369,7 @@ namespace OJ.Tower
             for (int i = 0; i < candidates.Count; i++)
             {
                 DiceType diceType = candidates[i];
-                if (!IsDiceUnlocked(diceType))
+                if (!ownership.IsOwned(diceType))
                     continue;
 
                 if (loadout.IsTierFull(diceType, TowerLoadoutRules.NonBaseStar))
@@ -619,8 +574,9 @@ namespace OJ.Tower
         /// <b>진짜와 구별되지 않아야</b> 그 상태에서 나온 버그를 믿을 수 있다.
         /// 클리어 시간은 0 으로 둔다(없는 기록을 지어내지 않는다).
         ///
-        /// <b>해금은 따로 켜지 않는다.</b> 층 번호의 함수라(<see cref="IsDiceUnlocked"/>)
-        /// 진행도를 올리는 것만으로 따라온다.
+        /// <b>해금도 같이 켠다.</b> 예전에는 해금이 층 번호의 함수라 진행도만 올리면 따라왔지만,
+        /// 이제 보유는 별개 상태다. 안 켜면 "250층을 깼는데 편성이 텅 빈" 상태가 되고,
+        /// 그건 진짜와 구별되는 상태다 — 이 메서드의 존재 이유에 반한다.
         ///
         /// <c>internal</c> 인 것이 중요하다 — 이 메서드는 정상 경로에 존재해선 안 된다.
         /// </summary>
@@ -640,6 +596,15 @@ namespace OJ.Tower
                     BestClearMilliseconds = 0,
                     BestRemainingHpPercent = 0,
                 });
+            }
+
+            // 그 층들이 열어 줬을 다이스를 실제로 보유시킨다. 환급은 받지 않는다 —
+            // 치트가 만든 상태에 재화까지 얹으면 밸런스를 볼 때 숫자가 오염된다.
+            for (int floor = 1; floor <= target; floor++)
+            {
+                DiceType granted = DiceUnlockDatabaseProvider.Database.GetUnlockAtFloor(floor);
+                if (granted != DiceType.Max)
+                    ownership.GrantFromContent(granted, null);
             }
 
             Save();

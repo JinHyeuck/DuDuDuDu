@@ -350,7 +350,7 @@ namespace OJ.Tower
             if (progress == null)
                 return;
 
-            TowerDiceUnlock next = progress.GetNextUnlock();
+            DiceUnlockDefinition next = progress.GetNextUnlock();
 
             if (data.UnlockedDice != DiceType.Max)
             {
@@ -385,12 +385,12 @@ namespace OJ.Tower
                 unlockCaptionText.SetText(next.diceType + " 해금 진행도");
 
             UITowerUIFactory.SetGauge(unlockGaugeFill, GaugeWidth,
-                TowerFormula.UnlockProgress01(progress.HighestClearedFloor, next.floor));
+                TowerFormula.UnlockProgress01(progress.HighestClearedFloor, next.towerFloor));
 
             if (unlockProgressText != null)
             {
-                unlockProgressText.SetText(next.floor + "층 클리어 시 해금 · " +
-                                           progress.HighestClearedFloor + " / " + next.floor);
+                unlockProgressText.SetText(next.towerFloor + "층 클리어 시 해금 · " +
+                                           progress.HighestClearedFloor + " / " + next.towerFloor);
             }
         }
 
@@ -432,7 +432,7 @@ namespace OJ.Tower
                 sb.Append(" · 강화석 ").Append(TowerFormula.BandRewardEnhanceStone(nextFloor));
             }
 
-            DiceType unlock = TowerDatabaseProvider.Database.GetUnlockAtFloor(nextFloor);
+            DiceType unlock = DiceUnlockDatabaseProvider.Database.GetUnlockAtFloor(nextFloor);
             if (unlock != DiceType.Max)
                 sb.Append(" · ").Append(TowerDiceText.NameOf(unlock)).Append(" 해금");
 

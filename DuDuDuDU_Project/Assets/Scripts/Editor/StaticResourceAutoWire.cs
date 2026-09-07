@@ -2,6 +2,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using OJ.Bounty;
+using OJ.Dice;
 using OJ.Tower;
 using OJ.UI;
 using OJ.Utils;
@@ -60,6 +61,7 @@ namespace OJ.EditorTools
             changed |= TryFill<DialogCatalog>(resource, "DialogCatalog", quiet);
             changed |= TryFill<BountyDatabase>(resource, "BountyDatabase", quiet);
             changed |= TryFill<TowerDatabase>(resource, "TowerDatabase", quiet);
+            changed |= TryFill<DiceUnlockDatabase>(resource, "DiceUnlockDatabase", quiet);
 
             if (!changed)
             {

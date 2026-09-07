@@ -157,9 +157,9 @@ namespace OJ.Tower
         {
             if (unlockGoalText != null)
             {
-                TowerDiceUnlock next = progress.GetNextUnlock();
+                DiceUnlockDefinition next = progress.GetNextUnlock();
                 unlockGoalText.SetText(next != null
-                    ? next.floor + "층 · " + next.diceType + " 해금"
+                    ? next.towerFloor + "층 · " + next.diceType + " 해금"
                     : "모든 다이스 사용 가능");
             }
 
@@ -308,16 +308,23 @@ namespace OJ.Tower
             sb.AppendLine();
             sb.AppendLine("<b>다이스 해금</b>");
 
-            IReadOnlyList<TowerDiceUnlock> unlocks = TowerDatabaseProvider.Database.DiceUnlocks;
+            // <b>기준이 층에서 보유로 바뀌었다.</b> 예전에는 "아직 안 올라간 층" 을 남은
+            // 해금으로 셌지만, 이제 같은 다이스를 별·스테이지로 먼저 얻을 수 있다 —
+            // 그러면 층은 안 올라갔어도 이미 갖고 있고, 목록에 남겨 두면 거짓말이 된다.
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+            IReadOnlyList<DiceUnlockDefinition> unlocks = DiceUnlockDatabaseProvider.Database.Definitions;
             bool anyLocked = false;
             for (int i = 0; i < unlocks.Count; i++)
             {
-                TowerDiceUnlock unlock = unlocks[i];
-                if (unlock == null || unlock.floor <= progress.HighestClearedFloor)
+                DiceUnlockDefinition unlock = unlocks[i];
+                if (unlock == null || unlock.towerFloor <= 0)
+                    continue;
+
+                if (ownership != null && ownership.IsOwned(unlock.diceType))
                     continue;
 
                 anyLocked = true;
-                sb.Append("  ").Append(unlock.floor).Append("층 — ").Append(unlock.diceType).AppendLine();
+                sb.Append("  ").Append(unlock.towerFloor).Append("층 — ").Append(unlock.diceType).AppendLine();
             }
 
             if (!anyLocked)

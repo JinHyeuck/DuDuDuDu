@@ -115,7 +115,7 @@ namespace OJ.EditorTools
         private static void Report(string header, TowerDatabase database)
         {
             var sb = new StringBuilder(header).AppendLine();
-            sb.AppendLine("  구간 " + database.Bands.Count + "개 / 해금 " + database.DiceUnlocks.Count + "개");
+            sb.AppendLine("  구간 " + database.Bands.Count + "개");
 
             // 학습 구간 넷은 기획서에 마리 수까지 적혀 있어 검증 값어치가 크다.
             for (int floor = 1; floor <= 20; floor += 5)

@@ -78,6 +78,9 @@ namespace OJ.Utils
         /// <summary>무한의 탑 60구간의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public TowerDatabase TowerDatabase;
 
+        /// <summary>다이스 언락 10줄(가격·컨텐츠 보상처)의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
+        public DiceUnlockDatabase DiceUnlockDatabase;
+
         /// <summary>
         /// 웨이브 되돌리기의 밸런스 손잡이. <b>비어 있어도 정상이다</b> —
         /// 코드 기본값이 곧 출시 값이라 Provider 가 조용히 그것을 쓴다.

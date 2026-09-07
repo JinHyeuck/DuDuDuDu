@@ -105,10 +105,10 @@ namespace OJ.EditorTools
                     " / 방어 " + plan.MonsterDefense);
                 EditorGUILayout.LabelField("목표 처치 수", plan.KillTarget + "마리");
 
-                TowerDiceUnlock next = progress.GetNextUnlock();
+                DiceUnlockDefinition next = progress.GetNextUnlock();
                 EditorGUILayout.LabelField(
                     "다음 해금",
-                    next != null ? next.floor + "층 · " + next.diceType : "전부 해금");
+                    next != null ? next.towerFloor + "층 · " + next.diceType : "전부 해금");
             }
         }
 

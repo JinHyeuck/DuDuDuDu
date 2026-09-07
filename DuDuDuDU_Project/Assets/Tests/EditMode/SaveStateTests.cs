@@ -57,6 +57,11 @@ namespace OJ.Core.Tests
             state.DiceLevels["Water"] = 1;
             state.DiceLevels["Thunder"] = 45;
 
+            // 다이스 보유. 값은 항상 1이고 기본 다이스는 오지 않는다 — 그 규칙은 매니저가
+            // 지키므로 여기서는 왕복만 본다.
+            state.OwnedDice["Tornado"] = 1;
+            state.OwnedDice["KingFire"] = 1;
+
             state.Relics.SummonCount = 987;
             state.Relics.Levels["QuickHands"] = 3;
             state.Relics.Levels["LastWall"] = 1;
@@ -98,6 +103,7 @@ namespace OJ.Core.Tests
             Assert.That(actual.Version, Is.EqualTo(expected.Version), "version");
             CollectionAssert.AreEqual(expected.Points, actual.Points, "points");
             CollectionAssert.AreEqual(expected.DiceLevels, actual.DiceLevels, "diceLevels");
+            CollectionAssert.AreEqual(expected.OwnedDice, actual.OwnedDice, "ownedDice");
 
             Assert.That(actual.Relics.SummonCount, Is.EqualTo(expected.Relics.SummonCount), "relics.summonCount");
             CollectionAssert.AreEqual(expected.Relics.Levels, actual.Relics.Levels, "relics.levels");
@@ -216,6 +222,7 @@ namespace OJ.Core.Tests
 
             Assert.That(state.Points, Is.Not.Null);
             Assert.That(state.DiceLevels, Is.Not.Null);
+            Assert.That(state.OwnedDice, Is.Not.Null);
             Assert.That(state.Relics, Is.Not.Null);
             Assert.That(state.Relics.Levels, Is.Not.Null);
             Assert.That(state.Equipment, Is.Not.Null);
@@ -306,6 +313,7 @@ namespace OJ.Core.Tests
         {
             var state = new SaveState();
             state.Points["Gold"] = 10;
+            state.OwnedDice["Tornado"] = 1;
             state.Relics.Levels["QuickHands"] = 2;
             state.Equipment.GemSlots["Weapon"] = new List<string> { "gem_a", "" };
             state.Stage.Records["3"] = new StageRecordSave { BestClearGrade = 1 };
@@ -322,6 +330,9 @@ namespace OJ.Core.Tests
                 "    \"Gold\": 10",
                 "  },",
                 "  \"diceLevels\": {},",
+                "  \"ownedDice\": {",
+                "    \"Tornado\": 1",
+                "  },",
                 "  \"relics\": {",
                 "    \"summonCount\": 0,",
                 "    \"levels\": {",

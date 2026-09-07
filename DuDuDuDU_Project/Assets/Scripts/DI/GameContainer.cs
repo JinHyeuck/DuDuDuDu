@@ -164,6 +164,13 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 다이스 보유. DiceLevelManager 바로 뒤에 둔다 — 의존은 PointManager 하나뿐이라
+            // 순서 제약은 없지만, 등록 순서가 곧 세이브 파일의 순서라(위 :153) 다이스 둘이
+            // 붙어 있어야 파일을 읽을 때 이해가 된다. 탑을 스테이지 계열 뒤에 둔 것과 같은 판단.
+            builder.Register<DiceOwnershipManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 스테이지 계열. StageProgressManager 가 뿌리이고 나머지 셋이 그것을 받는다.
             // 순서를 신경 쓸 필요는 없다 — 컨테이너가 생성자 의존을 보고 알아서 정한다.
             // 예전에 Awake 순서를 못 믿어 구독을 두 번 시도하던 것이 이걸로 사라졌다.
@@ -242,6 +249,7 @@ namespace OJ.DI
         {
             PointManager.Instance = container.Resolve<PointManager>();
             DiceLevelManager.Instance = container.Resolve<DiceLevelManager>();
+            DiceOwnershipManager.Instance = container.Resolve<DiceOwnershipManager>();
             StageProgressManager.Instance = container.Resolve<StageProgressManager>();
             StageRewardManager.Instance = container.Resolve<StageRewardManager>();
             StageStarManager.Instance = container.Resolve<StageStarManager>();

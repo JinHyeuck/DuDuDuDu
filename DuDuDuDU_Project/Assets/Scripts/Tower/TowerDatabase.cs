@@ -6,7 +6,10 @@ using OJ.Stage;
 namespace OJ.Tower
 {
     /// <summary>
-    /// 무한의 탑 60구간(300층)과 다이스 해금 사다리의 정본.
+    /// 무한의 탑 60구간(300층)의 정본.
+    ///
+    /// <b>다이스 해금 사다리는 여기 없다.</b> 가격과 세 컨텐츠의 보상처를 한 목록에 모아야
+    /// 중복 환급이 성립하므로 <c>DiceUnlockDatabase</c> 로 옮겼다 — 그쪽 클래스 주석 참조.
     /// (AGENTS 확정사항 3 — 밸런스 수치는 SO 로 올린다)
     ///
     /// <b>구간 60줄은 코드가 찍고 사람이 고친다.</b> <see cref="PopulateDefaults"/> 가
@@ -24,9 +27,6 @@ namespace OJ.Tower
     {
         [SerializeField] private List<TowerBandDefinition> bands = new List<TowerBandDefinition>();
 
-        [Tooltip("층을 깨서 열리는 스페셜·신화 다이스. 층 오름차순으로 둘 것.")]
-        [SerializeField] private List<TowerDiceUnlock> diceUnlocks = new List<TowerDiceUnlock>();
-
         [Header("공통")]
         [Tooltip("모든 층의 벽 체력. 층이 실패로 끝나는 유일한 조건이다.")]
         [Min(1)] [SerializeField] private int wallHp = 100;
@@ -37,16 +37,12 @@ namespace OJ.Tower
         private readonly Dictionary<int, TowerBandDefinition> bandMap = new Dictionary<int, TowerBandDefinition>();
 
         public IReadOnlyList<TowerBandDefinition> Bands => bands;
-        public IReadOnlyList<TowerDiceUnlock> DiceUnlocks => diceUnlocks;
         public int WallHp => Mathf.Max(1, wallHp);
 
         private void OnEnable()
         {
             if (bands == null)
                 bands = new List<TowerBandDefinition>();
-
-            if (diceUnlocks == null)
-                diceUnlocks = new List<TowerDiceUnlock>();
 
             // 비었을 때만 채운다. StageDatabase 와 같은 판단이고, 이유도 같다 —
             // 로드마다 덮으면 인스펙터에서 고친 밸런스가 조용히 사라진다.
@@ -138,57 +134,6 @@ namespace OJ.Tower
                 wallHp: WallHp);
         }
 
-        /// <summary>
-        /// 이 층을 클리어하면 열리는 다이스. 없으면 <c>DiceType.Max</c> 다.
-        /// <see cref="DiceType.Max"/> 를 "없음" 으로 쓰는 것은 이 프로젝트의 기존 관례다
-        /// (<c>PlayerController.CheatDiceType</c>).
-        /// </summary>
-        public DiceType GetUnlockAtFloor(int floor)
-        {
-            for (int i = 0; i < diceUnlocks.Count; i++)
-            {
-                TowerDiceUnlock unlock = diceUnlocks[i];
-                if (unlock != null && unlock.floor == floor)
-                    return unlock.diceType;
-            }
-
-            return DiceType.Max;
-        }
-
-        /// <summary>
-        /// 지금 진행도에서 <b>다음에 열릴</b> 해금. 층 선택 화면의 목표 배너와
-        /// 결과 화면의 해금 진행도가 쓴다(기획서 5.2 · 5.6).
-        /// 전부 열었으면 null 이다.
-        /// </summary>
-        public TowerDiceUnlock GetNextUnlock(int highestClearedFloor)
-        {
-            TowerDiceUnlock best = null;
-            for (int i = 0; i < diceUnlocks.Count; i++)
-            {
-                TowerDiceUnlock unlock = diceUnlocks[i];
-                if (unlock == null || unlock.floor <= highestClearedFloor)
-                    continue;
-
-                if (best == null || unlock.floor < best.floor)
-                    best = unlock;
-            }
-
-            return best;
-        }
-
-        /// <summary>이 다이스를 열어 주는 층. 없으면 0 이다.</summary>
-        public int GetUnlockFloorOf(DiceType diceType)
-        {
-            for (int i = 0; i < diceUnlocks.Count; i++)
-            {
-                TowerDiceUnlock unlock = diceUnlocks[i];
-                if (unlock != null && unlock.diceType == diceType)
-                    return unlock.floor;
-            }
-
-            return 0;
-        }
-
         // ── 검사 ────────────────────────────────────────────────────────
 
         /// <summary>
@@ -231,32 +176,6 @@ namespace OJ.Tower
                     problems.Add("구간 " + band + " 이 없다.");
             }
 
-            // 해금 사다리. 같은 다이스를 두 층이 열면 나중 것이 죽은 줄이 되고,
-            // 같은 층이 둘을 열면 결과 화면이 하나만 보여 준다.
-            var seenFloors = new HashSet<int>();
-            var seenDice = new HashSet<DiceType>();
-            for (int i = 0; i < diceUnlocks.Count; i++)
-            {
-                TowerDiceUnlock unlock = diceUnlocks[i];
-                if (unlock == null)
-                {
-                    problems.Add(i + "번 해금 항목이 비어 있다.");
-                    continue;
-                }
-
-                if (unlock.floor < 1 || unlock.floor > TowerFormula.TotalFloors)
-                    problems.Add("해금 층이 1~" + TowerFormula.TotalFloors + " 밖이다: " + unlock.floor);
-
-                if (!seenFloors.Add(unlock.floor))
-                    problems.Add("해금 층이 중복이다: " + unlock.floor + "층");
-
-                if (!seenDice.Add(unlock.diceType))
-                    problems.Add("같은 다이스를 두 번 해금한다: " + unlock.diceType);
-
-                if (TowerLoadoutRules.TierOf(unlock.diceType) == TowerSlotTier.Base)
-                    problems.Add("기본 다이스는 처음부터 쓸 수 있어 해금 대상이 아니다: " + unlock.diceType);
-            }
-
             return problems;
         }
 
@@ -270,7 +189,6 @@ namespace OJ.Tower
         public void PopulateDefaults()
         {
             bands = BuildDefaultBands();
-            diceUnlocks = BuildDefaultUnlocks();
             planCache.Clear();
             RebuildMaps();
         }
@@ -418,38 +336,6 @@ namespace OJ.Tower
             }
 
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// 해금 사다리.
-        ///
-        /// <b>30층 KingFire 는 기획서에 박혀 있는 값이다</b>(5.2 목표 배너, 5.6 해금 진행도).
-        /// 그 앞으로 스페셜 둘을 배치해 <b>30층에서 7슬롯이 처음 다 찬다</b> —
-        /// 기획서 8.1 의 "초반 4/7 → 중반 5/7 → 중후반 6/7 → 후반 7/7" 이 30층 안에 끝난다.
-        ///
-        /// <b>그 뒤의 해금은 슬롯을 채우는 것이 아니라 <i>바꿀 것</i>을 준다.</b>
-        /// 이미 7칸이 찼으므로 새 스페셜은 "무엇을 뺄까" 를 만든다 — 8.3 이 말하는
-        /// "같은 보유 상태에서도 층 특성에 따라 다른 편성을 연구" 가 그 지점이다.
-        ///
-        /// 스페셜의 대응 킹보다 스페셜이 먼저 열리게 순서를 맞췄다
-        /// (<c>DiceEvolution</c> 의 배선: Fire → ArmorBreak → KingFire).
-        /// 본편 진화와 규칙이 다른 곳이라 순서까지 어긋나면 읽는 사람이 두 번 헷갈린다.
-        /// </summary>
-        private static List<TowerDiceUnlock> BuildDefaultUnlocks()
-        {
-            return new List<TowerDiceUnlock>
-            {
-                new TowerDiceUnlock { floor = 10, diceType = DiceType.Tornado },
-                new TowerDiceUnlock { floor = 20, diceType = DiceType.ArmorBreak },
-                new TowerDiceUnlock { floor = 30, diceType = DiceType.KingFire },
-                new TowerDiceUnlock { floor = 45, diceType = DiceType.Wind },
-                new TowerDiceUnlock { floor = 60, diceType = DiceType.Time },
-                new TowerDiceUnlock { floor = 80, diceType = DiceType.Stun },
-                new TowerDiceUnlock { floor = 100, diceType = DiceType.KingIce },
-                new TowerDiceUnlock { floor = 140, diceType = DiceType.KingThunder },
-                new TowerDiceUnlock { floor = 190, diceType = DiceType.KingNormal },
-                new TowerDiceUnlock { floor = 250, diceType = DiceType.KingPoison },
-            };
         }
 
         private void RebuildMaps()
