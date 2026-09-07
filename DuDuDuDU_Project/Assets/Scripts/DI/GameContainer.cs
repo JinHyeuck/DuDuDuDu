@@ -7,6 +7,7 @@ using OJ.Equipment;
 using OJ.IdleReward;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Rewind;
 using OJ.Save;
 using OJ.SceneFlow;
 using OJ.Stage;
@@ -65,6 +66,14 @@ namespace OJ.DI
 
         /// <summary>팝업 서비스. 오프너가 쓴다. (10.1)</summary>
         public static UIService UI { get; private set; }
+
+        /// <summary>
+        /// 리워드 광고. <b>지금은 언제나 "없다" 고 답하는 구현이 꽂혀 있다</b> —
+        /// 이 프로젝트에 광고 SDK 가 아직 0 줄이기 때문이다. SDK 를 붙이는 날
+        /// <see cref="NullRewardedAdService"/> 자리에 진짜 구현을 등록하면
+        /// 되돌리기의 광고 몫이 그대로 살아난다.
+        /// </summary>
+        public static IRewardedAdService RewardedAds { get; private set; }
 
         /// <summary>
         /// 전투 씬 매니저로 가는 창구. (8.3b)
@@ -207,6 +216,11 @@ namespace OJ.DI
                 .As<ISaveOnApplicationLifecycle>();
 
             builder.RegisterEntryPoint<SaveOnApplicationLifecycle>();
+
+            // 리워드 광고 포트. 구현이 스텁이라 지금은 아무 일도 하지 않지만, 등록을
+            // 여기 두면 SDK 를 붙일 때 <b>고칠 곳이 이 한 줄</b>이다.
+            builder.Register<NullRewardedAdService>(Lifetime.Singleton)
+                .As<IRewardedAdService>();
         }
 
         /// <summary>
@@ -243,6 +257,7 @@ namespace OJ.DI
             SaveService = container.Resolve<SaveService>();
             SceneRouter = container.Resolve<SceneRouter>();
             UI = container.Resolve<UIService>();
+            RewardedAds = container.Resolve<IRewardedAdService>();
 
             // 통합 세이브를 읽어 매니저들에게 덮는다. <b>순서가 중요하다</b> —
             // 매니저 생성자가 컬렉션 초기화와 초기 지급을 이미 끝내 둔 상태이고,

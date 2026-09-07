@@ -7,6 +7,7 @@ using OJ.Dice;
 using OJ.Element;
 using OJ.Hunting;
 using OJ.SceneFlow;
+using OJ.Rewind;
 using OJ.Tower;
 
 namespace OJ.DI
@@ -141,6 +142,14 @@ namespace OJ.DI
             // 본편 전투의 실시간 패널과 탑 결과 화면이 같은 것을 읽는다.
             var contribution = new DamageContributionTracker();
 
+            // 되돌리기도 같은 이유로 여기서 만든다. 씬에 없고, 되돌릴지 묻는 확인 창이
+            // 루트에서 태어나 배틀 스코프의 등록을 못 본다.
+            //
+            // <b>창구 자신을 넘긴다.</b> 아직 Bind 전이라 안이 전부 null 인데,
+            // 이 매니저도 BountyManager 처럼 생성자에서는 들고만 있고 실제로 읽는 것은
+            // 웨이브가 시작된 뒤다.
+            var rewind = new WaveRewindManager(context);
+
             context.Bind(
                 resolver.Resolve<GameManager>(),
                 resolver.Resolve<PlayerController>(),
@@ -158,7 +167,8 @@ namespace OJ.DI
                 resolver.Resolve<DamageTextPool>(),
                 bounty,
                 tower,
-                contribution);
+                contribution,
+                rewind);
 
             // 등록한 14개 말고도 씬에는 창구가 필요한 컴포넌트가 있다
             // (Wall · PlayerFireRateUI · UIRemoveDice). 그것들은 다른 곳에서

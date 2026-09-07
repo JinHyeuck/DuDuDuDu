@@ -13,6 +13,7 @@ using OJ.Dice;
 using OJ.Element;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Rewind;
 using OJ.SceneFlow;
 using OJ.Stage;
 using OJ.Tower;
@@ -66,7 +67,26 @@ namespace OJ.Hunting
         public RectTransform RemainMonsterGauge;
         public float RemainMonsterGauge_Width = 705.0f;
 
+        /// <summary>
+        /// 사망 시 되돌리기 제안 창이 떠 있는가.
+        ///
+        /// <b>없으면 창이 두 번 뜬다.</b> 벽이 0 이 된 프레임에 몬스터 둘이 같이 때리면
+        /// <see cref="OnWallDestroyed"/> 가 두 번 불리는데, 그때 <c>isGameOver</c> 는 아직
+        /// false 다 — 예전에는 <c>GameOver()</c> 가 그 자리에서 불려 그 플래그가 막아 줬고,
+        /// 이제는 확인을 기다리느라 그 사이가 벌어졌다.
+        /// </summary>
+        private bool deathRewindPromptOpen;
+
         private float timeSpeed = 1.0f;
+
+        /// <summary>
+        /// 지금 배속(1·2·3). 되돌리기가 되감기 속도를 여기서 뽑는다
+        /// (<see cref="OJ.Core.WaveRewindFormula.PlaybackSpeed"/>).
+        ///
+        /// <b><c>Time.timeScale</c> 을 읽지 않는다.</b> 확인 창이 떠 있는 동안 그 값은 0 이라,
+        /// 되돌리기를 누른 시점에 물으면 언제나 0 이 돌아온다.
+        /// </summary>
+        public float CurrentTimeSpeed => timeSpeed;
         [SerializeField] private float returnToLobbyDelay = 1.0f;
 
         /// <summary>
@@ -248,6 +268,68 @@ namespace OJ.Hunting
                 GameOver);
         }
 
+        /// <summary>
+        /// 이번 웨이브를 시작 직전으로 되돌릴지 묻는다.
+        ///
+        /// <b>버튼 자체는 아무것도 되돌리지 않는다.</b> <see cref="OnClick_Pause"/> 와 같은
+        /// 모양이다 — 판을 크게 바꾸는 것은 전부 확인을 거친다.
+        ///
+        /// <b>왜 이 판단이 버튼이 아니라 여기 있나.</b> 확인을 기다리는 동안 시간을
+        /// 멈춰야 하는데, 되돌리는 <i>시간</i>은 <c>timeSpeed</c> 이고 그 값을 아는 것은
+        /// 이 클래스뿐이다. 버튼이 직접 <c>timeScale = 1</c> 로 되돌리면 <b>배속 3배로
+        /// 놀던 사람이 취소 한 번에 1배로 떨어진다.</b>
+        /// </summary>
+        public void OnClick_Rewind()
+        {
+            if (!battle.Rewind.CanRewindDuringWave)
+                return;
+
+            UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (confirm == null)
+            {
+                // 창을 못 열었는데 조용히 넘어가면 버튼이 죽은 것처럼 보인다.
+                // OnClick_Pause 와 같은 판단이다.
+                Debug.LogError("[전투] 확인 창을 열지 못했다. 카탈로그에 UIConfirmDialog 가 있는지 볼 것.");
+                return;
+            }
+
+            // 확인을 기다리는 동안 몬스터가 계속 내려오면 "되돌릴까" 를 고민하는 사이에
+            // 벽이 부서진다. 되돌리기가 가장 필요한 순간이 정확히 그 순간이다.
+            //
+            // 멈추기 <b>직전에</b> 알린다. 여기서부터 창이 닫힐 때까지는 웨이브 길이에서
+            // 빠져야 한다 — 안 그러면 오래 고민할수록 되감기가 길어진다.
+            battle.Rewind.NotifyRewindOffered();
+            Time.timeScale = 0f;
+
+            int remaining = battle.Rewind.RemainingCount;
+            confirm.Open(
+                "이번 웨이브를 되돌릴까요?",
+                "웨이브를 시작하기 직전으로 돌아가요." + Environment.NewLine +
+                "쓰고 나면 " + Mathf.Max(0, remaining - 1) + "번 남아요.",
+                "되돌릴게요",
+                "계속할게요",
+                ConfirmRewind,
+                CancelRewind);
+        }
+
+        private void ConfirmRewind()
+        {
+            // 되돌리기가 성공하면 그 안에서 timeScale 을 되살리고 관리 단계까지 간다.
+            // 실패하는 경우(창이 떠 있는 사이에 조건이 깨진 경우)에만 여기서 시간을 푼다.
+            if (!battle.Rewind.TryRewind(RewindSource.Free, RewindTrigger.Wave))
+                CancelRewind();
+        }
+
+        /// <summary>
+        /// 되돌리지 않기로 했다. <b>1 이 아니라 <c>timeSpeed</c> 로 되돌린다</b> —
+        /// 배속을 켜 둔 사람의 설정을 취소 한 번으로 뺏지 않는다.
+        /// </summary>
+        private void CancelRewind()
+        {
+            battle.Rewind.NotifyOfferClosed();
+            Time.timeScale = timeSpeed;
+        }
+
         public void OnClick_Speed()
         {
             if (timeSpeed == 1)
@@ -320,6 +402,11 @@ namespace OJ.Hunting
 
             if (state == InGameState.Wave)
             {
+                // <b>WaveIndex++ 보다 먼저다.</b> 되돌리기는 "시작 버튼을 누르기 직전"
+                // 으로 되감는 기능이라, 뒤에서 뜨면 되돌린 판의 웨이브 번호가 하나 앞선다.
+                // 탑에서는 이 호출이 첫 줄에서 그냥 돌아간다.
+                battle.Rewind.Capture();
+
                 Run.WaveIndex++;
                 RelicManager.Instance?.BeginWave(CurrentWaveIndex);
 
@@ -360,6 +447,23 @@ namespace OJ.Hunting
                 Time.timeScale = 1;
                 UpdateWaveText();
             }
+
+            // 되돌리기 버튼은 웨이브 중에만, 그리고 실제로 되돌릴 수 있을 때만 뜬다.
+            // 남은 횟수가 0 이면 아예 없는 편이 낫다 — 눌리지 않는 버튼은 고장으로 읽힌다.
+            //
+            // <b>반드시 위 분기 <i>뒤</i>여야 한다.</b> 되돌릴 수 있는지는 스냅샷이 떠 있는지에
+            // 걸려 있고, 그 스냅샷은 바로 위 웨이브 진입에서 떠진다. 앞에 두면 <b>첫 웨이브에만
+            // 버튼이 안 뜬다</b> — 그때만 아직 뜬 것이 없기 때문이고, 두 번째 웨이브부터는
+            // 지난 웨이브의 스냅샷이 남아 있어 멀쩡해 보인다. 그래서 눈으로 잡기 나쁘다.
+            //
+            // <b>여기서 판단하는 이유.</b> 상태를 아는 곳이 이 함수 하나뿐이라는 규약이
+            // 위 현상금 띠 주석에 이미 적혀 있다. 버튼이 스스로 판단하게 두면 매 프레임
+            // inGameState 를 들여다보게 되고, 그건 이벤트로 바꿔 놓은 것을 폴링으로
+            // 되돌리는 일이다.
+            if (state == InGameState.Wave && battle.Rewind.CanRewindDuringWave)
+                GameContainer.UI?.Show<UIWaveRewindButton>();
+            else
+                GameContainer.UI?.Hide<UIWaveRewindButton>();
         }
 
         /// <summary>
@@ -426,6 +530,7 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<UIBountySelectDialog>();
             GameContainer.UI?.Hide<UIBountyCallout>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
+            GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
         }
 
@@ -495,6 +600,95 @@ namespace OJ.Hunting
             Vector2 vector2 = RemainMonsterGauge.sizeDelta;
             vector2.x = RemainMonsterGauge_Width * ratio;
             RemainMonsterGauge.sizeDelta = vector2;
+        }
+
+        /// <summary>
+        /// 벽이 무너졌다. <see cref="Wall.TakeDamage"/> 가 부른다.
+        ///
+        /// <b>예전에는 <c>Wall</c> 이 여기서 <c>GameOver()</c> 를 부르고 곧바로 자기
+        /// <c>gameObject</c> 를 부쉈다.</b> 되돌리기는 벽이 살아 있어야 하므로 그 두 가지를
+        /// 이리로 옮겼다 — 벽은 이제 "무너졌다" 고 알리기만 하고, 무엇을 할지는 여기서 정한다.
+        ///
+        /// 최후의 벽 유물은 <b>건드리지 않았다.</b> 그건 자동으로 터지는 것이고 되돌리기는
+        /// 유저가 고르는 것이라 성격이 다르다. 순서상 유물이 먼저이고, 유물이 살려내면
+        /// 이 함수는 애초에 불리지 않는다.
+        /// </summary>
+        public void OnWallDestroyed()
+        {
+            if (isGameOver || deathRewindPromptOpen)
+                return;
+
+            if (battle.Rewind.CanRewindOnDeath)
+            {
+                UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
+                if (confirm != null)
+                {
+                    deathRewindPromptOpen = true;
+
+                    // 벽이 0 인 채로 시간이 흐르면 고민하는 동안 화면이 계속 움직인다.
+                    // 되돌리기를 안 고르면 아래 DeclineDeathRewind 가 배속을 그대로 되살린다.
+                    //
+                    // 능동 경로와 같은 이유로 멈추기 직전에 알린다 — 여기서 고민한 시간은
+                    // 웨이브 길이가 아니다.
+                    battle.Rewind.NotifyRewindOffered();
+                    Time.timeScale = 0f;
+
+                    int remaining = battle.Rewind.RemainingCount;
+                    confirm.Open(
+                        "벽이 무너졌어요",
+                        "이번 웨이브를 시작하기 직전으로 되돌릴 수 있어요." + Environment.NewLine +
+                        "쓰고 나면 " + Mathf.Max(0, remaining - 1) + "번 남아요.",
+                        "되돌릴게요",
+                        "여기서 끝낼게요",
+                        ConfirmDeathRewind,
+                        DeclineDeathRewind);
+                    return;
+                }
+
+                // 창을 못 열었다고 판을 멈춰 세울 수는 없다 — 여기는 이미 진 자리라
+                // 그냥 지는 것이 유일하게 안전한 답이다. 대신 크게 운다.
+                Debug.LogError("[전투] 확인 창을 열지 못해 되돌리기를 제안하지 못했다. " +
+                               "카탈로그에 UIConfirmDialog 가 있는지 볼 것.");
+            }
+
+            FinalizeDefeat();
+        }
+
+        private void ConfirmDeathRewind()
+        {
+            deathRewindPromptOpen = false;
+
+            // 되돌리기가 성공하면 그 안에서 시간을 되살리고 관리 단계까지 데려간다.
+            // 실패하는 경우는 창이 떠 있는 사이에 조건이 깨진 때뿐이고, 그때는 진다.
+            if (!battle.Rewind.TryRewind(RewindSource.Free, RewindTrigger.Death))
+                DeclineDeathRewind();
+        }
+
+        /// <summary>
+        /// 되돌리지 않기로 했다.
+        ///
+        /// <b>배속을 <c>timeSpeed</c> 로 되살린 뒤에 진다.</b> 1 로 두면 되돌리기가 생기기
+        /// 전과 동작이 달라진다 — 예전에는 벽이 부서질 때 배속이 그대로였고, 결과창 앞의
+        /// 뜸(<c>WaitBeforeResult</c>)이 그때 1 로 되돌렸다. 그 순서를 그대로 지킨다.
+        /// </summary>
+        private void DeclineDeathRewind()
+        {
+            deathRewindPromptOpen = false;
+            battle.Rewind.NotifyOfferClosed();
+            Time.timeScale = timeSpeed;
+            FinalizeDefeat();
+        }
+
+        /// <summary>
+        /// 진다. <b>순서가 있다</b> — <see cref="GameOver"/> 가 <c>wall.CurrentHp</c> 를
+        /// 읽으므로(부분 보상·기록) 벽은 반드시 그 뒤에 부순다.
+        /// </summary>
+        private void FinalizeDefeat()
+        {
+            GameOver();
+
+            if (wall != null)
+                Destroy(wall.gameObject);
         }
 
         public void GameOver()
@@ -617,6 +811,10 @@ namespace OJ.Hunting
             // 지금은 배틀 스코프가 씬마다 새로 만들어 줘서 우연히 깨끗하지만,
             // 씬을 다시 로드하지 않고 판을 다시 시작하게 되는 날 그 우연이 깨진다.
             battle.Bounty.ResetWaveState();
+            // 되돌리기 횟수도 그 "우연" 에 기대는 것 중 하나다. 판이 소유하는 값이므로
+            // 지난 판에 쓴 횟수가 따라오지 않게 여기서 판다.
+            battle.Rewind.BeginRun();
+            deathRewindPromptOpen = false;
             wall.SetInit(WallHp);
             int startSpBonus = RelicManager.Instance != null ? RelicManager.Instance.GetStageStartSpBonus() : 0;
             battle.Summon.SetStageStartSp(CurrentStageData.initialSP + startSpBonus);

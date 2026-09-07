@@ -8,6 +8,7 @@ using OJ.Equipment;
 using OJ.Hunting;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Rewind;
 using OJ.Stage;
 using OJ.StageReward;
 using OJ.Tower;
@@ -76,6 +77,13 @@ namespace OJ.Utils
 
         /// <summary>무한의 탑 60구간의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public TowerDatabase TowerDatabase;
+
+        /// <summary>
+        /// 웨이브 되돌리기의 밸런스 손잡이. <b>비어 있어도 정상이다</b> —
+        /// 코드 기본값이 곧 출시 값이라 Provider 가 조용히 그것을 쓴다.
+        /// 위 데이터베이스들과 달리 없다고 울지 않는 이유가 그것이다.
+        /// </summary>
+        public WaveRewindSettings WaveRewindSettings;
 
         /// <summary>팝업 프리팹 목록. (10.1) 비면 팝업이 하나도 열리지 않는다.</summary>
         public DialogCatalog DialogCatalog;
