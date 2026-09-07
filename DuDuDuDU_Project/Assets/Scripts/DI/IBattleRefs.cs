@@ -2,6 +2,7 @@ using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
 using OJ.Hunting;
+using OJ.Tower;
 
 namespace OJ.DI
 {
@@ -56,5 +57,25 @@ namespace OJ.DI
         /// (해석은 자식 → 부모 단방향이다). 창구에 얹어야 배너와 선택 창이 닿는다.
         /// </summary>
         BountyManager Bounty { get; }
+
+        /// <summary>
+        /// 무한의 탑. <see cref="Bounty"/> 와 같은 이유로 여기 있다 —
+        /// 씬 컴포넌트가 아니고, 루트에서 태어나는 다이얼로그(결과 화면)가 읽어야 한다.
+        ///
+        /// <b>본편 전투에서도 null 이 아니다.</b> 대신 <c>IsActive</c> 가 false 이고,
+        /// 그때는 어떤 메서드도 아무 일을 하지 않는다. null 로 두면 <c>GameManager</c> ·
+        /// <c>MonsterSpawner</c> · <c>Monster</c> 에 들어간 탑 분기가 전부 <c>?.</c> 를
+        /// 달게 되고, 그러면 "탑인데 매니저가 없다" 는 사고가 조용히 삼켜진다.
+        /// </summary>
+        TowerRunManager Tower { get; }
+
+        /// <summary>
+        /// 이 판의 다이스별 피해 누적. <b>본편과 탑이 함께 쓴다.</b>
+        ///
+        /// 원래 <see cref="Tower"/> 안에 있었는데 본편 전투에도 기여도를 띄우기로 하면서
+        /// 꺼냈다. 탑에 남겨 두고 본편이 그것을 읽게 하면 <b>본편이 탑을 의존</b>하게 되고,
+        /// 그건 방향이 거꾸로다 — 탑이 본편 위에 얹힌 콘텐츠지 그 반대가 아니다.
+        /// </summary>
+        DamageContributionTracker Contribution { get; }
     }
 }

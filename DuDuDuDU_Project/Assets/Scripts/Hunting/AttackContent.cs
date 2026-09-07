@@ -115,6 +115,14 @@ namespace OJ.Hunting
         public void HitMonster(Monster target, DiceType diceType, int damage)
         {
             int appliedDamage = target.TakeDamage(damage);
+
+            // 다이스별 기여도. <b>이 한 줄이 전부인 것이 요점이다</b> — 다이스 효과
+            // 아홉 개가 전부 이 함수를 지나므로(범위·연쇄·다단 포함) 여기만 잡으면 새지 않는다.
+            //
+            // <b>0 이하일 때도 부른다.</b> 보호막에 막힌 타격은 0 을 돌려주는데, 그것을
+            // 셀지 말지는 추적기가 정한다 — 호출부가 거르면 판단이 두 곳으로 갈린다.
+            battle.Contribution.Record(diceType, appliedDamage);
+
             if (appliedDamage <= 0)
                 return;
 

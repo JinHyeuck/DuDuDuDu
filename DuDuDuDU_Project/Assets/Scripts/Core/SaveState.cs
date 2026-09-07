@@ -61,6 +61,15 @@ namespace OJ.Core
         /// <summary>스테이지 진행도·보상. (<c>OJ.Stage.Progress</c> 외 2개)</summary>
         public StageSave Stage { get; } = new StageSave();
 
+        /// <summary>
+        /// 무한의 탑 진행도·해금·편성.
+        ///
+        /// <b>버전을 올리지 않았다.</b> 위 <see cref="CurrentVersion"/> 주석이 적어 둔 규칙
+        /// 그대로다 — 필드를 <i>더하는</i> 것은 옛 세이브에 그 키가 없을 뿐이고 기본값이
+        /// 들어간다. 여기서는 "탑을 한 번도 안 해 본 사람"과 정확히 같은 상태다.
+        /// </summary>
+        public TowerSave Tower { get; } = new TowerSave();
+
         /// <summary>방치 보상 타이머. (<c>OJ.IdleReward.*</c>)</summary>
         public IdleSave Idle { get; } = new IdleSave();
 
@@ -136,6 +145,73 @@ namespace OJ.Core
 
         /// <summary>도달한 가장 높은 웨이브.</summary>
         public int BestClearedWave { get; set; }
+    }
+
+    /// <summary>
+    /// 무한의 탑 저장분.
+    ///
+    /// <b>스테이지 저장분과 합치지 않는다.</b> 둘은 같은 "진행도" 로 보이지만 축이 다르다 —
+    /// 스테이지는 웨이브 기록과 등급별 보상 플래그를 들고, 탑은 클리어 시간과 해금 목록을
+    /// 든다. 합치면 한쪽에만 있는 필드가 다른 쪽 기록마다 빈칸으로 따라다니고, 무엇보다
+    /// <b>둘 중 하나를 초기화할 방법이 없어진다</b>(기획서 9장의 "300층 이후 시즌제·초기화"가
+    /// 열려 있는 항목이라 그 여지를 미리 없애면 안 된다).
+    /// </summary>
+    public sealed class TowerSave
+    {
+        /// <summary>클리어한 가장 높은 층. 0 이면 아직 1층도 못 깼다는 뜻이다.</summary>
+        public int HighestClearedFloor { get; set; }
+
+        // "선택한 층" 은 저장하지 않는다. 고를 것이 없기 때문이다 —
+        // 도전 가능한 층은 언제나 HighestClearedFloor + 1 하나뿐이다(반복 없음).
+
+        /// <summary>
+        /// 층 번호 → 기록. 키가 문자열인 이유는 <see cref="StageSave.Records"/> 와 같다.
+        /// <b>클리어한 층만 들어간다</b> — 300칸을 미리 만들어 두면 세이브가 이유 없이 커진다.
+        /// </summary>
+        public SortedDictionary<string, TowerFloorRecordSave> Records { get; }
+            = new SortedDictionary<string, TowerFloorRecordSave>(StringComparer.Ordinal);
+
+        // 해금 목록은 저장하지 않는다. <b>층 번호의 함수</b>이기 때문이다 —
+        // "몇 층까지 깼는가" 하나에서 어떤 스페셜·신화가 열렸는지가 결정된다
+        // (TowerProgressManager.IsDiceUnlocked). 따로 저장하면 정본이 둘이 되고,
+        // 둘이 어긋났을 때(세이브 손상, 해금 사다리 수정) 어느 쪽이 맞는지
+        // 판단할 근거가 없어진다.
+
+        /// <summary>
+        /// 마지막으로 출전한 편성. <c>"DiceType이름:성급"</c> 형태의 문자열이다.
+        ///
+        /// 기획서 5.5 "최근 편성 저장 — 직전 출전 편성을 자동 저장한다". 문자열인 것은
+        /// <see cref="SaveState"/> 가 enum 을 볼 수 없기 때문이고, 그 제약이 여기서도 맞다 —
+        /// 없어진 다이스 이름은 불러올 때 걸러지고 빈 슬롯으로 남는다.
+        /// </summary>
+        public List<string> LastLoadout { get; } = new List<string>();
+
+        /// <summary>
+        /// 빈 슬롯 안내를 이미 봤는가. 기획서 5.5 "빈 슬롯 안내는 최초 출전 시 1회만 노출".
+        /// </summary>
+        public bool EmptySlotNoticeShown { get; set; }
+    }
+
+    /// <summary>층 하나의 기록.</summary>
+    public sealed class TowerFloorRecordSave
+    {
+        /// <summary>
+        /// 최고 기록(밀리초). <b>초가 아니라 밀리초인 것이 중요하다.</b> 화면에는
+        /// "42.3초" 처럼 소수 한 자리로 나가는데(기획서 5.6), 초를 정수로 저장하면
+        /// 그 소수가 저장 왕복에서 사라져 기록 갱신이 0.1초 단위로 뭉개진다.
+        /// float 로 두지 않는 것은 왕복 비교가 정확해야 하기 때문이다.
+        /// </summary>
+        public int BestClearMilliseconds { get; set; }
+
+        /// <summary>이 층을 클리어한 적이 있는가. 최초 클리어 보상 중복 지급을 막는 기준이다.</summary>
+        public bool Cleared { get; set; }
+
+        /// <summary>
+        /// 실패했을 때 남은 적 체력의 비율(0~100). 기획서 5.6 의 "보스 체력 12% 잔여 ·
+        /// 이전보다 6%p 개선" 이 이 값의 차이다. <b>실패도 진척으로 읽히게</b> 하려면
+        /// 실패 기록도 남아야 한다.
+        /// </summary>
+        public int BestRemainingHpPercent { get; set; } = 100;
     }
 
     /// <summary>

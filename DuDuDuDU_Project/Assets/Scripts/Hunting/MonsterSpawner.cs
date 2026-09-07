@@ -6,6 +6,7 @@ using OJ.Bounty;
 using OJ.Core;
 using OJ.DI;
 using OJ.Stage;
+using OJ.Tower;
 using OJ.Utils;
 
 namespace OJ.Hunting
@@ -117,6 +118,15 @@ namespace OJ.Hunting
             if (battle.Game.inGameState != InGameState.Wave)
                 return;
 
+            // 무한의 탑은 규칙이 다르다 — 보스도 현상금도 없고, 층 계획이 마리 수와
+            // 간격을 정한다. 여기서 갈라 놓지 않으면 아래 세 판정(현상금·보스·일반)이
+            // 전부 탑에 맞지 않는 답을 낸다.
+            if (battle.Tower.IsActive)
+            {
+                TickTowerSpawn();
+                return;
+            }
+
             if (IsWaveSpawnCompleted())
                 return;
 
@@ -127,6 +137,118 @@ namespace OJ.Hunting
                 timer = 0f;
             }
         }
+
+        // ──────────────────────────────────────────────────────────────
+        // 무한의 탑
+        //
+        // <b>풀과 위치는 여기 남는다.</b> 탑이 자기 스포너를 갖게 하면 몬스터 풀이
+        // 두 벌이 되고, 화면 밖 이탈·재사용 규칙을 두 곳에서 지켜야 한다.
+        // 여기서 정하는 것은 "무엇을 몇 마리, 어떤 간격으로" 뿐이고 그 답은
+        // <c>TowerRunManager</c> 가 준다.
+        // ──────────────────────────────────────────────────────────────
+
+        private void TickTowerSpawn()
+        {
+            if (!battle.Tower.HasMoreToSpawn)
+                return;
+
+            timer += Time.deltaTime;
+            if (timer < battle.Tower.Plan.SpawnInterval)
+                return;
+
+            timer = 0f;
+            SpawnTowerMonster();
+        }
+
+        private void SpawnTowerMonster()
+        {
+            TowerFloorPlan plan = battle.Tower.Plan;
+
+            // 덩치가 큰 콘셉트(정예·고방어)는 보스 프리팹을 쓴다. 전용 아트가 없는
+            // 지금, 30마리짜리 물량과 1마리짜리 정예가 같은 모습으로 나오면 층의
+            // 성격이 화면에서 안 읽힌다 — 기획서 1.3 의 "적 정보를 읽고" 가 무너진다.
+            Monster monster = plan.ScaleMultiplier >= TowerBossLookScale
+                ? GetBossMonster()
+                : GetMonster();
+
+            if (monster == null)
+                return;
+
+            TowerMonsterSpec spec = battle.Tower.GetSpawnSpec();
+
+            monster.OnSpawn();
+            monster.transform.position = GetSpawnPosition();
+            monster.transform.rotation = Quaternion.identity;
+            monster.SetCombatStats(spec.Hp, spec.Defense, spec.Scale);
+
+            // OnSpawn 이 ApplyMoveSpeed 를 되돌려 놓으므로 반드시 그 뒤다.
+            monster.ConfigureAsTowerMonster(spec);
+
+            battle.Tower.NotifySpawned();
+        }
+
+        /// <summary>
+        /// 분열 자식을 내보낸다. <c>TowerRunManager.NotifyMonsterDefeated</c> 가 부른다.
+        ///
+        /// <b>부모가 죽은 자리에서 좌우로 흩어 놓는다.</b> 같은 점에 겹쳐 놓으면
+        /// 스프라이트가 하나로 보여 두 마리인 줄 모르고, 범위 공격 하나가 언제나
+        /// 둘을 같이 맞혀 "단일과 범위의 균형" 이라는 이 기믹의 요구가 사라진다.
+        /// </summary>
+        /// <returns>
+        /// <b>실제로 내보낸 자식 수.</b> 약속한 수보다 적을 수 있고, 그때는 부르는 쪽이
+        /// 그만큼 목표 처치 수를 깎아야 한다 — 안 그러면 나오지도 않은 자식을 기다리며
+        /// 층이 영영 안 끝난다.
+        /// </returns>
+        public int SpawnTowerSplitChildren(Monster parent, Vector3 deathPosition)
+        {
+            if (parent == null || !battle.Tower.IsActive)
+                return 0;
+
+            int count = parent.TowerSplitChildCount;
+            if (count <= 0)
+                return 0;
+
+            TowerFloorPlan plan = battle.Tower.Plan;
+            int childHp = plan.SplitChildHp;
+            float childScale = Mathf.Max(0.1f, plan.ScaleMultiplier * SplitChildScaleRatio);
+
+            for (int i = 0; i < count; i++)
+            {
+                Monster child = GetMonster();
+                if (child == null)
+                {
+                    // 풀이 비었고 새로 찍지도 못했다. 여기서 조용히 빠져나가면
+                    // <b>목표는 그대로인데 자식이 모자라</b> 층이 끝나지 않는다.
+                    // 몇 마리를 못 냈는지 돌려줘 부르는 쪽이 목표를 맞추게 한다.
+                    Debug.LogError("[탑] 분열 자식을 " + count + "마리 중 " + i +
+                                   "마리만 내보냈다. 목표 처치 수를 그만큼 줄인다.");
+                    return i;
+                }
+
+                child.OnSpawn();
+
+                float offsetX = (i - (count - 1) * 0.5f) * SplitChildSpreadX;
+                child.transform.position = new Vector3(deathPosition.x + offsetX, deathPosition.y, deathPosition.z);
+                child.transform.rotation = Quaternion.identity;
+
+                // 방어력은 부모와 같다. 낮추면 분열 구간이 "부모만 단단한 층" 이 되어
+                // 자식을 처리하는 범위 공격의 값어치가 사라진다.
+                child.SetCombatStats(childHp, plan.MonsterDefense, childScale);
+
+                // 자식은 조금 빠르다. 부모가 죽은 자리에서 다시 내려오기 시작하므로
+                // 같은 속도면 벽까지 가는 시간이 층마다 두 배로 늘어난다.
+                child.ConfigureAsTowerSplitChild(plan.MoveSpeedMultiplier * SplitChildSpeedRatio);
+            }
+
+            return count;
+        }
+
+        /// <summary>이 배수를 넘는 층은 보스 프리팹으로 나온다. 덩치로 콘셉트를 읽히게 하는 값이다.</summary>
+        private const float TowerBossLookScale = 1.3f;
+
+        private const float SplitChildScaleRatio = 0.65f;
+        private const float SplitChildSpeedRatio = 1.25f;
+        private const float SplitChildSpreadX = 0.7f;
 
         public Monster GetMonster()
         {
