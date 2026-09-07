@@ -3,6 +3,7 @@ using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
 using OJ.Hunting;
+using OJ.Tower;
 
 namespace OJ.DI
 {
@@ -38,6 +39,8 @@ namespace OJ.DI
         public BulletEffectPool BulletEffects { get; private set; }
         public DamageTextPool DamageTexts { get; private set; }
         public BountyManager Bounty { get; private set; }
+        public TowerRunManager Tower { get; private set; }
+        public DamageContributionTracker Contribution { get; private set; }
 
         /// <summary>
         /// 배틀 스코프가 빌드된 직후 한 번 부른다.
@@ -61,7 +64,9 @@ namespace OJ.DI
             BulletPool bullets,
             BulletEffectPool bulletEffects,
             DamageTextPool damageTexts,
-            BountyManager bounty)
+            BountyManager bounty,
+            TowerRunManager tower,
+            DamageContributionTracker contribution)
         {
             Game = game;
             Player = player;
@@ -78,6 +83,8 @@ namespace OJ.DI
             BulletEffects = bulletEffects;
             DamageTexts = damageTexts;
             Bounty = bounty;
+            Tower = tower;
+            Contribution = contribution;
 
             IsActive = true;
         }
@@ -102,6 +109,12 @@ namespace OJ.DI
             BulletEffects = null;
             DamageTexts = null;
             Bounty = null;
+
+            // 탑도 같이 비운다. 판이 끝나 로비로 나간 뒤에도 IsActive 가 true 로 남으면
+            // 다음 본편 전투가 탑 규칙(소환 금지·단일 웨이브)으로 돌아간다.
+            Tower?.Clear();
+            Tower = null;
+            Contribution = null;
         }
     }
 }

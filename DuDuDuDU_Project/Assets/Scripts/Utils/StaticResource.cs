@@ -10,6 +10,7 @@ using OJ.Point;
 using OJ.Relic;
 using OJ.Stage;
 using OJ.StageReward;
+using OJ.Tower;
 using OJ.UI;
 
 namespace OJ.Utils
@@ -72,6 +73,9 @@ namespace OJ.Utils
 
         /// <summary>현상금 5등급의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public BountyDatabase BountyDatabase;
+
+        /// <summary>무한의 탑 60구간의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
+        public TowerDatabase TowerDatabase;
 
         /// <summary>팝업 프리팹 목록. (10.1) 비면 팝업이 하나도 열리지 않는다.</summary>
         public DialogCatalog DialogCatalog;

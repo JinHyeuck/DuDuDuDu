@@ -13,6 +13,7 @@ using OJ.Point;
 using OJ.Relic;
 using OJ.Save;
 using OJ.Stage;
+using OJ.Tower;
 using OJ.StageReward;
 using OJ.StageStar;
 using OJ.UI;
@@ -168,6 +169,10 @@ namespace OJ.SceneFlow
             Check(sb, "IdleRewardManager", IdleRewardManager.Instance,
                 () => "자동전투 " + IdleRewardManager.Instance.GetAutoBattleElapsed().TotalMinutes.ToString("0") + "분");
 
+            Check(sb, "TowerProgressManager", TowerProgressManager.Instance,
+                () => "최고 " + TowerProgressManager.Instance.HighestClearedFloor +
+                      "층 / 도전 " + TowerProgressManager.Instance.HighestUnlockedFloor + "층");
+
             Check(sb, "RunHistoryManager", RunHistoryManager.Instance, () => null);
             Check(sb, "AOSBackBtnManager", AOSBackBtnManager.Instance, () => null);
         }
@@ -186,6 +191,13 @@ namespace OJ.SceneFlow
             Line(sb, realStage ? Ok : Bad, "StageDatabase",
                 realStage
                     ? "스테이지 " + StageDatabaseProvider.GetDatabase().StageCount + "개"
+                    : "폴백(코드 기본값)을 쓰고 있다");
+
+            bool realTower = TowerDatabaseProvider.HasRealDatabase;
+            Line(sb, realTower ? Ok : Bad, "TowerDatabase",
+                realTower
+                    ? "구간 " + TowerDatabaseProvider.Database.Bands.Count +
+                      "개 / 해금 " + TowerDatabaseProvider.Database.DiceUnlocks.Count + "개"
                     : "폴백(코드 기본값)을 쓰고 있다");
         }
 

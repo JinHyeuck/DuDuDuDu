@@ -81,6 +81,13 @@ namespace OJ.Dice
 
         private void OnSummonButton()
         {
+            // 무한의 탑에서는 소환이 없다(기획서 3.2 금지 항목). 버튼 자체는
+            // GameManager.HideTowerForbiddenUI 가 이미 치웠지만, 규칙은 여기 있어야 한다 —
+            // 화면을 끄는 것과 동작을 막는 것은 다른 일이고, 끄는 쪽만 고치면
+            // 다른 경로로 들어온 호출이 조용히 통과한다.
+            if (battle.Tower.IsActive)
+                return;
+
             if (battle.Game.inGameState == InGameState.Wave)
                 return;
 

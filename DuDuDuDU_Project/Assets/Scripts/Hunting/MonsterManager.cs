@@ -29,7 +29,22 @@ namespace OJ.Hunting
             // 이 null 이면 그것은 사고이므로 조용히 넘기지 않고 울어야 한다.
             // (씬 정리 중에 도는 Monster.OnDisable 경로는 countAsKill 이 false 라 여기 닿지 않는다.)
             if (removed && countAsKill)
+            {
                 battle.Game.RemoveMonsterDeadCount();
+                return;
+            }
+
+            // 탑에서는 <b>죽지 않고 빠진 것</b>도 알려야 한다. 목표 처치 수가
+            // "이미 나온 것을 다 잡는다" 라서, 나온 것 하나가 사라지면 그 한 칸이
+            // 영영 안 채워져 층이 끝나지 않는다.
+            //
+            // <c>removed</c> 를 먼저 보는 것이 요점이다 — 죽은 개체는 위에서 이미
+            // 목록에서 빠졌으므로 풀로 돌아갈 때의 두 번째 호출은 여기 닿지 않는다.
+            //
+            // <c>?.</c> 는 씬을 내릴 때를 위한 것이다. 그때도 이 경로가 도는데
+            // 창구는 이미 비어 있을 수 있다.
+            if (removed && battle.Tower != null && battle.Tower.IsActive)
+                battle.Tower.NotifyKillForfeited(monster);
         }
 
         public Monster GetClosestMonster(Vector3 position)

@@ -12,6 +12,7 @@ using OJ.SceneFlow;
 using OJ.Stage;
 using OJ.StageReward;
 using OJ.StageStar;
+using OJ.Tower;
 using OJ.UI;
 using OJ.Utils;
 
@@ -169,6 +170,13 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 무한의 탑. 스테이지 계열 <b>바로 뒤</b>에 둔다 — 의존은 없지만
+            // 세이브 파일의 순서가 등록 순서를 따르므로(SaveService.Capture),
+            // 읽을 때 진행도끼리 붙어 있는 편이 낫다.
+            builder.Register<TowerProgressManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             builder.Register<EquipmentManager>(Lifetime.Singleton)
                 .AsSelf()
                 .As<ISaveStateOwner>();
@@ -223,6 +231,7 @@ namespace OJ.DI
             StageProgressManager.Instance = container.Resolve<StageProgressManager>();
             StageRewardManager.Instance = container.Resolve<StageRewardManager>();
             StageStarManager.Instance = container.Resolve<StageStarManager>();
+            TowerProgressManager.Instance = container.Resolve<TowerProgressManager>();
             IdleRewardManager.Instance = container.Resolve<IdleRewardManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
