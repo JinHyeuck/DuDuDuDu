@@ -6,6 +6,8 @@ using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.Relic;
+using OJ.Rewind;
+using OJ.Tower;
 using OJ.Utils;
 using VContainer;
 
@@ -57,6 +59,31 @@ namespace OJ.Hunting
         /// </summary>
         public bool IsBounty { get; private set; }
 
+        /// <summary>
+        /// 이 개체가 화면에 나온 자리. <b>되돌리기 연출이 여기로 되감는다.</b>
+        ///
+        /// <c>MonsterSpawner</c> 가 위치를 넣는 네 곳에서 같이 적어 준다. 여기서 스스로
+        /// <c>transform.position</c> 을 읽지 않는 이유는 <c>OnSpawn</c> 이 <b>위치를 넣기
+        /// 전에</b> 불리기 때문이다 — 그 시점의 좌표는 지난번에 죽은 자리다.
+        /// </summary>
+        public Vector2 SpawnPosition { get; private set; }
+
+        /// <summary>
+        /// 이 개체가 화면에 나온 <b>실제 시각</b>. 되감기가 타임라인을 역재생할 때 쓴다.
+        ///
+        /// <b><c>Time.unscaledTime</c> 이다.</b> 되감기 길이의 기준은 "유저가 실제로 본 시간"
+        /// 이고, 게임 시간은 배속에 눌려 그것과 다르다 — 3배속으로 20초를 본 웨이브는
+        /// 게임 시간으로 60초다. 여기에 게임 시간을 넣으면 3배속에서만 되감기가 3배 길어진다.
+        /// </summary>
+        public float SpawnRealTime { get; private set; }
+
+        /// <summary>소환 위치와 시각을 적는다. <c>MonsterSpawner</c> 만 부른다.</summary>
+        public void MarkSpawnPosition(Vector2 position)
+        {
+            SpawnPosition = position;
+            SpawnRealTime = Time.unscaledTime;
+        }
+
         private readonly WaitForSeconds poisonDelay = new WaitForSeconds(0.5f);
         private int _baseDefense;
         private int _defenseDownAmount;
@@ -84,6 +111,44 @@ namespace OJ.Hunting
         private float _pullUntilTime;
         private Vector2 _pullCenter;
         private Vector3 _defaultLocalScale;
+
+        // ── 무한의 탑 전용 상태 ──────────────────────────────────────────
+        //
+        // <b>넷 다 탑에서만 켜진다.</b> 본편 전투에서는 OnSpawn 이 전부 0 으로 깔고
+        // 아무도 다시 켜지 않으므로, 아래 분기들은 그 자리에서 빠져나간다.
+        //
+        // <b>현상금(IsBounty)과 달리 이동 제어 면역을 주지 않는다.</b> 저쪽은 웨이브
+        // 종료 조건이 "현상금이 정리될 때까지" 라 붙잡히면 판이 멈추지만, 탑은 종료
+        // 조건이 <b>처치 수</b>라 붙잡혀 있어도 언젠가 끝난다. 오히려 둔화·기절이
+        // 초고속 돌진 구간의 정답이므로(기획서 6.2) 면역을 주면 그 구간이 죽는다.
+
+        /// <summary>최대 체력. 회복형 적의 회복량 계산에만 쓴다.</summary>
+        private int _maxHp;
+
+        /// <summary>
+        /// 이 층의 이동 속도 배수. <b>슬로우가 풀렸을 때 되돌릴 기준</b>이기도 하다.
+        /// 1 이 기본이고, 본편 전투에서는 언제나 1 이다.
+        /// </summary>
+        private float _towerSpeedMultiplier = 1f;
+
+        /// <summary>초당 최대 체력의 몇 %를 회복하는가. 0 이면 회복 없음.</summary>
+        private float _towerRegenPercentPerSecond;
+
+        /// <summary>회복의 소수점 나머지. 1 미만이 매 프레임 버려지면 회복이 0 이 된다.</summary>
+        private float _towerRegenCarry;
+
+        /// <summary>남은 보호막 타격 수. 0 이면 보호막 없음.</summary>
+        private int _towerShieldCharges;
+
+        /// <summary>
+        /// 죽을 때 갈라질 자식 수. 0 이면 분열하지 않는다.
+        /// <c>TowerRunManager</c> 가 이 값으로 <b>부모와 자식을 구분</b>한다 —
+        /// 자식은 0 이라 다시 갈라지지 않는다.
+        /// </summary>
+        public int TowerSplitChildCount { get; private set; }
+
+        /// <summary>분열 자식이 물려받는 체력 비율.</summary>
+        public float TowerSplitChildHpRatio { get; private set; }
 
         private void Awake()
         {
@@ -126,6 +191,7 @@ namespace OJ.Hunting
 
             IsBounty = false;
             _bountyWallHitDone = false;
+            ClearTowerTraits();
 
             battle.Monsters.RegisterMonster(this);
             ApplyMoveSpeed = moveSpeed;
@@ -174,8 +240,12 @@ namespace OJ.Hunting
             if (IsBounty)
                 battle.Bounty?.NotifyEscaped(this);
 
+            // 탑의 "죽지 않고 사라짐" 통보는 여기 없다. <c>MonsterManager.UnregisterMonster</c>
+            // 가 <c>countAsKill == false</c> 하나로 부모·자식을 가리지 않고 처리한다 —
+            // 목표가 자식까지 세는 지금은 자식이 사라져도 한 칸이 비기 때문이다.
             IsBounty = false;
             _bountyWallHitDone = false;
+            ClearTowerTraits();
 
             // 여기 ?. 는 새로 넣은 것이 아니라 원래 MonsterManager.Instance 뒤에 붙어 있던
             // 것을 그대로 옮긴 것이다. OnDisable 은 씬을 내릴 때도 도는데 그때는 배틀 스코프가
@@ -246,6 +316,20 @@ namespace OJ.Hunting
                 stateBonusPercent);
             int appliedDamage = IncomingDamageFormula.AppliedDamage(dmg, defense, totalBonusPercent);
 
+            // 탑의 보호막. <b>피해가 아니라 타격 한 번을 통째로 먹는다.</b>
+            // 기획서 6.2 가 보호막의 대응으로 "다단 공격" 을 적어 둔 것이 이 뜻이다 —
+            // 흡수량으로 만들면 한 방이 센 다이스가 그대로 뚫어 다단의 자리가 없어진다.
+            //
+            // <b>피해 계산이 다 끝난 뒤에 가로챈다.</b> 앞에 두면 방어력 감소·상태
+            // 피해증가가 보호막에 막힌 타격에서는 소모되지 않은 것이 되어, 같은 다이스가
+            // 보호막 앞에서만 다르게 동작한다.
+            if (_towerShieldCharges > 0)
+            {
+                _towerShieldCharges--;
+                ShowShieldAbsorb();
+                return 0;
+            }
+
             _hp -= appliedDamage;
             if (_hp <= 0)
             {
@@ -264,8 +348,31 @@ namespace OJ.Hunting
                     EquipmentManager.Instance?.OnMonsterKilled(
                         battle.Game != null ? battle.Game.wall : null);
                     RelicManager.Instance?.OnMonsterKilled(this, wasPoisoned, deathPosition);
+
+                    // 되돌리기 연출이 되감을 대상. <b>PoolMonster 보다 먼저여야 한다</b> —
+                    // 저것이 SetActive(false) 를 부르면 OnDisable 이 스프라이트를 포함한
+                    // 상태를 지워, 무엇이 어떻게 죽었는지 읽을 수 없게 된다.
+                    // (바로 아래 분열 통보가 같은 이유로 같은 자리에 있다.)
+                    battle.Rewind.RecordDeath(this, deathPosition);
                     // 현상금은 웨이브 목표 수에 들어가지 않으므로 처치 수로 세지 않는다.
                     // true 로 넘기면 웨이브가 한 마리 일찍 끝난다.
+                    // 분열을 <b>처치를 세기 전에</b> 통보한다. 순서가 중요하다 —
+                    // 목표 처치 수는 "이미 나온 것" 만 세므로, 자식이 목표에 더해지기
+                    // 전에 부모의 처치가 세어지면 <b>그 순간 목표를 채워 층이 끝난다.</b>
+                    // (부모 1마리·자식 1마리짜리 층이면 1/1 로 즉시 클리어가 된다.)
+                    //
+                    // 풀에 돌려보내기 전이기도 해야 한다. PoolMonster 가 부르는
+                    // OnDisable 이 위치·자식 수를 지우기 때문이다.
+                    if (TowerSplitChildCount > 0)
+                    {
+                        battle.Tower.NotifyMonsterDefeated(this, deathPosition);
+
+                        // <b>여기서 반드시 0 으로 만든다.</b> 아래 PoolMonster 가 돌리는
+                        // OnDisable 은 "죽지 않고 사라졌다" 경로를 타는데, 그때 이 값이
+                        // 남아 있으면 같은 부모가 죽음과 이탈로 두 번 세어진다.
+                        TowerSplitChildCount = 0;
+                    }
+
                     if (IsBounty)
                     {
                         battle.Bounty?.NotifyDefeated(this);
@@ -619,6 +726,8 @@ namespace OJ.Hunting
 
         private void UpdateTimedStates()
         {
+            TickTowerRegen();
+
             // 현상금은 여기서 빠진다. 이 줄은 "슬로우가 풀렸으면 원래 속도로" 인데,
             // 현상금의 느린 걸음은 슬로우가 아니라 <b>기본 속도</b>다. 걸러 내지 않으면
             // _slowUntilTime 이 -1 인 첫 프레임에 조건이 참이 되어 느린 걸음이
@@ -626,9 +735,56 @@ namespace OJ.Hunting
             if (IsBounty)
                 return;
 
-            if (Clock.GameTime >= _slowUntilTime && ApplyMoveSpeed != moveSpeed)
-                ApplyMoveSpeed = moveSpeed;
+            // 탑의 속도 배수도 슬로우가 아니라 <b>기본 속도</b>다. 아래 줄이
+            // "슬로우가 풀렸으면 moveSpeed 로" 되돌리는데, 그러면 초고속 돌진 구간의
+            // 몬스터가 한 번 둔화됐다 풀리는 순간 <b>영영 느려진 채</b>로 남는다.
+            // 그래서 되돌릴 기준을 프리팹 속도가 아니라 이 층의 속도로 바꾼다.
+            float restoreSpeed = moveSpeed * _towerSpeedMultiplier;
+            if (Clock.GameTime >= _slowUntilTime && ApplyMoveSpeed != restoreSpeed)
+                ApplyMoveSpeed = restoreSpeed;
         }
+
+        /// <summary>
+        /// 회복형 적의 체력 회복. 기획서 6.2 "일정 시간마다 체력 회복 → 순간 화력".
+        ///
+        /// <b>소수점을 이월한다.</b> 초당 4% 라도 체력이 작으면 한 프레임 회복량이
+        /// 1 미만이고, 그때마다 버리면 <c>RoundToInt</c> 가 0 을 돌려줘 회복이 아예
+        /// 일어나지 않는다 — 체력이 작은 층에서만 기믹이 사라지는, 눈으로는
+        /// 못 찾는 종류의 사고다.
+        ///
+        /// <b>최대 체력을 넘지 않는다.</b> 넘게 두면 "잡을 뻔했다" 가 아니라
+        /// "처음보다 더 단단해졌다" 가 되어 결과 화면의 잔여 체력이 100%를 넘는다.
+        /// </summary>
+        private void TickTowerRegen()
+        {
+            if (_towerRegenPercentPerSecond <= 0f || !IsAlive || _hp >= _maxHp)
+                return;
+
+            _towerRegenCarry += _maxHp * (_towerRegenPercentPerSecond * 0.01f) * Time.deltaTime;
+            if (_towerRegenCarry < 1f)
+                return;
+
+            int healed = Mathf.FloorToInt(_towerRegenCarry);
+            _towerRegenCarry -= healed;
+            _hp = Mathf.Min(_maxHp, _hp + healed);
+        }
+
+        /// <summary>
+        /// 보호막이 한 대를 막았다. <b>남은 횟수를 숫자로 띄운다.</b>
+        ///
+        /// 아무것도 안 띄우면 화면에서는 "공격이 안 먹는다" 로만 보이고,
+        /// 그것은 기획서 8.2 가 금지한 "실패 원인을 알 수 없는" 상태와 같은 종류다.
+        /// 3 → 2 → 1 로 줄어드는 숫자가 보이면 "몇 대 더 때리면 된다" 가 읽힌다.
+        /// </summary>
+        private void ShowShieldAbsorb()
+        {
+            GameObject dtObj = battle.DamageTexts.GetDamageText();
+            dtObj.transform.position = transform.position;
+            dtObj.transform.ResetLocalZ();
+            dtObj.GetComponent<DamageText>().SetText(_towerShieldCharges, ShieldTextColor);
+        }
+
+        private static readonly Color ShieldTextColor = new Color(0.55f, 0.85f, 1f, 1f);
 
         private void StartAttack(Wall wall)
         {
@@ -725,9 +881,69 @@ namespace OJ.Hunting
             ApplyMoveSpeed = Mathf.Max(0.05f, moveSpeed * Mathf.Max(0.05f, moveSpeedMultiplier));
         }
 
+        /// <summary>
+        /// 이 개체를 탑의 몬스터로 만든다. <b><c>OnSpawn</c> · <c>SetCombatStats</c> 뒤에
+        /// 불러야 한다</b> — <c>OnSpawn</c> 이 여기서 세우는 값을 전부 지우고,
+        /// 속도 배수는 <c>ApplyMoveSpeed</c> 를 덮으므로 순서가 뒤집히면 사라진다.
+        /// (<see cref="ConfigureAsBounty"/> 와 같은 제약이고 같은 이유다.)
+        /// </summary>
+        public void ConfigureAsTowerMonster(TowerMonsterSpec spec)
+        {
+            _towerSpeedMultiplier = Mathf.Max(0.05f, spec.SpeedMultiplier);
+            _towerRegenPercentPerSecond = Mathf.Max(0f, spec.RegenPercentPerSecond);
+            _towerRegenCarry = 0f;
+            _towerShieldCharges = Mathf.Max(0, spec.ShieldHitCharges);
+            TowerSplitChildCount = Mathf.Max(0, spec.SplitChildCount);
+            TowerSplitChildHpRatio = Mathf.Clamp01(spec.SplitChildHpRatio);
+
+            // moveSpeed 자체는 건드리지 않는다. 그것은 프리팹 값이고, 풀에서 재사용될 때
+            // OnSpawn 이 ApplyMoveSpeed 를 여기로 되돌리는 기준점이다 — 깎아 두면
+            // 같은 인스턴스가 본편 몬스터로 나왔을 때 느려진 채로 나온다.
+            ApplyMoveSpeed = moveSpeed * _towerSpeedMultiplier;
+        }
+
+        /// <summary>
+        /// 분열 자식으로 만든다. <b>자식은 다시 갈라지지 않는다</b> —
+        /// 갈라지면 마리 수가 기하급수로 늘어 목표 처치 수를 미리 셀 수 없게 되고,
+        /// 그 순간 웨이브 종료 판정이 통째로 무너진다.
+        ///
+        /// 보호막과 회복도 물려받지 않는다. 자식까지 그것을 들면 "분열 + 보호막" 구간이
+        /// 조합이 아니라 같은 대응을 세 배로 요구하는 벽이 된다.
+        /// </summary>
+        public void ConfigureAsTowerSplitChild(float speedMultiplier)
+        {
+            _towerSpeedMultiplier = Mathf.Max(0.05f, speedMultiplier);
+            _towerRegenPercentPerSecond = 0f;
+            _towerRegenCarry = 0f;
+            _towerShieldCharges = 0;
+            TowerSplitChildCount = 0;
+            TowerSplitChildHpRatio = 0f;
+
+            ApplyMoveSpeed = moveSpeed * _towerSpeedMultiplier;
+        }
+
+        /// <summary>
+        /// 탑 상태를 전부 끈다. <c>OnSpawn</c> 과 <c>OnDisable</c> 이 부른다 —
+        /// 풀에서 재사용되는 개체가 지난 층의 보호막을 들고 나오지 않게 하는 자리다.
+        /// </summary>
+        private void ClearTowerTraits()
+        {
+            _towerSpeedMultiplier = 1f;
+            _towerRegenPercentPerSecond = 0f;
+            _towerRegenCarry = 0f;
+            _towerShieldCharges = 0;
+            TowerSplitChildCount = 0;
+            TowerSplitChildHpRatio = 0f;
+        }
+
         public void SetCombatStats(int hp, int baseDefenseValue, float scaleMultiplier = 1f)
         {
             _hp = Mathf.Max(1, hp);
+
+            // 회복형 적의 상한. 여기서만 세운다 — SetHp 는 유물·치트가 부르는 경로라
+            // 거기서도 세우면 "최대 체력" 의 뜻이 호출부마다 달라진다.
+            _maxHp = _hp;
+
             _baseDefense = Mathf.Max(0, baseDefenseValue);
             _defenseDownAmount = 0;
             RecalculateDefense();

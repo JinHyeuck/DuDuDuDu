@@ -311,6 +311,52 @@ namespace OJ.Relic
             lastWallCooldownWaveIndex = -1;
         }
 
+        /// <summary>
+        /// 판 범위 플래그 묶음. 웨이브 되돌리기가 뜨고 되돌린다.
+        ///
+        /// <b><see cref="summonCount"/> 와 레벨은 여기 없다.</b> 그 둘은 세이브로 가는
+        /// 영구 상태라 판을 되감아도 되감기면 안 된다.
+        /// </summary>
+        public struct RunFlags
+        {
+            public bool StageStartDiceApplied;
+            public bool FirstWaveAttackUsed;
+            public bool FirstMythicCrafted;
+            public bool LastWallTriggered;
+            public int LastWallCooldownWaveIndex;
+        }
+
+        /// <summary>
+        /// 판 범위 플래그를 뜬다.
+        ///
+        /// <b>이게 없으면 되돌리기가 유물을 태워 먹는다.</b> <see cref="BeginWave"/> 와
+        /// <see cref="EndWave"/> 가 되돌리는 것은 <c>firstWaveAttackUsed</c> 와
+        /// <c>lastWallCooldownWaveIndex</c> 둘뿐이고, 나머지 셋은 <b>판에 한 번</b>이라
+        /// <see cref="BeginStageRun"/> 에서만 꺼진다. 특히 <c>lastWallTriggered</c> —
+        /// 되돌린 웨이브에서 최후의 벽이 발동했다면 그 판에서 두 번 다시 못 쓴다.
+        /// </summary>
+        public RunFlags CaptureRunFlags()
+        {
+            return new RunFlags
+            {
+                StageStartDiceApplied = stageStartDiceApplied,
+                FirstWaveAttackUsed = firstWaveAttackUsed,
+                FirstMythicCrafted = firstMythicCrafted,
+                LastWallTriggered = lastWallTriggered,
+                LastWallCooldownWaveIndex = lastWallCooldownWaveIndex,
+            };
+        }
+
+        /// <summary><see cref="CaptureRunFlags"/> 의 역.</summary>
+        public void RestoreRunFlags(in RunFlags flags)
+        {
+            stageStartDiceApplied = flags.StageStartDiceApplied;
+            firstWaveAttackUsed = flags.FirstWaveAttackUsed;
+            firstMythicCrafted = flags.FirstMythicCrafted;
+            lastWallTriggered = flags.LastWallTriggered;
+            lastWallCooldownWaveIndex = flags.LastWallCooldownWaveIndex;
+        }
+
         public int GetStageStartSpBonus()
         {
             return Mathf.RoundToInt(GetPrimaryValue(RelicId.BeginnerPouch));

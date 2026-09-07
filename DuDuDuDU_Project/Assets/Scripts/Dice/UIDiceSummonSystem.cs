@@ -70,6 +70,39 @@ namespace OJ.Dice
             spText.color = currentSP >= summonCost ? Color.white : Color.red;
         }
 
+        /// <summary>
+        /// 소환 상태 묶음. 웨이브 되돌리기가 뜨고 되돌린다.
+        ///
+        /// <b><see cref="summonsSinceLastCostIncrease"/> 가 여기 있어야 하는 이유.</b>
+        /// 그것이 private 이라 밖에서 못 읽는데, 빠뜨리면 되돌린 뒤 <b>다음 소환 한 번의
+        /// 비용 상승 시점이 어긋난다</b> — 화면에는 "가끔 비용이 한 박자 늦게 오른다"
+        /// 로만 보여서 원인을 못 찾는다.
+        /// </summary>
+        public struct SummonSnapshot
+        {
+            public int CurrentSP;
+            public int SummonCost;
+            public int SummonsSinceLastCostIncrease;
+        }
+
+        public SummonSnapshot CaptureSnapshot()
+        {
+            return new SummonSnapshot
+            {
+                CurrentSP = currentSP,
+                SummonCost = summonCost,
+                SummonsSinceLastCostIncrease = summonsSinceLastCostIncrease,
+            };
+        }
+
+        public void RestoreSnapshot(in SummonSnapshot snapshot)
+        {
+            currentSP = snapshot.CurrentSP;
+            summonCost = snapshot.SummonCost;
+            summonsSinceLastCostIncrease = snapshot.SummonsSinceLastCostIncrease;
+            UpdateSPUI();
+        }
+
         public void AddSP(int addsp)
         {
             if (addsp <= 0)
@@ -81,6 +114,13 @@ namespace OJ.Dice
 
         private void OnSummonButton()
         {
+            // 무한의 탑에서는 소환이 없다(기획서 3.2 금지 항목). 버튼 자체는
+            // GameManager.HideTowerForbiddenUI 가 이미 치웠지만, 규칙은 여기 있어야 한다 —
+            // 화면을 끄는 것과 동작을 막는 것은 다른 일이고, 끄는 쪽만 고치면
+            // 다른 경로로 들어온 호출이 조용히 통과한다.
+            if (battle.Tower.IsActive)
+                return;
+
             if (battle.Game.inGameState == InGameState.Wave)
                 return;
 

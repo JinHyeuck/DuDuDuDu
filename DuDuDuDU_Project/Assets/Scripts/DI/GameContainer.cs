@@ -7,11 +7,13 @@ using OJ.Equipment;
 using OJ.IdleReward;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Rewind;
 using OJ.Save;
 using OJ.SceneFlow;
 using OJ.Stage;
 using OJ.StageReward;
 using OJ.StageStar;
+using OJ.Tower;
 using OJ.UI;
 using OJ.Utils;
 
@@ -64,6 +66,14 @@ namespace OJ.DI
 
         /// <summary>팝업 서비스. 오프너가 쓴다. (10.1)</summary>
         public static UIService UI { get; private set; }
+
+        /// <summary>
+        /// 리워드 광고. <b>지금은 언제나 "없다" 고 답하는 구현이 꽂혀 있다</b> —
+        /// 이 프로젝트에 광고 SDK 가 아직 0 줄이기 때문이다. SDK 를 붙이는 날
+        /// <see cref="NullRewardedAdService"/> 자리에 진짜 구현을 등록하면
+        /// 되돌리기의 광고 몫이 그대로 살아난다.
+        /// </summary>
+        public static IRewardedAdService RewardedAds { get; private set; }
 
         /// <summary>
         /// 전투 씬 매니저로 가는 창구. (8.3b)
@@ -169,6 +179,13 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 무한의 탑. 스테이지 계열 <b>바로 뒤</b>에 둔다 — 의존은 없지만
+            // 세이브 파일의 순서가 등록 순서를 따르므로(SaveService.Capture),
+            // 읽을 때 진행도끼리 붙어 있는 편이 낫다.
+            builder.Register<TowerProgressManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             builder.Register<EquipmentManager>(Lifetime.Singleton)
                 .AsSelf()
                 .As<ISaveStateOwner>();
@@ -199,6 +216,11 @@ namespace OJ.DI
                 .As<ISaveOnApplicationLifecycle>();
 
             builder.RegisterEntryPoint<SaveOnApplicationLifecycle>();
+
+            // 리워드 광고 포트. 구현이 스텁이라 지금은 아무 일도 하지 않지만, 등록을
+            // 여기 두면 SDK 를 붙일 때 <b>고칠 곳이 이 한 줄</b>이다.
+            builder.Register<NullRewardedAdService>(Lifetime.Singleton)
+                .As<IRewardedAdService>();
         }
 
         /// <summary>
@@ -223,6 +245,7 @@ namespace OJ.DI
             StageProgressManager.Instance = container.Resolve<StageProgressManager>();
             StageRewardManager.Instance = container.Resolve<StageRewardManager>();
             StageStarManager.Instance = container.Resolve<StageStarManager>();
+            TowerProgressManager.Instance = container.Resolve<TowerProgressManager>();
             IdleRewardManager.Instance = container.Resolve<IdleRewardManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
@@ -234,6 +257,7 @@ namespace OJ.DI
             SaveService = container.Resolve<SaveService>();
             SceneRouter = container.Resolve<SceneRouter>();
             UI = container.Resolve<UIService>();
+            RewardedAds = container.Resolve<IRewardedAdService>();
 
             // 통합 세이브를 읽어 매니저들에게 덮는다. <b>순서가 중요하다</b> —
             // 매니저 생성자가 컬렉션 초기화와 초기 지급을 이미 끝내 둔 상태이고,

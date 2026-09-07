@@ -1,0 +1,601 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7207fdc213fb7e46bef368ea845b0e8, type: 3}
+  m_Name: TowerDatabase
+  m_EditorClassIdentifier: OJ.Game::OJ.Tower.TowerDatabase
+  bands:
+  - band: 1
+    displayName: "\uCCAB \uBB34\uB9AC"
+    primaryConcept: 0
+    extraConcepts: 
+    theme: 0
+    monsterCount: 14
+    countPerFloorStep: 2
+    hpMultiplier: 1
+    defenseMultiplier: 1
+  - band: 2
+    displayName: "\uBB34\uAC70\uC6B4 \uBC1C\uAC78\uC74C"
+    primaryConcept: 3
+    extraConcepts: 
+    theme: 1
+    monsterCount: 11
+    countPerFloorStep: 4
+    hpMultiplier: 1
+    defenseMultiplier: 1
+  - band: 3
+    displayName: "\uB2EC\uB824\uC624\uB294 \uAC83\uB4E4"
+    primaryConcept: 1
+    extraConcepts: 
+    theme: 2
+    monsterCount: 17
+    countPerFloorStep: 0
+    hpMultiplier: 1
+    defenseMultiplier: 1
+  - band: 4
+    displayName: "\uAD73\uC740 \uAECD\uC9C8"
+    primaryConcept: 2
+    extraConcepts: 
+    theme: 3
+    monsterCount: 4
+    countPerFloorStep: 0
+    hpMultiplier: 1
+    defenseMultiplier: 1
+  - band: 5
+    displayName: "\uD63C\uD569 \uBD80\uB300"
+    primaryConcept: 4
+    extraConcepts: 
+    theme: 4
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1
+    defenseMultiplier: 1
+  - band: 6
+    displayName: "\uD68C\uBCF5\uD615 \uC801"
+    primaryConcept: 5
+    extraConcepts: 
+    theme: 0
+    monsterCount: 15
+    countPerFloorStep: 0
+    hpMultiplier: 1.0027
+    defenseMultiplier: 1
+  - band: 7
+    displayName: "\uBD84\uC5F4\uD615 \uC801"
+    primaryConcept: 6
+    extraConcepts: 
+    theme: 1
+    monsterCount: 14
+    countPerFloorStep: 0
+    hpMultiplier: 1.0054
+    defenseMultiplier: 1
+  - band: 8
+    displayName: "\uBCF4\uD638\uB9C9 \uC801"
+    primaryConcept: 7
+    extraConcepts: 
+    theme: 2
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0081
+    defenseMultiplier: 1
+  - band: 9
+    displayName: "\uB300\uADDC\uBAA8 \uBB3C\uB7C9"
+    primaryConcept: 0
+    extraConcepts: 
+    theme: 3
+    monsterCount: 20
+    countPerFloorStep: 2
+    hpMultiplier: 1.0108
+    defenseMultiplier: 1
+  - band: 10
+    displayName: "\uCD08\uACE0\uC18D \uB3CC\uC9C4"
+    primaryConcept: 1
+    extraConcepts: 
+    theme: 4
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0135
+    defenseMultiplier: 1
+  - band: 11
+    displayName: "\uACE0\uBC29\uC5B4 \uBD80\uB300"
+    primaryConcept: 2
+    extraConcepts: 
+    theme: 0
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0162
+    defenseMultiplier: 1
+  - band: 12
+    displayName: "\uACE0\uCCB4\uB825 \uC815\uC608"
+    primaryConcept: 3
+    extraConcepts: 
+    theme: 1
+    monsterCount: 22
+    countPerFloorStep: 0
+    hpMultiplier: 1.0189
+    defenseMultiplier: 1
+  - band: 13
+    displayName: "\uD63C\uD569 \uBD80\uB300 + \uBCF4\uD638\uB9C9 \uC801"
+    primaryConcept: 4
+    extraConcepts: 07000000
+    theme: 2
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0216
+    defenseMultiplier: 1
+  - band: 14
+    displayName: "\uD68C\uBCF5\uD615 \uC801 + \uB300\uADDC\uBAA8 \uBB3C\uB7C9"
+    primaryConcept: 5
+    extraConcepts: 00000000
+    theme: 3
+    monsterCount: 15
+    countPerFloorStep: 0
+    hpMultiplier: 1.0243
+    defenseMultiplier: 1
+  - band: 15
+    displayName: "\uBD84\uC5F4\uD615 \uC801 + \uCD08\uACE0\uC18D \uB3CC\uC9C4"
+    primaryConcept: 6
+    extraConcepts: 01000000
+    theme: 4
+    monsterCount: 14
+    countPerFloorStep: 0
+    hpMultiplier: 1.027
+    defenseMultiplier: 1
+  - band: 16
+    displayName: "\uBCF4\uD638\uB9C9 \uC801 + \uACE0\uBC29\uC5B4 \uBD80\uB300"
+    primaryConcept: 7
+    extraConcepts: 02000000
+    theme: 0
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0297
+    defenseMultiplier: 1
+  - band: 17
+    displayName: "\uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uCCB4\uB825 \uC815\uC608"
+    primaryConcept: 0
+    extraConcepts: 03000000
+    theme: 1
+    monsterCount: 20
+    countPerFloorStep: 2
+    hpMultiplier: 1.0324
+    defenseMultiplier: 1
+  - band: 18
+    displayName: "\uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uD63C\uD569 \uBD80\uB300"
+    primaryConcept: 1
+    extraConcepts: 04000000
+    theme: 2
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0351
+    defenseMultiplier: 1
+  - band: 19
+    displayName: "\uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD68C\uBCF5\uD615 \uC801"
+    primaryConcept: 2
+    extraConcepts: 05000000
+    theme: 3
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0378
+    defenseMultiplier: 1
+  - band: 20
+    displayName: "\uACE0\uCCB4\uB825 \uC815\uC608 + \uBD84\uC5F4\uD615 \uC801"
+    primaryConcept: 3
+    extraConcepts: 06000000
+    theme: 4
+    monsterCount: 22
+    countPerFloorStep: 0
+    hpMultiplier: 1.0405
+    defenseMultiplier: 1
+  - band: 21
+    displayName: "\uD63C\uD569 \uBD80\uB300 + \uBCF4\uD638\uB9C9 \uC801"
+    primaryConcept: 4
+    extraConcepts: 07000000
+    theme: 0
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0432
+    defenseMultiplier: 1
+  - band: 22
+    displayName: "\uD68C\uBCF5\uD615 \uC801 + \uB300\uADDC\uBAA8 \uBB3C\uB7C9"
+    primaryConcept: 5
+    extraConcepts: 00000000
+    theme: 1
+    monsterCount: 15
+    countPerFloorStep: 0
+    hpMultiplier: 1.0459
+    defenseMultiplier: 1
+  - band: 23
+    displayName: "\uBD84\uC5F4\uD615 \uC801 + \uCD08\uACE0\uC18D \uB3CC\uC9C4"
+    primaryConcept: 6
+    extraConcepts: 01000000
+    theme: 2
+    monsterCount: 14
+    countPerFloorStep: 0
+    hpMultiplier: 1.0486
+    defenseMultiplier: 1
+  - band: 24
+    displayName: "\uBCF4\uD638\uB9C9 \uC801 + \uACE0\uBC29\uC5B4 \uBD80\uB300"
+    primaryConcept: 7
+    extraConcepts: 02000000
+    theme: 3
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0513
+    defenseMultiplier: 1
+  - band: 25
+    displayName: "\uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uCCB4\uB825 \uC815\uC608"
+    primaryConcept: 0
+    extraConcepts: 03000000
+    theme: 4
+    monsterCount: 20
+    countPerFloorStep: 2
+    hpMultiplier: 1.054
+    defenseMultiplier: 1
+  - band: 26
+    displayName: "\uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uD63C\uD569 \uBD80\uB300"
+    primaryConcept: 1
+    extraConcepts: 04000000
+    theme: 0
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0567
+    defenseMultiplier: 1
+  - band: 27
+    displayName: "\uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD68C\uBCF5\uD615 \uC801"
+    primaryConcept: 2
+    extraConcepts: 05000000
+    theme: 1
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0594
+    defenseMultiplier: 1
+  - band: 28
+    displayName: "\uACE0\uCCB4\uB825 \uC815\uC608 + \uBD84\uC5F4\uD615 \uC801"
+    primaryConcept: 3
+    extraConcepts: 06000000
+    theme: 2
+    monsterCount: 22
+    countPerFloorStep: 0
+    hpMultiplier: 1.0621
+    defenseMultiplier: 1
+  - band: 29
+    displayName: "\uD63C\uD569 \uBD80\uB300 + \uBCF4\uD638\uB9C9 \uC801"
+    primaryConcept: 4
+    extraConcepts: 07000000
+    theme: 3
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0648
+    defenseMultiplier: 1
+  - band: 30
+    displayName: "\uD68C\uBCF5\uD615 \uC801 + \uB300\uADDC\uBAA8 \uBB3C\uB7C9"
+    primaryConcept: 5
+    extraConcepts: 00000000
+    theme: 4
+    monsterCount: 15
+    countPerFloorStep: 0
+    hpMultiplier: 1.0675
+    defenseMultiplier: 1
+  - band: 31
+    displayName: "\uBD84\uC5F4\uD615 \uC801 + \uCD08\uACE0\uC18D \uB3CC\uC9C4"
+    primaryConcept: 6
+    extraConcepts: 01000000
+    theme: 0
+    monsterCount: 14
+    countPerFloorStep: 0
+    hpMultiplier: 1.0702
+    defenseMultiplier: 1
+  - band: 32
+    displayName: "\uBCF4\uD638\uB9C9 \uC801 + \uACE0\uBC29\uC5B4 \uBD80\uB300"
+    primaryConcept: 7
+    extraConcepts: 02000000
+    theme: 1
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0729
+    defenseMultiplier: 1
+  - band: 33
+    displayName: "\uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uCCB4\uB825 \uC815\uC608"
+    primaryConcept: 0
+    extraConcepts: 03000000
+    theme: 2
+    monsterCount: 20
+    countPerFloorStep: 2
+    hpMultiplier: 1.0756
+    defenseMultiplier: 1
+  - band: 34
+    displayName: "\uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uD63C\uD569 \uBD80\uB300"
+    primaryConcept: 1
+    extraConcepts: 04000000
+    theme: 3
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0783
+    defenseMultiplier: 1
+  - band: 35
+    displayName: "\uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD68C\uBCF5\uD615 \uC801"
+    primaryConcept: 2
+    extraConcepts: 05000000
+    theme: 4
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.081
+    defenseMultiplier: 1
+  - band: 36
+    displayName: "\uACE0\uCCB4\uB825 \uC815\uC608 + \uBD84\uC5F4\uD615 \uC801"
+    primaryConcept: 3
+    extraConcepts: 06000000
+    theme: 0
+    monsterCount: 22
+    countPerFloorStep: 0
+    hpMultiplier: 1.0837001
+    defenseMultiplier: 1
+  - band: 37
+    displayName: "\uD63C\uD569 \uBD80\uB300 + \uBCF4\uD638\uB9C9 \uC801 + \uCD08\uACE0\uC18D
+      \uB3CC\uC9C4"
+    primaryConcept: 4
+    extraConcepts: 0700000001000000
+    theme: 1
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0864
+    defenseMultiplier: 1
+  - band: 38
+    displayName: "\uD68C\uBCF5\uD615 \uC801 + \uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uBC29\uC5B4
+      \uBD80\uB300"
+    primaryConcept: 5
+    extraConcepts: 0000000002000000
+    theme: 2
+    monsterCount: 15
+    countPerFloorStep: 0
+    hpMultiplier: 1.0891
+    defenseMultiplier: 1
+  - band: 39
+    displayName: "\uBD84\uC5F4\uD615 \uC801 + \uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uACE0\uCCB4\uB825
+      \uC815\uC608"
+    primaryConcept: 6
+    extraConcepts: 0100000003000000
+    theme: 3
+    monsterCount: 14
+    countPerFloorStep: 0
+    hpMultiplier: 1.0918
+    defenseMultiplier: 1
+  - band: 40
+    displayName: "\uBCF4\uD638\uB9C9 \uC801 + \uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD63C\uD569
+      \uBD80\uB300"
+    primaryConcept: 7
+    extraConcepts: 0200000004000000
+    theme: 4
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.0945
+    defenseMultiplier: 1
+  - band: 41
+    displayName: "\uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uCCB4\uB825 \uC815\uC608
+      + \uD68C\uBCF5\uD615 \uC801"
+    primaryConcept: 0
+    extraConcepts: 0300000005000000
+    theme: 0
+    monsterCount: 20
+    countPerFloorStep: 2
+    hpMultiplier: 1.0972
+    defenseMultiplier: 1
+  - band: 42
+    displayName: "\uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uD63C\uD569 \uBD80\uB300 + \uBD84\uC5F4\uD615
+      \uC801"
+    primaryConcept: 1
+    extraConcepts: 0400000006000000
+    theme: 1
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.0999
+    defenseMultiplier: 1
+  - band: 43
+    displayName: "\uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD68C\uBCF5\uD615 \uC801 + \uBCF4\uD638\uB9C9
+      \uC801"
+    primaryConcept: 2
+    extraConcepts: 0500000007000000
+    theme: 2
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.1026
+    defenseMultiplier: 1
+  - band: 44
+    displayName: "\uACE0\uCCB4\uB825 \uC815\uC608 + \uBD84\uC5F4\uD615 \uC801 + \uB300\uADDC\uBAA8
+      \uBB3C\uB7C9"
+    primaryConcept: 3
+    extraConcepts: 0600000000000000
+    theme: 3
+    monsterCount: 22
+    countPerFloorStep: 0
+    hpMultiplier: 1.1053
+    defenseMultiplier: 1
+  - band: 45
+    displayName: "\uD63C\uD569 \uBD80\uB300 + \uBCF4\uD638\uB9C9 \uC801 + \uCD08\uACE0\uC18D
+      \uB3CC\uC9C4"
+    primaryConcept: 4
+    extraConcepts: 0700000001000000
+    theme: 4
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.108
+    defenseMultiplier: 1
+  - band: 46
+    displayName: "\uD68C\uBCF5\uD615 \uC801 + \uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uBC29\uC5B4
+      \uBD80\uB300"
+    primaryConcept: 5
+    extraConcepts: 0000000002000000
+    theme: 0
+    monsterCount: 15
+    countPerFloorStep: 0
+    hpMultiplier: 1.1107
+    defenseMultiplier: 1
+  - band: 47
+    displayName: "\uBD84\uC5F4\uD615 \uC801 + \uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uACE0\uCCB4\uB825
+      \uC815\uC608"
+    primaryConcept: 6
+    extraConcepts: 0100000003000000
+    theme: 1
+    monsterCount: 14
+    countPerFloorStep: 0
+    hpMultiplier: 1.1134
+    defenseMultiplier: 1
+  - band: 48
+    displayName: "\uBCF4\uD638\uB9C9 \uC801 + \uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD63C\uD569
+      \uBD80\uB300"
+    primaryConcept: 7
+    extraConcepts: 0200000004000000
+    theme: 2
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.1161
+    defenseMultiplier: 1
+  - band: 49
+    displayName: "\uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uCCB4\uB825 \uC815\uC608
+      + \uD68C\uBCF5\uD615 \uC801"
+    primaryConcept: 0
+    extraConcepts: 0300000005000000
+    theme: 3
+    monsterCount: 20
+    countPerFloorStep: 2
+    hpMultiplier: 1.1188
+    defenseMultiplier: 1
+  - band: 50
+    displayName: "\uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uD63C\uD569 \uBD80\uB300 + \uBD84\uC5F4\uD615
+      \uC801"
+    primaryConcept: 1
+    extraConcepts: 0400000006000000
+    theme: 4
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.1215
+    defenseMultiplier: 1
+  - band: 51
+    displayName: "\uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD68C\uBCF5\uD615 \uC801 + \uBCF4\uD638\uB9C9
+      \uC801"
+    primaryConcept: 2
+    extraConcepts: 0500000007000000
+    theme: 0
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.1242
+    defenseMultiplier: 1
+  - band: 52
+    displayName: "\uACE0\uCCB4\uB825 \uC815\uC608 + \uBD84\uC5F4\uD615 \uC801 + \uB300\uADDC\uBAA8
+      \uBB3C\uB7C9"
+    primaryConcept: 3
+    extraConcepts: 0600000000000000
+    theme: 1
+    monsterCount: 22
+    countPerFloorStep: 0
+    hpMultiplier: 1.1269
+    defenseMultiplier: 1
+  - band: 53
+    displayName: "\uD63C\uD569 \uBD80\uB300 + \uBCF4\uD638\uB9C9 \uC801 + \uCD08\uACE0\uC18D
+      \uB3CC\uC9C4"
+    primaryConcept: 4
+    extraConcepts: 0700000001000000
+    theme: 2
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.1296
+    defenseMultiplier: 1
+  - band: 54
+    displayName: "\uD68C\uBCF5\uD615 \uC801 + \uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uBC29\uC5B4
+      \uBD80\uB300"
+    primaryConcept: 5
+    extraConcepts: 0000000002000000
+    theme: 3
+    monsterCount: 15
+    countPerFloorStep: 0
+    hpMultiplier: 1.1323
+    defenseMultiplier: 1
+  - band: 55
+    displayName: "\uBD84\uC5F4\uD615 \uC801 + \uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uACE0\uCCB4\uB825
+      \uC815\uC608"
+    primaryConcept: 6
+    extraConcepts: 0100000003000000
+    theme: 4
+    monsterCount: 14
+    countPerFloorStep: 0
+    hpMultiplier: 1.135
+    defenseMultiplier: 1
+  - band: 56
+    displayName: "\uBCF4\uD638\uB9C9 \uC801 + \uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD63C\uD569
+      \uBD80\uB300"
+    primaryConcept: 7
+    extraConcepts: 0200000004000000
+    theme: 0
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.1377
+    defenseMultiplier: 1
+  - band: 57
+    displayName: "\uB300\uADDC\uBAA8 \uBB3C\uB7C9 + \uACE0\uCCB4\uB825 \uC815\uC608
+      + \uD68C\uBCF5\uD615 \uC801"
+    primaryConcept: 0
+    extraConcepts: 0300000005000000
+    theme: 1
+    monsterCount: 20
+    countPerFloorStep: 2
+    hpMultiplier: 1.1404
+    defenseMultiplier: 1
+  - band: 58
+    displayName: "\uCD08\uACE0\uC18D \uB3CC\uC9C4 + \uD63C\uD569 \uBD80\uB300 + \uBD84\uC5F4\uD615
+      \uC801"
+    primaryConcept: 1
+    extraConcepts: 0400000006000000
+    theme: 2
+    monsterCount: 18
+    countPerFloorStep: 0
+    hpMultiplier: 1.1431
+    defenseMultiplier: 1
+  - band: 59
+    displayName: "\uACE0\uBC29\uC5B4 \uBD80\uB300 + \uD68C\uBCF5\uD615 \uC801 + \uBCF4\uD638\uB9C9
+      \uC801"
+    primaryConcept: 2
+    extraConcepts: 0500000007000000
+    theme: 3
+    monsterCount: 16
+    countPerFloorStep: 0
+    hpMultiplier: 1.1458
+    defenseMultiplier: 1
+  - band: 60
+    displayName: "\uACE0\uCCB4\uB825 \uC815\uC608 + \uBD84\uC5F4\uD615 \uC801 + \uB300\uADDC\uBAA8
+      \uBB3C\uB7C9"
+    primaryConcept: 3
+    extraConcepts: 0600000000000000
+    theme: 4
+    monsterCount: 22
+    countPerFloorStep: 0
+    hpMultiplier: 1.1485
+    defenseMultiplier: 1
+  diceUnlocks:
+  - floor: 10
+    diceType: 100
+  - floor: 20
+    diceType: 102
+  - floor: 30
+    diceType: 201
+  - floor: 45
+    diceType: 103
+  - floor: 60
+    diceType: 104
+  - floor: 80
+    diceType: 101
+  - floor: 100
+    diceType: 202
+  - floor: 140
+    diceType: 203
+  - floor: 190
+    diceType: 200
+  - floor: 250
+    diceType: 204
+  wallHp: 100

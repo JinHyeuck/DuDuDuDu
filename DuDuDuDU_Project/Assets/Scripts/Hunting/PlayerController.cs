@@ -217,7 +217,15 @@ namespace OJ.Hunting
             return Mathf.Max(0f, endTime - Time.time);
         }
 
-        private void ResetAllDiceCooldowns()
+        /// <summary>
+        /// 발사 상태를 전부 판다.
+        ///
+        /// <b>public 인 이유.</b> 원래는 <c>Update</c> 의 Wave→비Wave 전이만 불렀고 그것으로
+        /// 충분했다. 웨이브 되돌리기는 <b>그 전이가 오기 전에</b> 보드 위 주사위를 지우는데,
+        /// <see cref="diceNextReadyTime"/> 이 파괴된 <c>UIDice</c> 를 키로 들고 있으면
+        /// 그 한 프레임 동안 죽은 참조를 읽는다. 되돌리기가 명시적으로 먼저 판다.
+        /// </summary>
+        public void ResetAllDiceCooldowns()
         {
             timer = 0f;
             shotindex = -1;

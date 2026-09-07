@@ -13,8 +13,10 @@ using OJ.Dice;
 using OJ.Element;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Rewind;
 using OJ.SceneFlow;
 using OJ.Stage;
+using OJ.Tower;
 using OJ.UI;
 using OJ.Utils;
 
@@ -65,8 +67,40 @@ namespace OJ.Hunting
         public RectTransform RemainMonsterGauge;
         public float RemainMonsterGauge_Width = 705.0f;
 
+        /// <summary>
+        /// 사망 시 되돌리기 제안 창이 떠 있는가.
+        ///
+        /// <b>없으면 창이 두 번 뜬다.</b> 벽이 0 이 된 프레임에 몬스터 둘이 같이 때리면
+        /// <see cref="OnWallDestroyed"/> 가 두 번 불리는데, 그때 <c>isGameOver</c> 는 아직
+        /// false 다 — 예전에는 <c>GameOver()</c> 가 그 자리에서 불려 그 플래그가 막아 줬고,
+        /// 이제는 확인을 기다리느라 그 사이가 벌어졌다.
+        /// </summary>
+        private bool deathRewindPromptOpen;
+
         private float timeSpeed = 1.0f;
+
+        /// <summary>
+        /// 지금 배속(1·2·3). 되돌리기가 되감기 속도를 여기서 뽑는다
+        /// (<see cref="OJ.Core.WaveRewindFormula.PlaybackSpeed"/>).
+        ///
+        /// <b><c>Time.timeScale</c> 을 읽지 않는다.</b> 확인 창이 떠 있는 동안 그 값은 0 이라,
+        /// 되돌리기를 누른 시점에 물으면 언제나 0 이 돌아온다.
+        /// </summary>
+        public float CurrentTimeSpeed => timeSpeed;
         [SerializeField] private float returnToLobbyDelay = 1.0f;
+
+        /// <summary>
+        /// 판이 끝나고 결과창이 뜨기까지의 뜸(초).
+        ///
+        /// <b>0 이면 갑작스럽다.</b> 마지막 몬스터가 죽는 순간·벽이 부서지는 순간에
+        /// 결과창이 곧바로 덮으면 <b>방금 무슨 일이 있었는지 볼 시간이 없다</b> —
+        /// 마지막 타격의 이펙트도, 벽이 무너지는 것도 결과창 뒤로 사라진다.
+        ///
+        /// <b>실제 시간으로 잰다.</b> 배속(x2/x3)에서 <c>Time.timeScale</c> 이 3이면
+        /// 게임 시간 1초는 실제 0.33초라 뜸이 거의 없는 것과 같아진다 —
+        /// "잠깐 보여 준다" 는 목적이 배속에 따라 달라지면 안 된다.
+        /// </summary>
+        [SerializeField] private float resultPopupDelay = 0.9f;
 
         void Awake()
         {
@@ -99,8 +133,67 @@ namespace OJ.Hunting
             battle.Bounty.OnSpawned += OnBountySpawned;
 
             InitializeStage();
+
+            // 기여도 패널은 본편·탑 둘 다에서 뜬다. 접어 둔 사람에게는 접힌 채로
+            // 나타난다(그 상태는 UIDamageContributionPanel 이 세션 동안 기억한다).
+            GameContainer.UI?.Show<UIDamageContributionPanel>();
+
+            if (battle.Tower.IsActive)
+            {
+                // 탑에는 관리 단계가 없다. 편성은 로비에서 이미 끝났고(기획서 5.1),
+                // 여기서 Setting 을 거치면 <b>아무것도 할 수 없는 화면에서 시작 버튼을
+                // 한 번 더 누르는</b> 단계가 생긴다 — 30초 안에 결과를 본다는 전제를
+                // 그 한 번의 탭이 깎아먹는다.
+                //
+                // 다음 프레임에 시작한다. UIBoard.Start 가 아직 안 돌았을 수 있어
+                // (Start 끼리의 순서는 정해져 있지 않다) 이 프레임에 다이스를 놓으면
+                // 슬롯이 없다.
+                StartCoroutine(CoBeginTowerFloor());
+                return;
+            }
+
             ChangeState(InGameState.Setting);
             StartCoroutine(CoApplyStageStartRelics());
+        }
+
+        /// <summary>
+        /// 탑의 층을 시작한다. 편성한 다이스를 보드에 놓고 곧바로 웨이브로 넘어간다.
+        ///
+        /// <b>한 프레임 기다리는 것이 핵심이다.</b> <c>UIBoard.CreateBoard</c> 는
+        /// <c>UIBoard.Start</c> 에서 도는데 <c>Start</c> 끼리의 호출 순서는 정해져 있지 않다.
+        /// 여기서 바로 놓으면 보드가 아직 없는 판에서 <b>다이스가 하나도 안 나온 채</b>
+        /// 층이 시작된다 — 화면에는 "왜 아무것도 안 쏘지" 로만 보인다.
+        /// (<see cref="CoApplyStageStartRelics"/> 가 같은 이유로 같은 모양이다.)
+        /// </summary>
+        private IEnumerator CoBeginTowerFloor()
+        {
+            yield return null;
+
+            PlaceTowerLoadout();
+            ChangeState(InGameState.Wave);
+            battle.Tower.StartTimer();
+        }
+
+        /// <summary>
+        /// 편성한 다이스를 보드 앞줄부터 놓는다.
+        ///
+        /// <b>자리는 아무 뜻이 없다.</b> <c>PlayerController</c> 는 쿨다운이 찬 다이스를
+        /// 골라 쏘지 자리를 보지 않는다. 기획서 9장이 "다이스 배치 순서가 공격 순서나
+        /// 위치에 영향을 주는지" 를 열린 항목으로 남겨 두었으므로, 여기서 뜻을 만들지
+        /// 않고 <b>보이는 순서만</b> 편성 화면의 슬롯 바와 맞춘다.
+        /// </summary>
+        private void PlaceTowerLoadout()
+        {
+            List<TowerLoadoutEntry> entries = battle.Tower.Loadout.ToOrderedList();
+            for (int i = 0; i < entries.Count; i++)
+            {
+                TowerLoadoutEntry entry = entries[i];
+
+                // 성급 UI 는 성급을 아는 매니저를 거쳐야 맞는다. 본편의 소환 경로도
+                // 같은 순서(DiceStars → SpawnDice)라 여기만 다르게 하면 별 표시가 어긋난다.
+                battle.DiceStars.OnDiceSpawn(entry.DiceType, entry.Star);
+                battle.Board.SpawnDice(entry.DiceType, entry.Star, i);
+            }
         }
 
         /// <summary>
@@ -151,6 +244,21 @@ namespace OJ.Hunting
                 return;
             }
 
+            // 탑은 나가는 대가가 다르다. 웨이브 비율 보상이 없고(층은 하나뿐이다)
+            // 스태미나도 쓰지 않으므로, 본편 문구를 그대로 쓰면 <b>있지도 않은 손해</b>를
+            // 경고하게 된다. 실제로 잃는 것은 이번 시도뿐이고 재도전은 무비용이다.
+            if (battle.Tower.IsActive)
+            {
+                confirm.Open(
+                    "도전을 그만둘까요?",
+                    battle.Tower.Plan.Floor + "층 도전이 실패로 기록돼요." + Environment.NewLine +
+                    "재도전에는 아무 비용도 들지 않아요.",
+                    "그만둘게요",
+                    "더 해볼게요",
+                    GameOver);
+                return;
+            }
+
             confirm.Open(
                 "전투를 마칠까요?",
                 "지금까지 클리어한 웨이브만큼 보상을 받고 나가요." + Environment.NewLine +
@@ -158,6 +266,68 @@ namespace OJ.Hunting
                 "여기까지 할게요",
                 "더 해볼게요",
                 GameOver);
+        }
+
+        /// <summary>
+        /// 이번 웨이브를 시작 직전으로 되돌릴지 묻는다.
+        ///
+        /// <b>버튼 자체는 아무것도 되돌리지 않는다.</b> <see cref="OnClick_Pause"/> 와 같은
+        /// 모양이다 — 판을 크게 바꾸는 것은 전부 확인을 거친다.
+        ///
+        /// <b>왜 이 판단이 버튼이 아니라 여기 있나.</b> 확인을 기다리는 동안 시간을
+        /// 멈춰야 하는데, 되돌리는 <i>시간</i>은 <c>timeSpeed</c> 이고 그 값을 아는 것은
+        /// 이 클래스뿐이다. 버튼이 직접 <c>timeScale = 1</c> 로 되돌리면 <b>배속 3배로
+        /// 놀던 사람이 취소 한 번에 1배로 떨어진다.</b>
+        /// </summary>
+        public void OnClick_Rewind()
+        {
+            if (!battle.Rewind.CanRewindDuringWave)
+                return;
+
+            UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (confirm == null)
+            {
+                // 창을 못 열었는데 조용히 넘어가면 버튼이 죽은 것처럼 보인다.
+                // OnClick_Pause 와 같은 판단이다.
+                Debug.LogError("[전투] 확인 창을 열지 못했다. 카탈로그에 UIConfirmDialog 가 있는지 볼 것.");
+                return;
+            }
+
+            // 확인을 기다리는 동안 몬스터가 계속 내려오면 "되돌릴까" 를 고민하는 사이에
+            // 벽이 부서진다. 되돌리기가 가장 필요한 순간이 정확히 그 순간이다.
+            //
+            // 멈추기 <b>직전에</b> 알린다. 여기서부터 창이 닫힐 때까지는 웨이브 길이에서
+            // 빠져야 한다 — 안 그러면 오래 고민할수록 되감기가 길어진다.
+            battle.Rewind.NotifyRewindOffered();
+            Time.timeScale = 0f;
+
+            int remaining = battle.Rewind.RemainingCount;
+            confirm.Open(
+                "이번 웨이브를 되돌릴까요?",
+                "웨이브를 시작하기 직전으로 돌아가요." + Environment.NewLine +
+                "쓰고 나면 " + Mathf.Max(0, remaining - 1) + "번 남아요.",
+                "되돌릴게요",
+                "계속할게요",
+                ConfirmRewind,
+                CancelRewind);
+        }
+
+        private void ConfirmRewind()
+        {
+            // 되돌리기가 성공하면 그 안에서 timeScale 을 되살리고 관리 단계까지 간다.
+            // 실패하는 경우(창이 떠 있는 사이에 조건이 깨진 경우)에만 여기서 시간을 푼다.
+            if (!battle.Rewind.TryRewind(RewindSource.Free, RewindTrigger.Wave))
+                CancelRewind();
+        }
+
+        /// <summary>
+        /// 되돌리지 않기로 했다. <b>1 이 아니라 <c>timeSpeed</c> 로 되돌린다</b> —
+        /// 배속을 켜 둔 사람의 설정을 취소 한 번으로 뺏지 않는다.
+        /// </summary>
+        private void CancelRewind()
+        {
+            battle.Rewind.NotifyOfferClosed();
+            Time.timeScale = timeSpeed;
         }
 
         public void OnClick_Speed()
@@ -232,11 +402,33 @@ namespace OJ.Hunting
 
             if (state == InGameState.Wave)
             {
+                // <b>WaveIndex++ 보다 먼저다.</b> 되돌리기는 "시작 버튼을 누르기 직전"
+                // 으로 되감는 기능이라, 뒤에서 뜨면 되돌린 판의 웨이브 번호가 하나 앞선다.
+                // 탑에서는 이 호출이 첫 줄에서 그냥 돌아간다.
+                battle.Rewind.Capture();
+
                 Run.WaveIndex++;
                 RelicManager.Instance?.BeginWave(CurrentWaveIndex);
-                // 스포너가 첫 Update 를 돌기 전에 이번 웨이브의 현상금 등급을 확정한다.
-                // PlayWave 뒤로 미루면 그 사이에 ShouldSpawn 이 지난 웨이브 값을 답한다.
-                battle.Bounty.BeginWave(CurrentWaveIndex);
+
+                // 기여도를 웨이브마다 0 으로 돌린다. 판 전체로 누적하면 뒤 웨이브로 갈수록
+                // 앞 웨이브의 몫에 묻혀, <b>관리 단계에서 방금 바꾼 편성의 효과가 안 보인다</b>.
+                //
+                // <b>본편·탑 공통이라 여기 한 곳에서만 리셋한다.</b> 탑은 한 층이 곧
+                // 한 웨이브라(기획서 3.2) 이 줄이 그대로 층 리셋이 된다.
+                battle.Contribution.BeginWave();
+
+                // 탑에는 현상금이 없다. 기획서 2장이 두 콘텐츠의 축을 분리하라고 했고,
+                // 현상금은 "관리 단계에 무엇을 부를까" 를 고르는 시스템이라 관리 단계가
+                // 없는 탑에서는 고를 자리 자체가 없다.
+                //
+                // 지금은 SelectedGrade 가 0(소환 X)이라 불러도 아무 일이 없지만,
+                // 기본값 하나에 기대는 것과 규칙으로 끊는 것은 다르다.
+                if (!battle.Tower.IsActive)
+                {
+                    // 스포너가 첫 Update 를 돌기 전에 이번 웨이브의 현상금 등급을 확정한다.
+                    // PlayWave 뒤로 미루면 그 사이에 ShouldSpawn 이 지난 웨이브 값을 답한다.
+                    battle.Bounty.BeginWave(CurrentWaveIndex);
+                }
                 Run.WaveMonsterCount = GetWaveTargetCount();
                 UpdateWaveText();
                 SetRemainMonster(0);
@@ -255,6 +447,36 @@ namespace OJ.Hunting
                 Time.timeScale = 1;
                 UpdateWaveText();
             }
+
+            // 되돌리기 버튼은 웨이브 중에만, 그리고 실제로 되돌릴 수 있을 때만 뜬다.
+            // 남은 횟수가 0 이면 아예 없는 편이 낫다 — 눌리지 않는 버튼은 고장으로 읽힌다.
+            //
+            // <b>반드시 위 분기 <i>뒤</i>여야 한다.</b> 되돌릴 수 있는지는 스냅샷이 떠 있는지에
+            // 걸려 있고, 그 스냅샷은 바로 위 웨이브 진입에서 떠진다. 앞에 두면 <b>첫 웨이브에만
+            // 버튼이 안 뜬다</b> — 그때만 아직 뜬 것이 없기 때문이고, 두 번째 웨이브부터는
+            // 지난 웨이브의 스냅샷이 남아 있어 멀쩡해 보인다. 그래서 눈으로 잡기 나쁘다.
+            //
+            // <b>여기서 판단하는 이유.</b> 상태를 아는 곳이 이 함수 하나뿐이라는 규약이
+            // 위 현상금 띠 주석에 이미 적혀 있다. 버튼이 스스로 판단하게 두면 매 프레임
+            // inGameState 를 들여다보게 되고, 그건 이벤트로 바꿔 놓은 것을 폴링으로
+            // 되돌리는 일이다.
+            if (state == InGameState.Wave && battle.Rewind.CanRewindDuringWave)
+                GameContainer.UI?.Show<UIWaveRewindButton>();
+            else
+                GameContainer.UI?.Hide<UIWaveRewindButton>();
+        }
+
+        /// <summary>
+        /// 탑의 시계를 돌린다. <b>이 <c>Update</c> 는 탑을 위해 새로 생긴 것이다</b> —
+        /// 본편 전투에는 프레임마다 할 일이 없었다.
+        ///
+        /// <c>TowerRunManager</c> 가 MonoBehaviour 가 아니라(<c>BountyManager</c> 와 같은
+        /// 이유) 스스로 돌 수 없어서, 이미 씬에 있는 이 컴포넌트가 대신 흘려 준다.
+        /// 탑이 아니면 <c>Tick</c> 이 첫 줄에서 돌아간다.
+        /// </summary>
+        private void Update()
+        {
+            battle.Tower.Tick(Time.deltaTime);
         }
 
         public void RemoveMonsterDeadCount()
@@ -262,6 +484,13 @@ namespace OJ.Hunting
             if (inGameState != InGameState.Wave)
                 return;
             WaveMonsterDeadCount++;
+
+#if UNITY_EDITOR || DEV_DEFINE
+            // 탑의 목표 처치 수가 안 맞을 때 어디서 새는지 보려고 한 줄씩 찍는다.
+            // 릴리스 빌드에는 컴파일되지 않는다.
+            if (battle.Tower.IsActive)
+                battle.Tower.DevLogKill(WaveMonsterDeadCount, WaveMonsterCount);
+#endif
 
             if (TryCompleteWave())
                 return;
@@ -294,10 +523,14 @@ namespace OJ.Hunting
         /// </summary>
         private void CloseBattlePhaseUI()
         {
+            // <b>기여도 패널은 여기서 거두지 않는다.</b> 결과창 앞의 뜸(WaitBeforeResult)
+            // 동안 마지막 숫자가 보여야 그 시간이 "볼 것이 있는 시간" 이 된다.
+            // 거두는 것은 결과창이 실제로 뜨기 직전이다.
             GameContainer.UI?.Hide<UIBountyBanner>();
             GameContainer.UI?.Hide<UIBountySelectDialog>();
             GameContainer.UI?.Hide<UIBountyCallout>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
+            GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
         }
 
@@ -317,8 +550,43 @@ namespace OJ.Hunting
                 return false;
             }
 
+            // <b>끝내기 전에 마지막 처치를 화면에 찍는다.</b> 이 줄이 없으면
+            // <c>RemoveMonsterDeadCount</c> 가 여기서 true 를 받고 곧바로 돌아가
+            // <c>SetRemainMonster</c> 를 건너뛴다 — 그래서 게이지가 <b>직전 값</b>에
+            // 멈춘 채로 웨이브가 끝난다(24마리를 다 잡았는데 23/24 로 보인다).
+            //
+            // 본편에서도 매 웨이브가 19/20 으로 끝나고 있었다. 관리 단계가 곧바로
+            // 이어져 눈에 덜 띄었을 뿐이다.
+            SetRemainMonster(WaveMonsterDeadCount);
+
             HandleWaveCompleted();
             return true;
+        }
+
+        /// <summary>
+        /// 탑의 목표 처치 수를 다시 읽는다. <c>TowerRunManager</c> 가 분열 부모의 이탈을
+        /// 알았을 때 부른다.
+        ///
+        /// <b>왜 목표가 도중에 바뀌나.</b> 층의 목표는 분열 자식까지 미리 세어 둔 값인데,
+        /// 부모가 <b>죽지 않고</b> 화면 밖으로 사라지면 그 자식들은 영영 안 나온다.
+        /// 목표를 그대로 두면 <b>나오지도 않을 몬스터를 기다리며 층이 끝나지 않는다</b> —
+        /// 현상금에서 같은 형태의 데드락을 이미 한 번 막았다
+        /// (<c>BountyFormula.SpawnThreshold</c> 주석 참조).
+        ///
+        /// 줄인 뒤에 종료 판정을 다시 돌린다. 마지막 부모가 이탈한 순간이라면 그때
+        /// 이미 목표를 채운 상태일 수 있고, 아무도 다시 물어보지 않는다.
+        /// </summary>
+        public void RefreshTowerWaveTarget()
+        {
+            if (!battle.Tower.IsActive || inGameState != InGameState.Wave)
+                return;
+
+            Run.WaveMonsterCount = GetWaveTargetCount();
+
+            if (TryCompleteWave())
+                return;
+
+            SetRemainMonster(WaveMonsterDeadCount);
         }
 
         public void SetRemainMonster(int currentKillMonster)
@@ -334,6 +602,95 @@ namespace OJ.Hunting
             RemainMonsterGauge.sizeDelta = vector2;
         }
 
+        /// <summary>
+        /// 벽이 무너졌다. <see cref="Wall.TakeDamage"/> 가 부른다.
+        ///
+        /// <b>예전에는 <c>Wall</c> 이 여기서 <c>GameOver()</c> 를 부르고 곧바로 자기
+        /// <c>gameObject</c> 를 부쉈다.</b> 되돌리기는 벽이 살아 있어야 하므로 그 두 가지를
+        /// 이리로 옮겼다 — 벽은 이제 "무너졌다" 고 알리기만 하고, 무엇을 할지는 여기서 정한다.
+        ///
+        /// 최후의 벽 유물은 <b>건드리지 않았다.</b> 그건 자동으로 터지는 것이고 되돌리기는
+        /// 유저가 고르는 것이라 성격이 다르다. 순서상 유물이 먼저이고, 유물이 살려내면
+        /// 이 함수는 애초에 불리지 않는다.
+        /// </summary>
+        public void OnWallDestroyed()
+        {
+            if (isGameOver || deathRewindPromptOpen)
+                return;
+
+            if (battle.Rewind.CanRewindOnDeath)
+            {
+                UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
+                if (confirm != null)
+                {
+                    deathRewindPromptOpen = true;
+
+                    // 벽이 0 인 채로 시간이 흐르면 고민하는 동안 화면이 계속 움직인다.
+                    // 되돌리기를 안 고르면 아래 DeclineDeathRewind 가 배속을 그대로 되살린다.
+                    //
+                    // 능동 경로와 같은 이유로 멈추기 직전에 알린다 — 여기서 고민한 시간은
+                    // 웨이브 길이가 아니다.
+                    battle.Rewind.NotifyRewindOffered();
+                    Time.timeScale = 0f;
+
+                    int remaining = battle.Rewind.RemainingCount;
+                    confirm.Open(
+                        "벽이 무너졌어요",
+                        "이번 웨이브를 시작하기 직전으로 되돌릴 수 있어요." + Environment.NewLine +
+                        "쓰고 나면 " + Mathf.Max(0, remaining - 1) + "번 남아요.",
+                        "되돌릴게요",
+                        "여기서 끝낼게요",
+                        ConfirmDeathRewind,
+                        DeclineDeathRewind);
+                    return;
+                }
+
+                // 창을 못 열었다고 판을 멈춰 세울 수는 없다 — 여기는 이미 진 자리라
+                // 그냥 지는 것이 유일하게 안전한 답이다. 대신 크게 운다.
+                Debug.LogError("[전투] 확인 창을 열지 못해 되돌리기를 제안하지 못했다. " +
+                               "카탈로그에 UIConfirmDialog 가 있는지 볼 것.");
+            }
+
+            FinalizeDefeat();
+        }
+
+        private void ConfirmDeathRewind()
+        {
+            deathRewindPromptOpen = false;
+
+            // 되돌리기가 성공하면 그 안에서 시간을 되살리고 관리 단계까지 데려간다.
+            // 실패하는 경우는 창이 떠 있는 사이에 조건이 깨진 때뿐이고, 그때는 진다.
+            if (!battle.Rewind.TryRewind(RewindSource.Free, RewindTrigger.Death))
+                DeclineDeathRewind();
+        }
+
+        /// <summary>
+        /// 되돌리지 않기로 했다.
+        ///
+        /// <b>배속을 <c>timeSpeed</c> 로 되살린 뒤에 진다.</b> 1 로 두면 되돌리기가 생기기
+        /// 전과 동작이 달라진다 — 예전에는 벽이 부서질 때 배속이 그대로였고, 결과창 앞의
+        /// 뜸(<c>WaitBeforeResult</c>)이 그때 1 로 되돌렸다. 그 순서를 그대로 지킨다.
+        /// </summary>
+        private void DeclineDeathRewind()
+        {
+            deathRewindPromptOpen = false;
+            battle.Rewind.NotifyOfferClosed();
+            Time.timeScale = timeSpeed;
+            FinalizeDefeat();
+        }
+
+        /// <summary>
+        /// 진다. <b>순서가 있다</b> — <see cref="GameOver"/> 가 <c>wall.CurrentHp</c> 를
+        /// 읽으므로(부분 보상·기록) 벽은 반드시 그 뒤에 부순다.
+        /// </summary>
+        private void FinalizeDefeat()
+        {
+            GameOver();
+
+            if (wall != null)
+                Destroy(wall.gameObject);
+        }
+
         public void GameOver()
         {
             if (isGameOver) return;
@@ -341,6 +698,15 @@ namespace OJ.Hunting
             inGameState = InGameState.None;
             CloseBattlePhaseUI();
             RelicManager.Instance?.EndWave();
+
+            // 탑은 실패 처리가 통째로 다르다. 웨이브 비율 보상이 없고(층은 하나뿐이다),
+            // 대신 <b>남은 적 체력</b>을 기록해 다음 도전에서 진척을 보여 준다
+            // (기획서 5.6 "보스 체력 12% 잔여 · 이전보다 6%p 개선").
+            if (battle.Tower.IsActive)
+            {
+                FinishTowerFloor(false);
+                return;
+            }
 
             int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
             int totalWaves = CurrentStageData != null ? Mathf.Max(1, CurrentStageData.totalWaves) : 1;
@@ -409,6 +775,16 @@ namespace OJ.Hunting
         private void InitializeStage()
         {
             RelicManager.Instance?.BeginStageRun();
+
+            // 탑 예약이 있으면 그것이 이 판이다. <b>예약은 한 번만 나온다</b> —
+            // 남겨 두면 다음에 본편 스테이지로 들어갈 때 탑 층이 열린다.
+            TowerRunRequest towerRun = TowerProgressManager.Instance?.ConsumePendingRun();
+            if (towerRun != null)
+            {
+                InitializeTowerFloor(towerRun);
+                return;
+            }
+
             CurrentStageData = StageProgressManager.Instance != null
                 ? StageProgressManager.Instance.GetSelectedStage()
                 : StageDatabaseProvider.GetStage(1);
@@ -435,11 +811,103 @@ namespace OJ.Hunting
             // 지금은 배틀 스코프가 씬마다 새로 만들어 줘서 우연히 깨끗하지만,
             // 씬을 다시 로드하지 않고 판을 다시 시작하게 되는 날 그 우연이 깨진다.
             battle.Bounty.ResetWaveState();
+            // 되돌리기 횟수도 그 "우연" 에 기대는 것 중 하나다. 판이 소유하는 값이므로
+            // 지난 판에 쓴 횟수가 따라오지 않게 여기서 판다.
+            battle.Rewind.BeginRun();
+            deathRewindPromptOpen = false;
             wall.SetInit(WallHp);
             int startSpBonus = RelicManager.Instance != null ? RelicManager.Instance.GetStageStartSpBonus() : 0;
             battle.Summon.SetStageStartSp(CurrentStageData.initialSP + startSpBonus);
             RunHistoryManager.Instance?.StartRun(CurrentStageData, WallHp);
             UpdateWaveText();
+        }
+
+        /// <summary>
+        /// 탑의 한 층으로 판을 세운다. <see cref="InitializeStage"/> 의 탑 갈래다.
+        ///
+        /// <b>합성 <see cref="StageData"/> 를 만든다.</b> 씬의 다른 컴포넌트가
+        /// <c>CurrentStageData</c> 를 통해 테마·벽 체력·웨이브 수를 읽고 있어서
+        /// (스포너·유물·기록), 그 창구를 그대로 두는 편이 분기를 훨씬 덜 만든다.
+        /// 값은 층 계획에서 온다 — <b>웨이브 1개</b>가 그 핵심이다(기획서 3.2).
+        ///
+        /// <c>stageIndex</c> 에 층 번호를 넣지 않는다. 그 값은 본편의 보상·기록 계산이
+        /// 읽는 축이라(<c>StageRewardFormula</c>) 층 번호를 흘려보내면 300층 클리어가
+        /// 300스테이지의 보상을 받는다. 탑의 보상은 <see cref="TowerFormula"/> 가 따로 낸다.
+        /// </summary>
+        private void InitializeTowerFloor(TowerRunRequest request)
+        {
+            TowerFloorPlan plan = TowerDatabaseProvider.GetPlan(request.Floor);
+            battle.Tower.BeginRun(plan, request.Loadout);
+
+            CurrentStageData = new StageData
+            {
+                stageIndex = 1,
+                theme = plan.Theme,
+
+                // 층 = 1웨이브. 이 한 줄이 기획서 3.2 의 전투 규칙 전부다.
+                totalWaves = 1,
+                monstersPerWave = plan.MonsterCount,
+                wallHp = plan.WallHp,
+
+                // SP 를 0 으로 둔다. 탑은 소환이 없으므로(기획서 3.2 금지 항목) 이 값이
+                // 화면에 뜨더라도 쓸 곳이 없다. 소환 UI 자체는 아래에서 끈다.
+                initialSP = 0,
+                waveClearSP = 0,
+
+                // 몬스터 스탯은 스포너가 층 계획에서 직접 가져간다. 여기 값은
+                // <b>쓰이지 않지만</b> 0 으로 두면 다른 곳의 Max(1, ...) 가 조용히 1 로
+                // 바꾼 값을 진짜로 착각하게 만들 수 있어, 계획과 같은 값을 넣어 둔다.
+                baseMonsterHp = plan.MonsterHp,
+                baseMonsterDefense = plan.MonsterDefense,
+            };
+
+            ApplyStageTheme();
+
+            Run.BeginRun(
+                seed: Environment.TickCount,
+                stageIndex: CurrentStageData.stageIndex,
+                wallMaxHp: CurrentStageData.wallHp,
+                monstersPerWave: plan.MonsterCount,
+                initialSummonPoint: 0,
+                initialSummonCost: 0);
+
+            battle.ElementUpgrade.ResetRunState();
+            battle.Bounty.ResetWaveState();
+            wall.SetInit(WallHp);
+
+            // 탑에서는 SP 를 쓰지 않는다. 0 을 넣어 두면 숫자가 0/10 으로 뜨고,
+            // 소환 버튼은 아래 HideBattleOnlyUI 가 통째로 치운다.
+            battle.Summon.SetStageStartSp(0);
+
+            HideTowerForbiddenUI();
+            UpdateWaveText();
+
+            Debug.Log("[탑] " + plan.Floor + "층 시작 — " + plan.DisplayName +
+                      " / " + plan.MonsterCount + "마리 × HP " + plan.MonsterHp +
+                      " (목표 처치 " + plan.KillTarget + ")");
+        }
+
+        /// <summary>
+        /// 탑에서 쓰지 않는 전투 UI 를 끈다. 기획서 3.2 의 금지 항목 넷이 여기서 닫힌다 —
+        /// SP · 소환 · 머지 · 전투 중 성장.
+        ///
+        /// <b>치우는 것과 막는 것을 둘 다 한다.</b> 버튼만 끄면 다른 경로(백키·핫키)로
+        /// 여전히 열리고, 규칙만 막으면 눌리는 버튼이 아무 일도 안 해 고장으로 보인다.
+        /// 실제 차단은 각 시스템이 <c>battle.Tower.IsActive</c> 로 한다.
+        /// </summary>
+        private void HideTowerForbiddenUI()
+        {
+            // <b>컴포넌트가 붙은 오브젝트를 통째로 끄지 않는다.</b> 그 오브젝트에는 다른
+            // 전투 UI 가 같이 붙어 있을 수 있고, 무엇보다 꺼진 오브젝트의 <c>Start</c> 가
+            // 안 돌아 <c>UIDiceSummonSystem</c> 의 초기화가 통째로 사라진다.
+            // 실제로 치울 것은 눈에 보이는 둘뿐이다.
+            if (battle.Summon.summonButton != null)
+                battle.Summon.summonButton.gameObject.SetActive(false);
+
+            if (battle.Summon.spText != null)
+                battle.Summon.spText.gameObject.SetActive(false);
+
+            battle.ElementUpgrade.SetUpgradeUIAvailable(false);
         }
 
         private void ApplyStageTheme()
@@ -466,6 +934,13 @@ namespace OJ.Hunting
 
         private int GetWaveTargetCount()
         {
+            // 탑은 목표가 <c>monstersPerWave</c> 와 다르다. 분열형 적이 죽으면서 자식을
+            // 만들고 그 자식도 잡아야 층이 끝나므로, 미리 세어 둔 값을 그대로 쓴다
+            // (<see cref="TowerFormula.WaveKillTarget"/>). 여기서 다시 세면 두 곳이
+            // 갈리고, 갈리는 순간 층이 안 끝나거나 한 마리 일찍 끝난다.
+            if (battle.Tower.IsActive)
+                return battle.Tower.EffectiveKillTarget;
+
             if (CurrentStageData == null)
                 return WaveMonsterCount;
 
@@ -478,6 +953,17 @@ namespace OJ.Hunting
 
         private void HandleWaveCompleted()
         {
+            // 탑의 웨이브 완료 = 층 클리어다. 아래 본편 경로가 하는 일 — 웨이브 클리어
+            // 강화석 1개, 유물 발동, SP 지급, 보상 미리보기, 스테이지 기록 — 은 전부
+            // <b>여러 웨이브를 전제</b>한 것이라 층 하나짜리 콘텐츠에 얹으면 뜻이 없거나
+            // 본편 진행도를 오염시킨다(스테이지 기록이 특히 그렇다).
+            if (battle.Tower.IsActive)
+            {
+                RelicManager.Instance?.EndWave();
+                FinishTowerFloor(true);
+                return;
+            }
+
             PointManager.Instance?.Add(PointType.BattleEnhanceStone, 1);
             RelicManager.Instance?.ApplyWaveClearRelics(wall);
 
@@ -508,6 +994,128 @@ namespace OJ.Hunting
 
             RelicManager.Instance?.EndWave();
             ChangeState(InGameState.Setting);
+        }
+
+        /// <summary>
+        /// 층을 끝낸다. 클리어와 실패가 <b>같은 함수</b>를 지난다.
+        ///
+        /// <b>갈래를 하나로 두는 것이 중요하다.</b> 시계 정지·기록·보상·결과창이 전부
+        /// 여기 모여 있고, 나누면 한쪽만 고치는 사고가 난다 —
+        /// <c>OnClick_Pause</c> 가 새 종료 경로를 만들지 않고 <see cref="GameOver"/> 를
+        /// 타는 것과 같은 판단이다.
+        ///
+        /// 실패 경로는 <see cref="GameOver"/> 가, 클리어 경로는
+        /// <see cref="HandleWaveCompleted"/> 가 부르며 둘 다 <c>isGameOver</c> 를
+        /// 이미 세워 둔 뒤다.
+        /// </summary>
+        private void FinishTowerFloor(bool isClear)
+        {
+            isGameOver = true;
+            inGameState = InGameState.None;
+            battle.Tower.StopTimer();
+            CloseBattlePhaseUI();
+
+            TowerFloorPlan plan = battle.Tower.Plan;
+            TowerProgressManager progress = TowerProgressManager.Instance;
+
+            int floor = plan.Floor;
+            int elapsedMs = battle.Tower.ElapsedMilliseconds;
+            int remainingPercent = battle.Tower.RemainingHpPercent;
+
+            // <b>이전 기록을 먼저 읽는다.</b> 아래에서 기록을 갱신하고 나면 "이전" 이
+            // 사라진다 — 결과 화면이 보여 줘야 하는 것은 바로 그 이전 값이다(기획서 5.6).
+            //
+            // 읽는 것이 잔여 체력 하나뿐인 이유: 반복이 없어 같은 층을 두 번 클리어할 수
+            // 없으므로, 이 층에 기록이 있다면 그것은 언제나 지난번 실패다.
+            int previousRemaining = progress != null ? progress.GetBestRemainingHpPercent(floor) : 100;
+
+            bool firstClear = false;
+            bool newRecord = false;
+            DiceType unlocked = DiceType.Max;
+
+            if (isClear)
+            {
+                if (progress != null)
+                {
+                    firstClear = progress.RecordClear(floor, elapsedMs, out newRecord);
+                    if (firstClear)
+                        unlocked = progress.GetUnlockGrantedByFloor(floor);
+                }
+            }
+            else if (progress != null)
+            {
+                newRecord = progress.RecordFail(floor, remainingPercent);
+            }
+
+            List<PointRewardEntry> rewards = TowerRunManager.BuildClearRewards(floor, firstClear);
+            PointRewardUtility.GrantRewards(rewards);
+
+            RunHistoryManager.Instance?.EndRun(
+                isClear ? RunResultType.Clear : RunResultType.Fail,
+                CurrentWaveIndex,
+                wall != null ? wall.CurrentHp : 0);
+
+            Debug.Log("[탑] " + floor + "층 " + (isClear ? "클리어" : "실패") +
+                      " | " + (elapsedMs / 1000f).ToString("0.0") + "초" +
+                      " | 남은 적 " + remainingPercent + "%" +
+                      " | 보상 " + PointRewardUtility.BuildRewardSummary(rewards));
+
+            ShowTowerResult(new TowerResultData
+            {
+                Plan = plan,
+                IsClear = isClear,
+                ElapsedMilliseconds = elapsedMs,
+                RemainingHpPercent = remainingPercent,
+                PreviousRemainingHpPercent = previousRemaining,
+                IsNewRecord = newRecord,
+                UnlockedDice = unlocked,
+                Rewards = rewards,
+                DamageShares = battle.Tower.BuildDamageShares(),
+            });
+        }
+
+        /// <summary>
+        /// 탑 결과창을 띄운다. 못 띄우면 로비로 돌려보낸다 —
+        /// <see cref="ShowStageResult"/> 와 같은 판단이다. 여기서 멈추면 이미 끝난 판의
+        /// 전투 씬에 갇힌다.
+        /// </summary>
+        private void ShowTowerResult(TowerResultData data)
+        {
+            StartCoroutine(CoShowTowerResult(data));
+        }
+
+        private IEnumerator CoShowTowerResult(TowerResultData data)
+        {
+            yield return WaitBeforeResult();
+
+            UITowerResultDialog dialog = GameContainer.UI?.Get<UITowerResultDialog>();
+            if (dialog == null)
+            {
+                StartCoroutine(CoReturnToLobby());
+                yield break;
+            }
+
+            GameContainer.UI?.Hide<UIWaveRewardPreviewDialog>();
+            dialog.Open(data, SceneFlowManager.LoadLobby);
+        }
+
+        /// <summary>
+        /// 결과창 앞의 뜸. <b>배속을 1 로 되돌리고</b> 실제 시간으로 기다린다.
+        ///
+        /// 되돌리는 이유는 이 뜸이 <b>보여 주기 위한</b> 시간이기 때문이다 — 3배속으로
+        /// 지나가는 마지막 순간은 보라고 준 시간이 아니다. 어차피 판이 끝나 조작할 것도
+        /// 없고, 씬을 나갈 때 <c>SceneFlowManager</c> 가 어차피 1 로 되돌린다.
+        /// </summary>
+        private IEnumerator WaitBeforeResult()
+        {
+            Time.timeScale = 1f;
+
+            if (resultPopupDelay > 0f)
+                yield return new WaitForSecondsRealtime(resultPopupDelay);
+
+            // 기여도 패널은 <b>뜸이 끝난 뒤</b> 거둔다. 판이 끝나는 순간에 같이 치우면
+            // 그 0.9초가 아무것도 없는 화면이 되고, 뜸을 준 이유가 없어진다.
+            GameContainer.UI?.Hide<UIDamageContributionPanel>();
         }
 
         private void ShowWaveRewardPreview()
@@ -541,6 +1149,19 @@ namespace OJ.Hunting
         {
             if (WaveText == null)
                 return;
+
+            // 탑에서 "Wave 1/1" 은 아무것도 말하지 않는다 — 층이 곧 웨이브라 언제나 1/1 이다.
+            // 그 자리에 <b>층과 적 콘셉트</b>를 넣는다.
+            //
+            // <b>이 줄이 처치 게이지의 숫자를 설명한다.</b> 분열형 층은 화면에 8마리가
+            // 나오는데 목표가 24 라 그냥 보면 안 맞아 보인다. 24 는 <b>부모 8 + 자식 16</b>
+            // 이고, 그 사실을 알려 주는 것은 "분열형 적" 이라는 이름 하나면 된다.
+            if (battle.Tower.IsActive)
+            {
+                TowerFloorPlan plan = battle.Tower.Plan;
+                WaveText.SetText(plan.Floor + "층 · " + plan.DisplayName);
+                return;
+            }
 
             int totalWaves = CurrentStageData != null ? Mathf.Max(1, CurrentStageData.totalWaves) : 1;
             int currentWave = Mathf.Clamp(CurrentWaveIndex, 0, totalWaves);
@@ -588,6 +1209,14 @@ namespace OJ.Hunting
 
         private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<PointRewardEntry> rewards)
         {
+            StartCoroutine(CoShowStageResult(isWin, stageIndex, reachedWaveCount, rewards));
+        }
+
+        private IEnumerator CoShowStageResult(
+            bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<PointRewardEntry> rewards)
+        {
+            yield return WaitBeforeResult();
+
             // Open 이 값을 채우고 Enter 까지 부르므로 Get 으로 받는다.
             UIStageResultDialog resultDialog = GameContainer.UI?.Get<UIStageResultDialog>();
             if (resultDialog == null)
@@ -595,7 +1224,7 @@ namespace OJ.Hunting
                 // 결과창을 못 띄워도 로비로는 돌아가야 한다. 여기서 멈추면 이미 끝난 판의
                 // 전투 씬에 갇힌다. 못 연 사유는 UIService 가 이미 로그로 남겼다.
                 StartCoroutine(CoReturnToLobby());
-                return;
+                yield break;
             }
 
             GameContainer.UI?.Hide<UIWaveRewardPreviewDialog>();

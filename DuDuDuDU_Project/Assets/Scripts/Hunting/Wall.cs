@@ -81,8 +81,10 @@ namespace OJ.Hunting
                     return;
                 }
 
-                battle.Game.GameOver();
-                Destroy(gameObject);
+                // <b>여기서 벽을 부수지 않는다.</b> 되돌리기를 제안할 수 있고, 그러려면
+                // 벽이 살아 있어야 한다 — 부순 뒤에는 되돌릴 대상 자체가 없다.
+                // 무엇을 할지(제안할지, 그대로 끝낼지)와 언제 부술지는 GameManager 가 정한다.
+                battle.Game.OnWallDestroyed();
             }
         }
 
@@ -94,6 +96,28 @@ namespace OJ.Hunting
             CurrentHp += value;
             if (CurrentHp > TotalHp)
                 CurrentHp = TotalHp;
+
+            SetHpLabel(CurrentHp);
+            SetHpBar(IncomingDamageFormula.WallHpBarRatioClamped(CurrentHp, TotalHp));
+        }
+
+        /// <summary>
+        /// 체력을 스냅샷 값으로 되돌린다. 웨이브 되돌리기가 부른다.
+        ///
+        /// <b><see cref="SetInit"/> 를 쓸 수 없다.</b> 저쪽은 <see cref="TotalHp"/> 까지 같이
+        /// 덮으므로, 최대 체력을 올리는 유물이 걸린 판에서 되돌리면 <b>그 증가분이 사라진다</b>.
+        /// 여기서 움직이는 것은 현재 체력 하나뿐이다.
+        ///
+        /// <b><see cref="Heal"/> 도 쓸 수 없다.</b> 저쪽은 <c>CurrentHp &lt;= 0</c> 이면
+        /// 그냥 돌아간다 — 되돌리기가 가장 필요한 순간(벽이 0 이 된 직후)에 아무 일도
+        /// 안 한다는 뜻이다.
+        ///
+        /// 비율식은 <c>Clamped</c> 쪽을 쓴다. 피해 경로의 식은 <c>TotalHp == 0</c> 가드가
+        /// 없어 NaN 이 나올 수 있고, 여기는 피해가 아니라 회복 성격이라 부활·회복과 같은 편이다.
+        /// </summary>
+        public void RestoreHp(int currentHp)
+        {
+            CurrentHp = Mathf.Clamp(currentHp, 0, TotalHp);
 
             SetHpLabel(CurrentHp);
             SetHpBar(IncomingDamageFormula.WallHpBarRatioClamped(CurrentHp, TotalHp));

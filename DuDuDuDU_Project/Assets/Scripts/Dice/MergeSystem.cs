@@ -19,6 +19,15 @@ namespace OJ.Dice
 
         public bool TryMerge(UIDice from, UIDice to)
         {
+            // 무한의 탑에서는 머지가 없다. 기획서 3.2 의 금지 항목이고, 2장이 두 콘텐츠를
+            // 가르는 축으로 든 것이 바로 이것이다("전투 중 성장 없음 — 편성 시 확정").
+            //
+            // <b>아래 웨이브 검사에 기대면 안 된다.</b> 탑은 관리 단계가 없어 전투 중에는
+            // 늘 Wave 라 우연히 막히지만, 층이 끝나면 상태가 None 으로 떨어져 <b>결과창이
+            // 뜬 채로 머지가 열린다.</b> 규칙을 우연에 맡기지 않는다.
+            if (battle.Tower.IsActive)
+                return false;
+
             if (battle.Game.inGameState == InGameState.Wave)
                 return false;
 
@@ -110,6 +119,11 @@ namespace OJ.Dice
         /// </summary>
         public bool TryEvolve(UIDice dice)
         {
+            // 탑에서는 진화·교환도 없다. 위 TryMerge 와 같은 이유이고, 셋을 함께 막아야
+            // "편성 = 최종 전투력"(기획서 3.2)이 성립한다.
+            if (battle.Tower.IsActive)
+                return false;
+
             if (dice == null || battle.Game.inGameState == InGameState.Wave)
                 return false;
 
@@ -143,6 +157,11 @@ namespace OJ.Dice
         /// </summary>
         public bool TryExchange(UIDice dice)
         {
+            // 탑에서는 진화·교환도 없다. 위 TryMerge 와 같은 이유이고, 셋을 함께 막아야
+            // "편성 = 최종 전투력"(기획서 3.2)이 성립한다.
+            if (battle.Tower.IsActive)
+                return false;
+
             if (dice == null || battle.Game.inGameState == InGameState.Wave)
                 return false;
 
