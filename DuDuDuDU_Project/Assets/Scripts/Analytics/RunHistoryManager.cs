@@ -26,6 +26,20 @@ namespace OJ.Analytics
         Merge = 4,
         Craft = 5,
         RunEnd = 6,
+
+        /// <summary>
+        /// 웨이브 되돌리기를 썼다.
+        ///
+        /// <b>이 값 하나가 "되돌리기가 독인가" 를 판정할 유일한 근거다.</b> 가설은
+        /// "위기를 여러 번 겪으면 더 강해지고 싶어진다" 인데, 반대로 <b>충분히 했다는
+        /// 포만감</b>을 줘서 다음 판을 안 켜게 만들 수도 있다. 둘은 감으로 구분되지 않는다.
+        ///
+        /// 남는 <c>note</c> 로 답할 것 셋 — 되돌린 뒤 그 웨이브를 넘겼는가(다음
+        /// <c>WaveComplete</c> 가 오는가), 되돌린 판이 더 멀리 갔는가(<c>finalWaveIndex</c>),
+        /// 그 판이 끝나고 다음 판까지 얼마나 걸렸는가(<c>endedAtUtc</c> → 다음 런의
+        /// <c>startedAtUtc</c>).
+        /// </summary>
+        Rewind = 7,
     }
 
     /// <summary>
@@ -80,6 +94,7 @@ namespace OJ.Analytics
             public int totalSummons;
             public int totalMerges;
             public int totalCrafts;
+            public int totalRewinds;
             public List<string> craftedKings = new List<string>();
             public List<RunEventRecord> events = new List<RunEventRecord>();
         }
@@ -233,6 +248,34 @@ namespace OJ.Analytics
                 resultDiceType: craftedType,
                 resultStar: 1,
                 note: "Crafted mythic dice");
+        }
+
+        /// <summary>
+        /// 웨이브를 되돌렸다.
+        ///
+        /// <b><c>finalWaveIndex</c> 는 건드리지 않는다.</b> 그 값은 <c>Mathf.Max</c> 로만
+        /// 올라가서 되감아도 안 내려가는데, 그대로 두는 편이 맞다 — 다른 집계가 "이 판이
+        /// 어디까지 갔나" 로 쓰고 있고, 되돌린 사실은 이 이벤트가 따로 남기므로 분석할 때
+        /// 걸러낼 수 있다. 여기서 내리면 두 뜻이 한 필드에 섞인다.
+        /// </summary>
+        /// <param name="waveIndex">되돌린 웨이브(되감기 전 번호).</param>
+        /// <param name="wallHp">되돌리기를 누른 순간의 벽 체력. 0 이면 죽어서 되돌린 것이다.</param>
+        /// <param name="trigger">"wave"(능동) 또는 "death"(사망 제안).</param>
+        /// <param name="source">"free" 또는 "ad".</param>
+        /// <param name="remainingAfter">쓰고 나서 남은 횟수.</param>
+        public void RecordRewind(
+            int waveIndex, int wallHp, string trigger, string source, int remainingAfter)
+        {
+            if (currentRun == null)
+                return;
+
+            currentRun.totalRewinds++;
+
+            AppendEvent(
+                RunEventType.Rewind,
+                waveIndex,
+                wallHp,
+                note: "trigger=" + trigger + ",source=" + source + ",remaining=" + remainingAfter);
         }
 
         public void EndRun(RunResultType resultType, int finalWaveIndex, int wallHp)

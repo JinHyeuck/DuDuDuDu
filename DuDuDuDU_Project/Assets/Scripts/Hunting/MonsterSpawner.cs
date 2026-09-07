@@ -177,7 +177,9 @@ namespace OJ.Hunting
             TowerMonsterSpec spec = battle.Tower.GetSpawnSpec();
 
             monster.OnSpawn();
-            monster.transform.position = GetSpawnPosition();
+            Vector2 spawnPos = GetSpawnPosition();
+            monster.transform.position = spawnPos;
+            monster.MarkSpawnPosition(spawnPos);
             monster.transform.rotation = Quaternion.identity;
             monster.SetCombatStats(spec.Hp, spec.Defense, spec.Scale);
 
@@ -228,7 +230,11 @@ namespace OJ.Hunting
                 child.OnSpawn();
 
                 float offsetX = (i - (count - 1) * 0.5f) * SplitChildSpreadX;
-                child.transform.position = new Vector3(deathPosition.x + offsetX, deathPosition.y, deathPosition.z);
+                var childSpawnPos = new Vector3(deathPosition.x + offsetX, deathPosition.y, deathPosition.z);
+                child.transform.position = childSpawnPos;
+                // 분열 자식에게는 <b>부모가 죽은 자리가 곧 소환 자리</b>다. 화면 위쪽을
+                // 넣으면 되돌리기 연출에서 나온 적 없는 곳으로 올라간다.
+                child.MarkSpawnPosition(childSpawnPos);
                 child.transform.rotation = Quaternion.identity;
 
                 // 방어력은 부모와 같다. 낮추면 분열 구간이 "부모만 단단한 층" 이 되어
@@ -391,7 +397,9 @@ namespace OJ.Hunting
                 return;
 
             monster.OnSpawn();
-            monster.transform.position = GetSpawnPosition();
+            Vector2 spawnPos = GetSpawnPosition();
+            monster.transform.position = spawnPos;
+            monster.MarkSpawnPosition(spawnPos);
             monster.transform.rotation = Quaternion.identity;
 
             // 방어력은 0 이다. 값을 주면 아머브레이크 계통이 사실상 강제 채용이 되어
@@ -438,6 +446,7 @@ namespace OJ.Hunting
 
             monster.OnSpawn();
             monster.transform.position = spawnPos;
+            monster.MarkSpawnPosition(spawnPos);
             monster.transform.rotation = Quaternion.identity;
             // 폴백 1/0 은 GameManager 가 없을 때만 쓰이던 값이다. 전투 씬에서 그 상황은
             // 성립하지 않으므로 폴백을 지운다 — 남기면 스탯 0 짜리 몬스터로 조용히 굴러간다.
@@ -457,6 +466,7 @@ namespace OJ.Hunting
 
             monster.OnSpawn();
             monster.transform.position = spawnPos;
+            monster.MarkSpawnPosition(spawnPos);
             monster.transform.rotation = Quaternion.identity;
             // 위와 같은 이유로 폴백(1/0/1.45)을 지운다. 보스가 스탯 없이 나오는 것보다
             // GameManager 가 없다는 사실이 그 자리에서 터지는 편이 낫다.

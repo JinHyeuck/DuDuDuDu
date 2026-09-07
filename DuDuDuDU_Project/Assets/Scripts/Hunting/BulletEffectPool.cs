@@ -103,6 +103,29 @@ namespace OJ.Hunting
             bullet.gameObject.SetActive(false);
             pool.Enqueue(bullet);
         }
+
+        /// <summary>
+        /// 재생 중인 이펙트를 전부 거둔다. 웨이브 되돌리기가 부른다.
+        ///
+        /// <see cref="BulletPool.ReleaseAll"/> 와 같은 이유·같은 모양이다 — 나간 이펙트를
+        /// 세는 목록이 없어 자식을 훑고, 꺼져 있는 것은 이미 큐에 있으므로 건드리지 않는다.
+        ///
+        /// <b><see cref="PoolBullet"/> 이 아니라 <c>ForceRelease</c> 를 부른다.</b>
+        /// 저쪽은 큐에 넣기만 해서 이펙트 자신의 재생 플래그가 켜진 채로 남는다.
+        /// </summary>
+        public void ReleaseAll()
+        {
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                GameObject child = transform.GetChild(i).gameObject;
+                if (!child.activeSelf)
+                    continue;
+
+                BulletEffect effect = child.GetComponent<BulletEffect>();
+                if (effect != null)
+                    effect.ForceRelease();
+            }
+        }
     }
 
 }

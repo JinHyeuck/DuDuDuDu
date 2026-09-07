@@ -6,6 +6,7 @@ using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.Relic;
+using OJ.Rewind;
 using OJ.Tower;
 using OJ.Utils;
 using VContainer;
@@ -57,6 +58,31 @@ namespace OJ.Hunting
         /// 통째로 무용지물이 된다.
         /// </summary>
         public bool IsBounty { get; private set; }
+
+        /// <summary>
+        /// 이 개체가 화면에 나온 자리. <b>되돌리기 연출이 여기로 되감는다.</b>
+        ///
+        /// <c>MonsterSpawner</c> 가 위치를 넣는 네 곳에서 같이 적어 준다. 여기서 스스로
+        /// <c>transform.position</c> 을 읽지 않는 이유는 <c>OnSpawn</c> 이 <b>위치를 넣기
+        /// 전에</b> 불리기 때문이다 — 그 시점의 좌표는 지난번에 죽은 자리다.
+        /// </summary>
+        public Vector2 SpawnPosition { get; private set; }
+
+        /// <summary>
+        /// 이 개체가 화면에 나온 <b>실제 시각</b>. 되감기가 타임라인을 역재생할 때 쓴다.
+        ///
+        /// <b><c>Time.unscaledTime</c> 이다.</b> 되감기 길이의 기준은 "유저가 실제로 본 시간"
+        /// 이고, 게임 시간은 배속에 눌려 그것과 다르다 — 3배속으로 20초를 본 웨이브는
+        /// 게임 시간으로 60초다. 여기에 게임 시간을 넣으면 3배속에서만 되감기가 3배 길어진다.
+        /// </summary>
+        public float SpawnRealTime { get; private set; }
+
+        /// <summary>소환 위치와 시각을 적는다. <c>MonsterSpawner</c> 만 부른다.</summary>
+        public void MarkSpawnPosition(Vector2 position)
+        {
+            SpawnPosition = position;
+            SpawnRealTime = Time.unscaledTime;
+        }
 
         private readonly WaitForSeconds poisonDelay = new WaitForSeconds(0.5f);
         private int _baseDefense;
@@ -322,6 +348,12 @@ namespace OJ.Hunting
                     EquipmentManager.Instance?.OnMonsterKilled(
                         battle.Game != null ? battle.Game.wall : null);
                     RelicManager.Instance?.OnMonsterKilled(this, wasPoisoned, deathPosition);
+
+                    // 되돌리기 연출이 되감을 대상. <b>PoolMonster 보다 먼저여야 한다</b> —
+                    // 저것이 SetActive(false) 를 부르면 OnDisable 이 스프라이트를 포함한
+                    // 상태를 지워, 무엇이 어떻게 죽었는지 읽을 수 없게 된다.
+                    // (바로 아래 분열 통보가 같은 이유로 같은 자리에 있다.)
+                    battle.Rewind.RecordDeath(this, deathPosition);
                     // 현상금은 웨이브 목표 수에 들어가지 않으므로 처치 수로 세지 않는다.
                     // true 로 넘기면 웨이브가 한 마리 일찍 끝난다.
                     // 분열을 <b>처치를 세기 전에</b> 통보한다. 순서가 중요하다 —

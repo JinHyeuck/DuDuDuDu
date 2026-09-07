@@ -106,5 +106,79 @@ namespace OJ.Core
             PendingBountySummonPoint = 0;
             PendingBountyEnhanceStone = 0;
         }
+
+        /// <summary>
+        /// 되돌리기용 스냅샷. <see cref="RunState"/> 의 <b>모든</b> 필드를 담는다.
+        ///
+        /// <b>왜 일부가 아니라 전부인가.</b> "웨이브 중에 안 변하는 필드"를 골라 빼면
+        /// 그 판단이 오늘만 맞다 — 나중에 누가 <c>Seed</c> 를 웨이브마다 굴리게 바꾸면
+        /// 스냅샷은 조용히 틀린 값을 복원한다. 전부 담으면 그 사고가 성립하지 않고,
+        /// 아래 왕복 테스트가 필드 누락을 리플렉션으로 잡을 수 있게 된다.
+        /// </summary>
+        public struct WaveSnapshot
+        {
+            public int Seed;
+            public int StageIndex;
+            public int WaveIndex;
+            public int WaveMonsterDeadCount;
+            public int WaveMonsterCount;
+            public int WallMaxHp;
+            public int WallHp;
+            public int SummonPoint;
+            public int SummonCost;
+            public bool IsGameOver;
+            public int SelectedBountyGrade;
+            public int HighestDefeatedBountyGrade;
+            public int PendingBountySummonPoint;
+            public int PendingBountyEnhanceStone;
+        }
+
+        /// <summary>
+        /// 지금 상태를 뜬다. 웨이브가 시작되기 <b>직전</b>에 부른다.
+        ///
+        /// <b><see cref="BeginRun"/> 바로 아래 붙어 있는 것이 의도다.</b> 필드를 하나
+        /// 늘리면 <see cref="BeginRun"/> · <see cref="WaveSnapshot"/> · 아래 두 메서드를
+        /// 같이 고쳐야 하고, 그 사실이 눈에 보여야 한다. 빠뜨리면
+        /// <c>RunStateSnapshotTests</c> 가 리플렉션으로 잡는다.
+        /// </summary>
+        public WaveSnapshot CaptureWaveSnapshot()
+        {
+            return new WaveSnapshot
+            {
+                Seed = Seed,
+                StageIndex = StageIndex,
+                WaveIndex = WaveIndex,
+                WaveMonsterDeadCount = WaveMonsterDeadCount,
+                WaveMonsterCount = WaveMonsterCount,
+                WallMaxHp = WallMaxHp,
+                WallHp = WallHp,
+                SummonPoint = SummonPoint,
+                SummonCost = SummonCost,
+                IsGameOver = IsGameOver,
+                SelectedBountyGrade = SelectedBountyGrade,
+                HighestDefeatedBountyGrade = HighestDefeatedBountyGrade,
+                PendingBountySummonPoint = PendingBountySummonPoint,
+                PendingBountyEnhanceStone = PendingBountyEnhanceStone,
+            };
+        }
+
+        /// <summary>뜬 상태로 되돌린다. <see cref="CaptureWaveSnapshot"/> 의 역이다.</summary>
+        public void RestoreWaveSnapshot(in WaveSnapshot snapshot)
+        {
+            Seed = snapshot.Seed;
+            StageIndex = snapshot.StageIndex;
+            WaveIndex = snapshot.WaveIndex;
+            WaveMonsterDeadCount = snapshot.WaveMonsterDeadCount;
+            WaveMonsterCount = snapshot.WaveMonsterCount;
+            WallMaxHp = snapshot.WallMaxHp;
+            WallHp = snapshot.WallHp;
+            SummonPoint = snapshot.SummonPoint;
+            SummonCost = snapshot.SummonCost;
+            IsGameOver = snapshot.IsGameOver;
+            SelectedBountyGrade = snapshot.SelectedBountyGrade;
+            HighestDefeatedBountyGrade = snapshot.HighestDefeatedBountyGrade;
+            PendingBountySummonPoint = snapshot.PendingBountySummonPoint;
+            PendingBountyEnhanceStone = snapshot.PendingBountyEnhanceStone;
+        }
     }
 }
