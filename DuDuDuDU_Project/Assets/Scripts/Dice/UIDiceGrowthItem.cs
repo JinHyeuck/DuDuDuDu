@@ -39,6 +39,8 @@ namespace OJ.Dice
         private DiceType diceType;
         private System.Action<DiceType> onClick;
 
+        public DiceType DiceType => diceType;
+
         private void Awake()
         {
             if (button != null)
