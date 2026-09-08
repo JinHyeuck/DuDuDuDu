@@ -30,43 +30,47 @@ namespace OJ.Dice
         /// 한 다이스에 경로가 둘 이상 붙어 있으면 <b>별 → 스테이지 → 탑</b> 순으로 고른다.
         /// 앞의 것일수록 초반에 닿는 컨텐츠라, 지금 당장 할 수 있는 쪽을 먼저 준다.
         /// </summary>
-        public static void Go(DiceUnlockDefinition definition)
+        /// <returns>
+        /// 실제로 옮겼으면 true. <b>호출부는 이 값을 보고 자기 창을 닫는다</b> —
+        /// 못 갔는데 닫으면 유저 앞에 아무것도 안 남는다.
+        /// </returns>
+        public static bool Go(DiceUnlockDefinition definition)
         {
             if (definition == null)
-                return;
+                return false;
 
             if (definition.starRequirement > 0)
-            {
-                OpenStarTrial();
-                return;
-            }
+                return OpenStarTrial();
 
             if (definition.stageRequirement > 0)
-            {
-                OpenStageSelect();
-                return;
-            }
+                return OpenStageSelect();
 
             if (definition.towerFloor > 0)
-                OpenTower();
+                return OpenTower();
+
+            return false;
         }
 
-        private static void OpenStarTrial()
+        private static bool OpenStarTrial()
         {
-            if (GameContainer.UI?.Show<UIStageStarDialog>() == null)
-                LogMissing("별의 시련");
+            if (GameContainer.UI?.Show<UIStageStarDialog>() != null)
+                return true;
+
+            LogMissing("별의 시련");
+            return false;
         }
 
-        private static void OpenTower()
+        private static bool OpenTower()
         {
             UITowerFloorSelectDialog dialog = GameContainer.UI?.Get<UITowerFloorSelectDialog>();
             if (dialog == null)
             {
                 LogMissing("무한의 탑 층 선택");
-                return;
+                return false;
             }
 
             dialog.Enter();
+            return true;
         }
 
         /// <summary>
@@ -80,16 +84,17 @@ namespace OJ.Dice
         /// 레이아웃이라 컨테이너에 등록돼 있지 않기 때문이다. 버튼 한 번에 한 번 도는
         /// 조회라 비용도 문제가 되지 않는다.
         /// </summary>
-        private static void OpenStageSelect()
+        private static bool OpenStageSelect()
         {
             var lobby = Object.FindFirstObjectByType<LobbyLayoutController>();
             if (lobby == null)
             {
                 LogMissing("로비 홈 탭");
-                return;
+                return false;
             }
 
             lobby.ShowTab(LobbyTab.Home);
+            return true;
         }
 
         private static void LogMissing(string what)

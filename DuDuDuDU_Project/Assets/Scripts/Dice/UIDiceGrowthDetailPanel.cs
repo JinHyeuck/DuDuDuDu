@@ -294,9 +294,17 @@ namespace OJ.Dice
                 unlockNoticeText.SetText(UnlockNotice);
         }
 
+        /// <summary>
+        /// 획득 미션 컨텐츠로 보낸다.
+        ///
+        /// <b>보내고 나서 이 창을 닫는다.</b> 안 닫으면 컨텐츠 화면 <i>위에</i> 다이스 상세창이
+        /// 그대로 떠 있어서, 보내 준 화면을 정작 볼 수가 없다.
+        /// 못 갔으면 닫지 않는다 — 그때 닫으면 유저 앞에 아무것도 안 남는다.
+        /// </summary>
         private void OnClickUnlockMission()
         {
-            DiceUnlockShortcut.Go(DiceUnlockDatabaseProvider.Database.Get(currentDiceType));
+            if (DiceUnlockShortcut.Go(DiceUnlockDatabaseProvider.Database.Get(currentDiceType)))
+                Exit();
         }
 
         private void OnClickUnlockBuy()

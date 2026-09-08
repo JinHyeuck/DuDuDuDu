@@ -63,6 +63,11 @@ namespace OJ.Dice
             var meta = DiceMetaDataProvider.GetMeta(diceType);
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
 
+            // 계열 배경색은 보유 여부와 무관하다. 미보유 칸도 위에 딤이 깔릴 뿐
+            // 바탕색 자체는 같은 계열이면 같아야 칸이 흔들리지 않는다.
+            if (bgImage != null && TryGetBackgroundColor(diceType, out Color bgColor))
+                bgImage.color = bgColor;
+
             // 보유하지 않았으면 강화 정보를 전부 끈다. 레벨과 스크롤 진행도는 <b>보유한 뒤에나
             // 뜻이 있는 숫자</b>인데, 미보유 칸에 그대로 두면 "이미 쓰고 있는 다이스" 로 읽힌다.
             // 레벨 자체는 지우지 않는다 — 언락 전에 올려 둔 레벨은 실재하고, 그것을 버리는 것은
@@ -98,9 +103,6 @@ namespace OJ.Dice
                 RefreshUnlockInfo();
                 return;
             }
-
-            // if (bgImage != null)
-            //     bgImage.color = DiceMetaDataProvider.GetColor(diceType);
 
             if (iconImage != null)
                 iconImage.sprite = DiceMetaDataProvider.GetIcon(diceType);
@@ -167,6 +169,31 @@ namespace OJ.Dice
                 string sources = DiceUnlockText.DescribeShortSources(definition);
                 unlockConditionText.SetText(string.IsNullOrEmpty(sources) ? "재화로만 열림" : sources);
             }
+        }
+
+        /// <summary>
+        /// 다이스 계열별 바탕색. 100번대(<see cref="DiceType.Tornado"/>·Stun·ArmorBreak·Wind·Time)와
+        /// 200번대(<see cref="DiceType.KingNormal"/> 이하 킹 계열)만 지정색을 쓰고,
+        /// 기본 원소(0번대)는 프리팹에 찍힌 색을 그대로 둔다(<c>false</c> 반환).
+        /// </summary>
+        private static bool TryGetBackgroundColor(DiceType type, out Color color)
+        {
+            int id = (int)type;
+
+            if (id >= (int)DiceType.Tornado && id < (int)DiceType.KingNormal)
+            {
+                color = new Color32(0x24, 0x43, 0x82, 0xFF);
+                return true;
+            }
+
+            if (id >= (int)DiceType.KingNormal && id < (int)DiceType.Max)
+            {
+                color = new Color32(0x62, 0x29, 0x6C, 0xFF);
+                return true;
+            }
+
+            color = default;
+            return false;
         }
 
         private void HandleClick()

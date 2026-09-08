@@ -10,6 +10,25 @@ namespace OJ.Dice
     {
         [SerializeField] private Transform listRoot;
         [SerializeField] private UIDiceGrowthItem itemPrefab;
+        
+        [SerializeField] private DiceType[] diceTypesToShow = new DiceType[]
+        {
+            DiceType.Normal,
+            DiceType.Tornado,
+            DiceType.KingNormal,
+            DiceType.Fire,
+            DiceType.ArmorBreak,
+            DiceType.KingFire,
+            DiceType.Ice,
+            DiceType.Wind,
+            DiceType.KingIce,
+            DiceType.Thunder,
+            DiceType.Time,
+            DiceType.KingThunder,
+            DiceType.Poison,
+            DiceType.Stun,
+            DiceType.KingPoison,
+        };
 
         private readonly List<UIDiceGrowthItem> items = new List<UIDiceGrowthItem>();
 
@@ -45,7 +64,9 @@ namespace OJ.Dice
             if (itemPrefab == null || listRoot == null || items.Count > 0)
                 return;
 
-            foreach (DiceType diceType in System.Enum.GetValues(typeof(DiceType)))
+
+            //foreach (DiceType diceType in System.Enum.GetValues(typeof(DiceType)))
+            foreach (DiceType diceType in diceTypesToShow)
             {
                 if (diceType == DiceType.Max)
                     continue;

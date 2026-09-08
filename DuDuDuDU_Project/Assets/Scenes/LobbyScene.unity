@@ -3491,7 +3491,6 @@ RectTransform:
   - {fileID: 727032413}
   - {fileID: 837397977}
   - {fileID: 1109359849}
-  - {fileID: 985358724}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -3694,6 +3693,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 626011764}
+  - {fileID: 985358724}
   m_Father: {fileID: 727032413}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4006,7 +4006,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 887810886}
+    m_TransformParent: {fileID: 919905683}
     m_Modifications:
     - target: {fileID: 3444712178424326523, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
       propertyPath: m_Pivot.x
@@ -4058,15 +4058,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3444712178424326523, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 3444712178424326523, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 3444712178424326523, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 3444712178424326523, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -4091,6 +4091,22 @@ PrefabInstance:
     - target: {fileID: 4286317123136312263, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
       propertyPath: m_Name
       value: UITowerEntryButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 4432346964662673998, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 5647925343899577760, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 5979253927721860511, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4284602111
+      objectReference: {fileID: 0}
+    - target: {fileID: 5979253927721860511, guid: f6ca5d1867d540f4d8244ccad297a97a, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
