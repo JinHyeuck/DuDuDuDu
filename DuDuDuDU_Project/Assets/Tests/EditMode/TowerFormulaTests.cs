@@ -252,9 +252,9 @@ namespace OJ.Core.Tests
         [TestCase(5, 12)]
         [TestCase(10, 15)]
         [TestCase(300, 189)]
-        public void BandRewardEnhanceStone_GrowsWithBand(int floor, int expected)
+        public void BandRewardMaterial_GrowsWithBand(int floor, int expected)
         {
-            Assert.AreEqual(expected, TowerFormula.BandRewardEnhanceStone(floor));
+            Assert.AreEqual(expected, TowerFormula.BandRewardMaterial(floor));
         }
 
         // ── 진행 ─────────────────────────────────────────────────────

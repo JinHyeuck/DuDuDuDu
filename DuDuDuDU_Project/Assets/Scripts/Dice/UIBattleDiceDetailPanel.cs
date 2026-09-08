@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -70,6 +71,12 @@ namespace OJ.Dice
         /// <c>Update</c> 뿐이고, 둘 다 찍기가 끝난 다음이다.
         /// </summary>
         [Inject] private IBattleRefs battle;
+
+        /// <summary>
+        /// 진화 대상과 교환 후보를 보유로 거르기 위한 판정.
+        /// 이 창은 <c>resolver.Instantiate</c> 로 만들어지므로 주입이 채워진다.
+        /// </summary>
+        [Inject] private DiceOwnershipManager ownership;
 
         protected override void OnLoad()
         {
@@ -227,16 +234,23 @@ namespace OJ.Dice
                 ? PointManager.Instance.Get(PointType.BattleEnhanceStone)
                 : 0;
 
-            bool hasEvolvePath = DiceEvolution.TryGetEvolveTarget(currentDiceType, out _);
+            bool hasEvolvePath = DiceEvolution.TryGetEvolveTarget(currentDiceType, out DiceType evolveTarget);
             bool starOk = DiceEvolution.CanEvolve(currentDiceType, currentDiceStar);
             int evolveCost = DiceEvolution.GetEvolveCost(currentDiceType);
 
+            // 보유 판정을 CanEvolve 안에 접지 않고 따로 둔다. 접으면 "성급이 모자라다" 와
+            // "그 다이스를 아직 못 얻었다" 가 한 값으로 뭉쳐져, 아래 안내가 둘을 구분해
+            // 말할 수 없게 된다 — 유저가 다음에 할 일이 완전히 다른 두 상황이다.
+            bool targetOwned = !hasEvolvePath || ownership == null || ownership.IsOwned(evolveTarget);
+
             if (evolveButton != null)
             {
+                // <b>감추지 않는다.</b> 감추면 "진화 경로가 있다" 는 사실 자체가 안 보이고,
+                // 그러면 잠긴 다이스를 목표로 삼을 수가 없다.
                 evolveButton.gameObject.SetActive(hasEvolvePath);
                 if (hasEvolvePath)
                 {
-                    evolveButton.interactable = canAct && starOk && owned >= evolveCost;
+                    evolveButton.interactable = canAct && starOk && targetOwned && owned >= evolveCost;
                     if (evolveCostText != null)
                     {
                         evolveCostText.SetText("{0}", evolveCost);
@@ -245,7 +259,12 @@ namespace OJ.Dice
                 }
             }
 
-            bool canExchange = DiceEvolution.CanExchange(currentDiceType);
+            // 교환은 후보가 하나도 안 남으면 아예 없는 동작이다 — 킹이 교환 대상이 아닌 것과
+            // 같은 뜻이 되므로 버튼도 같이 감춘다. MergeSystem 도 같은 판정으로 막는다.
+            bool canExchange = DiceEvolution.CanExchange(currentDiceType)
+                               && DiceEvolution.TryGetExchangeCandidates(
+                                      currentDiceType, exchangeBuffer,
+                                      ownership != null ? (System.Func<DiceType, bool>)ownership.IsOwned : null);
             int exchangeCost = DiceEvolution.GetExchangeCost(currentDiceType);
 
             if (exchangeButton != null)
@@ -262,8 +281,12 @@ namespace OJ.Dice
                 }
             }
 
-            RefreshRequirementText(hasEvolvePath, starOk, canAct, owned, evolveCost, canExchange, exchangeCost);
+            RefreshRequirementText(hasEvolvePath, starOk, targetOwned, evolveTarget,
+                canAct, owned, evolveCost, canExchange, exchangeCost);
         }
+
+        /// <summary>교환 후보를 담는 재사용 버퍼. 이 창은 하나뿐이라 재진입이 없다.</summary>
+        private readonly List<DiceType> exchangeBuffer = new List<DiceType>(5);
 
         /// <summary>
         /// 버튼이 왜 안 눌리는지 <b>한 줄로 말한다.</b>
@@ -278,8 +301,17 @@ namespace OJ.Dice
         /// 할 일은 어차피 하나다. 순서는 "고치기 어려운 것부터" — 웨이브는 기다리면 끝나고,
         /// 성급은 머지가 필요하며, 재화는 그중 가장 오래 걸린다.
         /// </summary>
+        /// <summary>
+        /// 인게임과 같은 이름. 위 <c>Refresh</c> 가 쓰는 식과 같은 것이라 여기 모아 둔다.
+        /// </summary>
+        private static string NameOf(DiceType diceType)
+        {
+            DiceMetaDataDatabase.DiceMeta meta = DiceMetaDataProvider.GetMeta(diceType);
+            return meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : diceType.ToString();
+        }
+
         private void RefreshRequirementText(
-            bool hasEvolvePath, bool starOk, bool canAct,
+            bool hasEvolvePath, bool starOk, bool targetOwned, DiceType evolveTarget, bool canAct,
             int owned, int evolveCost, bool canExchange, int exchangeCost)
         {
             if (requirementText == null)
@@ -295,6 +327,16 @@ namespace OJ.Dice
             if (!canAct)
             {
                 ShowRequirement("웨이브 중에는 바꿀 수 없습니다", MutedTextColor);
+                return;
+            }
+
+            // <b>미보유가 성급보다 앞이다.</b> 이것은 다른 조건을 전부 무의미하게 만드는
+            // 조건이라, 뒤에 두면 유저가 4성을 만들고 마석까지 모은 <b>뒤에야</b>
+            // "사실 못 쓴다" 를 알게 된다.
+            if (hasEvolvePath && !targetOwned)
+            {
+                ShowRequirement(NameOf(evolveTarget) + " 을(를) 아직 보유하지 않았습니다 (로비 → 다이스 성장)",
+                    LackingColor);
                 return;
             }
 

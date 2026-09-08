@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 using OJ.DI;
+using OJ.Dice;
 using OJ.Point;
 using OJ.Save;
 using OJ.Stage;
@@ -39,9 +40,13 @@ namespace OJ.StageReward
         private readonly HashSet<string> claimedRewardIds = new HashSet<string>();
         private readonly StageProgressManager stageProgress;
 
-        public StageRewardManager(StageProgressManager stageProgress)
+        /// <summary>스테이지 퍼펙트 보상이 다이스를 줄 때 쓰는 창구. 중복이면 환급까지 정한다.</summary>
+        private readonly DiceOwnershipManager ownership;
+
+        public StageRewardManager(StageProgressManager stageProgress, DiceOwnershipManager ownership)
         {
             this.stageProgress = stageProgress;
+            this.ownership = ownership;
 
             // 7.5 이전에는 여기서 Load() 가 PlayerPrefs 를 읽었다. 이제 로드는 SaveService 가
             // ReadFrom 으로 밀어 넣으므로 생성자는 <b>초기 상태를 세우는 일만</b> 한다.
@@ -183,7 +188,46 @@ namespace OJ.StageReward
 
         public bool TryClaim(StageRewardMilestone milestone, out List<PointRewardEntry> grantedRewards)
         {
+            return TryClaim(milestone, out grantedRewards, out _);
+        }
+
+        /// <summary>화면이 다이스를 그릴 수 있는 형태로 받는다. 다이스가 없으면 <c>hasDice</c> 가 거짓.</summary>
+        public bool TryClaim(
+            StageRewardMilestone milestone, out List<PointRewardEntry> grantedRewards,
+            out DiceRewardView diceView, out bool hasDice)
+        {
+            return TryClaim(milestone, out grantedRewards, out diceView, out hasDice, out _);
+        }
+
+        /// <summary>
+        /// 다이스 언락까지 함께 처리하는 형태. (다이스 언락)
+        ///
+        /// <b><c>StageRewardEntry</c> 에 다이스 칸을 더하지 않았다.</b> 그 struct 의 계약은
+        /// <c>ToPointRewardEntry()</c> 이고, 다이스를 담으면 그것이 무엇을 돌려줄지 답이 없다 —
+        /// 억지로 돌려주면 결과창에 빈 칸이 뜬다. 마일스톤에 필드를 더하지 않은 이유는
+        /// 그러면 언락 정본이 <c>DiceUnlockDatabase</c> 와 둘이 되기 때문이다.
+        ///
+        /// 대신 <b>"그 스테이지의 마지막 칸"</b> 이라는 규칙을 코드에 두고 스테이지 번호로 조회한다.
+        /// </summary>
+        /// <param name="newlyUnlockedDice">이번에 새로 얻은 다이스. 없으면 <c>DiceType.Max</c>.</param>
+        public bool TryClaim(
+            StageRewardMilestone milestone,
+            out List<PointRewardEntry> grantedRewards,
+            out DiceType newlyUnlockedDice)
+        {
+            return TryClaim(milestone, out grantedRewards, out _, out _, out newlyUnlockedDice);
+        }
+
+        private bool TryClaim(
+            StageRewardMilestone milestone,
+            out List<PointRewardEntry> grantedRewards,
+            out DiceRewardView diceView, out bool hasDice,
+            out DiceType newlyUnlockedDice)
+        {
             grantedRewards = new List<PointRewardEntry>();
+            newlyUnlockedDice = DiceType.Max;
+            diceView = default;
+            hasDice = false;
 
             if (GetState(milestone) != StageRewardState.Claimable)
                 return false;
@@ -197,6 +241,23 @@ namespace OJ.StageReward
                         continue;
 
                     grantedRewards.Add(reward.ToPointRewardEntry());
+                }
+            }
+
+            // 그 스테이지의 <b>마지막</b> 칸(= 전 웨이브 클리어)에만 다이스가 붙는다.
+            // 중간 웨이브 칸에 붙이면 안내한 조건과 실제 지급 시점이 어긋난다.
+            //
+            // 마일스톤의 등급 id 는 "stage_N_perfect" 지만 <b>화면에는 "퍼펙트" 라고 쓰지
+            // 않는다</b> — 이 게임의 StageClearGrade.Perfect 는 "HP 100% 클리어" 라는 다른
+            // 조건이고, 둘을 같은 말로 부르면 유저가 더 어려운 쪽을 목표로 삼는다.
+            if (StageRewardDatabaseProvider.GetDatabase().IsFinalMilestoneOf(milestone))
+            {
+                DiceType dice = DiceUnlockDatabaseProvider.Database.GetStageUnlock(milestone.requiredStageIndex);
+                if (dice != DiceType.Max)
+                {
+                    hasDice = true;
+                    if (ownership.GrantFromContent(dice, grantedRewards, out diceView))
+                        newlyUnlockedDice = dice;
                 }
             }
 

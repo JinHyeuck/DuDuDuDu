@@ -1033,13 +1033,19 @@ namespace OJ.Hunting
             bool newRecord = false;
             DiceType unlocked = DiceType.Max;
 
+            // 이미 보유한 다이스를 이 층이 열면 재화로 환급된다. 여기 담아 두었다가
+            // 아래에서 층 보상과 <b>함께 한 번에</b> 지급한다 — 지급 경로가 둘이 되면
+            // 이중 지급을 막을 자리가 없어진다.
+            var unlockRefunds = new List<PointRewardEntry>();
+
             if (isClear)
             {
                 if (progress != null)
                 {
-                    firstClear = progress.RecordClear(floor, elapsedMs, out newRecord);
-                    if (firstClear)
-                        unlocked = progress.GetUnlockGrantedByFloor(floor);
+                    firstClear = progress.RecordClear(floor, elapsedMs, out newRecord, unlockRefunds);
+
+                    // 소비하지 않고 본다. NEW 배지를 위해 남겨 두는 것은 편성 화면의 몫이다.
+                    unlocked = progress.PendingNewUnlock;
                 }
             }
             else if (progress != null)
@@ -1047,7 +1053,30 @@ namespace OJ.Hunting
                 newRecord = progress.RecordFail(floor, remainingPercent);
             }
 
+            // 이 층이 다이스를 준 경우, 처음 얻은 것인지 환급된 것인지를 결과창에 실어 보낸다.
+            // <b>환급 여부는 unlockRefunds 가 말한다</b> — 비어 있으면 새로 얻은 것이다.
+            // 따로 조회하지 않는 이유는 그 사이에 값이 바뀌면 준 것과 보여 준 것이 갈리기 때문이다.
+            bool hasTowerDice = false;
+            DiceRewardView towerDiceView = default;
+
+            if (unlocked != DiceType.Max)
+            {
+                hasTowerDice = true;
+                towerDiceView = DiceRewardView.NewlyOwned(unlocked);
+            }
+            else if (unlockRefunds.Count > 0 && progress != null)
+            {
+                DiceType refunded = progress.GetUnlockGrantedByFloor(floor);
+                if (refunded != DiceType.Max)
+                {
+                    hasTowerDice = true;
+                    towerDiceView = DiceRewardView.Refunded(
+                        refunded, unlockRefunds[0].PointType, unlockRefunds[0].Amount);
+                }
+            }
+
             List<PointRewardEntry> rewards = TowerRunManager.BuildClearRewards(floor, firstClear);
+            rewards.AddRange(unlockRefunds);
             PointRewardUtility.GrantRewards(rewards);
 
             RunHistoryManager.Instance?.EndRun(
@@ -1069,6 +1098,8 @@ namespace OJ.Hunting
                 PreviousRemainingHpPercent = previousRemaining,
                 IsNewRecord = newRecord,
                 UnlockedDice = unlocked,
+                DiceReward = towerDiceView,
+                HasDiceReward = hasTowerDice,
                 Rewards = rewards,
                 DamageShares = battle.Tower.BuildDamageShares(),
             });

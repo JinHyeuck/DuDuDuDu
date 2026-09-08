@@ -26,11 +26,44 @@ namespace OJ.Dice
             if (definition.starRequirement > 0)
                 into.Add("별 " + definition.starRequirement + "개 모으기");
 
+            // <b>"퍼펙트" 라고 쓰지 않는다.</b> 이 게임의 StageClearGrade.Perfect 는
+            // "HP 100% 로 클리어" 라는 <i>다른</i> 조건이라, 그렇게 적으면 훨씬 어려운
+            // 조건을 목표로 삼게 만든다. 실제 조건은 그 스테이지의 마지막 마일스톤이다.
             if (definition.stageRequirement > 0)
-                into.Add("스테이지 " + definition.stageRequirement + " 퍼펙트 클리어");
+                into.Add("스테이지 " + definition.stageRequirement + " 클리어");
 
             if (definition.towerFloor > 0)
                 into.Add("무한의 탑 " + definition.towerFloor + "층 클리어");
+        }
+
+        /// <summary>
+        /// 목록 칸에 들어갈 <b>짧은</b> 경로들. 성장 목록의 칸은 폭이 220 남짓이라
+        /// "별 36개 모으기 · 스테이지 8 퍼펙트 클리어" 를 그대로 넣으면 잘린다.
+        ///
+        /// <b>말을 줄이되 숫자는 안 줄인다.</b> 유저가 칸에서 읽어야 하는 것은
+        /// "얼마나 남았나" 이고 그건 숫자에만 있다 — 동사는 팝업에서 온전히 말한다.
+        /// </summary>
+        public static void AppendShortSources(DiceUnlockDefinition definition, List<string> into)
+        {
+            if (definition == null || into == null)
+                return;
+
+            if (definition.starRequirement > 0)
+                into.Add("별 " + definition.starRequirement + "개");
+
+            if (definition.stageRequirement > 0)
+                into.Add("스테이지 " + definition.stageRequirement + " 클리어");
+
+            if (definition.towerFloor > 0)
+                into.Add("탑 " + definition.towerFloor + "층");
+        }
+
+        /// <summary>짧은 경로들을 한 줄로 잇는다. 없으면 빈 문자열.</summary>
+        public static string DescribeShortSources(DiceUnlockDefinition definition)
+        {
+            var sources = new List<string>();
+            AppendShortSources(definition, sources);
+            return Join(sources);
         }
 
         /// <summary>경로들을 한 줄로 잇는다. 없으면 빈 문자열.</summary>
@@ -38,7 +71,11 @@ namespace OJ.Dice
         {
             var sources = new List<string>();
             AppendSources(definition, sources);
+            return Join(sources);
+        }
 
+        private static string Join(List<string> sources)
+        {
             if (sources.Count == 0)
                 return string.Empty;
 

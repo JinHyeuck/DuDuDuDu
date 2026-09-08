@@ -6,6 +6,7 @@ using UnityEngine.Scripting;
 using OJ.Core;
 using OJ.DI;
 using OJ.Dice;
+using OJ.Point;
 using OJ.Save;
 
 namespace OJ.Tower
@@ -177,7 +178,13 @@ namespace OJ.Tower
         /// 이 한 줄이 이중 지급을 막는다.
         /// </summary>
         /// <returns>이번이 이 층의 최초 클리어면 true.</returns>
-        public bool RecordClear(int floor, int clearMilliseconds, out bool isNewRecord)
+        /// <param name="refundInto">
+        /// 이미 보유한 다이스를 이 층이 열었을 때 <b>환급 재화가 담기는 곳</b>.
+        /// 호출부가 자기 보상 목록에 합쳐 한 번에 지급한다 — 지급 경로가 둘이 되면
+        /// 이중 지급을 막을 자리가 없어진다. null 이면 환급을 버린다(치트 경로).
+        /// </param>
+        public bool RecordClear(int floor, int clearMilliseconds, out bool isNewRecord,
+            List<PointRewardEntry> refundInto = null)
         {
             isNewRecord = false;
 
@@ -208,7 +215,11 @@ namespace OJ.Tower
             if (firstClear)
             {
                 DiceType granted = GetUnlockGrantedByFloor(validFloor);
-                if (granted != DiceType.Max)
+
+                // <b>세우는 자리가 하나다.</b> 실제로 새로 얻었을 때만 pendingNewUnlock 이 서므로,
+                // 이미 보유였다면 결과창의 "해금!" 배너와 편성 화면의 NEW 배지가 같이 조용해지고
+                // 대신 환급이 보상 목록에 뜬다. 둘이 어긋날 수가 없다.
+                if (granted != DiceType.Max && ownership.GrantFromContent(granted, refundInto))
                     pendingNewUnlock = granted;
             }
 
@@ -494,6 +505,12 @@ namespace OJ.Tower
         /// 가져간다. <b>한 번만 나온다</b> — 남겨 두면 배지가 영영 붙어 있고,
         /// 그러면 배지가 배경이 되어 다음 획득을 못 알린다.
         /// </summary>
+        /// <summary>
+        /// <b>소비하지 않고</b> 들여다본다. 결과 화면이 "해금!" 을 그릴 때 쓴다 —
+        /// 거기서 소비해 버리면 편성 화면의 NEW 배지가 영영 안 뜬다.
+        /// </summary>
+        public DiceType PendingNewUnlock => pendingNewUnlock;
+
         public DiceType ConsumeNewUnlock()
         {
             DiceType diceType = pendingNewUnlock;

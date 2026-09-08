@@ -36,6 +36,35 @@ namespace OJ.StageReward
             EnsureValid();
         }
 
+        /// <summary>
+        /// 이 마일스톤이 그 스테이지의 <b>마지막</b>(요구 웨이브가 가장 높은) 칸인가.
+        ///
+        /// 다이스 언락이 붙는 자리를 "전 웨이브 클리어" 로 고정하기 위한 것이다.
+        /// (등급 id 는 "perfect" 지만 StageClearGrade.Perfect = HP 100% 와는 다른 조건이다)
+        /// <b>id 문자열로 판정하지 않는다</b> — <c>StableId</c> 는 비어 있으면 자동 생성되는
+        /// 값이라 규칙이 바뀌면 조용히 죽는다. 요구 웨이브는 그 마일스톤이 무엇인지를
+        /// 실제로 정하는 값이라 흔들리지 않는다.
+        /// </summary>
+        public bool IsFinalMilestoneOf(StageRewardMilestone milestone)
+        {
+            if (milestone == null)
+                return false;
+
+            EnsureValid();
+
+            for (int i = 0; i < milestones.Count; i++)
+            {
+                StageRewardMilestone other = milestones[i];
+                if (other == null || other.requiredStageIndex != milestone.requiredStageIndex)
+                    continue;
+
+                if (other.requiredWaveIndex > milestone.requiredWaveIndex)
+                    return false;
+            }
+
+            return true;
+        }
+
         public StageRewardMilestone GetMilestone(int index)
         {
             EnsureValid();

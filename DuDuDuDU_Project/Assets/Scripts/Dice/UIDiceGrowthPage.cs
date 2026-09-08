@@ -22,6 +22,11 @@ namespace OJ.Dice
                 DiceLevelManager.Instance.OnDiceLevelChanged += OnDiceLevelChanged;
             if (PointManager.Instance != null)
                 PointManager.Instance.OnPointChanged += OnPointChanged;
+
+            // 구매 직후 목록이 그 자리에서 바뀌어야 한다. 안 걸면 팝업을 닫아도
+            // 자물쇠가 그대로 남아 "샀는데 아무 일도 없었다"로 보인다.
+            if (DiceOwnershipManager.Instance != null)
+                DiceOwnershipManager.Instance.OnOwnershipChanged += OnOwnershipChanged;
         }
 
         protected override void OnExit()
@@ -30,6 +35,9 @@ namespace OJ.Dice
                 DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
             if (PointManager.Instance != null)
                 PointManager.Instance.OnPointChanged -= OnPointChanged;
+
+            if (DiceOwnershipManager.Instance != null)
+                DiceOwnershipManager.Instance.OnOwnershipChanged -= OnOwnershipChanged;
         }
 
         private void BuildIfNeeded()
@@ -67,9 +75,18 @@ namespace OJ.Dice
         /// </summary>
         private void OnClickItem(DiceType diceType)
         {
+            // <b>보유든 미보유든 창은 하나다.</b> 예전에는 미보유일 때 언락 팝업을 따로
+            // 겹쳐 띄웠는데, 그러면 "얼마나 센가"(이 창)와 "어떻게 얻나"(팝업)가 갈라져
+            // 유저가 둘을 나란히 못 본다. 상세창의 비용 칸이 해금 비용으로 바뀌어 끼워지고,
+            // 강화 버튼이 구매 버튼이 된다 — UIDiceGrowthDetailPanel.RefreshCostSection 참조.
             UIDiceGrowthDetailPanel detailPanel = GameContainer.UI?.Get<UIDiceGrowthDetailPanel>();
             if (detailPanel != null)
                 detailPanel.Open(diceType, RefreshAll);
+        }
+
+        private void OnOwnershipChanged(DiceType diceType)
+        {
+            RefreshAll();
         }
 
         private void OnDiceLevelChanged(DiceType diceType, int level)

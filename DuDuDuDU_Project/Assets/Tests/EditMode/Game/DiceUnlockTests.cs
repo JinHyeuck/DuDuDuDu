@@ -264,6 +264,84 @@ namespace OJ.Game.Tests
             Assert.That(rewards, Is.Empty);
         }
 
+        // ── 진화·교환 게이팅 ────────────────────────────────────────────
+
+        /// <summary>
+        /// 진화는 <b>대상</b>의 보유를 본다. Normal 을 4성까지 올려도 Tornado 가 없으면 못 간다.
+        ///
+        /// 자기 자신의 보유를 보면 안 된다 — 기본 다이스는 늘 보유라 그 판정은 언제나 참이고,
+        /// 게이팅이 통째로 무력해진다.
+        /// </summary>
+        [Test]
+        public void 진화는_대상의_보유를_본다()
+        {
+            var owned = new HashSet<DiceType>();
+
+            Assert.That(
+                DiceEvolution.CanEvolve(DiceType.Normal, DiceEvolution.EvolveRequiredStar, owned.Contains),
+                Is.False, "Tornado 미보유면 4성이어도 못 간다");
+
+            owned.Add(DiceType.Tornado);
+
+            Assert.That(
+                DiceEvolution.CanEvolve(DiceType.Normal, DiceEvolution.EvolveRequiredStar, owned.Contains),
+                Is.True);
+        }
+
+        /// <summary>성급 조건은 보유와 별개로 그대로 남는다. 둘 다 만족해야 열린다.</summary>
+        [Test]
+        public void 보유해도_성급이_모자라면_못_간다()
+        {
+            var owned = new HashSet<DiceType> { DiceType.Tornado };
+
+            Assert.That(
+                DiceEvolution.CanEvolve(DiceType.Normal, DiceEvolution.EvolveRequiredStar - 1, owned.Contains),
+                Is.False);
+        }
+
+        /// <summary>필터를 안 넘기면 예전 그대로 — 로비의 진화 경로 표시가 이 형태를 쓴다.</summary>
+        [Test]
+        public void 필터가_없으면_보유를_보지_않는다()
+        {
+            Assert.That(DiceEvolution.CanEvolve(DiceType.Normal, DiceEvolution.EvolveRequiredStar), Is.True);
+            Assert.That(
+                DiceEvolution.CanEvolve(DiceType.Normal, DiceEvolution.EvolveRequiredStar, null),
+                Is.True);
+        }
+
+        /// <summary>
+        /// 교환 후보에서 미보유가 빠지고, 하나도 안 남으면 <c>false</c> 다.
+        ///
+        /// <b>false 가 중요하다.</b> 호출부가 이 검사를 재화 차감보다 먼저 하므로,
+        /// 여기서 참을 주면 마석을 내고도 바꿀 것이 없는 상태가 만들어진다.
+        /// </summary>
+        [Test]
+        public void 교환_후보에서_미보유가_빠진다()
+        {
+            var buffer = new List<DiceType>();
+            var owned = new HashSet<DiceType> { DiceType.Wind };
+
+            Assert.That(DiceEvolution.TryGetExchangeCandidates(DiceType.Tornado, buffer, owned.Contains), Is.True);
+            Assert.That(buffer, Is.EqualTo(new[] { DiceType.Wind }));
+
+            owned.Clear();
+
+            Assert.That(DiceEvolution.TryGetExchangeCandidates(DiceType.Tornado, buffer, owned.Contains), Is.False,
+                "후보가 0이면 거짓이어야 재화를 안 깎는다");
+            Assert.That(buffer, Is.Empty);
+        }
+
+        /// <summary>기본 다이스끼리의 교환은 필터를 걸어도 그대로다 — 5종 전부 보유이기 때문이다.</summary>
+        [Test]
+        public void 기본_교환은_게이팅에_영향받지_않는다()
+        {
+            DiceOwnershipManager ownership = MakeOwnership();
+            var buffer = new List<DiceType>();
+
+            Assert.That(DiceEvolution.TryGetExchangeCandidates(DiceType.Normal, buffer, ownership.IsOwned), Is.True);
+            Assert.That(buffer, Has.Count.EqualTo(4));
+        }
+
         // ── 저장 ────────────────────────────────────────────────────────
 
         /// <summary>

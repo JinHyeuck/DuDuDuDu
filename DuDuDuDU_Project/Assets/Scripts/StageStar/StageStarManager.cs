@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 using OJ.DI;
+using OJ.Dice;
 using OJ.Point;
 using OJ.Save;
 using OJ.Stage;
@@ -37,9 +38,15 @@ namespace OJ.StageStar
         private readonly HashSet<int> claimedRewardIndices = new HashSet<int>();
         private readonly StageProgressManager stageProgress;
 
-        public StageStarManager(StageProgressManager stageProgress)
+        /// <summary>
+        /// 별 보상이 다이스를 줄 때 쓰는 창구. 중복이면 환급까지 여기가 정한다.
+        /// </summary>
+        private readonly DiceOwnershipManager ownership;
+
+        public StageStarManager(StageProgressManager stageProgress, DiceOwnershipManager ownership)
         {
             this.stageProgress = stageProgress;
+            this.ownership = ownership;
             stageProgress.OnProgressChanged += HandleStageProgressChanged;
         }
 
@@ -137,7 +144,43 @@ namespace OJ.StageStar
 
         public bool TryClaimReward(int rewardIndex, out List<PointRewardEntry> grantedRewards)
         {
+            return TryClaimReward(rewardIndex, out grantedRewards, out _);
+        }
+
+        /// <summary>화면이 다이스를 그릴 수 있는 형태로 받는다. 다이스가 없으면 <c>hasDice</c> 가 거짓.</summary>
+        public bool TryClaimReward(
+            int rewardIndex, out List<PointRewardEntry> grantedRewards, out DiceRewardView diceView, out bool hasDice)
+        {
+            bool ok = TryClaimReward(rewardIndex, out grantedRewards, out diceView, out hasDice, out _);
+            return ok;
+        }
+
+        /// <summary>
+        /// 다이스 언락까지 함께 처리하는 형태. (다이스 언락)
+        ///
+        /// <b>사다리 자체는 손대지 않았다.</b> <see cref="GetRequiredStars"/> 는 스테이지 수에서
+        /// 파생되는 값이라 SO 로 굳히면 스테이지가 늘 때 같이 고쳐야 하고, 안 고치면 별을 다
+        /// 모아도 못 받는 보상이 생긴다. 지금은 자동으로 늘어난다 —
+        /// 이 클래스가 별 개수를 저장하지 않는 이유와 같은 논리다.
+        ///
+        /// <b>인덱스가 아니라 별 수로 조회한다.</b> 인덱스는 스테이지가 늘면 뜻이 변하지만
+        /// "누적 36별" 은 변하지 않는다.
+        /// </summary>
+        /// <param name="newlyUnlockedDice">이번에 새로 얻은 다이스. 없으면 <c>DiceType.Max</c>.</param>
+        public bool TryClaimReward(
+            int rewardIndex, out List<PointRewardEntry> grantedRewards, out DiceType newlyUnlockedDice)
+        {
+            return TryClaimReward(rewardIndex, out grantedRewards, out _, out _, out newlyUnlockedDice);
+        }
+
+        private bool TryClaimReward(
+            int rewardIndex, out List<PointRewardEntry> grantedRewards,
+            out DiceRewardView diceView, out bool hasDice, out DiceType newlyUnlockedDice)
+        {
             grantedRewards = new List<PointRewardEntry>();
+            newlyUnlockedDice = DiceType.Max;
+            diceView = default;
+            hasDice = false;
 
             if (rewardIndex < 0 || rewardIndex >= GetRewardCount())
                 return false;
@@ -146,6 +189,16 @@ namespace OJ.StageStar
                 return false;
 
             grantedRewards.Add(new PointRewardEntry(PointType.Dia, StageStarUtility.DiaRewardAmount));
+
+            // 에셋을 깨우지만 이 메서드는 UI 클릭에서만 불리므로 씬이 이미 서 있다.
+            DiceType dice = DiceUnlockDatabaseProvider.Database.GetStarUnlock(GetRequiredStars(rewardIndex));
+            if (dice != DiceType.Max)
+            {
+                hasDice = true;
+                if (ownership.GrantFromContent(dice, grantedRewards, out diceView))
+                    newlyUnlockedDice = dice;
+            }
+
             claimedRewardIndices.Add(rewardIndex);
             PointRewardUtility.GrantRewards(grantedRewards);
 

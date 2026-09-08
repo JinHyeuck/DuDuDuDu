@@ -17,6 +17,15 @@ namespace OJ.Dice
         // 단 스코프는 씬의 모든 Awake 뒤에 빌드되므로 Awake 에서는 아직 null 이다.
         [Inject] private IBattleRefs battle;
 
+        /// <summary>
+        /// 미보유 다이스를 만들어 내지 않기 위한 판정. 루트 스코프에 살아서 배틀 스코프의
+        /// 자식으로 해석된다.
+        ///
+        /// <b><c>.Instance</c> 로 잡지 않는다.</b> 이 클래스는 이미 주입 창구를 갖고 있고,
+        /// 여기에 싱글톤 호출을 하나 더 얹으면 8.3b 가 262곳에서 걷어낸 방향을 되돌리는 셈이다.
+        /// </summary>
+        [Inject] private DiceOwnershipManager ownership;
+
         public bool TryMerge(UIDice from, UIDice to)
         {
             // 무한의 탑에서는 머지가 없다. 기획서 3.2 의 금지 항목이고, 2장이 두 콘텐츠를
@@ -91,6 +100,12 @@ namespace OJ.Dice
                 if (!DiceMetaDataProvider.IsSummonable(type))
                     continue;
 
+                // 지금 deckTypes 는 기본 5종뿐이라 이 줄은 아무것도 거르지 않는다. 그래도 둔다 —
+                // 그건 <b>씬 데이터</b>라 언제든 특수가 들어갈 수 있고, 그때 미보유 다이스가
+                // 머지 결과로 튀어나오는 것은 어떤 검사 도구도 못 잡는다.
+                if (!ownership.IsOwned(type))
+                    continue;
+
                 candidates.Add(type);
             }
 
@@ -127,7 +142,8 @@ namespace OJ.Dice
             if (dice == null || battle.Game.inGameState == InGameState.Wave)
                 return false;
 
-            if (!DiceEvolution.CanEvolve(dice.Type, dice.Star))
+            // 보는 것은 <b>대상</b>의 보유다 — Normal 을 4성까지 올려도 Tornado 가 없으면 못 간다.
+            if (!DiceEvolution.CanEvolve(dice.Type, dice.Star, ownership.IsOwned))
                 return false;
 
             if (!DiceEvolution.TryGetEvolveTarget(dice.Type, out DiceType target))
@@ -168,7 +184,9 @@ namespace OJ.Dice
             if (!DiceEvolution.CanExchange(dice.Type))
                 return false;
 
-            if (!DiceEvolution.TryGetExchangeCandidates(dice.Type, exchangeBuffer))
+            // 후보가 0이면 여기서 돌아간다. 이 검사가 TrySpend 보다 앞이라
+            // 재화를 내고 나서 바꿀 것이 없어지는 경로는 없다.
+            if (!DiceEvolution.TryGetExchangeCandidates(dice.Type, exchangeBuffer, ownership.IsOwned))
                 return false;
 
             int cost = DiceEvolution.GetExchangeCost(dice.Type);

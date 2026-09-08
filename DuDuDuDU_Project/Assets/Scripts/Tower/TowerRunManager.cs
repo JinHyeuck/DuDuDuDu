@@ -406,8 +406,16 @@ namespace OJ.Tower
             if (TowerFormula.IsBandLastFloor(floor))
             {
                 rewards.Add(new PointRewardEntry(PointType.Dia, TowerFormula.BandRewardDia(floor)));
+                // <b>BattleEnhanceStone 을 주면 안 된다.</b> 그것은 판이 시작될 때 0 으로
+                // 밀리는 인게임 재화라(ElementUpgradeManager.ResetRunState), 받자마자 다음
+                // 층에 들어가면 사라지고 로비에는 쓸 곳조차 없다 — 주는 척만 하는 보상이었다.
+                //
+                // 신화 스크롤로 바꾼 이유: <b>탑이 여는 것이 킹 다이스</b>이고, 킹을 올리는
+                // 재료가 신화 스크롤이다(PointManager.ToScrollType). 탑이 킹을 주고 그것을
+                // 키울 재료도 주는 것이 한 줄로 읽힌다. 게다가 신화 스크롤의 다른 수급처는
+                // 스테이지 등급 보너스뿐이라 1회성이고 상한이 낮다.
                 rewards.Add(new PointRewardEntry(
-                    PointType.BattleEnhanceStone, TowerFormula.BandRewardEnhanceStone(floor)));
+                    PointType.MythicScroll, TowerFormula.BandRewardMaterial(floor)));
             }
 
             return rewards;

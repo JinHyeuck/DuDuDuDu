@@ -196,8 +196,15 @@ namespace OJ.SceneFlow
             bool realTower = TowerDatabaseProvider.HasRealDatabase;
             Line(sb, realTower ? Ok : Bad, "TowerDatabase",
                 realTower
-                    ? "구간 " + TowerDatabaseProvider.Database.Bands.Count +
-                      "개 / 해금 " + TowerDatabaseProvider.Database.DiceUnlocks.Count + "개"
+                    ? "구간 " + TowerDatabaseProvider.Database.Bands.Count + "개"
+                    : "폴백(코드 기본값)을 쓰고 있다");
+
+            // 해금 사다리는 TowerDatabase 에서 여기로 옮겨 왔다. 폴백으로 돌고 있으면
+            // 언락 가격과 보상처가 전부 코드 기본값이라는 뜻이라 따로 보여 준다.
+            bool realUnlock = DiceUnlockDatabaseProvider.HasRealDatabase;
+            Line(sb, realUnlock ? Ok : Bad, "DiceUnlockDatabase",
+                realUnlock
+                    ? "언락 " + DiceUnlockDatabaseProvider.Database.Definitions.Count + "종"
                     : "폴백(코드 기본값)을 쓰고 있다");
         }
 
