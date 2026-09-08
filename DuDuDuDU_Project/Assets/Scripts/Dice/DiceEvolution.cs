@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace OJ.Dice
@@ -141,10 +142,30 @@ namespace OJ.Dice
         /// </summary>
         public static bool CanEvolve(DiceType diceType, int star)
         {
-            if (!evolveMap.ContainsKey(diceType))
+            return CanEvolve(diceType, star, null);
+        }
+
+        /// <summary>
+        /// 보유 판정까지 보는 형태. <b>보는 것은 <i>대상</i>의 보유다</b> —
+        /// <c>Normal → Tornado</c> 는 Tornado 를 갖고 있어야 열린다. 자기 자신이 아니다.
+        ///
+        /// <b>판정을 인자로 받는 이유.</b> 이 클래스는 <c>UnityEngine.Random</c> 조차
+        /// 호출부에서 받는다(<see cref="TryGetExchangeCandidates"/> 주석) — 엔진과 싱글톤에
+        /// 묶이면 테스트에서 두드릴 수 없기 때문이다. 보유 판정도 정확히 같은 성질이라
+        /// 여기서 <c>DiceOwnershipManager.Instance</c> 를 부르지 않는다.
+        ///
+        /// <paramref name="isOwned"/> 가 null 이면 보유를 보지 않는다. 로비의 진화 경로 표시는
+        /// 보유와 무관하게 "무엇이 되는지" 를 그려야 해서 그 형태가 계속 필요하다.
+        /// </summary>
+        public static bool CanEvolve(DiceType diceType, int star, Func<DiceType, bool> isOwned)
+        {
+            if (!evolveMap.TryGetValue(diceType, out DiceType target))
                 return false;
 
             if (GetTier(diceType) == DiceTier.Base && star < EvolveRequiredStar)
+                return false;
+
+            if (isOwned != null && !isOwned(target))
                 return false;
 
             return true;
@@ -203,6 +224,19 @@ namespace OJ.Dice
         /// </summary>
         public static bool TryGetExchangeCandidates(DiceType diceType, List<DiceType> buffer)
         {
+            return TryGetExchangeCandidates(diceType, buffer, null);
+        }
+
+        /// <summary>
+        /// 보유한 것만 후보로 남기는 형태. <b>여기서 걸리는 것은 특수↔특수뿐이다</b> —
+        /// 기본 5종은 전부 처음부터 보유라 걸러질 것이 없다.
+        ///
+        /// 후보가 하나도 안 남으면 <c>false</c> 다. 호출부가 <b>재화를 깎기 전에</b> 이것을
+        /// 먼저 묻고 있어(<c>MergeSystem.TryExchange</c>) 순서가 이미 맞다 —
+        /// 내고 나서 "바꿀 것이 없다"가 되는 경로는 없다.
+        /// </summary>
+        public static bool TryGetExchangeCandidates(DiceType diceType, List<DiceType> buffer, Func<DiceType, bool> isOwned)
+        {
             if (buffer == null)
                 return false;
 
@@ -225,6 +259,10 @@ namespace OJ.Dice
             {
                 if (pool[i] == diceType)
                     continue;
+
+                if (isOwned != null && !isOwned(pool[i]))
+                    continue;
+
                 buffer.Add(pool[i]);
             }
 

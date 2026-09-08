@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using OJ.DI;
+using OJ.Dice;
 using OJ.Hunting;
 using OJ.Point;
 using OJ.UI;
@@ -218,7 +219,7 @@ namespace OJ.StageReward
             if (nextButton != null)
                 nextButton.interactable = selectedIndex >= 0 && selectedIndex < totalCount - 1;
 
-            BindRewards(milestone != null ? milestone.rewards : null);
+            BindRewards(milestone);
         }
 
         private void SetClaimButtonVisible(bool visible)
@@ -230,10 +231,23 @@ namespace OJ.StageReward
             claimButton.interactable = visible;
         }
 
-        private void BindRewards(IReadOnlyList<StageRewardEntry> rewards)
+        /// <summary>
+        /// 고른 마일스톤의 보상을 그린다.
+        ///
+        /// <b>다이스는 <c>milestone.rewards</c> 에 없다.</b> 그 목록은 <c>PointType</c> 전용이고
+        /// 다이스 언락의 정본은 <c>DiceUnlockDatabase</c> 다. 그래서 재화를 다 그린 뒤
+        /// 다이스 칸을 <b>한 칸 이어 붙인다</b> — 이걸 빠뜨리면 "스테이지 8 클리어로 얻는다"
+        /// 고 안내해 놓고 정작 그 스테이지의 보상 목록에는 안 보이는 상태가 된다.
+        /// </summary>
+        private void BindRewards(StageRewardMilestone milestone)
         {
+            IReadOnlyList<StageRewardEntry> rewards = milestone != null ? milestone.rewards : null;
             int count = rewards != null ? rewards.Count : 0;
-            EnsureRewardElements(rewardElements, rewardElementTemplate, rewardRoot, count);
+
+            DiceType dice = ResolvePreviewDice(milestone);
+            int total = count + (dice != DiceType.Max ? 1 : 0);
+
+            EnsureRewardElements(rewardElements, rewardElementTemplate, rewardRoot, total);
 
             for (int i = 0; i < rewardElements.Count; i++)
             {
@@ -241,14 +255,57 @@ namespace OJ.StageReward
                 if (rewardElement == null)
                     continue;
 
-                bool shouldShow = i < count;
+                bool shouldShow = i < total;
                 rewardElement.gameObject.SetActive(shouldShow);
                 if (!shouldShow)
                     continue;
 
-                StageRewardEntry reward = rewards[i];
-                rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.pointType), reward.amount, "x{0:#,##0}");
+                if (i < count)
+                {
+                    StageRewardEntry reward = rewards[i];
+                    rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.pointType), reward.amount, "x{0:#,##0}");
+                    continue;
+                }
+
+                BindDicePreview(rewardElement, dice);
             }
+        }
+
+        /// <summary>
+        /// 이 마일스톤이 열어 주는 다이스. 없으면 <c>DiceType.Max</c>.
+        ///
+        /// <b>지급과 같은 판정을 쓴다</b>(마지막 칸인가 + 스테이지 번호로 조회) —
+        /// 미리보기가 다른 식으로 판정하면 보여 준 것과 준 것이 갈라진다.
+        /// </summary>
+        private static DiceType ResolvePreviewDice(StageRewardMilestone milestone)
+        {
+            if (milestone == null)
+                return DiceType.Max;
+
+            if (!StageRewardDatabaseProvider.GetDatabase().IsFinalMilestoneOf(milestone))
+                return DiceType.Max;
+
+            return DiceUnlockDatabaseProvider.Database.GetStageUnlock(milestone.requiredStageIndex);
+        }
+
+        /// <summary>
+        /// 이미 보유한 다이스면 <b>받게 될 것은 환급 재화</b>다. 그것을 미리 보여 주지 않으면
+        /// 수령하고 나서 "다이스인 줄 알았는데" 가 된다.
+        /// </summary>
+        private static void BindDicePreview(UIRewardElement element, DiceType dice)
+        {
+            Sprite diceSprite = DiceMetaDataProvider.GetIcon(dice);
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+
+            if (ownership == null || !ownership.IsOwned(dice))
+            {
+                element.BindDice(diceSprite);
+                return;
+            }
+
+            element.BindDice(diceSprite,
+                PointRewardUtility.GetPointIcon(DiceOwnershipManager.GetPriceCurrency(dice)),
+                ownership.GetPrice(dice));
         }
 
         private void ClaimSelected()
@@ -258,7 +315,8 @@ namespace OJ.StageReward
             if (manager == null || milestones == null || selectedIndex < 0 || selectedIndex >= milestones.Count)
                 return;
 
-            if (!manager.TryClaim(milestones[selectedIndex], out List<PointRewardEntry> rewards))
+            if (!manager.TryClaim(milestones[selectedIndex], out List<PointRewardEntry> rewards,
+                    out DiceRewardView diceView, out bool hasDice))
                 return;
 
             Refresh();
@@ -273,7 +331,14 @@ namespace OJ.StageReward
             UIRewardResultDialog resultDialog = GameContainer.UI?.Get<UIRewardResultDialog>();
             if (resultDialog != null)
             {
-                resultDialog.Open(rewards, "보상을 획득했습니다.", HandleClaimResultClosed);
+                // 처음 얻었든 환급이든 다이스 칸을 세운다 — 딤 처리 여부로 둘을 구별한다.
+                List<DiceRewardView> diceRewards = hasDice
+                    ? new List<DiceRewardView> { diceView }
+                    : null;
+
+                resultDialog.Open(rewards, diceRewards,
+                    hasDice && diceView.WasNew ? "새 다이스를 얻었습니다!" : "보상을 획득했습니다.",
+                    HandleClaimResultClosed);
                 return;
             }
 

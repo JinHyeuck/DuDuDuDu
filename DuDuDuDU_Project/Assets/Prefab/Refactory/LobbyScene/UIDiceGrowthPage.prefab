@@ -439,8 +439,7 @@ MonoBehaviour:
   _exitBtn: []
   listRoot: {fileID: 7058463958662956045}
   itemPrefab: {fileID: 7579742592224974235, guid: ef63a0bcfb1ea43058887cbf941fdf38, type: 3}
-  detailPanel: {fileID: 0}
-  lobbyLayoutController: {fileID: 0}
+  diceTypesToShow: 0000000064000000c80000000100000066000000c90000000200000067000000ca0000000300000068000000cb0000000400000065000000cc000000
 --- !u!1 &3028765469746387758
 GameObject:
   m_ObjectHideFlags: 0
@@ -718,8 +717,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -240.04999}
-  m_SizeDelta: {x: 0, y: -480.09998}
+  m_AnchoredPosition: {x: 0, y: -199.3}
+  m_SizeDelta: {x: 0, y: -398.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1005978334222627385
 CanvasRenderer:
@@ -774,7 +773,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &5631814699389851250
 RectTransform:
   m_ObjectHideFlags: 0
@@ -907,7 +906,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 57}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &2877605130942308352
 MonoBehaviour:
@@ -924,15 +923,15 @@ MonoBehaviour:
   m_Padding:
     m_Left: 0
     m_Right: 0
-    m_Top: 33
+    m_Top: -5
     m_Bottom: 0
   m_ChildAlignment: 4
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 283.54, y: 372}
-  m_Spacing: {x: -34, y: -24}
+  m_CellSize: {x: 283.54, y: 270}
+  m_Spacing: {x: 7.4, y: -47.3}
   m_Constraint: 1
-  m_ConstraintCount: 4
+  m_ConstraintCount: 3
 --- !u!114 &1514389820520447877
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1427,7 +1426,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uAC15\uD654"
+  m_text: "\uB2E4\uC774\uC2A4"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: ab17ef2442648aa4ebe429dc731b50ca, type: 2}
   m_sharedMaterial: {fileID: -4573349343101527188, guid: ab17ef2442648aa4ebe429dc731b50ca, type: 2}

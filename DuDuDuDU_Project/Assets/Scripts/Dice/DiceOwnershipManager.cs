@@ -155,11 +155,28 @@ namespace OJ.Dice
         /// <returns>이번에 <b>새로</b> 얻었으면 true. "해금!" 연출의 유일한 근거다.</returns>
         public bool GrantFromContent(DiceType diceType, List<PointRewardEntry> refundInto)
         {
-            if (!ShouldGrant(diceType, IsOwned(diceType), GetPrice(diceType), refundInto))
-                return false;
+            return GrantFromContent(diceType, refundInto, out _);
+        }
 
-            Grant(diceType);
-            return true;
+        /// <summary>
+        /// 위와 같되 <b>화면이 그릴 것</b>까지 알려 준다.
+        ///
+        /// 지급이 끝나면 <c>IsOwned</c> 는 두 경우 모두 참이라, 처음 얻은 것인지
+        /// 재화로 돌아온 것인지 <b>화면이 스스로 구별할 수 없다.</b> 아는 것은 여기뿐이다.
+        /// </summary>
+        public bool GrantFromContent(DiceType diceType, List<PointRewardEntry> refundInto, out DiceRewardView view)
+        {
+            int price = GetPrice(diceType);
+
+            if (ShouldGrant(diceType, IsOwned(diceType), price, refundInto))
+            {
+                Grant(diceType);
+                view = DiceRewardView.NewlyOwned(diceType);
+                return true;
+            }
+
+            view = DiceRewardView.Refunded(diceType, GetPriceCurrency(diceType), price);
+            return false;
         }
 
         /// <summary>

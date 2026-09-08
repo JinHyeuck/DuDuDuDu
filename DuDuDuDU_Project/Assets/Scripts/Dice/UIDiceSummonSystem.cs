@@ -16,6 +16,11 @@ namespace OJ.Dice
         // 단 Awake 시점에는 아직 비어 있다 — 스코프는 씬의 모든 Awake 뒤에 빌드된다.
         [Inject] private IBattleRefs battle;
 
+        /// <summary>
+        /// 소환 풀에서 미보유를 빼기 위한 판정. 루트 스코프에 살아 배틀 스코프에서 해석된다.
+        /// </summary>
+        [Inject] private DiceOwnershipManager ownership;
+
         [Header("References")]
         public UIBoard board;
         public Button summonButton;
@@ -140,8 +145,15 @@ namespace OJ.Dice
             List<DiceType> summonable = new List<DiceType>();
             for (int i = 0; i < deckTypes.Count; i++)
             {
-                if (DiceMetaDataProvider.IsSummonable(deckTypes[i]))
-                    summonable.Add(deckTypes[i]);
+                if (!DiceMetaDataProvider.IsSummonable(deckTypes[i]))
+                    continue;
+
+                // 보유하지 않은 다이스는 소환도 안 된다. 지금 deckTypes 는 기본 5종뿐이라
+                // 걸러지는 것이 없지만, 그건 <b>씬 데이터</b>라 언제든 특수가 들어갈 수 있다.
+                if (ownership != null && !ownership.IsOwned(deckTypes[i]))
+                    continue;
+
+                summonable.Add(deckTypes[i]);
             }
 
             if (summonable.Count == 0)

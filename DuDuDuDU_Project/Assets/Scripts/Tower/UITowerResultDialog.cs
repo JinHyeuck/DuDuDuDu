@@ -42,6 +42,15 @@ namespace OJ.Tower
         /// <summary>이번 클리어로 열린 다이스. 없으면 <c>DiceType.Max</c>.</summary>
         public DiceType UnlockedDice;
 
+        /// <summary>
+        /// 이 층이 준 다이스. <b>처음 얻었을 때와 환급됐을 때 둘 다</b> 담긴다 —
+        /// <see cref="UnlockedDice"/> 는 처음 얻은 경우만 세워지므로 환급을 표현할 수 없다.
+        /// </summary>
+        public DiceRewardView DiceReward;
+
+        /// <summary>위 <see cref="DiceReward"/> 가 유효한가. 이 층에 다이스가 없으면 거짓.</summary>
+        public bool HasDiceReward;
+
         public List<PointRewardEntry> Rewards;
         public List<DiceDamageShare> DamageShares;
     }
@@ -79,6 +88,17 @@ namespace OJ.Tower
 
         [Header("(3) 보상 · 해금")]
         [SerializeField] private TMP_Text rewardText;
+
+        /// <summary>
+        /// 보상 아이콘이 들어갈 자리. 다른 화면과 <b>같은 칸</b>(<c>UIRewardElement</c>)을 쓴다 —
+        /// 탑만 글자로 적으면 같은 보상이 화면마다 다르게 보인다.
+        /// </summary>
+        [SerializeField] private RectTransform rewardRoot;
+
+        /// <summary>복제해 쓸 칸. 굽는 도구가 공용 프리팹을 여기 꽂는다.</summary>
+        [SerializeField] private UIRewardElement rewardElementTemplate;
+
+        private readonly List<UIRewardElement> rewardElements = new List<UIRewardElement>();
         [SerializeField] private TMP_Text unlockCaptionText;
         [SerializeField] private Image unlockGaugeFill;
         [SerializeField] private TMP_Text unlockProgressText;
@@ -343,8 +363,16 @@ namespace OJ.Tower
 
         private void RefreshRewards()
         {
+            // 칸이 배선돼 있으면 아이콘으로 그리고 글자 줄은 감춘다.
+            // 아직 안 구웠으면 예전처럼 글자로 나온다 — 굽기 전에도 화면이 비지 않게 한다.
+            bool useElements = BindRewardElements();
+
             if (rewardText != null)
-                rewardText.SetText(BuildRewardText());
+            {
+                rewardText.gameObject.SetActive(!useElements);
+                if (!useElements)
+                    rewardText.SetText(BuildRewardText());
+            }
 
             TowerProgressManager progress = TowerProgressManager.Instance;
             if (progress == null)
@@ -394,6 +422,81 @@ namespace OJ.Tower
             }
         }
 
+        /// <summary>
+        /// 재화와 다이스를 아이콘 칸으로 그린다.
+        ///
+        /// <b>환급은 재화 칸으로 또 그리지 않는다.</b> 이미 가진 다이스가 재화로 돌아온
+        /// 경우 그 사실을 말하는 것은 딤 처리된 다이스 칸이다 — 다른 화면과 같은 규칙이다.
+        /// </summary>
+        /// <returns>칸으로 그렸으면 true. 배선이 없으면 false 라 호출부가 글자로 물러선다.</returns>
+        private bool BindRewardElements()
+        {
+            if (rewardRoot == null || rewardElementTemplate == null)
+                return false;
+
+            List<PointRewardEntry> merged = PointRewardUtility.MergeRewards(data.Rewards);
+            bool hasDice = data.HasDiceReward;
+
+            if (hasDice && !data.DiceReward.WasNew && data.DiceReward.RefundAmount > 0)
+            {
+                for (int i = 0; i < merged.Count; i++)
+                {
+                    if (merged[i].PointType != data.DiceReward.RefundCurrency)
+                        continue;
+
+                    int left = merged[i].Amount - data.DiceReward.RefundAmount;
+                    if (left > 0)
+                        merged[i] = new PointRewardEntry(data.DiceReward.RefundCurrency, left);
+                    else
+                        merged.RemoveAt(i);
+
+                    break;
+                }
+            }
+
+            int total = merged.Count + (hasDice ? 1 : 0);
+            EnsureRewardElements(total);
+
+            for (int i = 0; i < rewardElements.Count; i++)
+            {
+                UIRewardElement element = rewardElements[i];
+                if (element == null)
+                    continue;
+
+                bool show = i < total;
+                element.gameObject.SetActive(show);
+                if (!show)
+                    continue;
+
+                if (i < merged.Count)
+                {
+                    PointRewardEntry reward = merged[i];
+                    element.Bind(PointRewardUtility.GetPointIcon(reward.PointType), reward.Amount, "x{0:#,##0}");
+                    continue;
+                }
+
+                Sprite diceSprite = DiceMetaDataProvider.GetIcon(data.DiceReward.DiceType);
+                if (data.DiceReward.WasNew)
+                    element.BindDice(diceSprite);
+                else
+                    element.BindDice(diceSprite,
+                        PointRewardUtility.GetPointIcon(data.DiceReward.RefundCurrency),
+                        data.DiceReward.RefundAmount);
+            }
+
+            return true;
+        }
+
+        private void EnsureRewardElements(int count)
+        {
+            while (rewardElements.Count < count)
+            {
+                UIRewardElement created = Instantiate(rewardElementTemplate, rewardRoot);
+                created.gameObject.SetActive(true);
+                rewardElements.Add(created);
+            }
+        }
+
         private string BuildRewardText()
         {
             List<PointRewardEntry> rewards = data.Rewards;
@@ -429,7 +532,7 @@ namespace OJ.Tower
             if (TowerFormula.IsBandLastFloor(nextFloor))
             {
                 sb.Append(" · 다이아 ").Append(TowerFormula.BandRewardDia(nextFloor));
-                sb.Append(" · 강화석 ").Append(TowerFormula.BandRewardEnhanceStone(nextFloor));
+                sb.Append(" · 신화 스크롤 ").Append(TowerFormula.BandRewardMaterial(nextFloor));
             }
 
             DiceType unlock = DiceUnlockDatabaseProvider.Database.GetUnlockAtFloor(nextFloor);
@@ -445,6 +548,11 @@ namespace OJ.Tower
             {
                 case PointType.Gold: return "골드";
                 case PointType.Dia: return "다이아";
+                case PointType.MythicScroll: return "신화 스크롤";
+                case PointType.SpecialDiceCore: return "특수 다이스 코어";
+
+                // 탑은 더 이상 이것을 주지 않는다(사라지는 재화였다). 다른 경로가
+                // 결과창을 타고 들어올 수 있어 이름만 남겨 둔다.
                 case PointType.BattleEnhanceStone: return "강화석";
                 default: return pointType.ToString();
             }

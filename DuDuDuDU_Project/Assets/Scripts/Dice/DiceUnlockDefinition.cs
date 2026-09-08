@@ -31,7 +31,7 @@ namespace OJ.Dice
         [Tooltip("별의 시련 누적 별. 0 이면 이 경로로는 열리지 않는다.")]
         [Min(0)] public int starRequirement;
 
-        [Tooltip("이 스테이지를 퍼펙트로 깨면 열린다. 0 이면 이 경로로는 열리지 않는다.")]
+        [Tooltip("이 스테이지의 마지막 마일스톤(전 웨이브 클리어)을 수령하면 열린다. 0 이면 이 경로로는 열리지 않는다.")]
         [Min(0)] public int stageRequirement;
 
         [Tooltip("이 층을 클리어하면 열린다. 0 이면 이 경로로는 열리지 않는다.")]

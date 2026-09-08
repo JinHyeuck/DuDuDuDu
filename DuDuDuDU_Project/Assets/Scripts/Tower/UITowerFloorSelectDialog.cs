@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
 using OJ.DI;
+using OJ.Dice;
 using OJ.UI;
 
 namespace OJ.Tower
@@ -169,8 +170,8 @@ namespace OJ.Tower
                                     + TowerFormula.FloorsPerBand - 1;
                 bandLastFloor = TowerFormula.ClampFloor(bandLastFloor);
                 bandRewardText.SetText(bandLastFloor + "층 · 다이아 " +
-                                       TowerFormula.BandRewardDia(bandLastFloor) + " · 강화석 " +
-                                       TowerFormula.BandRewardEnhanceStone(bandLastFloor));
+                                       TowerFormula.BandRewardDia(bandLastFloor) + " · 신화 스크롤 " +
+                                       TowerFormula.BandRewardMaterial(bandLastFloor));
             }
         }
 
@@ -300,8 +301,8 @@ namespace OJ.Tower
 
                 sb.Append("  ").Append(lastFloor).Append("층 — 다이아 ")
                     .Append(TowerFormula.BandRewardDia(lastFloor))
-                    .Append(" · 강화석 ")
-                    .Append(TowerFormula.BandRewardEnhanceStone(lastFloor))
+                    .Append(" · 신화 스크롤 ")
+                    .Append(TowerFormula.BandRewardMaterial(lastFloor))
                     .AppendLine();
             }
 
@@ -424,7 +425,7 @@ namespace OJ.Tower
                 new Vector2(440f, 60f), new Vector2(-230f, 0f));
 
             dialog.bandRewardText = UITowerUIFactory.CreateText("BandReward", banner.transform,
-                "30층 · 다이아 22 · 강화석 27", 24f, TextAlignmentOptions.Right, UITowerUIFactory.GoldText, font);
+                "30층 · 다이아 22 · 신화 스크롤 27", 24f, TextAlignmentOptions.Right, UITowerUIFactory.GoldText, font);
             UITowerUIFactory.SetRect(dialog.bandRewardText.rectTransform,
                 new Vector2(440f, 60f), new Vector2(230f, 0f));
 

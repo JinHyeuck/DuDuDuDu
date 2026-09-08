@@ -4,7 +4,6 @@ using UnityEngine;
 using OJ;
 using OJ.Dice;
 using OJ.Point;
-using OJ.Tower;
 
 namespace OJ.Game.Tests
 {
@@ -68,19 +67,18 @@ namespace OJ.Game.Tests
         ///
         /// 아래는 그 형태가 실제로 되는지 확인한다 — <c>[Serializable]</c> 평범한 클래스는
         /// <c>UnityEngine</c> 애트리뷰트(<c>[Min]</c>)를 달고 있어도 그냥 만들어진다.
-        /// <c>TowerDiceUnlock</c> 이 <c>DiceUnlockDefinition</c> 과 같은 모양이라 대역으로 쓴다.
         /// </summary>
         [Test]
         public void PlainSerializableGameTypesCanBeConstructed()
         {
-            var unlock = new TowerDiceUnlock { floor = 30, diceType = DiceType.KingFire };
+            var unlock = new DiceUnlockDefinition { diceType = DiceType.KingFire, price = 200, towerFloor = 30 };
 
-            Assert.That(unlock.floor, Is.EqualTo(30));
+            Assert.That(unlock.towerFloor, Is.EqualTo(30));
             Assert.That(DiceEvolution.GetTier(unlock.diceType), Is.EqualTo(DiceTier.King));
 
-            // 목록에 담아 순수 규칙에 넘기는 것까지 — 앞으로 Validate 가 받게 될 모양 그대로다.
-            var list = new List<TowerDiceUnlock> { unlock };
-            Assert.That(list, Has.Count.EqualTo(1));
+            // 목록에 담아 순수 규칙에 넘기는 것까지 — Validate 가 실제로 받는 모양 그대로다.
+            var list = new List<DiceUnlockDefinition> { unlock };
+            Assert.That(DiceUnlockDatabase.Validate(list, 0, 0, 0), Is.Not.Empty, "9종이 빠졌으니 문제가 나와야 한다");
         }
 
         /// <summary>

@@ -40,6 +40,60 @@ namespace OJ.Dice
         [SerializeField] private TMP_Text scrollCostText;
         [SerializeField] private Image scrollIcon;
 
+        // ── 미보유(해금) 표시 ────────────────────────────────────────────
+        //
+        // 이 창은 <b>보유·미보유 둘 다</b> 맡는다. 미보유일 때 따로 팝업을 띄우지 않는 이유는,
+        // 유저가 그때 알아야 할 것이 "이 다이스가 얼마나 센가"(이 창이 이미 그리는 것)와
+        // "어떻게 얻나" 두 가지인데 그 둘을 갈라 놓으면 <b>비교할 수가 없기</b> 때문이다.
+        //
+        // <b>두 길은 <i>둘 중 하나</i>다.</b> 컨텐츠 미션과 재화 구매를 그냥 두 줄로 늘어놓으면
+        // <b>둘 다 해야 열리는 것처럼</b> 읽힌다 — 실제로 그렇게 오해가 났다. 그래서 제목에
+        // "두 가지 방법 중 진행" 을 박고, 두 줄 사이에 선을 그어 <b>갈래</b>임을 눈으로 말한다.
+
+        /// <summary>비용 칸의 제목. 보유면 "필요 재화", 미보유면 두 갈래를 알리는 문구.</summary>
+        [SerializeField] private TMP_Text priceTitleText;
+
+        // 강화 비용 두 줄. <b>미보유일 때는 둘 다 끈다</b> — 해금 값은 아래 전용 줄이
+        // 따로 그리므로, 켜 두면 <b>재화 아이콘이 화면에 두 개</b>가 된다. 실제로 그랬다.
+
+        /// <summary>골드 줄(강화 비용).</summary>
+        [SerializeField] private GameObject goldRow;
+
+        /// <summary>스크롤 줄(강화 비용). <c>scrollIcon</c>·<c>scrollCostText</c> 가 이 안에 산다.</summary>
+        [SerializeField] private GameObject scrollRow;
+
+        /// <summary>미보유일 때만 켜지는 것들의 부모. 하나로 묶어야 껐다 켜는 자리가 하나가 된다.</summary>
+        [SerializeField] private GameObject unlockRoot;
+
+        /// <summary>"획득 미션 : 별 15개 모으기".</summary>
+        [SerializeField] private TMP_Text unlockMissionText;
+
+        /// <summary>미션 컨텐츠로 데려다 주는 버튼. 갈 곳이 없으면 꺼진다.</summary>
+        [SerializeField] private Button unlockMissionButton;
+
+        /// <summary>"즉시 구매 :" 줄의 재화 아이콘.</summary>
+        [SerializeField] private Image unlockPriceIcon;
+
+        /// <summary>보유/필요.</summary>
+        [SerializeField] private TMP_Text unlockPriceText;
+
+        /// <summary>재화로 여는 버튼. <b>바깥 LevelUp 버튼과 별개다</b> — 그쪽은 미보유일 때 잠긴다.</summary>
+        [SerializeField] private Button unlockBuyButton;
+
+        /// <summary>중복 획득이 재화로 돌아온다는 안내. 사기 전에 알아야 손해가 아니라고 읽힌다.</summary>
+        [SerializeField] private TMP_Text unlockNoticeText;
+
+        // 프리팹에 원래 적혀 있던 문구다. 코드가 갈아 끼우므로 되돌릴 값이 필요하다.
+        private const string PriceTitleOwned = "필요 재화";
+        private const string PriceTitleLocked = "획득 방법 (두 가지 방법 중 진행)";
+
+        /// <summary>
+        /// 중복 획득 안내. <b>사기 전에 보여야 뜻이 있다</b> — 컨텐츠 보상으로도 나오는
+        /// 다이스를 재화로 먼저 사면 "그럼 나중에 그 보상은 날아가나" 가 걸리는데,
+        /// 실제로는 가격만큼 재화로 돌아온다. 그 사실을 모르면 사지 않는다.
+        /// </summary>
+        private const string UnlockNotice = "(이미 획득한 다이스를 다시 얻으면 구매한 재화로 획득해요)";
+
         [Header("Buttons")]
         [SerializeField] private Button upgradeButton;
 
@@ -62,12 +116,24 @@ namespace OJ.Dice
         {
             if (upgradeButton != null)
                 upgradeButton.onClick.AddListener(OnClickUpgrade);
+
+            if (unlockMissionButton != null)
+                unlockMissionButton.onClick.AddListener(OnClickUnlockMission);
+
+            if (unlockBuyButton != null)
+                unlockBuyButton.onClick.AddListener(OnClickUnlockBuy);
         }
 
         protected override void OnUnload()
         {
             if (upgradeButton != null)
                 upgradeButton.onClick.RemoveListener(OnClickUpgrade);
+
+            if (unlockMissionButton != null)
+                unlockMissionButton.onClick.RemoveListener(OnClickUnlockMission);
+
+            if (unlockBuyButton != null)
+                unlockBuyButton.onClick.RemoveListener(OnClickUnlockBuy);
         }
 
         protected override void OnEnter()
@@ -92,6 +158,9 @@ namespace OJ.Dice
 
         public void Refresh()
         {
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+            bool owned = ownership == null || ownership.IsOwned(currentDiceType);
+
             var meta = DiceMetaDataProvider.GetMeta(currentDiceType);
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(currentDiceType) : 1;
             float cooldown = DiceMetaDataProvider.GetCooldown(currentDiceType, 1);
@@ -118,21 +187,137 @@ namespace OJ.Dice
             }
 
             if (nameText != null) nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : currentDiceType.ToString());
-            if (levelText != null) levelText.SetText("Lv. {0}", level);
+            // 미보유에 "Lv. 1" 을 적으면 <b>이미 가진 것처럼</b> 읽힌다. 레벨 자체는 남아
+            // 있지만(언락 전에도 올릴 수 있었다) 그 숫자가 지금 뜻하는 것은 없다.
+            if (levelText != null)
+            {
+                if (owned)
+                    levelText.SetText("Lv. {0}", level);
+                else
+                    levelText.SetText("미보유");
+            }
             if (coolTimeText != null) coolTimeText.SetText("{0:0.0}", cooldown);
             if (descText != null) descText.SetText(BuildDescriptionText(meta, level));
 
-            if (goldCostText != null) goldCostText.SetText("{0}/{1}", cost.goldCost, PointManager.Instance.Get(PointType.Gold));
-
-            PointType scrollType = PointManager.ToScrollType(currentDiceType);
-            if (scrollCostText != null) scrollCostText.SetText("{0}/{1}", cost.scrollCost, PointManager.Instance.Get(scrollType));
-
-            PointMetadataDatabase db = StaticResource.Instance.PointMetadataDatabase;
-            PointMetadataDatabase.PointMetadata metadata = db != null ? db.Get(scrollType) : null;
-            if (scrollIcon != null) scrollIcon.sprite = metadata != null ? metadata.icon : null;
+            RefreshCostSection(owned, ownership, cost);
             RefreshMilestoneRows(meta, level);
 
             RefreshEvolvePath();
+        }
+
+        /// <summary>
+        /// 비용 칸을 <b>강화용</b>과 <b>해금용</b> 사이에서 갈아 끼운다.
+        ///
+        /// 해금 쪽은 두 갈래를 <b>나란히</b> 놓는다 — 위가 컨텐츠 미션(+ 그리로 가는 버튼),
+        /// 아래가 즉시 구매(+ 구매 버튼). 둘 사이의 선과 제목의 "두 가지 방법 중 진행" 이
+        /// 그 둘이 <b>and 가 아니라 or</b> 임을 말하는 장치다.
+        /// </summary>
+        private void RefreshCostSection(bool owned, DiceOwnershipManager ownership, (int goldCost, int scrollCost) cost)
+        {
+            if (goldRow != null)
+                goldRow.SetActive(owned);
+
+            if (scrollRow != null)
+                scrollRow.SetActive(owned);
+
+            if (priceTitleText != null)
+                priceTitleText.SetText(owned ? PriceTitleOwned : PriceTitleLocked);
+
+            if (unlockRoot != null)
+                unlockRoot.SetActive(!owned);
+
+            // 재화 종류는 둘 다 ToScrollType 이 정한다 — 강화 스크롤과 해금 재화가
+            // 같은 것이라, 아이콘을 어디에 꽂든 조회는 하나면 된다.
+            PointType scrollType = PointManager.ToScrollType(currentDiceType);
+            PointMetadataDatabase db = StaticResource.Instance.PointMetadataDatabase;
+            PointMetadataDatabase.PointMetadata metadata = db != null ? db.Get(scrollType) : null;
+
+            // 강화 줄의 아이콘. 미보유면 그 줄이 통째로 꺼지므로 꽂을 필요가 없다.
+            if (owned && scrollIcon != null)
+                scrollIcon.sprite = metadata != null ? metadata.icon : null;
+
+            if (owned)
+            {
+                // <b>보유/필요 순서다.</b> 재화 표기는 프로젝트 전체가 이 순서를 쓴다 —
+                // 앞이 "지금 얼마 있나", 뒤가 "얼마가 드는가".
+                if (goldCostText != null)
+                    goldCostText.SetText("{0}/{1}", PointManager.Instance.Get(PointType.Gold), cost.goldCost);
+
+                if (scrollCostText != null)
+                    scrollCostText.SetText("{0}/{1}", PointManager.Instance.Get(scrollType), cost.scrollCost);
+
+                if (upgradeButton != null)
+                    upgradeButton.interactable = true;
+
+                return;
+            }
+
+            // <b>LevelUp 버튼은 잠근다.</b> 글자를 "구매" 로 바꾸지 않는다 — 구매는 아래
+            // 전용 버튼이 맡고, 바깥 버튼까지 같은 일을 하면 누를 곳이 둘이 된다.
+            if (upgradeButton != null)
+                upgradeButton.interactable = false;
+
+            RefreshUnlockRows(ownership, scrollType, metadata);
+        }
+
+        /// <summary>획득 미션 줄과 즉시 구매 줄을 채운다.</summary>
+        private void RefreshUnlockRows(
+            DiceOwnershipManager ownership, PointType scrollType, PointMetadataDatabase.PointMetadata metadata)
+        {
+            DiceUnlockDefinition definition = DiceUnlockDatabaseProvider.Database.Get(currentDiceType);
+            int price = definition != null ? definition.price : 0;
+            int held = PointManager.Instance != null ? PointManager.Instance.Get(scrollType) : 0;
+
+            if (unlockMissionText != null)
+            {
+                string sources = DiceUnlockText.DescribeSources(definition);
+                unlockMissionText.SetText(string.IsNullOrEmpty(sources)
+                    ? "획득 미션 : 없음"
+                    : "획득 미션 : " + sources);
+            }
+
+            // 갈 곳이 없으면 버튼을 감춘다. 눌러도 아무 일이 없는 버튼은 고장으로 읽힌다.
+            if (unlockMissionButton != null)
+                unlockMissionButton.gameObject.SetActive(DiceUnlockShortcut.CanGo(definition));
+
+            if (unlockPriceIcon != null)
+                unlockPriceIcon.sprite = metadata != null ? metadata.icon : null;
+
+            if (unlockPriceText != null)
+                unlockPriceText.SetText("{0}/{1}", held, price);
+
+            // 가격이 없다는 것은 <b>살 수 없다</b>는 뜻이지 공짜가 아니다.
+            if (unlockBuyButton != null)
+                unlockBuyButton.interactable = price > 0 && ownership != null && ownership.CanAfford(currentDiceType);
+
+            if (unlockNoticeText != null)
+                unlockNoticeText.SetText(UnlockNotice);
+        }
+
+        /// <summary>
+        /// 획득 미션 컨텐츠로 보낸다.
+        ///
+        /// <b>보내고 나서 이 창을 닫는다.</b> 안 닫으면 컨텐츠 화면 <i>위에</i> 다이스 상세창이
+        /// 그대로 떠 있어서, 보내 준 화면을 정작 볼 수가 없다.
+        /// 못 갔으면 닫지 않는다 — 그때 닫으면 유저 앞에 아무것도 안 남는다.
+        /// </summary>
+        private void OnClickUnlockMission()
+        {
+            if (DiceUnlockShortcut.Go(DiceUnlockDatabaseProvider.Database.Get(currentDiceType)))
+                Exit();
+        }
+
+        private void OnClickUnlockBuy()
+        {
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+            if (ownership == null)
+                return;
+
+            if (ownership.TryUnlockWithPoints(currentDiceType))
+            {
+                Refresh();
+                onChanged?.Invoke();
+            }
         }
 
         private void OnClickUpgrade()

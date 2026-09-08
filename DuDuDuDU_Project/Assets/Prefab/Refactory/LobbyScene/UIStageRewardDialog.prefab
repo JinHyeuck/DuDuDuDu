@@ -668,7 +668,6 @@ MonoBehaviour:
   previousButton: {fileID: 7968748673657531197}
   nextButton: {fileID: 2334277074087456435}
   claimButton: {fileID: 9150242906672292752}
-  rewardResultDialog: {fileID: 0}
 --- !u!1 &1770335557759596258
 GameObject:
   m_ObjectHideFlags: 0
@@ -1673,7 +1672,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1542997183280146686}
-  - component: {fileID: 8973988183276414053}
+  - component: {fileID: 151360615748951012}
   m_Layer: 5
   m_Name: RewardRoot
   m_TagString: Untagged
@@ -1697,10 +1696,10 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -3.6}
-  m_SizeDelta: {x: 684.1, y: 180}
+  m_AnchoredPosition: {x: 0, y: -46}
+  m_SizeDelta: {x: 900, y: 368}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &8973988183276414053
+--- !u!114 &151360615748951012
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1709,23 +1708,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 6309454049708815147}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GridLayoutGroup
   m_Padding:
     m_Left: 0
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
+  m_StartCorner: 0
+  m_StartAxis: 0
+  m_CellSize: {x: 217.5, y: 179}
+  m_Spacing: {x: 10, y: 10}
+  m_Constraint: 1
+  m_ConstraintCount: 4
 --- !u!1 &6356388098823554535
 GameObject:
   m_ObjectHideFlags: 0
@@ -1765,7 +1762,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -329.67}
-  m_SizeDelta: {x: 955.7, y: 400}
+  m_SizeDelta: {x: 955.7, y: 480}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &9141319120073627215
 CanvasRenderer:

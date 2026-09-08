@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using OJ.Core;
+using OJ.Dice;
 using OJ.Tower;
 
 namespace OJ.EditorTools

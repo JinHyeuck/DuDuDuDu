@@ -96,6 +96,7 @@ namespace OJ.Equipment
                 equipmentTypeText.SetText(UIEquipmentText.GetEquipmentName(equipmentType));
             RefreshEquipmentItem(level, attack);
 
+            // 보유/필요 순서. 다이스 강화·해금 창과 같은 순서라야 같은 모양이 같은 뜻이 된다.
             if (goldCostText != null)
                 goldCostText.SetText("{0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0, goldCost);
 
