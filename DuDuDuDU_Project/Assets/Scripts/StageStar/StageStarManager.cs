@@ -188,7 +188,7 @@ namespace OJ.StageStar
             if (!IsRewardClaimable(rewardIndex))
                 return false;
 
-            grantedRewards.Add(new PointRewardEntry(PointType.Dia, StageStarUtility.DiaRewardAmount));
+            grantedRewards.Add(new PointRewardEntry(PointType.FreeGem, StageStarUtility.DiaRewardAmount));
 
             // 에셋을 깨우지만 이 메서드는 UI 클릭에서만 불리므로 씬이 이미 서 있다.
             DiceType dice = DiceUnlockDatabaseProvider.Database.GetStarUnlock(GetRequiredStars(rewardIndex));

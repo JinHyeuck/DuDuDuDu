@@ -146,7 +146,7 @@ namespace OJ.Stage
             {
                 rewards.Add(new PointRewardEntry(PointType.Gold, 500 + StageRewardFormula.StageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 });
-                rewards.Add(new PointRewardEntry(PointType.Dia, 150));
+                rewards.Add(new PointRewardEntry(PointType.FreeGem, 150));
                 rewards.Add(new PointRewardEntry(PointType.MythicScroll, 10));
             }
 

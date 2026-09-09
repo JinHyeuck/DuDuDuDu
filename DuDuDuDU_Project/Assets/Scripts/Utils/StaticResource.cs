@@ -9,6 +9,7 @@ using OJ.Hunting;
 using OJ.Point;
 using OJ.Relic;
 using OJ.Rewind;
+using OJ.Shop;
 using OJ.Stage;
 using OJ.StageReward;
 using OJ.Tower;
@@ -80,6 +81,9 @@ namespace OJ.Utils
 
         /// <summary>다이스 언락 10줄(가격·컨텐츠 보상처)의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public DiceUnlockDatabase DiceUnlockDatabase;
+
+        /// <summary>상점 7개 섹션의 가격표 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
+        public ShopDatabase ShopDatabase;
 
         /// <summary>
         /// 웨이브 되돌리기의 밸런스 손잡이. <b>비어 있어도 정상이다</b> —

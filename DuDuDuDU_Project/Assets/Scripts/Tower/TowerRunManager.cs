@@ -405,7 +405,7 @@ namespace OJ.Tower
 
             if (TowerFormula.IsBandLastFloor(floor))
             {
-                rewards.Add(new PointRewardEntry(PointType.Dia, TowerFormula.BandRewardDia(floor)));
+                rewards.Add(new PointRewardEntry(PointType.FreeGem, TowerFormula.BandRewardDia(floor)));
                 // <b>BattleEnhanceStone 을 주면 안 된다.</b> 그것은 판이 시작될 때 0 으로
                 // 밀리는 인게임 재화라(ElementUpgradeManager.ResetRunState), 받자마자 다음
                 // 층에 들어가면 사라지고 로비에는 쓸 곳조차 없다 — 주는 척만 하는 보상이었다.

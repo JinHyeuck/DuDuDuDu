@@ -154,7 +154,7 @@ namespace OJ.StageReward
             };
 
             AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 }, stageIndex);
-            rewards.Add(new StageRewardEntry(PointType.Dia, 150));
+            rewards.Add(new StageRewardEntry(PointType.FreeGem, 150));
             rewards.Add(new StageRewardEntry(PointType.MythicScroll, 10));
 
             return rewards;

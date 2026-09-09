@@ -91,6 +91,15 @@ namespace OJ.Core
         /// <summary>방치 보상 타이머. (<c>OJ.IdleReward.*</c>)</summary>
         public IdleSave Idle { get; } = new IdleSave();
 
+        /// <summary>
+        /// 상점 일일 구매 기록. (<c>OJ.Shop.*</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> <see cref="CurrentVersion"/> 주석의 규칙대로 필드를
+        /// <i>더하는</i> 것이라, 옛 세이브에는 이 키가 없고 그 상태는 "오늘 아무것도 안 산 사람"과
+        /// 정확히 같다.
+        /// </summary>
+        public ShopSave Shop { get; } = new ShopSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -245,5 +254,32 @@ namespace OJ.Core
 
         /// <summary>고기 축제 누적 시작 시각(UTC tick).</summary>
         public long MeatFestivalStartUtcTicks { get; set; }
+    }
+
+    /// <summary>
+    /// 상점의 일일 구매 기록. 일일상점 SOLD·다이스석 한도·골드 누진이 <b>같은 표 하나</b>를 쓴다.
+    ///
+    /// <b>왜 셋을 안 나눴나.</b> 셋 다 "오늘 이것을 몇 번 샀나"라는 같은 질문이고, 리셋 시점도
+    /// 같다. 표를 셋으로 나누면 리셋 코드가 셋이 되고, 그중 하나를 빠뜨리는 사고가
+    /// <b>날짜가 바뀌는 순간에만</b> 드러난다 — 개발 중에 가장 안 밟히는 경로다.
+    /// </summary>
+    public sealed class ShopSave
+    {
+        /// <summary>
+        /// 이 기록이 어느 날짜의 것인가. <c>yyyy-MM-dd</c> 형식이며 빈 문자열이면 "기록 없음"이다.
+        /// 오늘과 다르면 <see cref="DailyPurchaseCounts"/> 를 통째로 버린다.
+        ///
+        /// <b>날짜 문자열이지 tick 이 아니다.</b> 갱신 기준이 "하루가 지났다"(경과 시간)가 아니라
+        /// "날짜가 바뀌었다"이기 때문이다. tick 으로 두면 23시에 산 사람이 다음 날 22시까지
+        /// 못 사게 된다.
+        /// </summary>
+        public string DailyResetDate { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 구매 키 → 오늘 구매 횟수. 키는 <c>OJ.Shop.ShopPurchaseManager</c> 가 만든다
+        /// (<c>daily:3</c>, <c>stone:MythicStone</c>, <c>gold:0</c> 꼴).
+        /// </summary>
+        public SortedDictionary<string, int> DailyPurchaseCounts { get; }
+            = new SortedDictionary<string, int>(StringComparer.Ordinal);
     }
 }

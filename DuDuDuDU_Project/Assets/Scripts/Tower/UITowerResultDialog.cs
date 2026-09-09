@@ -547,9 +547,10 @@ namespace OJ.Tower
             switch (pointType)
             {
                 case PointType.Gold: return "골드";
-                case PointType.Dia: return "다이아";
-                case PointType.MythicScroll: return "신화 스크롤";
-                case PointType.SpecialDiceCore: return "특수 다이스 코어";
+                case PointType.FreeGem: return "무료젬";
+                case PointType.PaidGem: return "유료젬";
+                case PointType.MythicScroll: return "신화석";
+                case PointType.SpecialDiceCore: return "레어석";
 
                 // 탑은 더 이상 이것을 주지 않는다(사라지는 재화였다). 다른 경로가
                 // 결과창을 타고 들어올 수 있어 이름만 남겨 둔다.

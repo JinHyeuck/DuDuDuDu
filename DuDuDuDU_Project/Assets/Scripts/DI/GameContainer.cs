@@ -10,6 +10,7 @@ using OJ.Relic;
 using OJ.Rewind;
 using OJ.Save;
 using OJ.SceneFlow;
+using OJ.Shop;
 using OJ.Stage;
 using OJ.StageReward;
 using OJ.StageStar;
@@ -213,6 +214,13 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 상점 일일 기록(SOLD·한도·누진). 의존은 PointManager 하나뿐이라 순서 제약은
+            // 없지만, 세이브 파일에서 방치 보상 옆에 있는 편이 읽기 좋다 — 둘 다 "날짜가
+            // 바뀌면 달라지는 것"이다.
+            builder.Register<ShopPurchaseManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 통합 세이브. 7.5 이후 <b>이것이 유일한 진행도 저장소다.</b>
             // ISaveOnApplicationLifecycle 로 등록해 앱이 멈출 때 파일이 쓰이게 한다.
             //
@@ -255,6 +263,7 @@ namespace OJ.DI
             StageStarManager.Instance = container.Resolve<StageStarManager>();
             TowerProgressManager.Instance = container.Resolve<TowerProgressManager>();
             IdleRewardManager.Instance = container.Resolve<IdleRewardManager>();
+            ShopPurchaseManager.Instance = container.Resolve<ShopPurchaseManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();

@@ -373,6 +373,10 @@ namespace OJ.Core.Tests
                 "  \"idle\": {",
                 "    \"autoBattleStartUtcTicks\": 123,",
                 "    \"meatFestivalStartUtcTicks\": 0",
+                "  },",
+                "  \"shop\": {",
+                "    \"dailyResetDate\": \"\",",
+                "    \"dailyPurchaseCounts\": {}",
                 "  }",
                 "}",
             })));

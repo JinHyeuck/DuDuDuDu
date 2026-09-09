@@ -8,6 +8,7 @@ using OJ.Equipment;
 using OJ.Hunting;
 using OJ.Relic;
 using OJ.SceneFlow;
+using OJ.Shop;
 using OJ.Stage;
 using OJ.UI;
 using OJ.Utils;
@@ -109,11 +110,12 @@ namespace OJ.Lobby
         /// <c>shopPanel</c> 은 그 폴백조차 없어서 상점 탭은 아무것도 열지 않는다.
         /// 어느 쪽이든 배선이 맞는지 코드만 보고는 알 수 없었다.
         ///
-        /// 상점 탭은 <b>지금도 비어 있다.</b> 페이지가 아직 없기 때문이고, 그 사실을
-        /// 폴백으로 감추지 않는다.
+        /// 상점 탭은 <c>UIShopPage</c> 가 받는다(기획서 7장). 카탈로그에 등재되지 않았으면
+        /// <see cref="UIService"/> 가 사유를 로그로 남긴다 — 예전처럼 조용히 빈 화면이 되지 않는다.
         /// </summary>
         public void ShowTab(LobbyTab tab)
         {
+            SetPageActive<UIShopPage>(tab == LobbyTab.Shop);
             SetPageActive<UIEquipmentPage>(tab == LobbyTab.Equipment);
             SetPageActive<UIDiceGrowthPage>(tab == LobbyTab.Bullet);
             SetPageActive<UIRelicDialog>(tab == LobbyTab.Helper);

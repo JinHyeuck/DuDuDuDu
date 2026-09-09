@@ -59,7 +59,7 @@ namespace OJ.Save
                 () => Get(state.Points, "Gold"));
 
             mismatch += Compare(sb, "다이아",
-                () => PointManager.Instance.Get(PointType.Dia),
+                () => PointManager.Instance.Get(PointType.FreeGem),
                 () => Get(state.Points, "Dia"));
 
             mismatch += Compare(sb, "주사위 Normal 레벨",

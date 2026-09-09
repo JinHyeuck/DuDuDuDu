@@ -86,7 +86,7 @@ namespace OJ.StageStar
             {
                 rewardElement.gameObject.SetActive(true);
                 rewardElement.Bind(
-                    PointRewardUtility.GetPointIcon(PointType.Dia),
+                    PointRewardUtility.GetPointIcon(PointType.FreeGem),
                     StageStarUtility.DiaRewardAmount,
                     "x{0:#,##0}");
             }
