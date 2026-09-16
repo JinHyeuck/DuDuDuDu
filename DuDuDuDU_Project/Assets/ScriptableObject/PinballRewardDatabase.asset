@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dff727d6ecef3434ea942279b68a7757, type: 3}
+  m_Name: PinballRewardDatabase
+  m_EditorClassIdentifier: OJ.Game::OJ.Pinball.PinballRewardDatabase
+  ticketCost: 1
+  slotRewards:
+  - label: "1000 \uACE8\uB4DC"
+    rewards:
+    - pointType: 0
+      amount: 1000
+  - label: "2000 \uACE8\uB4DC"
+    rewards:
+    - pointType: 0
+      amount: 2000
+  - label: "5000 \uACE8\uB4DC"
+    rewards:
+    - pointType: 0
+      amount: 5000
+  - label: "2000 \uACE8\uB4DC"
+    rewards:
+    - pointType: 0
+      amount: 2000
+  - label: "1000 \uACE8\uB4DC"
+    rewards:
+    - pointType: 0
+      amount: 1000
+  specialRewards:
+  - tag: 1
+    label: "\uD669\uAE08\uD540"
+    requiredHits: 10
+    rewards:
+    - pointType: 1
+      amount: 10
+  - tag: 2
+    label: "\uD3ED\uD0C4\uD540"
+    requiredHits: 15
+    rewards:
+    - pointType: 3
+      amount: 5

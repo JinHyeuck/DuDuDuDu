@@ -6,6 +6,7 @@ using OJ.Bounty;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.Hunting;
+using OJ.Pinball;
 using OJ.Point;
 using OJ.Relic;
 using OJ.Rewind;
@@ -84,6 +85,15 @@ namespace OJ.Utils
 
         /// <summary>상점 7개 섹션의 가격표 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public ShopDatabase ShopDatabase;
+
+        /// <summary>
+        /// 핀볼 경품표(칸별 경품·특수 핀 누적 보상)의 정본.
+        /// 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.
+        ///
+        /// <b>착지 확률은 여기 없다</b> — <c>PinballBoard.declaredProbability</c> 가 정본이고,
+        /// 그 에셋은 <c>PinballPlayback</c> 이 인스펙터로 직접 물고 있어 여기 올리지 않는다.
+        /// </summary>
+        public PinballRewardDatabase PinballRewardDatabase;
 
         /// <summary>
         /// 웨이브 되돌리기의 밸런스 손잡이. <b>비어 있어도 정상이다</b> —

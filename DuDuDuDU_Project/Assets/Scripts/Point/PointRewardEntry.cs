@@ -136,6 +136,7 @@ namespace OJ.Point
                 case PointType.Stamina: return "고기";
                 case PointType.BattleEnhanceStone: return "강화석";
                 case PointType.RelicTicket: return "유물권";
+                case PointType.PinballTicket: return "핀볼 티켓";
                 case PointType.NormalScroll: return "일반 소환권";
                 case PointType.FireScroll: return "화염 소환권";
                 case PointType.IceScroll: return "냉기 소환권";

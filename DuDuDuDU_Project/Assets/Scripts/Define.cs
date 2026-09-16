@@ -92,6 +92,17 @@ namespace OJ
         /// <summary>유료젬. 현금(IAP)으로만 들어온다. 10원 = 1개.</summary>
         PaidGem,
 
+        /// <summary>
+        /// 핀볼 티켓. 1개 = 핀볼 1회 플레이(<c>OJ.Pinball.PinballManager</c>).
+        ///
+        /// <b>여기(6번)에 넣은 이유.</b> <c>PointMetadataDatabase.asset</c> 은 enum 을
+        /// <b>정수로</b> 직렬화하므로 기존 값 사이에 끼워 넣으면 뒤 항목의 아이콘·이름이
+        /// 통째로 밀린다. 100/200번대는 명시 값이 박혀 있어 이 자리는 밀리지 않는다.
+        /// <see cref="Max"/> 앞이어야 하는 것도 조건이다 —
+        /// <c>UIShopGridCard.Bind</c> 가 <c>Max</c> 를 "현금 결제" sentinel 로 쓴다.
+        /// </summary>
+        PinballTicket,
+
         NormalScroll = 100,
         FireScroll,
         IceScroll,

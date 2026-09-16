@@ -100,6 +100,15 @@ namespace OJ.Core
         /// </summary>
         public ShopSave Shop { get; } = new ShopSave();
 
+        /// <summary>
+        /// 핀볼의 특수 핀 게이지. (<c>OJ.Pinball.*</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> <see cref="CurrentVersion"/> 주석의 규칙대로 필드를
+        /// <i>더하는</i> 것이라, 옛 세이브에는 이 키가 없고 그 상태는 "핀볼을 한 번도 안 해 본
+        /// 사람"과 정확히 같다.
+        /// </summary>
+        public PinballSave Pinball { get; } = new PinballSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -280,6 +289,24 @@ namespace OJ.Core
         /// (<c>daily:3</c>, <c>stone:MythicStone</c>, <c>gold:0</c> 꼴).
         /// </summary>
         public SortedDictionary<string, int> DailyPurchaseCounts { get; }
+            = new SortedDictionary<string, int>(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// 핀볼의 특수 핀 게이지. 판을 넘어 누적되고, 임계치에 닿으면 보상이 나가며 0으로 돌아간다.
+    ///
+    /// <b>왜 태그마다 필드를 만들지 않았나.</b> 특수 핀은 판(<c>PinballBoard</c>)에서 태그로
+    /// 정의되고 <b>기획이 태그를 늘리면 늘어난다</b>. 필드로 두면 태그를 추가할 때마다
+    /// 이 클래스와 마이그레이션이 따라 붙어야 하는데, 표 하나면 아무것도 안 고쳐도 된다.
+    /// <see cref="ShopSave.DailyPurchaseCounts"/> 와 같은 판단이다.
+    /// </summary>
+    public sealed class PinballSave
+    {
+        /// <summary>
+        /// 특수 핀 태그 → 누적 적중 수. 키는 <c>OJ.Pinball.PinballManager</c> 가 만든다
+        /// (<c>tag:1</c> 꼴).
+        /// </summary>
+        public SortedDictionary<string, int> SpecialHitCounts { get; }
             = new SortedDictionary<string, int>(StringComparer.Ordinal);
     }
 }

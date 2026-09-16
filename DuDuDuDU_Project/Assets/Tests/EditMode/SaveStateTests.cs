@@ -95,6 +95,10 @@ namespace OJ.Core.Tests
             state.Idle.AutoBattleStartUtcTicks = 638_600_000_000_000_000L;
             state.Idle.MeatFestivalStartUtcTicks = 638_600_000_000_000_001L;
 
+            // 핀볼 특수 핀 게이지. 키는 OJ.Pinball.PinballManager 가 만든다("tag:1" 꼴).
+            state.Pinball.SpecialHitCounts["tag:1"] = 7;
+            state.Pinball.SpecialHitCounts["tag:2"] = 14;
+
             return state;
         }
 
@@ -135,6 +139,9 @@ namespace OJ.Core.Tests
 
             Assert.That(actual.Idle.AutoBattleStartUtcTicks, Is.EqualTo(expected.Idle.AutoBattleStartUtcTicks), "idle.autoBattleStartUtcTicks");
             Assert.That(actual.Idle.MeatFestivalStartUtcTicks, Is.EqualTo(expected.Idle.MeatFestivalStartUtcTicks), "idle.meatFestivalStartUtcTicks");
+
+            CollectionAssert.AreEqual(
+                expected.Pinball.SpecialHitCounts, actual.Pinball.SpecialHitCounts, "pinball.specialHitCounts");
         }
 
         // --- 직렬화 왕복 ------------------------------------------------------------------
@@ -377,6 +384,9 @@ namespace OJ.Core.Tests
                 "  \"shop\": {",
                 "    \"dailyResetDate\": \"\",",
                 "    \"dailyPurchaseCounts\": {}",
+                "  },",
+                "  \"pinball\": {",
+                "    \"specialHitCounts\": {}",
                 "  }",
                 "}",
             })));

@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using OJ.Bounty;
 using OJ.Dice;
+using OJ.Pinball;
 using OJ.Shop;
 using OJ.Tower;
 using OJ.UI;
@@ -64,6 +65,7 @@ namespace OJ.EditorTools
             changed |= TryFill<TowerDatabase>(resource, "TowerDatabase", quiet);
             changed |= TryFill<DiceUnlockDatabase>(resource, "DiceUnlockDatabase", quiet);
             changed |= TryFill<ShopDatabase>(resource, "ShopDatabase", quiet);
+            changed |= TryFill<PinballRewardDatabase>(resource, "PinballRewardDatabase", quiet);
 
             if (!changed)
             {

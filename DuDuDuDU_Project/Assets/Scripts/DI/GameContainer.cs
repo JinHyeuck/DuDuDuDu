@@ -5,6 +5,7 @@ using OJ.Analytics;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.IdleReward;
+using OJ.Pinball;
 using OJ.Point;
 using OJ.Relic;
 using OJ.Rewind;
@@ -221,6 +222,12 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 핀볼의 특수 핀 게이지. 의존은 PointManager 하나뿐이라 순서 제약은 없고,
+            // 상점 뒤에 둔 것은 세이브 파일에서 "재화를 쓰는 컨텐츠"끼리 붙여 두려는 것뿐이다.
+            builder.Register<PinballManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 통합 세이브. 7.5 이후 <b>이것이 유일한 진행도 저장소다.</b>
             // ISaveOnApplicationLifecycle 로 등록해 앱이 멈출 때 파일이 쓰이게 한다.
             //
@@ -264,6 +271,7 @@ namespace OJ.DI
             TowerProgressManager.Instance = container.Resolve<TowerProgressManager>();
             IdleRewardManager.Instance = container.Resolve<IdleRewardManager>();
             ShopPurchaseManager.Instance = container.Resolve<ShopPurchaseManager>();
+            PinballManager.Instance = container.Resolve<PinballManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();
