@@ -20,7 +20,7 @@ namespace OJ.EditorTools
         private const string PrefabFolder = "Assets/Prefab/Lobby";
         private const string PrefabPath = PrefabFolder + "/UICombatPowerDisplay.prefab";
         private const string LobbyScenePath = "Assets/Scenes/LobbyScene.unity";
-        private const string FontPath = "Assets/NotoSansKR-Black/NotoSansKR-Black SDF.asset";
+        private const string FontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
         private const string IconPath = "Assets/Resources/Art/Ingame/Icon_Fight.png";
 
         [MenuItem("Tools/OJ/Combat Power/Rebuild UI Prefab And Install")]
