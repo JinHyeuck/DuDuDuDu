@@ -96,7 +96,10 @@ namespace OJ.UI
                 // 씬과 함께 파괴됐는데 캐시에 남아 있는 경우. UnityEngine.Object 의
                 // 가짜 null 이라 == null 로 잡힌다.
                 if (cached != null)
+                {
+                    cached.HintOpenStyle(StyleFor(parent));
                     return cached as T;
+                }
 
                 opened.Remove(key);
             }
@@ -128,8 +131,25 @@ namespace OJ.UI
                 return null;
             }
 
+            dialog.HintOpenStyle(StyleFor(parent));
+
             opened[key] = dialog;
             return dialog;
+        }
+
+        /// <summary>
+        /// 열림 연출의 종류를 부모로 판정한다.
+        ///
+        /// <b>부모를 받았다는 것은 팝업이 아니라는 뜻이다.</b> 이 오버로드에 부모를 넘기는
+        /// 곳은 로비 탭 내용물뿐이고(<c>LobbyLayoutController.SetPageActive</c>), 그것들은
+        /// 화면 위에 뜨는 것이 아니라 <c>Content</c> 영역 <b>안에</b> 들어간다.
+        ///
+        /// 프리팹에서 <c>openStyle</c> 을 명시적으로 고른 창은 이 값을 무시한다 —
+        /// 여기서 정하는 것은 <c>Auto</c> 로 둔 창의 기본값이다.
+        /// </summary>
+        private static DialogOpenStyle StyleFor(Transform parent)
+        {
+            return parent != null ? DialogOpenStyle.Page : DialogOpenStyle.Popup;
         }
 
         /// <summary>

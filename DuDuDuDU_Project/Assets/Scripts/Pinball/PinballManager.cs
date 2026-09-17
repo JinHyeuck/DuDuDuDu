@@ -40,20 +40,52 @@ namespace OJ.Pinball
         /// <summary>1회 플레이에 드는 티켓 수.</summary>
         public int TicketCost => Database.TicketCost;
 
-        /// <summary>티켓이 한 발치라도 있는가.</summary>
-        public bool CanPlay => CanLaunch(1);
+        /// <summary>한 세션에 쏠 수 있는 공의 최대 수.</summary>
+        public int MaxShotsPerSession => Database.MaxShotsPerSession;
+
+        /// <summary>배율 표. 화면이 버튼을 나열하는 데 쓴다.</summary>
+        public IReadOnlyList<PinballMultiplierTier> MultiplierTiers => Database.multiplierTiers;
+
+        /// <summary>공 하나를 <paramref name="multiplier"/> 배로 쏘는 데 드는 티켓.</summary>
+        public int ShotCost(int multiplier)
+        {
+            return PinballRules.ScaleAmount(TicketCost, multiplier);
+        }
 
         /// <summary>
-        /// <paramref name="ballCount"/> 발을 쏠 티켓이 있는가. 화면이 연사 버튼을 잠그는 데 쓴다.
-        /// <b>모자라면 잠근다</b> — 가진 만큼만 쏘면 버튼에 적힌 숫자가 거짓말이 된다.
+        /// 그 배율이 열렸는가. <b>보유량이 기준이지 소모량이 아니다</b> —
+        /// 600장을 들고 x5 를 열었어도 5장만 남으면 열린 채로 남는다. 쏠 수 있는지는
+        /// <see cref="CanShoot"/> 가 따로 본다.
         /// </summary>
-        public bool CanLaunch(int ballCount)
+        public bool IsMultiplierUnlocked(int multiplier)
         {
-            if (ballCount <= 0)
+            PinballMultiplierTier tier = Database.GetTier(multiplier);
+            if (tier == null)
+                return false;
+
+            return PinballRules.IsMultiplierUnlocked(TicketCount, tier.requiredTickets);
+        }
+
+        /// <summary>그 배율을 열려면 티켓이 몇 장 있어야 하는가. 표에 없으면 -1.</summary>
+        public int RequiredTicketsFor(int multiplier)
+        {
+            PinballMultiplierTier tier = Database.GetTier(multiplier);
+            return tier != null ? tier.requiredTickets : -1;
+        }
+
+        /// <summary>티켓이 x1 한 발치라도 있는가.</summary>
+        public bool CanPlay => CanShoot(1);
+
+        /// <summary>
+        /// 지금 그 배율로 한 발 쏠 수 있는가 — 배율이 열려 있고 티켓도 그만큼 있어야 한다.
+        /// </summary>
+        public bool CanShoot(int multiplier)
+        {
+            if (multiplier <= 0 || !IsMultiplierUnlocked(multiplier))
                 return false;
 
             PointManager points = PointManager.Instance;
-            return points != null && points.Get(PointType.PinballTicket) >= TicketCost * ballCount;
+            return points != null && points.Get(PointType.PinballTicket) >= ShotCost(multiplier);
         }
 
         /// <summary>지금 보유한 티켓 수.</summary>
@@ -83,6 +115,9 @@ namespace OJ.Pinball
         /// <summary>경품표에 걸린 특수 핀 규칙 전부. 화면이 게이지를 나열하는 데 쓴다.</summary>
         public IReadOnlyList<PinballSpecialReward> SpecialRewards => Database.specialRewards;
 
+        /// <summary>그 태그의 규칙(보상·임계치). 경품표에 없으면 null.</summary>
+        public PinballSpecialReward GetSpecialReward(int tag) => Database.GetSpecial(tag);
+
         /// <summary>경품표에 적힌 칸 수. 화면이 칸마다 경품을 적는 데 쓴다.</summary>
         public int SlotCount => Database.slotRewards != null ? Database.slotRewards.Count : 0;
 
@@ -93,16 +128,16 @@ namespace OJ.Pinball
             return slotReward != null ? slotReward.rewards : null;
         }
 
-        // ──────────────────────────────────────────────── 1회 플레이
+        // ──────────────────────────────────────────────── 한 발
 
         /// <summary>
-        /// <paramref name="ballCount"/> 발을 <b>한 번에 확정한다</b> — 칸을 뽑고, 티켓을 빼고,
-        /// 칸 경품을 전부 지급하고, 저장까지 여기서 끝낸다.
+        /// 공 한 개를 <b>발사 시점에 확정한다</b> — 칸을 뽑고, 티켓을 빼고, 칸 경품에 배율을
+        /// 곱해 지급하고, 저장까지 여기서 끝낸다.
         ///
         /// <b>왜 발사 시점에 다 확정하나.</b> 이 판은 물리로 칸이 정해지지 않는다. 뽑은 칸으로
         /// 가는 궤적을 재생할 뿐이라(<c>Assets/Pinball/README.md</c>) 결과는 발사하는 순간
-        /// 이미 정해져 있다. 그러면 지급도 그때 끝내는 것이 가장 안전하다 — 30발을 쏘고
-        /// 재생 도중에 앱이 죽거나 화면을 나가도 <b>티켓과 경품이 갈라지지 않는다.</b>
+        /// 이미 정해져 있다. 그러면 지급도 그때 끝내는 것이 가장 안전하다 — 여러 발이 굴러가는
+        /// 도중에 앱이 죽거나 화면을 나가도 <b>티켓과 경품이 갈라지지 않는다.</b>
         /// 재생은 그 뒤로 순수한 연출이 된다.
         ///
         /// <b>특수 핀은 여기 없다.</b> 적중 횟수는 재생해 봐야 나오므로
@@ -111,17 +146,15 @@ namespace OJ.Pinball
         /// <paramref name="declaredProbability"/> 에는 <c>PinballBoard.declaredProbability</c> 를
         /// 그대로 넘긴다 — 매니저가 씬 오브젝트를 알지 않아야 헤드리스에서도 이 경로가 돈다.
         /// </summary>
-        /// <param name="slotsOut">뽑힌 칸이 발사 순서대로 담긴다. 화면이 재생에 그대로 넘긴다.</param>
+        /// <param name="multiplier">이번 세션의 배율. 경품과 티켓 소모 양쪽에 곱해진다.</param>
+        /// <param name="slot">뽑힌 칸. 화면이 재생에 그대로 넘긴다.</param>
         /// <returns>지급한 칸 경품. 실패하면 null 이고 재화는 하나도 건드리지 않는다.</returns>
-        public IReadOnlyList<PointRewardEntry> TryLaunch(
-            IReadOnlyList<float> declaredProbability, int ballCount, List<int> slotsOut)
+        public IReadOnlyList<PointRewardEntry> TryShoot(
+            IReadOnlyList<float> declaredProbability, int multiplier, out int slot)
         {
-            if (slotsOut == null)
-                return null;
+            slot = -1;
 
-            slotsOut.Clear();
-
-            if (ballCount <= 0)
+            if (!CanShoot(multiplier))
                 return null;
 
             PointManager points = PointManager.Instance;
@@ -131,57 +164,39 @@ namespace OJ.Pinball
                 return null;
             }
 
-            int cost = TicketCost * ballCount;
-            if (points.Get(PointType.PinballTicket) < cost)
-                return null;
-
-            // 칸을 먼저 전부 뽑는다. 하나라도 못 뽑으면 재화를 건드리기 전에 돌아간다 —
+            // 칸을 먼저 뽑는다. 못 뽑으면 재화를 건드리기 전에 돌아간다 —
             // ShopPurchaseManager.TryDrawGemBox 가 뽑기에서 쓰는 순서와 같다
             // ("재화를 먼저 빼고 후보가 없으면 그 재화가 조용히 사라진다").
-            var rewards = new List<PointRewardEntry>();
-            for (int i = 0; i < ballCount; i++)
+            int drawn = PinballRules.DrawSlot(declaredProbability, UnityEngine.Random.value);
+            if (drawn < 0)
             {
-                int slot = PinballRules.DrawSlot(declaredProbability, UnityEngine.Random.value);
-                if (slot < 0)
-                {
-                    Debug.LogError(
-                        "[핀볼] 착지 칸을 뽑지 못했다. PinballBoard.declaredProbability 가 비었거나 " +
-                        "전부 0 이다. Sim Lab 의 Edit Board 탭에서 확률표를 확인할 것.");
-                    slotsOut.Clear();
-                    return null;
-                }
-
-                slotsOut.Add(slot);
-                CollectSlotRewards(slot, rewards);
-            }
-
-            if (!points.TrySpend(PointType.PinballTicket, cost, false))
-            {
-                // 위에서 잔액을 봤으므로 정상 흐름에서는 여기 닿지 않는다.
-                // 닿았다면 다른 경로가 같은 티켓을 쓰고 있다는 뜻이라 조용히 넘기지 않는다.
-                Debug.LogError("[핀볼] 티켓 차감에 실패했다. 발사를 취소한다.");
-                slotsOut.Clear();
+                Debug.LogError(
+                    "[핀볼] 착지 칸을 뽑지 못했다. PinballBoard.declaredProbability 가 비었거나 " +
+                    "전부 0 이다. Sim Lab 의 Edit Board 탭에서 확률표를 확인할 것.");
                 return null;
             }
 
+            if (!points.TrySpend(PointType.PinballTicket, ShotCost(multiplier), false))
+            {
+                // 위에서 CanShoot 으로 잔액을 봤으므로 정상 흐름에서는 여기 닿지 않는다.
+                // 닿았다면 다른 경로가 같은 티켓을 쓰고 있다는 뜻이라 조용히 넘기지 않는다.
+                Debug.LogError("[핀볼] 티켓 차감에 실패했다. 발사를 취소한다.");
+                return null;
+            }
+
+            IReadOnlyList<PointRewardEntry> rewards = GetLandingRewards(drawn, multiplier);
             GrantWithoutSave(rewards);
             Save();     // 차감과 지급이 같은 파일 쓰기 한 번에 굳는다
 
+            slot = drawn;
             return rewards;
         }
 
         /// <summary>
-        /// 그 칸의 경품을 <b>조회만</b> 한다. 지급은 <see cref="TryLaunch"/> 가 이미 끝냈다 —
-        /// 화면이 착지 연출에 무엇을 띄울지 알기 위한 것이다.
+        /// 그 칸의 경품에 배율을 곱한 것. 발사 때는 지급할 목록으로, 착지 때는 연출에 띄울
+        /// 목록으로 쓴다 — <b>착지 시점에는 조회일 뿐 지급하지 않는다.</b>
         /// </summary>
-        public IReadOnlyList<PointRewardEntry> GetLandingRewards(int slot)
-        {
-            var rewards = new List<PointRewardEntry>();
-            CollectSlotRewards(slot, rewards);
-            return rewards;
-        }
-
-        private void CollectSlotRewards(int slot, List<PointRewardEntry> into)
+        public IReadOnlyList<PointRewardEntry> GetLandingRewards(int slot, int multiplier)
         {
             PinballSlotReward slotReward = Database.GetSlot(slot);
             if (slotReward == null)
@@ -189,14 +204,21 @@ namespace OJ.Pinball
                 Debug.LogError(
                     "[핀볼] " + slot + "번 칸의 경품이 경품표에 없다. 이 공은 빈손으로 끝난다. " +
                     "PinballRewardDatabase 의 칸 수가 판(PinballBoard.SlotCount)과 같은지 확인할 것.");
-                return;
+                return System.Array.Empty<PointRewardEntry>();
             }
 
             if (slotReward.rewards == null)
-                return;
+                return System.Array.Empty<PointRewardEntry>();
 
+            var rewards = new List<PointRewardEntry>();
             for (int i = 0; i < slotReward.rewards.Count; i++)
-                into.Add(slotReward.rewards[i].ToPointRewardEntry());
+            {
+                PinballReward reward = slotReward.rewards[i];
+                rewards.Add(new PointRewardEntry(
+                    reward.pointType, PinballRules.ScaleAmount(reward.amount, multiplier)));
+            }
+
+            return rewards;
         }
 
         /// <summary>
@@ -206,8 +228,9 @@ namespace OJ.Pinball
         /// 보이고, 임계치 보상도 그 자리에서 터져야 인과가 보인다. 저장만
         /// <see cref="FlushSave"/> 로 미루므로 게이지와 보상이 갈라질 일은 없다.
         /// </summary>
+        /// <param name="multiplier">이번 세션의 배율. 게이지가 이만큼씩 오른다.</param>
         /// <returns>임계치에 닿아 지급한 보상. 못 닿았으면 빈 목록.</returns>
-        public IReadOnlyList<PointRewardEntry> ResolveSpecialHit(int tag)
+        public IReadOnlyList<PointRewardEntry> ResolveSpecialHit(int tag, int multiplier)
         {
             PinballSpecialReward rule = Database.GetSpecial(tag);
             if (rule == null)
@@ -217,16 +240,24 @@ namespace OJ.Pinball
                 return System.Array.Empty<PointRewardEntry>();
             }
 
-            int next = PinballRules.AdvanceGauge(GetGauge(tag), rule.requiredHits, out bool granted);
+            int next = PinballRules.AdvanceGauge(
+                GetGauge(tag), rule.requiredHits, Mathf.Max(1, multiplier), out int grantCount);
+
             SetGauge(tag, next);
             OnGaugeChanged?.Invoke();
 
-            if (!granted || rule.rewards == null)
+            if (grantCount <= 0 || rule.rewards == null)
                 return System.Array.Empty<PointRewardEntry>();
 
+            // 배율이 크면 한 번 맞는 것으로 임계치를 여러 번 넘는다. 넘은 횟수만큼 준다 —
+            // 1회로 깎으면 배율을 올릴수록 특수 핀이 손해가 된다.
             var rewards = new List<PointRewardEntry>();
             for (int i = 0; i < rule.rewards.Count; i++)
-                rewards.Add(rule.rewards[i].ToPointRewardEntry());
+            {
+                PinballReward reward = rule.rewards[i];
+                rewards.Add(new PointRewardEntry(
+                    reward.pointType, PinballRules.ScaleAmount(reward.amount, grantCount)));
+            }
 
             GrantWithoutSave(rewards);
             return rewards;
@@ -235,7 +266,7 @@ namespace OJ.Pinball
         /// <summary>
         /// 미뤄 둔 특수 핀 쪽 변화를 저장한다. 공이 전부 착지했을 때, 그리고 화면을 닫을 때 부른다.
         ///
-        /// 칸 경품은 <see cref="TryLaunch"/> 가 이미 저장했으므로 여기서 남는 것은 게이지와
+        /// 칸 경품은 <see cref="TryShoot"/> 가 이미 저장했으므로 여기서 남는 것은 게이지와
         /// 임계치 보상뿐이다. 그것까지 적중할 때마다 저장하면 연사 중에 파일을 수십 번 쓴다.
         ///
         /// <b>여러 번 불러도 된다.</b> 저장은 현재 상태를 통째로 쓰는 것이라 멱등하다.

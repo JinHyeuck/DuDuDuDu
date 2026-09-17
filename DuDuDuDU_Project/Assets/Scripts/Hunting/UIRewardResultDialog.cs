@@ -197,13 +197,62 @@ namespace OJ.Hunting
                 panelRect.anchoredPosition.x, panelTopEdge - height * 0.5f);
         }
 
+        /// <summary>
+        /// 칸이 하나씩 나오는 간격(초).
+        ///
+        /// <b>칸 수가 많아도 총 시간이 늘어나지 않게 조인다.</b> 보상이 12개 나오는 판에서
+        /// 간격을 그대로 두면 마지막 칸이 1초 뒤에야 뜨는데, 그때는 유저가 이미 닫기를
+        /// 누르고 있다.
+        /// </summary>
+        private const float AppearStagger = 0.055f;
+
+        /// <summary>순차 등장에 쓸 총 시간의 상한(초).</summary>
+        private const float MaxStaggerSpan = 0.4f;
+
         protected override void OnEnter()
         {
             ApplyGridLayout(pendingCount);
+            PlayAppearSequence();
+        }
+
+        /// <summary>
+        /// 보이는 칸을 앞에서부터 하나씩 띄운다.
+        ///
+        /// <c>OnEnter</c> 에서 부르는 이유는 <b>창이 실제로 열리는 시점이 여기</b>이기
+        /// 때문이다. 목록을 채우는 <c>Bind</c> 시점에 걸면 창이 열리기 전에 연출이 끝나 버린다.
+        /// </summary>
+        private void PlayAppearSequence()
+        {
+            int visible = Mathf.Min(pendingCount, rewardElements.Count);
+            if (visible <= 0)
+                return;
+
+            float step = visible > 1
+                ? Mathf.Min(AppearStagger, MaxStaggerSpan / (visible - 1))
+                : 0f;
+
+            for (int i = 0; i < rewardElements.Count; i++)
+            {
+                UIRewardElement element = rewardElements[i];
+                if (element == null)
+                    continue;
+
+                if (i < visible)
+                    element.PlayAppear(step * i);
+                else
+                    element.SkipAppear();
+            }
         }
 
         protected override void OnExit()
         {
+            // 연출 도중에 닫으면 작아진 칸이 그대로 굳어, 다음에 열 때 그 크기로 뜬다.
+            for (int i = 0; i < rewardElements.Count; i++)
+            {
+                if (rewardElements[i] != null)
+                    rewardElements[i].SkipAppear();
+            }
+
             Action callback = closeAction;
             closeAction = null;
             callback?.Invoke();

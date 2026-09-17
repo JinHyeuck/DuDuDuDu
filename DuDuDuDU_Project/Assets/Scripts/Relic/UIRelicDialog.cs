@@ -98,6 +98,9 @@ namespace OJ.Relic
             SetDetailPopupVisible(false);
 
             RefreshAll();
+
+            // RefreshAll 이 유물 칸을 다 채운 뒤여야 한다.
+            UIAppear.PlayChildren(relicRoot);
         }
 
         /// <summary>

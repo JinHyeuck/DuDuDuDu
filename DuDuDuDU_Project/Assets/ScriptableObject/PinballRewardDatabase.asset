@@ -13,6 +13,24 @@ MonoBehaviour:
   m_Name: PinballRewardDatabase
   m_EditorClassIdentifier: OJ.Game::OJ.Pinball.PinballRewardDatabase
   ticketCost: 1
+  maxShotsPerSession: 15
+  multiplierTiers:
+  - multiplier: 1
+    requiredTickets: 0
+  - multiplier: 2
+    requiredTickets: 120
+  - multiplier: 3
+    requiredTickets: 360
+  - multiplier: 5
+    requiredTickets: 600
+  - multiplier: 10
+    requiredTickets: 1200
+  - multiplier: 20
+    requiredTickets: 2400
+  - multiplier: 50
+    requiredTickets: 6000
+  - multiplier: 100
+    requiredTickets: 12000
   slotRewards:
   - label: "1000 \uACE8\uB4DC"
     rewards:

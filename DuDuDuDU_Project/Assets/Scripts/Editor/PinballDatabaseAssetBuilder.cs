@@ -32,6 +32,7 @@ namespace OJ.EditorTools
             var existing = AssetDatabase.LoadAssetAtPath<PinballRewardDatabase>(AssetPath);
             if (existing != null)
             {
+                UpgradeIfNeeded(existing);
                 Report("[핀볼] 이미 있다: " + AssetPath, existing);
             }
             else
@@ -68,12 +69,31 @@ namespace OJ.EditorTools
             Report("[핀볼] 검사: " + AssetPath, database);
         }
 
+        /// <summary>
+        /// 나중에 생긴 필드를 보충한다. <b>덮어쓰지 않는다</b> — 비어 있을 때만 채운다.
+        ///
+        /// 배율 표가 비면 x1 조차 못 골라 발사가 통째로 막히는데, 그건 이 필드가 생기기 전에
+        /// 만든 에셋의 기본 상태다. 손으로 조정한 경품 밸런스는 건드리지 않는다.
+        /// </summary>
+        private static void UpgradeIfNeeded(PinballRewardDatabase database)
+        {
+            if (database.multiplierTiers != null && database.multiplierTiers.Count > 0)
+                return;
+
+            database.PopulateMultiplierDefaults();
+            EditorUtility.SetDirty(database);
+
+            Debug.Log("[핀볼] 배율 표가 비어 있어 기본값 8단계를 채웠다. 경품은 그대로 두었다.", database);
+        }
+
         private static void Report(string header, PinballRewardDatabase database)
         {
             var sb = new StringBuilder(header).AppendLine();
-            sb.Append("  티켓 ").Append(database.TicketCost).AppendLine("장 / 1회");
+            sb.Append("  티켓 ").Append(database.TicketCost).AppendLine("장 / 공 1개(x1)");
+            sb.Append("  세션당 최대 ").Append(database.MaxShotsPerSession).AppendLine("발");
             sb.Append("  칸 ").Append(database.slotRewards.Count).AppendLine("개");
             sb.Append("  특수 핀 ").Append(database.specialRewards.Count).AppendLine("종");
+            sb.Append("  배율 ").Append(database.multiplierTiers.Count).AppendLine("단계");
 
             if (database.Validate(ExpectedSlotCount, out string error))
             {

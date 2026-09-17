@@ -89,6 +89,10 @@ namespace OJ.Equipment
             BuildIfNeeded();
             SelectTab(EquipmentPageTab.EquippedEffects, false);
             RefreshAll();
+
+            // RefreshAll 이 목록을 다 채운 뒤여야 한다. 장비 칸은 화면에 늘 보이는 것이라
+            // 여기를 띄우고, 탭 내용물은 탭을 누를 때 SelectTab 이 띄운다.
+            UIAppear.PlayChildren(equipmentListRoot);
         }
 
         protected override void OnExit()
@@ -496,8 +500,20 @@ namespace OJ.Equipment
             currentTab = tab;
             RefreshTabViews();
 
-            if (refresh)
-                RefreshAll();
+            if (!refresh)
+            {
+                // <b>여기서 연출하면 안 된다.</b> refresh 가 false 인 호출은 탭을 누른 것이
+                // 아니라 내부 사정으로 탭을 맞추는 것이다 — 특히 OpenEquipmentDialog 가
+                // 보석을 고를 때마다 이 경로로 들어온다. 그때 목록을 다시 띄우면
+                // <b>클릭할 때마다 보석이 사라졌다 나타나 클릭이 씹힌다.</b>
+                return;
+            }
+
+            RefreshAll();
+
+            // 사람이 탭을 눌렀을 때만. RefreshAll 뒤여야 새로 채워진 칸을 훑는다.
+            UIAppear.PlayChildren(
+                currentTab == EquipmentPageTab.EquippedEffects ? equippedEffectRoot : gemInventoryRoot);
         }
 
         private void RefreshTabViews()

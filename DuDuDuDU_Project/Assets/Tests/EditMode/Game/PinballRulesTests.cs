@@ -136,8 +136,8 @@ namespace OJ.Game.Tests
             int gauge = 0;
             for (int i = 1; i < 5; i++)
             {
-                gauge = PinballRules.AdvanceGauge(gauge, 5, out bool granted);
-                Assert.That(granted, Is.False, i + "번째에서 일찍 지급됐다");
+                gauge = PinballRules.AdvanceGauge(gauge, 5, 1, out int grantCount);
+                Assert.That(grantCount, Is.Zero, i + "번째에서 일찍 지급됐다");
                 Assert.That(gauge, Is.EqualTo(i));
             }
         }
@@ -145,10 +145,33 @@ namespace OJ.Game.Tests
         [Test]
         public void 임계치에_닿으면_지급하고_0으로_돌아간다()
         {
-            int gauge = PinballRules.AdvanceGauge(4, 5, out bool granted);
+            int gauge = PinballRules.AdvanceGauge(4, 5, 1, out int grantCount);
 
-            Assert.That(granted, Is.True);
-            Assert.That(gauge, Is.EqualTo(0));
+            Assert.That(grantCount, Is.EqualTo(1));
+            Assert.That(gauge, Is.Zero);
+        }
+
+        /// <summary>
+        /// 배율이 걸리면 한 번 맞는 것이 그만큼의 적중으로 계산된다. 넘은 횟수를 1회로 깎으면
+        /// <b>배율을 올릴수록 특수 핀이 손해</b>가 되어 배율이 불이익이 된다.
+        /// </summary>
+        [Test]
+        public void 배율이_크면_한_번에_여러_번_지급된다()
+        {
+            // 임계치 10, 이미 5 쌓인 상태에서 x100 으로 한 번 맞았다 → 105
+            int gauge = PinballRules.AdvanceGauge(5, 10, 100, out int grantCount);
+
+            Assert.That(grantCount, Is.EqualTo(10));
+            Assert.That(gauge, Is.EqualTo(5), "넘고 남은 나머지가 게이지에 남아야 한다");
+        }
+
+        [Test]
+        public void 넘고_남은_나머지가_다음_판으로_이어진다()
+        {
+            int gauge = PinballRules.AdvanceGauge(0, 7, 20, out int grantCount);
+
+            Assert.That(grantCount, Is.EqualTo(2));     // 7 × 2 = 14
+            Assert.That(gauge, Is.EqualTo(6));          // 20 - 14
         }
 
         /// <summary>
@@ -159,20 +182,69 @@ namespace OJ.Game.Tests
         [TestCase(-3)]
         public void 임계치가_없으면_지급도_적립도_없다(int requiredHits)
         {
-            int gauge = PinballRules.AdvanceGauge(7, requiredHits, out bool granted);
+            int gauge = PinballRules.AdvanceGauge(7, requiredHits, 1, out int grantCount);
 
-            Assert.That(granted, Is.False);
+            Assert.That(grantCount, Is.Zero);
             Assert.That(gauge, Is.EqualTo(7));
+        }
+
+        [Test]
+        public void 배율이_0이하면_게이지가_움직이지_않는다()
+        {
+            int gauge = PinballRules.AdvanceGauge(3, 5, 0, out int grantCount);
+
+            Assert.That(grantCount, Is.Zero);
+            Assert.That(gauge, Is.EqualTo(3));
         }
 
         /// <summary>손상된 세이브가 음수를 들고 와도 0부터 다시 센다.</summary>
         [Test]
         public void 음수_게이지는_0으로_보정된다()
         {
-            int gauge = PinballRules.AdvanceGauge(-5, 3, out bool granted);
+            int gauge = PinballRules.AdvanceGauge(-5, 3, 1, out int grantCount);
 
-            Assert.That(granted, Is.False);
+            Assert.That(grantCount, Is.Zero);
             Assert.That(gauge, Is.EqualTo(1));
+        }
+
+        // ── 배율 ────────────────────────────────────────────────────────
+
+        [Test]
+        public void 배율이_수량에_곱해진다()
+        {
+            Assert.That(PinballRules.ScaleAmount(1000, 1), Is.EqualTo(1000));
+            Assert.That(PinballRules.ScaleAmount(1000, 100), Is.EqualTo(100000));
+        }
+
+        /// <summary>
+        /// 넘겨서 음수가 되면 <c>PointManager.Add</c> 가 <c>amount &lt;= 0</c> 을 조용히 무시해
+        /// <b>지급이 통째로 사라진다.</b> 그래서 최대값에서 멈춘다.
+        /// </summary>
+        [Test]
+        public void 곱셈이_넘치면_최대값에서_멈춘다()
+        {
+            Assert.That(PinballRules.ScaleAmount(int.MaxValue, 100), Is.EqualTo(int.MaxValue));
+            Assert.That(PinballRules.ScaleAmount(int.MaxValue, 2), Is.EqualTo(int.MaxValue));
+        }
+
+        [TestCase(0, 1)]
+        [TestCase(-5, 3)]
+        [TestCase(100, 0)]
+        [TestCase(100, -2)]
+        public void 수량이나_배율이_0이하면_0이다(int amount, int multiplier)
+        {
+            Assert.That(PinballRules.ScaleAmount(amount, multiplier), Is.Zero);
+        }
+
+        /// <summary>조건은 <b>보유량</b>이다. 딱 맞게 들고 있어도 열린다.</summary>
+        [TestCase(0, 0, true)]
+        [TestCase(119, 120, false)]
+        [TestCase(120, 120, true)]
+        [TestCase(12000, 12000, true)]
+        [TestCase(11999, 12000, false)]
+        public void 배율_해금은_보유량으로_판정한다(int ticketCount, int required, bool expected)
+        {
+            Assert.That(PinballRules.IsMultiplierUnlocked(ticketCount, required), Is.EqualTo(expected));
         }
 
         // ── 경품표 검사 ─────────────────────────────────────────────────
@@ -250,6 +322,81 @@ namespace OJ.Game.Tests
 
             Assert.That(PinballRewardDatabase.Validate(Slots(5), specials, 5, out string error), Is.False);
             Assert.That(error, Does.Contain("0 이하"));
+        }
+
+        // ── 배율 표 ─────────────────────────────────────────────────────
+
+        private static List<PinballMultiplierTier> Tiers(params (int multiplier, int required)[] rows)
+        {
+            var list = new List<PinballMultiplierTier>();
+            for (int i = 0; i < rows.Length; i++)
+            {
+                list.Add(new PinballMultiplierTier
+                {
+                    multiplier = rows[i].multiplier,
+                    requiredTickets = rows[i].required,
+                });
+            }
+
+            return list;
+        }
+
+        /// <summary>레퍼런스 8단계가 그대로 통과한다. 기본 표가 깨지면 신규 유저가 막힌다.</summary>
+        [Test]
+        public void 레퍼런스_배율표가_검사를_통과한다()
+        {
+            List<PinballMultiplierTier> tiers = Tiers(
+                (1, 0), (2, 120), (3, 360), (5, 600),
+                (10, 1200), (20, 2400), (50, 6000), (100, 12000));
+
+            Assert.That(PinballRewardDatabase.ValidateMultipliers(tiers, out string error), Is.True, error);
+        }
+
+        [Test]
+        public void 빈_배율표는_잡힌다()
+        {
+            Assert.That(PinballRewardDatabase.ValidateMultipliers(null, out _), Is.False);
+            Assert.That(
+                PinballRewardDatabase.ValidateMultipliers(new List<PinballMultiplierTier>(), out _),
+                Is.False);
+        }
+
+        /// <summary>x1 을 잠그면 티켓을 처음 얻은 사람이 아무것도 못 한다.</summary>
+        [Test]
+        public void x1_에_조건이_붙으면_잡힌다()
+        {
+            Assert.That(
+                PinballRewardDatabase.ValidateMultipliers(Tiers((1, 50), (2, 120)), out string error),
+                Is.False);
+            Assert.That(error, Does.Contain("x1"));
+        }
+
+        [Test]
+        public void x1_이_없으면_잡힌다()
+        {
+            Assert.That(
+                PinballRewardDatabase.ValidateMultipliers(Tiers((2, 120), (3, 360)), out string error),
+                Is.False);
+            Assert.That(error, Does.Contain("x1 이 없다"));
+        }
+
+        [Test]
+        public void 배율_중복이_잡힌다()
+        {
+            Assert.That(
+                PinballRewardDatabase.ValidateMultipliers(Tiers((1, 0), (2, 120), (2, 200)), out string error),
+                Is.False);
+            Assert.That(error, Does.Contain("중복"));
+        }
+
+        /// <summary>높은 배율이 더 싸면 낮은 배율을 고를 이유가 없어져 표가 무의미해진다.</summary>
+        [Test]
+        public void 조건이_역전되면_잡힌다()
+        {
+            Assert.That(
+                PinballRewardDatabase.ValidateMultipliers(Tiers((1, 0), (2, 360), (3, 120)), out string error),
+                Is.False);
+            Assert.That(error, Does.Contain("앞 단계보다 낮다"));
         }
     }
 }

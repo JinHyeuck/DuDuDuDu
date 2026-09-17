@@ -16,7 +16,7 @@ MonoBehaviour:
   gravity: {x: 0, y: -26}
   linearDrag: 0.45
   ballRadius: 0.16
-  pegRestitution: 0.86
+  pegRestitution: 0.7
   wallRestitution: 0.55
   maxSpeed: 36
   launchPos: {x: 5.62, y: 0.6}
@@ -44,180 +44,88 @@ MonoBehaviour:
   - 0.22
   - 0.2
   pegs:
-  - center: {x: 0.53, y: 7.05}
-    radius: 0.11
+  - center: {x: 2.6, y: 8.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 1.3199999, y: 7.05}
-    radius: 0.11
+  - center: {x: 2.1, y: 7.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 2.1100001, y: 7.05}
-    radius: 0.11
+  - center: {x: 3.1, y: 7.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 2.9, y: 7.05}
-    radius: 0.11
+  - center: {x: 1.6, y: 6.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 3.69, y: 7.05}
-    radius: 0.11
+  - center: {x: 2.6, y: 6.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 4.48, y: 7.05}
-    radius: 0.11
+  - center: {x: 3.6, y: 6.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 0.92499995, y: 6.33}
-    radius: 0.11
+  - center: {x: 1.1, y: 5.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 1.7149999, y: 6.33}
-    radius: 0.11
+  - center: {x: 2.1, y: 5.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 2.505, y: 6.33}
-    radius: 0.11
+  - center: {x: 3.1, y: 5.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 3.295, y: 6.33}
-    radius: 0.11
+  - center: {x: 4.1, y: 5.05}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 4.085, y: 6.33}
-    radius: 0.11
+  - center: {x: 1.6, y: 4.05}
+    radius: 0.2
     restitution: 0
-    specialTag: 0
-  - center: {x: 0.53, y: 5.61}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.1100001, y: 5.61}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.9, y: 5.61}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 4.48, y: 5.61}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 0.92499995, y: 4.8900003}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 1.7149999, y: 4.8900003}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.505, y: 4.8900003}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 3.295, y: 4.8900003}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 4.085, y: 4.8900003}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 0.53, y: 4.17}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 1.3199999, y: 4.17}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.1100001, y: 4.17}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.9, y: 4.17}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 3.69, y: 4.17}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 4.48, y: 4.17}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 0.92499995, y: 3.45}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 1.7149999, y: 3.45}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.505, y: 3.45}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 3.295, y: 3.45}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 4.085, y: 3.45}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 0.53, y: 2.73}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 1.3199999, y: 2.73}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.1100001, y: 2.73}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 2.9, y: 2.73}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 3.69, y: 2.73}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 4.48, y: 2.73}
-    radius: 0.11
-    restitution: 0
-    specialTag: 0
-  - center: {x: 1.35, y: 5.65}
-    radius: 0.3
-    restitution: 0.92
     specialTag: 1
-  - center: {x: 3.7, y: 5.65}
-    radius: 0.3
-    restitution: 0.92
+  - center: {x: 3.6, y: 4.05}
+    radius: 0.2
+    restitution: 0
     specialTag: 2
-  - center: {x: 0.62, y: 1.95}
-    radius: 0.11
+  - center: {x: 1.1, y: 3.0500002}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 1.64, y: 1.95}
-    radius: 0.11
+  - center: {x: 2.1, y: 3.0500002}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 2.6599998, y: 1.95}
-    radius: 0.11
+  - center: {x: 3.1, y: 3.0500002}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 3.6799998, y: 1.95}
-    radius: 0.11
+  - center: {x: 4.1, y: 3.0500002}
+    radius: 0.095
     restitution: 0
     specialTag: 0
-  - center: {x: 4.7, y: 1.95}
-    radius: 0.11
+  - center: {x: 0.6, y: 2.0500002}
+    radius: 0.095
+    restitution: 0
+    specialTag: 0
+  - center: {x: 1.6, y: 2.0500002}
+    radius: 0.095
+    restitution: 0
+    specialTag: 0
+  - center: {x: 2.6, y: 2.0500002}
+    radius: 0.095
+    restitution: 0
+    specialTag: 0
+  - center: {x: 3.6, y: 2.0500002}
+    radius: 0.095
+    restitution: 0
+    specialTag: 0
+  - center: {x: 4.6, y: 2.0500002}
+    radius: 0.095
     restitution: 0
     specialTag: 0
   segments:

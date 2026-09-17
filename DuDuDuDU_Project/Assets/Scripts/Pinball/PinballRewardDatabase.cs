@@ -54,6 +54,22 @@ namespace OJ.Pinball
     }
 
     /// <summary>
+    /// 배율 한 단계와 그것을 열어 주는 보유 티켓 수.
+    ///
+    /// <b>조건이 소모량이 아니라 보유량인 이유.</b> 배율은 클릭 수를 줄이는 장치다.
+    /// 아무나 쓰면 유저가 시행 횟수를 한꺼번에 녹여 버리고 컨텐츠가 몇 분 만에 끝난다.
+    /// 쌓아 둔 사람에게만 열면 그 속도가 적당히 유지된다.
+    /// </summary>
+    [Serializable]
+    public sealed class PinballMultiplierTier
+    {
+        [Min(1)] public int multiplier = 1;
+
+        [Tooltip("이 배율을 쓰려면 핀볼 티켓을 이만큼 들고 있어야 한다. 소모량이 아니라 보유량이다.")]
+        [Min(0)] public int requiredTickets;
+    }
+
+    /// <summary>
     /// 핀볼의 경품표.
     ///
     /// <b>슬롯 확률은 여기 없다.</b> 정본은 <c>PinballBoard.declaredProbability</c> 하나다
@@ -69,8 +85,14 @@ namespace OJ.Pinball
     public sealed class PinballRewardDatabase : ScriptableObject
     {
         [Header("입장")]
-        [Tooltip("1회 플레이에 드는 핀볼 티켓 수.")]
+        [Tooltip("공 1개(배율 x1)에 드는 핀볼 티켓 수.")]
         [Min(1)] public int ticketCost = 1;
+
+        [Tooltip("한 세션에 발사할 수 있는 공의 최대 수. 다 쏘면 그 세션이 끝날 때까지 기다린다.")]
+        [Min(1)] public int maxShotsPerSession = 15;
+
+        [Header("배율 — 보유 티켓이 조건 이상이어야 열린다")]
+        public List<PinballMultiplierTier> multiplierTiers = new List<PinballMultiplierTier>();
 
         [Header("칸 경품 — 순서가 곧 슬롯 인덱스다 (0 이 맨 왼쪽)")]
         public List<PinballSlotReward> slotRewards = new List<PinballSlotReward>();
@@ -79,6 +101,34 @@ namespace OJ.Pinball
         public List<PinballSpecialReward> specialRewards = new List<PinballSpecialReward>();
 
         public int TicketCost => Mathf.Max(1, ticketCost);
+
+        public int MaxShotsPerSession => Mathf.Max(1, maxShotsPerSession);
+
+        /// <summary>레퍼런스 기준 8단계. 조건은 보유 티켓 수다.</summary>
+        private static readonly int[] DefaultMultipliers = { 1, 2, 3, 5, 10, 20, 50, 100 };
+        private static readonly int[] DefaultRequiredTickets = { 0, 120, 360, 600, 1200, 2400, 6000, 12000 };
+
+        /// <summary>
+        /// 배율 표만 기본값으로 채운다. <b>경품은 건드리지 않는다</b> —
+        /// 배율은 나중에 생긴 필드라, 그 전에 만든 에셋을 보충할 때 밸런스까지 되돌리면 안 된다.
+        /// </summary>
+        public void PopulateMultiplierDefaults()
+        {
+            if (multiplierTiers == null)
+                multiplierTiers = new List<PinballMultiplierTier>();
+
+            multiplierTiers.Clear();
+            maxShotsPerSession = Mathf.Max(1, maxShotsPerSession);
+
+            for (int i = 0; i < DefaultMultipliers.Length; i++)
+            {
+                multiplierTiers.Add(new PinballMultiplierTier
+                {
+                    multiplier = DefaultMultipliers[i],
+                    requiredTickets = DefaultRequiredTickets[i],
+                });
+            }
+        }
 
         /// <summary>
         /// 코드 기본값을 채운다. 에셋 빌더와 <see cref="PinballDatabaseProvider"/> 의 폴백이 쓴다.
@@ -90,8 +140,10 @@ namespace OJ.Pinball
         public void PopulateDefaults()
         {
             ticketCost = 1;
+            maxShotsPerSession = 15;
             slotRewards.Clear();
             specialRewards.Clear();
+            PopulateMultiplierDefaults();
 
             int[] golds = { 1000, 2000, 5000, 2000, 1000 };
             for (int i = 0; i < golds.Length; i++)
@@ -141,7 +193,90 @@ namespace OJ.Pinball
         /// </summary>
         public bool Validate(int slotCount, out string error)
         {
-            return Validate(slotRewards, specialRewards, slotCount, out error);
+            if (!Validate(slotRewards, specialRewards, slotCount, out string slotError))
+            {
+                error = slotError;
+                return false;
+            }
+
+            return ValidateMultipliers(multiplierTiers, out error);
+        }
+
+        /// <summary>그 배율의 조건. 목록에 없으면 null.</summary>
+        public PinballMultiplierTier GetTier(int multiplier)
+        {
+            if (multiplierTiers == null)
+                return null;
+
+            for (int i = 0; i < multiplierTiers.Count; i++)
+            {
+                PinballMultiplierTier tier = multiplierTiers[i];
+                if (tier != null && tier.multiplier == multiplier)
+                    return tier;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 배율 표를 검사한다. 목록을 직접 받는 <c>static</c> 인 이유는 칸 경품 쪽과 같다 —
+        /// 헤드리스 러너가 <c>ScriptableObject</c> 를 못 만든다.
+        /// </summary>
+        public static bool ValidateMultipliers(
+            IReadOnlyList<PinballMultiplierTier> tiers, out string error)
+        {
+            if (tiers == null || tiers.Count == 0)
+            {
+                error = "배율 표가 비었다. 조건 없이 쓸 수 있는 x1 이 하나는 있어야 발사할 수 있다. ";
+                return false;
+            }
+
+            var problems = new StringBuilder();
+            var seen = new HashSet<int>();
+            bool hasBase = false;
+            int previousMultiplier = int.MinValue;
+            int previousRequired = int.MinValue;
+
+            for (int i = 0; i < tiers.Count; i++)
+            {
+                PinballMultiplierTier tier = tiers[i];
+                if (tier == null)
+                    continue;
+
+                if (!seen.Add(tier.multiplier))
+                    problems.Append("배율 x").Append(tier.multiplier).Append(" 가 중복이다. ");
+
+                if (tier.multiplier < 1)
+                    problems.Append("배율이 1 미만이다: x").Append(tier.multiplier).Append(". ");
+
+                if (tier.multiplier == 1)
+                {
+                    hasBase = true;
+
+                    // x1 을 잠그면 티켓을 처음 얻은 사람이 아무것도 못 한다.
+                    if (tier.requiredTickets > 0)
+                    {
+                        problems.Append("x1 의 조건이 0 이 아니다(")
+                                .Append(tier.requiredTickets).Append("). ");
+                    }
+                }
+
+                // 높은 배율이 더 싸면 낮은 배율을 고를 이유가 없어져 표가 무의미해진다.
+                if (tier.multiplier > previousMultiplier && tier.requiredTickets < previousRequired)
+                {
+                    problems.Append("x").Append(tier.multiplier)
+                            .Append(" 의 조건이 앞 단계보다 낮다. ");
+                }
+
+                previousMultiplier = tier.multiplier;
+                previousRequired = tier.requiredTickets;
+            }
+
+            if (!hasBase)
+                problems.Append("x1 이 없다. 조건 없이 쓸 수 있는 배율이 하나는 있어야 한다. ");
+
+            error = problems.ToString();
+            return error.Length == 0;
         }
 
         /// <summary>

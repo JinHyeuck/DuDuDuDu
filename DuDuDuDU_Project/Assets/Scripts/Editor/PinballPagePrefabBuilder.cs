@@ -27,21 +27,46 @@ namespace OJ.EditorTools
         private const string BoardPrefabPath = "Assets/Pinball/PinballBoard_View.prefab";
         private const string SeedTablePath = "Assets/Pinball/SeedTable.asset";
 
-        /// <summary>발사 버튼의 발수. 자리가 셋이라 셋까지다 — 늘리려면 columns 도 같이 늘릴 것.</summary>
-        private static readonly int[] BallCounts = { 1, 10, 30 };
+        /// <summary>
+        /// 배율 버튼. <c>PinballRewardDatabase.PopulateDefaults</c> 의 기본 표와 같은 순서다 —
+        /// 에셋에서 표를 바꿨다면 프리팹을 다시 구울 것.
+        /// </summary>
+        private static readonly int[] Multipliers = { 1, 2, 3, 5, 10, 20, 50, 100 };
+
+        /// <summary>배율 버튼 격자. 4열 2행.</summary>
+        private static readonly float[] MultiplierColumns = { -390f, -130f, 130f, 390f };
+        private static readonly float[] MultiplierRows = { -520f, -645f };
 
         // 자리 값은 1080x1920 기준이다. 중심이 (0,0) 이고 위가 +다.
+        // 탑 UI 와 같은 팔레트. UITowerUIFactory 의 값은 internal 이라 에디터 어셈블리에서
+        // 볼 수 없어 여기 옮겨 적었다.
         private static readonly Color Backdrop = new Color(0.07f, 0.08f, 0.15f, 1f);
         private static readonly Color Accent = new Color(0.36f, 0.42f, 0.92f, 1f);
+        private static readonly Color AccentSoft = new Color(0.24f, 0.28f, 0.55f, 1f);
         private static readonly Color GoldText = new Color(1f, 0.84f, 0.38f, 1f);
 
         [MenuItem("OJ/개발/핀볼/페이지 프리팹 굽기")]
-        private static void Build()
+        private static void BuildIfMissing() => Build(overwrite: false);
+
+        /// <summary>
+        /// 손본 것을 버리고 새로 굽는다. <b>같은 경로에 저장하므로 GUID 가 유지되고</b>,
+        /// 그래서 다이얼로그 카탈로그를 다시 훑지 않아도 된다.
+        ///
+        /// 화면 구조(버튼 구성)를 바꿨을 때 쓴다. 위의 "굽기"는 이미 있으면 아무 일도
+        /// 하지 않는데, 그게 <b>조용히 지나가서</b> 바뀐 줄 알고 플레이하는 사고가 한 번 났다.
+        /// </summary>
+        [MenuItem("OJ/개발/핀볼/페이지 프리팹 다시 굽기 (덮어씀)")]
+        private static void Rebuild() => Build(overwrite: true);
+
+        private static void Build(bool overwrite)
         {
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null)
+            bool exists = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
+            if (exists && !overwrite)
             {
-                Debug.Log("[핀볼] 페이지 프리팹이 이미 있다. 그대로 둔다 — " +
-                          "다시 굽고 싶으면 먼저 지울 것: " + PrefabPath);
+                Debug.LogWarning(
+                    "[핀볼] 페이지 프리팹이 이미 있어 <b>아무것도 하지 않았다</b>: " + PrefabPath +
+                    "\n  화면 구조가 바뀌어 다시 구워야 한다면 " +
+                    "OJ/개발/핀볼/페이지 프리팹 다시 굽기 (덮어씀) 을 쓸 것.");
                 return;
             }
 
@@ -89,9 +114,14 @@ namespace OJ.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
+            var baked = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            string next = exists
+                // 덮어쓰기는 GUID 를 유지하므로 카탈로그가 이미 이 프리팹을 가리키고 있다.
+                ? "  덮어썼다. GUID 가 그대로라 카탈로그는 다시 안 훑어도 된다."
+                : "  다음: OJ/개발/다이얼로그 카탈로그/훑어서 갱신 을 돌려야 화면이 열린다.";
+
             Debug.Log("[핀볼] 페이지 프리팹을 구웠다: " + PrefabPath + "\n" +
-                      "  다음: OJ/개발/다이얼로그 카탈로그/훑어서 갱신 을 돌려야 화면이 열린다.",
-                      AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
+                      "  배율 버튼 " + Multipliers.Length + "개 + 발사 버튼 1개\n" + next, baked);
         }
 
         private static GameObject Assemble(GameObject boardPrefab, SeedTable seedTable, TMP_FontAsset font)
@@ -121,7 +151,8 @@ namespace OJ.EditorTools
             boardRect.anchorMin = new Vector2(0.5f, 0.5f);
             boardRect.anchorMax = new Vector2(0.5f, 0.5f);
             boardRect.pivot = new Vector2(0.5f, 0.5f);
-            boardRect.anchoredPosition = new Vector2(0f, 120f);
+            // 판이 1000px 이라 중심을 180 에 두면 아래 끝이 -320 이다. 그 밑이 조작 영역.
+            boardRect.anchoredPosition = new Vector2(0f, 180f);
 
             var boardView = board.GetComponent<PinballBoardView>();
             if (boardView == null)
@@ -140,37 +171,75 @@ namespace OJ.EditorTools
             SetRect(gauge.rectTransform, new Vector2(900f, 60f), new Vector2(0f, 740f));
 
             TMP_Text ticket = NewText("TicketText", view.transform, "0", 36f, Color.white, font);
-            SetRect(ticket.rectTransform, new Vector2(300f, 50f), new Vector2(0f, -540f));
+            SetRect(ticket.rectTransform, new Vector2(400f, 50f), new Vector2(-230f, -380f));
 
-            // 1발·10발·30발. 티켓이 모자란 버튼은 페이지가 잠근다.
-            var options = new List<(int count, Button button, TMP_Text cost)>();
-            float[] columns = { -340f, 0f, 340f };
-            for (int i = 0; i < BallCounts.Length; i++)
+            TMP_Text cost = NewText("CostText", view.transform, "1", 36f, GoldText, font);
+            SetRect(cost.rectTransform, new Vector2(400f, 50f), new Vector2(230f, -380f));
+
+            TMP_Text session = NewText("SessionText", view.transform, "", 28f, Color.white, font);
+            SetRect(session.rectTransform, new Vector2(400f, 44f), new Vector2(0f, -432f));
+
+            // 배율 버튼. 잠긴 것과 선택된 것은 페이지가 런타임에 구분해 준다.
+            var options = new List<MultiplierWiring>();
+            for (int i = 0; i < Multipliers.Length; i++)
             {
-                int count = BallCounts[i];
-                Button button = NewButton("LaunchButton_" + count, view.transform,
-                    count + "발", Accent, font, out TMP_Text caption);
-                SetRect(button.GetComponent<RectTransform>(),
-                    new Vector2(300f, 130f), new Vector2(columns[i], -680f));
-
-                SetRect(caption.rectTransform, new Vector2(280f, 50f), new Vector2(0f, 24f));
-
-                TMP_Text cost = NewText("Cost", button.transform, count.ToString(), 26f, GoldText, font);
-                SetRect(cost.rectTransform, new Vector2(280f, 40f), new Vector2(0f, -30f));
-
-                options.Add((count, button, cost));
+                options.Add(BuildMultiplierButton(view.transform, font, Multipliers[i], i));
             }
 
+            Button launch = NewButton("LaunchButton", view.transform, "발사", Accent, font, out _);
+            SetRect(launch.GetComponent<RectTransform>(), new Vector2(420f, 130f), new Vector2(0f, -790f));
+
             // DialogBase 의 exitBtn 에 넣지 않는다 — 그건 무조건 닫아 버려서
-            // "공이 굴러가는 중에는 못 나간다"를 페이지가 판정할 수 없다.
+            // "세션 중에는 못 나간다"를 페이지가 판정할 수 없다.
             Button close = NewButton("CloseButton", view.transform, "X", Accent, font, out _);
             SetRect(close.GetComponent<RectTransform>(), new Vector2(90f, 90f), new Vector2(460f, 840f));
 
             var page = root.AddComponent<UIPinballPage>();
             page.dialogView = view.gameObject;
-            WirePage(page, playback, boardView, close, ticket, gauge, options);
+            WirePage(page, playback, boardView, launch, close, ticket, cost, session, gauge, options);
 
             return root;
+        }
+
+        /// <summary>배율 버튼 하나에 필요한 참조 묶음.</summary>
+        private struct MultiplierWiring
+        {
+            public int multiplier;
+            public Button button;
+            public TMP_Text label;
+            public TMP_Text requirement;
+            public GameObject selectedMark;
+        }
+
+        private static MultiplierWiring BuildMultiplierButton(
+            Transform parent, TMP_FontAsset font, int multiplier, int index)
+        {
+            float x = MultiplierColumns[index % MultiplierColumns.Length];
+            float y = MultiplierRows[index / MultiplierColumns.Length];
+
+            Button button = NewButton("Multiplier_x" + multiplier, parent,
+                "x" + multiplier, AccentSoft, font, out TMP_Text label);
+            SetRect(button.GetComponent<RectTransform>(), new Vector2(240f, 110f), new Vector2(x, y));
+            SetRect(label.rectTransform, new Vector2(220f, 50f), new Vector2(0f, 18f));
+
+            TMP_Text requirement = NewText("Requirement", button.transform, "", 22f, GoldText, font);
+            SetRect(requirement.rectTransform, new Vector2(220f, 36f), new Vector2(0f, -28f));
+
+            // 선택 표시는 테두리 한 줄이면 충분하다. 꺼 둔 채로 굽고 페이지가 켠다.
+            Image mark = NewImage("Selected", button.transform, Accent);
+            SetRect(mark.rectTransform, new Vector2(252f, 122f), Vector2.zero);
+            mark.raycastTarget = false;
+            mark.transform.SetAsFirstSibling();
+            mark.gameObject.SetActive(false);
+
+            return new MultiplierWiring
+            {
+                multiplier = multiplier,
+                button = button,
+                label = label,
+                requirement = requirement,
+                selectedMark = mark.gameObject,
+            };
         }
 
         /// <summary>
@@ -187,20 +256,24 @@ namespace OJ.EditorTools
 
         private static void WirePage(
             UIPinballPage page, PinballPlayback playback, PinballBoardView boardView,
-            Button close, TMP_Text ticket, TMP_Text gauge,
-            List<(int count, Button button, TMP_Text cost)> options)
+            Button launch, Button close, TMP_Text ticket, TMP_Text cost,
+            TMP_Text session, TMP_Text gauge, List<MultiplierWiring> options)
         {
             var so = new SerializedObject(page);
             SetRef(so, "playback", playback);
             SetRef(so, "boardView", boardView);
+            SetRef(so, "launchButton", launch);
             SetRef(so, "closeButton", close);
             SetRef(so, "ticketText", ticket);
+            SetRef(so, "costText", cost);
+            SetRef(so, "sessionText", session);
             SetRef(so, "gaugeText", gauge);
 
-            SerializedProperty list = so.FindProperty("launchOptions");
+            SerializedProperty list = so.FindProperty("multiplierOptions");
             if (list == null)
             {
-                Debug.LogError("[핀볼] UIPinballPage.launchOptions 를 못 찾았다. 이름이 바뀌었는지 확인할 것.");
+                Debug.LogError(
+                    "[핀볼] UIPinballPage.multiplierOptions 를 못 찾았다. 이름이 바뀌었는지 확인할 것.");
             }
             else
             {
@@ -208,9 +281,11 @@ namespace OJ.EditorTools
                 for (int i = 0; i < options.Count; i++)
                 {
                     SerializedProperty entry = list.GetArrayElementAtIndex(i);
-                    entry.FindPropertyRelative("ballCount").intValue = options[i].count;
+                    entry.FindPropertyRelative("multiplier").intValue = options[i].multiplier;
                     entry.FindPropertyRelative("button").objectReferenceValue = options[i].button;
-                    entry.FindPropertyRelative("costLabel").objectReferenceValue = options[i].cost;
+                    entry.FindPropertyRelative("label").objectReferenceValue = options[i].label;
+                    entry.FindPropertyRelative("requirementLabel").objectReferenceValue = options[i].requirement;
+                    entry.FindPropertyRelative("selectedMark").objectReferenceValue = options[i].selectedMark;
                 }
             }
 

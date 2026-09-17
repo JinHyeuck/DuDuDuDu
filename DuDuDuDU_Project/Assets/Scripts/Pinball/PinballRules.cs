@@ -75,27 +75,58 @@ namespace OJ.Pinball
         }
 
         /// <summary>
-        /// 특수 핀 게이지를 1 올린다. 임계치에 닿으면 보상이 나가고 게이지는 0으로 돌아간다.
+        /// 특수 핀 게이지를 <paramref name="step"/> 만큼 올린다. 임계치를 넘은 만큼 보상이
+        /// 나가고, 넘고 남은 나머지가 게이지에 남는다.
         ///
-        /// <paramref name="requiredHits"/> 가 0 이하면 <b>게이지를 올리지도, 보상을 주지도 않는다.</b>
-        /// 임계치가 0 이면 "매번 지급"이 되어 보상 설정을 빠뜨린 태그가 무한 지급으로 새는데,
-        /// 그건 설정 실수를 사고로 키우는 쪽이다.
+        /// <b>왜 한 번에 여러 번 지급될 수 있나.</b> 배율이 걸리면 한 번 맞는 것이
+        /// <paramref name="step"/> 회분으로 계산된다. x100 에서 임계치가 10 이면 한 번
+        /// 맞는 것으로 10회를 달성한다 — 그것을 1회로 깎으면 배율을 올릴수록 특수 핀이
+        /// 손해가 되어, 배율이 <b>불이익</b>이 된다.
+        ///
+        /// <paramref name="requiredHits"/> 나 <paramref name="step"/> 이 0 이하면
+        /// <b>게이지를 올리지도, 보상을 주지도 않는다.</b> 임계치가 0 이면 "매번 지급"이 되어
+        /// 보상 설정을 빠뜨린 태그가 무한 지급으로 새는데, 그건 설정 실수를 사고로 키우는 쪽이다.
         /// </summary>
-        /// <returns>반영 후의 게이지 값.</returns>
-        public static int AdvanceGauge(int current, int requiredHits, out bool granted)
+        /// <param name="grantCount">이번에 보상을 몇 번 지급해야 하는가. 0 이면 안 준다.</param>
+        /// <returns>반영 후의 게이지 값. 항상 0 이상 <paramref name="requiredHits"/> 미만.</returns>
+        public static int AdvanceGauge(int current, int requiredHits, int step, out int grantCount)
         {
-            granted = false;
+            grantCount = 0;
 
             int safe = current < 0 ? 0 : current;
-            if (requiredHits <= 0)
+            if (requiredHits <= 0 || step <= 0)
                 return safe;
 
-            int next = safe + 1;
-            if (next < requiredHits)
-                return next;
+            // long 으로 올린다. 배율 100 에 게이지가 이미 높으면 int 를 넘을 수 있다.
+            long total = (long)safe + step;
 
-            granted = true;
-            return 0;
+            long times = total / requiredHits;
+            grantCount = times > int.MaxValue ? int.MaxValue : (int)times;
+
+            return (int)(total % requiredHits);
+        }
+
+        /// <summary>
+        /// 배율을 곱한 수량. <b>넘치면 int 최대값에서 멈춘다</b> —
+        /// 넘겨서 음수가 되면 <c>PointManager.Add</c> 가 조용히 무시해 지급이 통째로 사라진다.
+        /// </summary>
+        public static int ScaleAmount(int amount, int multiplier)
+        {
+            if (amount <= 0 || multiplier <= 0)
+                return 0;
+
+            long scaled = (long)amount * multiplier;
+            return scaled > int.MaxValue ? int.MaxValue : (int)scaled;
+        }
+
+        /// <summary>
+        /// 그 배율을 쓸 수 있는가. <b>보유량이 기준이지 소모량이 아니다</b> —
+        /// 배율은 클릭 수를 줄이는 장치라, 충분히 쌓아 둔 사람에게만 열어 시행 횟수가
+        /// 한꺼번에 녹아 없어지지 않게 한다.
+        /// </summary>
+        public static bool IsMultiplierUnlocked(int ticketCount, int requiredTickets)
+        {
+            return ticketCount >= requiredTickets;
         }
     }
 }

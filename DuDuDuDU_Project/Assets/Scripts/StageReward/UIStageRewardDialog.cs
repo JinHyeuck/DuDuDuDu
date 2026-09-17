@@ -70,6 +70,9 @@ namespace OJ.StageReward
 
             selectedIndex = StageRewardManager.Instance != null ? StageRewardManager.Instance.GetFocusIndex() : -1;
             Refresh();
+
+            // Refresh 가 보상 칸과 마일스톤을 다 채운 뒤여야 한다.
+            UIAppear.PlayChildren(rewardRoot);
         }
 
         protected override void OnExit()
@@ -229,6 +232,9 @@ namespace OJ.StageReward
 
             claimButton.gameObject.SetActive(visible);
             claimButton.interactable = visible;
+
+            // 받을 수 있을 때만 맥동한다. 이 버튼은 꺼졌다 켜졌다 하므로 켜질 때마다 다시 건다.
+            UIIdlePulse.Apply(claimButton, visible);
         }
 
         /// <summary>

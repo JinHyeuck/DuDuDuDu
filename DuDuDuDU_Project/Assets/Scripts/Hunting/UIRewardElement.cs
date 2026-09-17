@@ -1,6 +1,8 @@
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.UI;
 
 namespace OJ.Hunting
 {
@@ -30,6 +32,29 @@ namespace OJ.Hunting
         /// <summary>이미 가진 다이스를 그릴 때의 색. 흑백에 가깝게 눌러 "이건 못 받았다" 를 말한다.</summary>
         private static readonly Color DimmedColor = new Color(0.42f, 0.42f, 0.46f, 1f);
 
+        // ── 등장 연출 ────────────────────────────────────────────────
+
+        /// <summary>튀어나오기 시작하는 배율.</summary>
+        private const float AppearStartScale = 0.4f;
+
+        private const float AppearDuration = 0.26f;
+
+        /// <summary>수량이 0 에서 목표까지 올라가는 시간(초).</summary>
+        private const float CountDuration = 0.34f;
+
+        /// <summary>
+        /// 이 수를 넘어야 카운트업을 한다. <b>x1 이 0 에서 1 로 올라가는 것은 우스꽝스럽다</b> —
+        /// 숫자가 도는 맛은 자릿수가 있을 때 난다.
+        /// </summary>
+        private const int MinCountUpAmount = 10;
+
+        private CanvasGroup appearGroup;
+        private int appearSequence;
+
+        /// <summary>카운트업이 끝나면 써야 할 최종 문구. 중간에 끊겨도 이 값으로 맞춘다.</summary>
+        private int pendingAmount;
+        private string pendingFormat;
+
         public void Construct(Image icon, TMP_Text amount)
         {
             iconImage = icon;
@@ -53,11 +78,117 @@ namespace OJ.Hunting
             {
                 amountText.gameObject.SetActive(true);
 
-                if (string.IsNullOrEmpty(amountFormat))
-                    amountText.SetText("{0:#,##0}", amount);
-                else
-                    amountText.SetText(amountFormat, amount);
+                pendingAmount = amount;
+                pendingFormat = string.IsNullOrEmpty(amountFormat) ? "{0:#,##0}" : amountFormat;
+                WriteAmount(amount);
             }
+        }
+
+        private void WriteAmount(int value)
+        {
+            if (amountText == null)
+                return;
+
+            amountText.SetText(string.IsNullOrEmpty(pendingFormat) ? "{0:#,##0}" : pendingFormat, value);
+        }
+
+        /// <summary>
+        /// 이 칸을 튀어나오게 한다. <paramref name="delay"/> 만큼 늦게 시작해서
+        /// 칸들이 <b>하나씩</b> 나타나게 한다.
+        ///
+        /// <b>Bind 안에서 하지 않는 이유.</b> 이 칸은 네 화면이 함께 쓰는데, 목록을 채우는
+        /// 시점과 창이 열리는 시점이 화면마다 다르다. 창이 스스로 "지금 보여 준다" 고
+        /// 말하게 두면 그 차이를 각 화면이 알아서 정한다.
+        /// </summary>
+        public void PlayAppear(float delay)
+        {
+            if (!gameObject.activeInHierarchy)
+                return;
+
+            AppearAsync(++appearSequence, delay).Forget();
+        }
+
+        /// <summary>
+        /// 연출을 건너뛰고 최종 상태로 못박는다. 창이 닫히거나 목록이 다시 채워질 때 쓴다.
+        /// </summary>
+        public void SkipAppear()
+        {
+            appearSequence++;
+
+            transform.localScale = Vector3.one;
+
+            if (appearGroup != null)
+                appearGroup.alpha = 1f;
+
+            WriteAmount(pendingAmount);
+        }
+
+        private async UniTaskVoid AppearAsync(int mine, float delay)
+        {
+            CanvasGroup group = EnsureAppearGroup();
+
+            // 시작 상태를 이 프레임에 세운다. 한 프레임이라도 또렷하게 보이면
+            // 칸이 깜빡였다가 다시 나타나는 것처럼 보인다.
+            transform.localScale = Vector3.one * AppearStartScale;
+            if (group != null)
+                group.alpha = 0f;
+
+            bool counts = pendingAmount >= MinCountUpAmount;
+            if (counts)
+                WriteAmount(0);
+
+            float waited = 0f;
+            while (waited < delay)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                if (this == null || mine != appearSequence)
+                    return;
+
+                waited += Time.unscaledDeltaTime;
+            }
+
+            float total = counts ? Mathf.Max(AppearDuration, CountDuration) : AppearDuration;
+            float elapsed = 0f;
+
+            while (elapsed < total)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                if (this == null || mine != appearSequence)
+                    return;
+
+                elapsed += Time.unscaledDeltaTime;
+
+                float pop = Mathf.Clamp01(elapsed / AppearDuration);
+                transform.localScale =
+                    Vector3.one * Mathf.LerpUnclamped(AppearStartScale, 1f, UIEase.OutBack(pop));
+
+                if (group != null)
+                    group.alpha = UIEase.OutQuad(pop);
+
+                if (counts)
+                {
+                    float c = Mathf.Clamp01(elapsed / CountDuration);
+                    // 끝을 향해 느려진다. 마지막 자리가 천천히 맞춰져야 결과가 읽힌다.
+                    WriteAmount(Mathf.RoundToInt(pendingAmount * UIEase.OutCubic(c)));
+                }
+            }
+
+            if (this == null || mine != appearSequence)
+                return;
+
+            SkipAppear();
+        }
+
+        private CanvasGroup EnsureAppearGroup()
+        {
+            if (appearGroup != null)
+                return appearGroup;
+
+            appearGroup = GetComponent<CanvasGroup>();
+            if (appearGroup == null)
+                appearGroup = gameObject.AddComponent<CanvasGroup>();
+
+            return appearGroup;
         }
 
         /// <summary>
@@ -73,6 +204,11 @@ namespace OJ.Hunting
 
             if (amountText != null)
                 amountText.gameObject.SetActive(false);
+
+            // 숫자가 없으니 카운트업도 없다. 남아 있던 앞 번 값이 새 다이스 칸에 찍히지
+            // 않도록 여기서 지운다.
+            pendingAmount = 0;
+            pendingFormat = null;
         }
 
         /// <summary>
@@ -98,7 +234,10 @@ namespace OJ.Hunting
             if (amountText != null)
             {
                 amountText.gameObject.SetActive(true);
-                amountText.SetText("x{0:#,##0}", refundAmount);
+
+                pendingAmount = refundAmount;
+                pendingFormat = "x{0:#,##0}";
+                WriteAmount(refundAmount);
             }
         }
 

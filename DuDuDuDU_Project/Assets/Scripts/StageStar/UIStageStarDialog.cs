@@ -74,6 +74,9 @@ namespace OJ.StageStar
                 StageStarManager.Instance.OnChanged += Refresh;
 
             Refresh();
+
+            // Refresh 가 목록을 다 채운 뒤여야 한다. 먼저 부르면 아직 없는 칸을 훑는다.
+            UIAppear.PlayChildren(stageRoot);
         }
 
         protected override void OnExit()
@@ -136,8 +139,13 @@ namespace OJ.StageStar
                     totalStarText.SetText(totalStarFormat, totalStars);
             }
 
+            bool claimable = manager != null && manager.HasClaimableReward();
+
             if (rewardRedDot != null)
-                rewardRedDot.SetActive(manager != null && manager.HasClaimableReward());
+                rewardRedDot.SetActive(claimable);
+
+            // 받을 것이 있을 때만 버튼이 맥동한다. 늘 움직이면 안내가 아니라 소음이 된다.
+            UIIdlePulse.Apply(rewardButton, claimable);
         }
 
         private void StartStage(int stageIndex)

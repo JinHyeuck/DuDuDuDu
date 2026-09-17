@@ -68,6 +68,57 @@ namespace OJ.Dice
             // 자물쇠가 그대로 남아 "샀는데 아무 일도 없었다"로 보인다.
             if (DiceOwnershipManager.Instance != null)
                 DiceOwnershipManager.Instance.OnOwnershipChanged += OnOwnershipChanged;
+
+            PlayListAppear();
+        }
+
+        /// <summary>
+        /// 칸과 보조선을 위에서 아래로 들여보낸다.
+        ///
+        /// <b><c>PlayChildren</c> 을 쓰지 않는 이유.</b> 그쪽은 한 부모의 자식을 순서대로
+        /// 세는데, 선은 칸과 <b>다른 부모</b>(<c>RowLines</c>) 아래에 있어 각자 0 부터 세게 된다.
+        /// 그러면 선이 칸보다 먼저 다 들어와 버린다. 여기서 같은 간격으로 직접 계산해
+        /// <b>선을 그 행 첫 칸과 같은 때</b>에 맞춘다.
+        ///
+        /// 선에는 배율을 주지 않는다 — 줄었다 늘어나면 칸과 칸 사이가 어긋나 보이고,
+        /// 장식이 본체보다 눈에 띈다.
+        /// </summary>
+        private void PlayListAppear()
+        {
+            if (items.Count == 0)
+                return;
+
+            float gap = UIAppear.StepFor(items.Count);
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] != null)
+                    UIAppear.Play(items[i], gap * i);
+            }
+
+            if (rowLineRoot == null || !rowLineRoot.gameObject.activeSelf)
+                return;
+
+            int columns = ResolveColumns();
+            for (int row = 0; row < rowLines.Count; row++)
+            {
+                Image line = rowLines[row];
+                if (line == null || !line.gameObject.activeSelf)
+                    continue;
+
+                // 그 행의 첫 칸과 같은 박자.
+                UIAppear.Play(line, gap * (row * columns), useScale: false);
+            }
+        }
+
+        /// <summary>그리드가 한 줄에 몇 칸을 놓는가. 줄 수와 줄 위치 계산이 이 값을 공유한다.</summary>
+        private int ResolveColumns()
+        {
+            GridLayoutGroup grid = listRoot != null ? listRoot.GetComponent<GridLayoutGroup>() : null;
+
+            return grid != null && grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount
+                ? Mathf.Max(1, grid.constraintCount)
+                : 3;
         }
 
         protected override void OnExit()
@@ -129,9 +180,7 @@ namespace OJ.Dice
             }
 
             GridLayoutGroup grid = content.GetComponent<GridLayoutGroup>();
-            int columns = grid != null && grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount
-                ? Mathf.Max(1, grid.constraintCount)
-                : 3;
+            int columns = ResolveColumns();
 
             // 그리드는 다음 레이아웃 패스에서야 칸을 앉힌다. 지금 좌표를 읽으려면 한 번 강제로 돌린다.
             LayoutRebuilder.ForceRebuildLayoutImmediate(content);
