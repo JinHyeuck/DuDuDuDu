@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using VContainer;
 using VContainer.Unity;
+using OJ.Battle;
 using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
@@ -150,8 +151,15 @@ namespace OJ.DI
             // 웨이브가 시작된 뒤다.
             var rewind = new WaveRewindManager(context);
 
+            // 전투 재화 창구. 값은 이 판의 RunState 가 들고 있어서, 창구를 만들려면
+            // GameManager 를 먼저 꺼내야 한다 — 아래 Bind 인자에서 한 번 더 Resolve 하지 않고
+            // 이 지역변수를 넘기는 것이 그래서다(Resolve 를 두 번 해도 같은 것이 오지만,
+            // <b>둘이 같다는 보장이 등록 방식에 달려 있다</b>. 여기서는 그 보장에 기대지 않는다).
+            var game = resolver.Resolve<GameManager>();
+            var battlePoints = new BattlePointManager(game.Run);
+
             context.Bind(
-                resolver.Resolve<GameManager>(),
+                game,
                 resolver.Resolve<PlayerController>(),
                 resolver.Resolve<MonsterManager>(),
                 resolver.Resolve<MonsterSpawner>(),
@@ -166,6 +174,7 @@ namespace OJ.DI
                 resolver.Resolve<BulletEffectPool>(),
                 resolver.Resolve<DamageTextPool>(),
                 bounty,
+                battlePoints,
                 tower,
                 contribution,
                 rewind);

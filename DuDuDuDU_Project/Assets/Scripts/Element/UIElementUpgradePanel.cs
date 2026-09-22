@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Point;
 using OJ.UI;
@@ -63,8 +64,8 @@ namespace OJ.Element
             // Instantiate 가 끝난 뒤라 이미 채워져 있다.
             BuildIfNeeded();
 
-            if (PointManager.Instance != null)
-                PointManager.Instance.OnPointChanged += OnPointChanged;
+            if (battle.BattlePoints != null)
+                battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
 
             if (battle.ElementUpgrade != null)
                 battle.ElementUpgrade.OnElementLevelChanged += OnElementLevelChanged;
@@ -74,8 +75,8 @@ namespace OJ.Element
 
         protected override void OnExit()
         {
-            if (PointManager.Instance != null)
-                PointManager.Instance.OnPointChanged -= OnPointChanged;
+            if (battle.BattlePoints != null)
+                battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
 
             // 여기의 null 검사는 남긴다. OnExit 는 OnDestroy 를 타고도 들어오는데, 씬이
             // 내려가는 중이면 매니저가 먼저 파괴돼 창구 뒤가 가짜 null 이다. 그때 이벤트를
@@ -115,14 +116,15 @@ namespace OJ.Element
 
         private void RefreshHeader()
         {
-            if (coinAmountText != null)
-                coinAmountText.SetText("{0}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.BattleEnhanceStone) : 0);
+            int owned = battle.BattlePoints != null
+                ? battle.BattlePoints.Get(BattlePointType.EnhanceStone)
+                : 0;
 
-            if (coinIconImage != null && StaticResource.Instance != null && StaticResource.Instance.PointMetadataDatabase != null)
-            {
-                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.BattleEnhanceStone);
-                coinIconImage.sprite = metadata != null ? metadata.icon : null;
-            }
+            if (coinAmountText != null)
+                coinAmountText.SetText("{0}", owned);
+
+            if (coinIconImage != null)
+                coinIconImage.sprite = BattlePointUtility.GetIcon(BattlePointType.EnhanceStone);
         }
 
         private void OnClickUpgrade(ElementType elementType)
@@ -134,10 +136,9 @@ namespace OJ.Element
                 Refresh();
         }
 
-        private void OnPointChanged(PointType pointType, int value)
+        private void OnBattlePointChanged(BattlePointType battlePointType, int value)
         {
-            if (pointType == PointType.BattleEnhanceStone)
-                Refresh();
+            Refresh();
         }
 
         private void OnElementLevelChanged(ElementType elementType, int level)

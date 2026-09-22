@@ -157,8 +157,15 @@ namespace OJ.Pinball
             gold.rewards.Add(new PinballReward(PointType.FreeGem, 10));
             specialRewards.Add(gold);
 
+            // <b>전투 재화를 주면 안 된다.</b> 핀볼은 로비 컨텐츠라, 판이 시작될 때 0 으로
+            // 밀리는 재화(SP·강화석)를 여기서 주면 받자마자 사라진다 — 탑이 먼저 같은
+            // 함정에 빠졌고 같은 이유로 신화석으로 갈아탔다(TowerRunManager.BuildClearRewards).
+            //
+            // 레어석인 이유: requiredHits 15 는 기본 판에서 가장 어려운 조건이라
+            // 황금핀(무료젬 10)보다 윗급이어야 하고, 핀볼이 주는 것 중에
+            // <b>다이스 성장</b> 축이 비어 있었다.
             var bomb = new PinballSpecialReward { tag = 2, label = "폭탄핀", requiredHits = 15 };
-            bomb.rewards.Add(new PinballReward(PointType.BattleEnhanceStone, 5));
+            bomb.rewards.Add(new PinballReward(PointType.RareStone, 1));
             specialRewards.Add(bomb);
         }
 

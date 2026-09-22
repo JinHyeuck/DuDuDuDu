@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using OJ.Battle;
 using OJ.Core;
 
 namespace OJ.Bounty
@@ -94,7 +95,7 @@ namespace OJ.Bounty
                     displayName = "좀도둑",
                     referenceWaveRatio = 0.10f,
                     hpMultiplier = 5f,
-                    rewardKind = BountyRewardKind.SummonPoint,
+                    rewardKind = BattlePointType.SummonPoint,
                     rewardAmount = 60,
                     moveSpeedMultiplier = 0.3f,
                     scaleMultiplier = 1.15f,
@@ -106,7 +107,7 @@ namespace OJ.Bounty
                     displayName = "악덕상인",
                     referenceWaveRatio = 0.30f,
                     hpMultiplier = 6f,
-                    rewardKind = BountyRewardKind.EnhanceStone,
+                    rewardKind = BattlePointType.EnhanceStone,
                     rewardAmount = 8,
                     moveSpeedMultiplier = 0.3f,
                     scaleMultiplier = 1.25f,
@@ -118,7 +119,7 @@ namespace OJ.Bounty
                     displayName = "해적왕",
                     referenceWaveRatio = 0.50f,
                     hpMultiplier = 8f,
-                    rewardKind = BountyRewardKind.SummonPoint,
+                    rewardKind = BattlePointType.SummonPoint,
                     rewardAmount = 150,
                     moveSpeedMultiplier = 0.3f,
                     scaleMultiplier = 1.35f,
@@ -130,7 +131,7 @@ namespace OJ.Bounty
                     displayName = "기사단장",
                     referenceWaveRatio = 0.75f,
                     hpMultiplier = 10f,
-                    rewardKind = BountyRewardKind.EnhanceStone,
+                    rewardKind = BattlePointType.EnhanceStone,
                     rewardAmount = 20,
                     moveSpeedMultiplier = 0.3f,
                     scaleMultiplier = 1.45f,
@@ -142,7 +143,7 @@ namespace OJ.Bounty
                     displayName = "대마법사",
                     referenceWaveRatio = 1.00f,
                     hpMultiplier = 14f,
-                    rewardKind = BountyRewardKind.EnhanceStone,
+                    rewardKind = BattlePointType.EnhanceStone,
                     rewardAmount = 40,
                     moveSpeedMultiplier = 0.3f,
                     scaleMultiplier = 1.6f,

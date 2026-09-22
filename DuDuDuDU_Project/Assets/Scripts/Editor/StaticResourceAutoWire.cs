@@ -1,6 +1,7 @@
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using OJ.Battle;
 using OJ.Bounty;
 using OJ.Dice;
 using OJ.Pinball;
@@ -66,6 +67,8 @@ namespace OJ.EditorTools
             changed |= TryFill<DiceUnlockDatabase>(resource, "DiceUnlockDatabase", quiet);
             changed |= TryFill<ShopDatabase>(resource, "ShopDatabase", quiet);
             changed |= TryFill<PinballRewardDatabase>(resource, "PinballRewardDatabase", quiet);
+            changed |= TryFill<BonusDiceDatabase>(resource, "BonusDiceDatabase", quiet);
+            changed |= TryFill<BattlePointMetadataDatabase>(resource, "BattlePointMetadataDatabase", quiet);
 
             if (!changed)
             {

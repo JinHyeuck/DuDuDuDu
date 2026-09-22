@@ -8,6 +8,7 @@ using VContainer;
 using OJ.Core;
 using OJ.Analytics;
 using OJ.Bounty;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Element;
@@ -964,7 +965,7 @@ namespace OJ.Hunting
                 return;
             }
 
-            PointManager.Instance?.Add(PointType.BattleEnhanceStone, 1);
+            battle.BattlePoints?.Add(BattlePointType.EnhanceStone, 1);
             RelicManager.Instance?.ApplyWaveClearRelics(wall);
 
             // 현상금 보상은 웨이브가 끝나는 이 자리에서만 들어온다. 잡은 순간 주면

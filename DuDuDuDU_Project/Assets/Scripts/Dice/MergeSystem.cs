@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using VContainer;
 using OJ.Analytics;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Hunting;
 using OJ.Point;
@@ -150,7 +151,7 @@ namespace OJ.Dice
                 return false;
 
             int cost = DiceEvolution.GetEvolveCost(dice.Type);
-            if (PointManager.Instance == null || !PointManager.Instance.TrySpend(PointType.BattleEnhanceStone, cost))
+            if (battle.BattlePoints == null || !battle.BattlePoints.TrySpend(BattlePointType.EnhanceStone, cost))
                 return false;
 
             // 상위 단계는 성급 개념이 없다(showStarUI = false). 옛 조합도 결과를 항상
@@ -190,7 +191,7 @@ namespace OJ.Dice
                 return false;
 
             int cost = DiceEvolution.GetExchangeCost(dice.Type);
-            if (PointManager.Instance == null || !PointManager.Instance.TrySpend(PointType.BattleEnhanceStone, cost))
+            if (battle.BattlePoints == null || !battle.BattlePoints.TrySpend(BattlePointType.EnhanceStone, cost))
                 return false;
 
             DiceType target = exchangeBuffer[Random.Range(0, exchangeBuffer.Count)];

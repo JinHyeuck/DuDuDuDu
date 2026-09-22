@@ -26,20 +26,18 @@ namespace OJ.Rewind
             public int Star;
         }
 
-        /// <summary>벽 HP · 웨이브 번호 · 현상금 진행까지 전부 여기 있다.</summary>
+        /// <summary>
+        /// 벽 HP · 웨이브 번호 · 현상금 진행 · <b>SP · 소환 비용 · 강화석</b>까지 전부 여기 있다.
+        ///
+        /// 뒤의 셋은 따로 있었다 — SP 묶음은 <c>UIDiceSummonSystem</c> 의 손으로 쓴 구조체가,
+        /// 강화석은 아래에 있던 <c>int</c> 하나가 들었다. 둘 다 <c>RunState</c> 로 들어가면서
+        /// <b>필드 누락이 테스트에 잡히게 됐다</b>(<c>RunStateSnapshotTests</c> 가 리플렉션으로
+        /// 전 필드를 훑는다). 손으로 쓴 구조체는 늘어난 필드를 모른다.
+        /// </summary>
         public RunState.WaveSnapshot Run;
-
-        /// <summary>SP · 소환 비용 · 비용 상승 카운터.</summary>
-        public UIDiceSummonSystem.SummonSnapshot Summon;
 
         /// <summary>판에 한 번뿐인 유물 발동 표시. 안 되돌리면 유물을 태워 먹는다.</summary>
         public RelicManager.RunFlags RelicFlags;
-
-        /// <summary>
-        /// 강화석 잔량. <b>영구 저장소에 살지만 런 재화다</b> —
-        /// <c>ElementUpgradeManager.ResetRunState</c> 가 판 시작마다 0 으로 민다.
-        /// </summary>
-        public int EnhanceStone;
 
         /// <summary>속성 강화 레벨. 인덱스가 곧 <c>(int)ElementType</c> 다.</summary>
         public int[] ElementLevels;

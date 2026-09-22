@@ -25,7 +25,11 @@ namespace OJ.EditorTools
         private const string PrefabPath = PrefabFolder + "/UIPinballPage.prefab";
 
         private const string BoardPrefabPath = "Assets/Pinball/PinballBoard_View.prefab";
-        private const string SeedTablePath = "Assets/Pinball/SeedTable.asset";
+        private const string SeedTablePath = "Assets/Pinball/PinballSeedTable.asset";
+
+        private const string BonusBoardPrefabPath = "Assets/Pinball/BonusBoard_View.prefab";
+        private const string BonusSeedTablePath = "Assets/Pinball/BonusSeedTable.asset";
+        private const string BonusBoardAssetPath = "Assets/Pinball/BonusBoard.asset";
 
         /// <summary>
         /// 배율 버튼. <c>PinballRewardDatabase.PopulateDefaults</c> 의 기본 표와 같은 순서다 —
@@ -44,6 +48,12 @@ namespace OJ.EditorTools
         private static readonly Color Accent = new Color(0.36f, 0.42f, 0.92f, 1f);
         private static readonly Color AccentSoft = new Color(0.24f, 0.28f, 0.55f, 1f);
         private static readonly Color GoldText = new Color(1f, 0.84f, 0.38f, 1f);
+
+        /// <summary>「바로 전액 받기」는 돈을 낸 사람의 버튼이라 색을 달리한다.</summary>
+        private static readonly Color GoldButton = new Color(0.62f, 0.48f, 0.15f, 1f);
+
+        /// <summary>보상 라운드 주사위 수. BonusDiceDatabase 의 기본값과 같다.</summary>
+        private const int DiceCount = 5;
 
         [MenuItem("OJ/개발/핀볼/페이지 프리팹 굽기")]
         private static void BuildIfMissing() => Build(overwrite: false);
@@ -84,6 +94,23 @@ namespace OJ.EditorTools
                 return;
             }
 
+            // 보상 라운드 몫. <b>없으면 굽지 않는다</b> — 페이지가 이 배선을 전제로 돌고,
+            // 반만 구워 두면 "센터핀을 다 채웠는데 아무 일도 안 일어나는" 상태가 된다.
+            var bonusBoardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BonusBoardPrefabPath);
+            var bonusSeedTable = AssetDatabase.LoadAssetAtPath<SeedTable>(BonusSeedTablePath);
+            var bonusBoard = AssetDatabase.LoadAssetAtPath<PinballBoard>(BonusBoardAssetPath);
+
+            if (bonusBoardPrefab == null || bonusSeedTable == null || bonusBoard == null)
+            {
+                Debug.LogError(
+                    "[핀볼] 보상 라운드 에셋이 빠져 페이지를 굽지 않는다." + "\n" +
+                    "  판 프리팹: " + (bonusBoardPrefab != null ? "OK" : BonusBoardPrefabPath) + "\n" +
+                    "  시드 테이블: " + (bonusSeedTable != null ? "OK" : BonusSeedTablePath) + "\n" +
+                    "  판 에셋: " + (bonusBoard != null ? "OK" : BonusBoardAssetPath) + "\n" +
+                    "  Tools/Pinball/Sim Lab 에서 보상판을 만들고 Bake 탭에서 구울 것.");
+                return;
+            }
+
             TMP_FontAsset font = FindKoreanFont();
             if (font == null)
             {
@@ -93,7 +120,8 @@ namespace OJ.EditorTools
 
             System.IO.Directory.CreateDirectory(PrefabFolder);
 
-            GameObject root = Assemble(boardPrefab, seedTable, font);
+            GameObject root = Assemble(
+                boardPrefab, seedTable, font, bonusBoardPrefab, bonusSeedTable, bonusBoard);
             if (root == null)
                 return;
 
@@ -124,7 +152,9 @@ namespace OJ.EditorTools
                       "  배율 버튼 " + Multipliers.Length + "개 + 발사 버튼 1개\n" + next, baked);
         }
 
-        private static GameObject Assemble(GameObject boardPrefab, SeedTable seedTable, TMP_FontAsset font)
+        private static GameObject Assemble(
+            GameObject boardPrefab, SeedTable seedTable, TMP_FontAsset font,
+            GameObject bonusBoardPrefab, SeedTable bonusSeedTable, PinballBoard bonusBoard)
         {
             GameObject root = NewRect("UIPinballPage", null);
             Stretch(root.GetComponent<RectTransform>());
@@ -137,8 +167,21 @@ namespace OJ.EditorTools
             TMP_Text titleText = NewText("Title", view.transform, "핀볼", 48f, Color.white, font);
             SetRect(titleText.rectTransform, new Vector2(600f, 70f), new Vector2(0f, 820f));
 
+            // 뒤집히는 부분. 이 아래 두 면이 Y축 180도로 마주 보고 있고, 부모를 돌리면
+            // 카드처럼 뒤집힌다. 보상 면이 로컬 180 이라 다 돌았을 때 정확히 정면으로 선다.
+            GameObject pivot = NewRect("BoardPivot", view.transform);
+            Stretch(pivot.GetComponent<RectTransform>());
+
+            GameObject pinballSide = NewRect("PinballSide", pivot.transform);
+            Stretch(pinballSide.GetComponent<RectTransform>());
+
+            GameObject bonusSide = NewRect("BonusSide", pivot.transform);
+            Stretch(bonusSide.GetComponent<RectTransform>());
+            bonusSide.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            bonusSide.SetActive(false);
+
             // 판. 프리팹 인스턴스로 넣어야 나중에 판을 다시 구웠을 때 따라온다.
-            var board = PrefabUtility.InstantiatePrefab(boardPrefab, view.transform) as GameObject;
+            var board = PrefabUtility.InstantiatePrefab(boardPrefab, pinballSide.transform) as GameObject;
             if (board == null)
             {
                 Debug.LogError("[핀볼] 판 프리팹을 인스턴스로 만들지 못했다.");
@@ -167,26 +210,26 @@ namespace OJ.EditorTools
             var playback = board.AddComponent<PinballPlayback>();
             WirePlayback(playback, seedTable, boardView);
 
-            TMP_Text gauge = NewText("GaugeText", view.transform, "", 30f, GoldText, font);
+            TMP_Text gauge = NewText("GaugeText", pinballSide.transform, "", 30f, GoldText, font);
             SetRect(gauge.rectTransform, new Vector2(900f, 60f), new Vector2(0f, 740f));
 
-            TMP_Text ticket = NewText("TicketText", view.transform, "0", 36f, Color.white, font);
+            TMP_Text ticket = NewText("TicketText", pinballSide.transform, "0", 36f, Color.white, font);
             SetRect(ticket.rectTransform, new Vector2(400f, 50f), new Vector2(-230f, -380f));
 
-            TMP_Text cost = NewText("CostText", view.transform, "1", 36f, GoldText, font);
+            TMP_Text cost = NewText("CostText", pinballSide.transform, "1", 36f, GoldText, font);
             SetRect(cost.rectTransform, new Vector2(400f, 50f), new Vector2(230f, -380f));
 
-            TMP_Text session = NewText("SessionText", view.transform, "", 28f, Color.white, font);
+            TMP_Text session = NewText("SessionText", pinballSide.transform, "", 28f, Color.white, font);
             SetRect(session.rectTransform, new Vector2(400f, 44f), new Vector2(0f, -432f));
 
             // 배율 버튼. 잠긴 것과 선택된 것은 페이지가 런타임에 구분해 준다.
             var options = new List<MultiplierWiring>();
             for (int i = 0; i < Multipliers.Length; i++)
             {
-                options.Add(BuildMultiplierButton(view.transform, font, Multipliers[i], i));
+                options.Add(BuildMultiplierButton(pinballSide.transform, font, Multipliers[i], i));
             }
 
-            Button launch = NewButton("LaunchButton", view.transform, "발사", Accent, font, out _);
+            Button launch = NewButton("LaunchButton", pinballSide.transform, "발사", Accent, font, out _);
             SetRect(launch.GetComponent<RectTransform>(), new Vector2(420f, 130f), new Vector2(0f, -790f));
 
             // DialogBase 의 exitBtn 에 넣지 않는다 — 그건 무조건 닫아 버려서
@@ -194,11 +237,197 @@ namespace OJ.EditorTools
             Button close = NewButton("CloseButton", view.transform, "X", Accent, font, out _);
             SetRect(close.GetComponent<RectTransform>(), new Vector2(90f, 90f), new Vector2(460f, 840f));
 
+            // 보너스 라운드 안내. 판 오른쪽에 떠 있다가 세션이 끝나면 가운데로 이동한다.
+            // <b>핀볼 면에 둔다</b> — 보상 면으로 넘어가는 안내이므로 넘어가기 전에 보여야 한다.
+            TMP_Text bannerText = NewText(
+                "BonusBannerText", pinballSide.transform, "보너스게임 가능", 30f, GoldText, font);
+            RectTransform banner = bannerText.rectTransform;
+            SetRect(banner, new Vector2(360f, 96f), new Vector2(330f, 430f));
+            bannerText.gameObject.SetActive(false);
+
+            UIBonusDicePanel bonusPanel = BuildBonusSide(
+                bonusSide.transform, font, bonusBoardPrefab, bonusSeedTable, bonusBoard);
+
             var page = root.AddComponent<UIPinballPage>();
             page.dialogView = view.gameObject;
             WirePage(page, playback, boardView, launch, close, ticket, cost, session, gauge, options);
+            WireFlip(page, pivot, pinballSide, bonusSide, bonusPanel, banner, bannerText);
 
             return root;
+        }
+
+        /// <summary>
+        /// <c>UIPinballPage</c> 의 전환 배선. 여기가 비면 센터핀을 다 채워도 판이 안 돈다.
+        /// </summary>
+        private static void WireFlip(
+            UIPinballPage page, GameObject pivot, GameObject pinballSide,
+            GameObject bonusSide, UIBonusDicePanel bonusPanel,
+            RectTransform banner, TMP_Text bannerText)
+        {
+            var so = new SerializedObject(page);
+            SetRef(so, "boardPivot", pivot.GetComponent<RectTransform>());
+            SetRef(so, "pinballSideRoot", pinballSide);
+            SetRef(so, "bonusSideRoot", bonusSide);
+            SetRef(so, "bonusPanel", bonusPanel);
+            SetRef(so, "bonusBanner", banner);
+            SetRef(so, "bonusBannerText", bannerText);
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// 보상 라운드 면을 조립한다. 판 하나와 주사위 조작 UI 가 들어간다.
+        ///
+        /// <b>모양은 임시다.</b> 자리와 크기만 맞춰 둔 것이고, 다듬는 것은 프리팹에서 한다 —
+        /// 핀볼 면과 같은 규약이다.
+        /// </summary>
+        private static UIBonusDicePanel BuildBonusSide(
+            Transform parent, TMP_FontAsset font,
+            GameObject bonusBoardPrefab, SeedTable bonusSeedTable, PinballBoard bonusBoard)
+        {
+            var board = PrefabUtility.InstantiatePrefab(bonusBoardPrefab, parent) as GameObject;
+            if (board == null)
+            {
+                Debug.LogError("[핀볼] 보상판 프리팹을 인스턴스로 만들지 못했다.");
+                return null;
+            }
+
+            board.name = "BonusBoard";
+            var boardRect = board.GetComponent<RectTransform>();
+            boardRect.anchorMin = new Vector2(0.5f, 0.5f);
+            boardRect.anchorMax = new Vector2(0.5f, 0.5f);
+            boardRect.pivot = new Vector2(0.5f, 0.5f);
+            boardRect.anchoredPosition = new Vector2(0f, 300f);
+
+            var boardView = board.GetComponent<PinballBoardView>();
+            if (boardView == null)
+            {
+                Debug.LogError("[핀볼] 보상판 프리팹에 PinballBoardView 가 없다.");
+                return null;
+            }
+
+            var playback = board.AddComponent<PinballPlayback>();
+            WirePlayback(playback, bonusSeedTable, boardView);
+
+            // 패널은 판과 형제로 둔다. 판을 다시 구워 교체해도 UI 배선이 안 끊긴다.
+            GameObject panelRoot = NewRect("BonusPanel", parent);
+            Stretch(panelRoot.GetComponent<RectTransform>());
+            var panel = panelRoot.AddComponent<UIBonusDicePanel>();
+
+            TMP_Text hand = NewText("HandText", panelRoot.transform, "", 34f, GoldText, font);
+            SetRect(hand.rectTransform, new Vector2(900f, 54f), new Vector2(0f, -330f));
+
+            TMP_Text cycle = NewText("CycleText", panelRoot.transform, "", 28f, Color.white, font);
+            SetRect(cycle.rectTransform, new Vector2(420f, 44f), new Vector2(-240f, -395f));
+
+            TMP_Text reroll = NewText("RerollText", panelRoot.transform, "", 28f, Color.white, font);
+            SetRect(reroll.rectTransform, new Vector2(420f, 44f), new Vector2(240f, -395f));
+
+            // 핀 진행도는 여기서 만들지 않는다 — 패널이 판 위의 핀 좌표를 읽어
+            // 런타임에 핀마다 직접 붙인다(UIBonusDicePanel.BuildPinLabels).
+
+            // 주사위 5칸. 눌러서 잠그고, 잠긴 것은 리롤에서 빠진다.
+            var diceSlots = new List<DiceWiring>();
+            for (int i = 0; i < DiceCount; i++)
+            {
+                float x = (i - (DiceCount - 1) * 0.5f) * 200f;
+                diceSlots.Add(BuildDiceSlot(panelRoot.transform, font, i, new Vector2(x, -500f)));
+            }
+
+            Button rerollButton = NewButton(
+                "RerollButton", panelRoot.transform, "다시 굴리기", AccentSoft, font, out _);
+            SetRect(rerollButton.GetComponent<RectTransform>(),
+                    new Vector2(400f, 120f), new Vector2(-230f, -660f));
+
+            Button shootButton = NewButton(
+                "ShootButton", panelRoot.transform, "발사", Accent, font, out _);
+            SetRect(shootButton.GetComponent<RectTransform>(),
+                    new Vector2(400f, 120f), new Vector2(230f, -660f));
+
+            // 이 둘은 조건이 맞을 때만 패널이 켠다. 꺼 둔 채로 굽는다 —
+            // 광고가 없는데 버튼이 보이면 "광고가 안 나온다"는 고장으로 읽힌다.
+            Button adButton = NewButton(
+                "AdButton", panelRoot.transform, "광고 보고 한 번 더", AccentSoft, font, out _);
+            SetRect(adButton.GetComponent<RectTransform>(),
+                    new Vector2(560f, 110f), new Vector2(0f, -790f));
+            adButton.gameObject.SetActive(false);
+
+            Button claimAllButton = NewButton(
+                "ClaimAllButton", panelRoot.transform, "바로 전액 받기", GoldButton, font, out _);
+            SetRect(claimAllButton.GetComponent<RectTransform>(),
+                    new Vector2(560f, 110f), new Vector2(0f, -910f));
+            claimAllButton.gameObject.SetActive(false);
+
+            WireBonusPanel(panel, playback, boardView, bonusSeedTable, bonusBoard,
+                           diceSlots, rerollButton, shootButton, adButton, claimAllButton,
+                           hand, cycle, reroll);
+
+            return panel;
+        }
+
+        /// <summary>주사위 한 칸에 필요한 참조 묶음.</summary>
+        private struct DiceWiring
+        {
+            public Button button;
+            public TMP_Text label;
+            public GameObject lockMark;
+        }
+
+        private static DiceWiring BuildDiceSlot(
+            Transform parent, TMP_FontAsset font, int index, Vector2 position)
+        {
+            Button button = NewButton(
+                "Dice" + index, parent, "1", AccentSoft, font, out TMP_Text label);
+            SetRect(button.GetComponent<RectTransform>(), new Vector2(170f, 170f), position);
+            label.fontSize = 72f;
+
+            // 잠금 표시는 테두리 한 줄이면 충분하다. 꺼 둔 채로 굽고 패널이 켠다.
+            Image mark = NewImage("Locked", button.transform, GoldText);
+            SetRect(mark.rectTransform, new Vector2(184f, 184f), Vector2.zero);
+            mark.raycastTarget = false;
+            mark.transform.SetAsFirstSibling();
+            mark.gameObject.SetActive(false);
+
+            return new DiceWiring { button = button, label = label, lockMark = mark.gameObject };
+        }
+
+        private static void WireBonusPanel(
+            UIBonusDicePanel panel, PinballPlayback playback, PinballBoardView boardView,
+            SeedTable seedTable, PinballBoard board, List<DiceWiring> dice,
+            Button reroll, Button shoot, Button ad, Button claimAll,
+            TMP_Text hand, TMP_Text cycle, TMP_Text rerollText)
+        {
+            var so = new SerializedObject(panel);
+            SetRef(so, "playback", playback);
+            SetRef(so, "boardView", boardView);
+            SetRef(so, "seedTable", seedTable);
+            SetRef(so, "board", board);
+            SetRef(so, "rerollButton", reroll);
+            SetRef(so, "shootButton", shoot);
+            SetRef(so, "adButton", ad);
+            SetRef(so, "claimAllButton", claimAll);
+            SetRef(so, "handText", hand);
+            SetRef(so, "cycleText", cycle);
+            SetRef(so, "rerollText", rerollText);
+
+            SerializedProperty list = so.FindProperty("diceSlots");
+            if (list == null)
+            {
+                Debug.LogError(
+                    "[핀볼] UIBonusDicePanel.diceSlots 를 못 찾았다. 이름이 바뀌었는지 확인할 것.");
+            }
+            else
+            {
+                list.arraySize = dice.Count;
+                for (int i = 0; i < dice.Count; i++)
+                {
+                    SerializedProperty entry = list.GetArrayElementAtIndex(i);
+                    entry.FindPropertyRelative("button").objectReferenceValue = dice[i].button;
+                    entry.FindPropertyRelative("label").objectReferenceValue = dice[i].label;
+                    entry.FindPropertyRelative("lockMark").objectReferenceValue = dice[i].lockMark;
+                }
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>배율 버튼 하나에 필요한 참조 묶음.</summary>

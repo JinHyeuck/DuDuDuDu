@@ -67,7 +67,8 @@ namespace OJ.Point
         }
 
         /// <summary>
-        /// 재화 18종을 0 으로 채우고 <see cref="isLoaded"/> 를 세운다.
+        /// <see cref="PointType"/> 전체를 0 으로 채우고 <see cref="isLoaded"/> 를 세운다.
+        /// (개수를 적지 않는다 — enum 이 늘고 줄 때마다 주석만 조용히 낡는다.)
         ///
         /// <b>왜 로드 경로가 아니라 생성자인가.</b> 세이브 파일이 없는 첫 실행에서는
         /// <see cref="ReadFrom"/> 이 <b>한 번도 불리지 않는다</b> — <c>SaveService.TryLoadAll</c> 이
@@ -207,25 +208,25 @@ namespace OJ.Point
                 case DiceType.Thunder:
                     return PointType.ThunderScroll;
                 case DiceType.KingNormal:
-                    return PointType.MythicScroll;
+                    return PointType.MythicStone;
                 case DiceType.KingFire:
-                    return PointType.MythicScroll;
+                    return PointType.MythicStone;
                 case DiceType.KingIce:
-                    return PointType.MythicScroll;
+                    return PointType.MythicStone;
                 case DiceType.KingPoison:
-                    return PointType.MythicScroll;
+                    return PointType.MythicStone;
                 case DiceType.KingThunder:
-                    return PointType.MythicScroll;
+                    return PointType.MythicStone;
                 case DiceType.Tornado:
-                    return PointType.SpecialDiceCore;
+                    return PointType.RareStone;
                 case DiceType.Stun:
-                    return PointType.SpecialDiceCore;
+                    return PointType.RareStone;
                 case DiceType.ArmorBreak:
-                    return PointType.SpecialDiceCore;
+                    return PointType.RareStone;
                 case DiceType.Wind:
-                    return PointType.SpecialDiceCore;
+                    return PointType.RareStone;
                 case DiceType.Time:
-                    return PointType.SpecialDiceCore;
+                    return PointType.RareStone;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(diceType), diceType, "Unsupported dice type.");
             }
@@ -375,7 +376,7 @@ namespace OJ.Point
                     continue;
 
                 // 재화마다 저장하지 않는다(saveNow: false). 통합 세이브는 한 번에 파일 전체를
-                // 쓰므로 18번 부르면 같은 파일을 18번 쓰고, 중간 상태가 파일에 남는다.
+                // 쓰므로 재화 수만큼 부르면 같은 파일을 그만큼 쓰고, 중간 상태가 파일에 남는다.
                 Set(pointType, 0, false);
             }
 

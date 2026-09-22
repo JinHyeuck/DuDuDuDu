@@ -49,11 +49,34 @@ namespace OJ.Core
         /// <summary>벽 현재 체력.</summary>
         public int WallHp { get; set; }
 
-        /// <summary>소환에 쓰는 SP.</summary>
+        /// <summary>
+        /// 소환에 쓰는 SP. <c>BattlePointType.SummonPoint</c> 의 값이다.
+        ///
+        /// 예전에는 <c>UIDiceSummonSystem.currentSP</c> 가 정본이었다. 그쪽은 MonoBehaviour 의
+        /// 직렬화 필드라 <b>프리팹에 박힌 값이 판 시작값처럼 보였고</b>, 되돌리기를 위해
+        /// 자기만의 스냅샷 구조체를 따로 갖고 있었다.
+        /// </summary>
         public int SummonPoint { get; set; }
 
         /// <summary>다음 소환 비용. 소환할수록 오른다.</summary>
         public int SummonCost { get; set; }
+
+        /// <summary>
+        /// 다음 비용 상승까지 남은 소환 횟수를 세는 칸. <see cref="SummonCost"/> 와 짝이라
+        /// 같이 있어야 한다 — 비용만 되돌리고 이 값을 두면 되돌린 뒤 첫 소환에서
+        /// 비용이 한 번 더 오른다.
+        /// </summary>
+        public int SummonsSinceLastCostIncrease { get; set; }
+
+        /// <summary>
+        /// 전투 강화석. <c>BattlePointType.EnhanceStone</c> 의 값이다.
+        ///
+        /// 예전에는 <c>PointType.BattleEnhanceStone</c> 으로 <c>PointManager</c> 안에 있었다.
+        /// 영구 재화 창고에 판마다 0 으로 밀리는 값이 섞여 있던 것이라,
+        /// <c>ElementUpgradeManager</c> 가 따로 0 을 쓰고 <c>WaveRewindManager</c> 가
+        /// 이 하나만을 위한 복원 코드를 갖고 세이브 파일까지 오갔다. 전부 사라졌다.
+        /// </summary>
+        public int EnhanceStone { get; set; }
 
         /// <summary>판이 끝났는가.</summary>
         public bool IsGameOver { get; set; }
@@ -100,6 +123,8 @@ namespace OJ.Core
             WallHp = wallMaxHp;
             SummonPoint = initialSummonPoint;
             SummonCost = initialSummonCost;
+            SummonsSinceLastCostIncrease = 0;
+            EnhanceStone = 0;
             IsGameOver = false;
             SelectedBountyGrade = 0;
             HighestDefeatedBountyGrade = 0;
@@ -126,6 +151,8 @@ namespace OJ.Core
             public int WallHp;
             public int SummonPoint;
             public int SummonCost;
+            public int SummonsSinceLastCostIncrease;
+            public int EnhanceStone;
             public bool IsGameOver;
             public int SelectedBountyGrade;
             public int HighestDefeatedBountyGrade;
@@ -154,6 +181,8 @@ namespace OJ.Core
                 WallHp = WallHp,
                 SummonPoint = SummonPoint,
                 SummonCost = SummonCost,
+                SummonsSinceLastCostIncrease = SummonsSinceLastCostIncrease,
+                EnhanceStone = EnhanceStone,
                 IsGameOver = IsGameOver,
                 SelectedBountyGrade = SelectedBountyGrade,
                 HighestDefeatedBountyGrade = HighestDefeatedBountyGrade,
@@ -174,6 +203,8 @@ namespace OJ.Core
             WallHp = snapshot.WallHp;
             SummonPoint = snapshot.SummonPoint;
             SummonCost = snapshot.SummonCost;
+            SummonsSinceLastCostIncrease = snapshot.SummonsSinceLastCostIncrease;
+            EnhanceStone = snapshot.EnhanceStone;
             IsGameOver = snapshot.IsGameOver;
             SelectedBountyGrade = snapshot.SelectedBountyGrade;
             HighestDefeatedBountyGrade = snapshot.HighestDefeatedBountyGrade;

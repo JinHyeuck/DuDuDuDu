@@ -134,7 +134,6 @@ namespace OJ.Point
                 case PointType.FreeGem: return "무료젬";
                 case PointType.PaidGem: return "유료젬";
                 case PointType.Stamina: return "고기";
-                case PointType.BattleEnhanceStone: return "강화석";
                 case PointType.RelicTicket: return "유물권";
                 case PointType.PinballTicket: return "핀볼 티켓";
                 case PointType.NormalScroll: return "일반 소환권";
@@ -142,8 +141,8 @@ namespace OJ.Point
                 case PointType.IceScroll: return "냉기 소환권";
                 case PointType.PoisonScroll: return "독 소환권";
                 case PointType.ThunderScroll: return "번개 소환권";
-                case PointType.MythicScroll: return "신화석";
-                case PointType.SpecialDiceCore: return "레어석";
+                case PointType.MythicStone: return "신화석";
+                case PointType.RareStone: return "레어석";
                 case PointType.WeaponScroll: return "무기 강화권";
                 case PointType.HelmetScroll: return "투구 강화권";
                 case PointType.ArmorScroll: return "갑옷 강화권";

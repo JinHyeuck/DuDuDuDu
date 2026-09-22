@@ -1,0 +1,191 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50bd92a391105704bab3fa1f310576f9, type: 3}
+  m_Name: BonusBoard
+  m_EditorClassIdentifier: Pinball.Runtime::Pinball.PinballBoard
+  size: {x: 6, y: 10}
+  gravity: {x: 0, y: -26}
+  linearDrag: 0.45
+  ballRadius: 0.16
+  pegRestitution: 0.86
+  wallRestitution: 0.55
+  maxSpeed: 36
+  launchPos: {x: 5.62, y: 0.6}
+  launchSpeed: 27
+  launchAngleDeg: 90
+  angleJitterDeg: 2.5
+  speedJitter: 0.85
+  stepsPerSecond: 120
+  maxSteps: 3000
+  catchLineY: 0.85
+  armHeightY: 3
+  slotMinX: 0.12
+  slotMaxX: 5.18
+  dividersX:
+  - 2.6499999
+  dividerBottomY: 0.3
+  dividerTopY: 1.35
+  declaredProbability:
+  - 0.4761905
+  - 0.52380955
+  pegs:
+  - center: {x: 0.85, y: 5.9}
+    radius: 0.11
+    restitution: 0
+    specialTag: 0
+  - center: {x: 2.505, y: 6.33}
+    radius: 0.4
+    restitution: 0
+    specialTag: 1
+  - center: {x: 4.1, y: 6}
+    radius: 0.11
+    restitution: 0
+    specialTag: 0
+  - center: {x: 0.5, y: 4.4}
+    radius: 0.11
+    restitution: 0
+    specialTag: 0
+  - center: {x: 1.7149999, y: 4.8900003}
+    radius: 0.4
+    restitution: 0
+    specialTag: 2
+  - center: {x: 3.295, y: 4.8900003}
+    radius: 0.4
+    restitution: 0
+    specialTag: 3
+  - center: {x: 4.55, y: 4.35}
+    radius: 0.11
+    restitution: 0
+    specialTag: 0
+  - center: {x: 2.5, y: 4.15}
+    radius: 0.11
+    restitution: 0
+    specialTag: 0
+  - center: {x: 1.1, y: 3.5}
+    radius: 0.4
+    restitution: 0
+    specialTag: 4
+  - center: {x: 2.5, y: 3.15}
+    radius: 0.4
+    restitution: 0
+    specialTag: 5
+  - center: {x: 3.95, y: 3.45}
+    radius: 0.4
+    restitution: 0
+    specialTag: 6
+  - center: {x: 1.6, y: 2.3500001}
+    radius: 0.11
+    restitution: 0
+    specialTag: 0
+  - center: {x: 3.45, y: 2.3500001}
+    radius: 0.11
+    restitution: 0
+    specialTag: 0
+  segments:
+  - a: {x: 0.05, y: 0.3}
+    b: {x: 0.05, y: 8.6}
+    restitution: 0
+  - a: {x: 5.95, y: 0.3}
+    b: {x: 5.95, y: 8.6}
+    restitution: 0
+  - a: {x: 0.05, y: 0.3}
+    b: {x: 5.95, y: 0.3}
+    restitution: 0
+  - a: {x: 5.25, y: 0.45000002}
+    b: {x: 5.25, y: 7.4}
+    restitution: 0
+  - a: {x: 5.95, y: 7.5}
+    b: {x: 4.35, y: 8.85}
+    restitution: 0
+  - a: {x: 0.049999952, y: 8.6}
+    b: {x: 0.12396264, y: 8.889277}
+    restitution: 0
+  - a: {x: 0.12396264, y: 8.889277}
+    b: {x: 0.34214184, y: 9.164049}
+    restitution: 0
+  - a: {x: 0.34214184, y: 9.164049}
+    b: {x: 0.693597, y: 9.410537}
+    restitution: 0
+  - a: {x: 0.693597, y: 9.410537}
+    b: {x: 1.1607051, y: 9.616382}
+    restitution: 0
+  - a: {x: 1.1607051, y: 9.616382}
+    b: {x: 1.7200426, y: 9.77126}
+    restitution: 0
+  - a: {x: 1.7200426, y: 9.77126}
+    b: {x: 2.3435636, y: 9.867407}
+    restitution: 0
+  - a: {x: 2.3435636, y: 9.867407}
+    b: {x: 2.9999998, y: 9.900001}
+    restitution: 0
+  - a: {x: 2.9999998, y: 9.900001}
+    b: {x: 3.656437, y: 9.867407}
+    restitution: 0
+  - a: {x: 3.656437, y: 9.867407}
+    b: {x: 4.2799573, y: 9.77126}
+    restitution: 0
+  - a: {x: 4.2799573, y: 9.77126}
+    b: {x: 4.839295, y: 9.616382}
+    restitution: 0
+  - a: {x: 4.839295, y: 9.616382}
+    b: {x: 5.3064027, y: 9.410537}
+    restitution: 0
+  - a: {x: 5.3064027, y: 9.410537}
+    b: {x: 5.6578584, y: 9.164049}
+    restitution: 0
+  - a: {x: 5.6578584, y: 9.164049}
+    b: {x: 5.876037, y: 8.889277}
+    restitution: 0
+  - a: {x: 5.876037, y: 8.889277}
+    b: {x: 5.95, y: 8.6}
+    restitution: 0
+  specialHitPolicy: 1
+  specialRules:
+  - tag: 1
+    label: Tag 1
+    targetHitProbability: 0.5
+  - tag: 2
+    label: Tag 2
+    targetHitProbability: 0.5
+  - tag: 3
+    label: Tag 3
+    targetHitProbability: 0.5
+  - tag: 4
+    label: Tag 4
+    targetHitProbability: 0.5
+  - tag: 5
+    label: Tag 5
+    targetHitProbability: 0.5
+  - tag: 6
+    label: Tag 6
+    targetHitProbability: 0.5
+  prefabSettings:
+    pixelsPerUnit: 100
+    wallThicknessPx: 10
+    pegSprite: {fileID: 21300000, guid: bac4436b7a014df4d9dd68842064ea5a, type: 3}
+    wallSprite: {fileID: 21300000, guid: 703b9a1bfffae624abf625b1dd6e74ad, type: 3}
+    ballSprite: {fileID: 21300000, guid: 6df02f96c6d65474a8ad756b642e9a4f, type: 3}
+    slotSprite: {fileID: 21300000, guid: 16617d0b2a7b28d4e93dae736a394da5, type: 3}
+    backgroundSprite: {fileID: 21300000, guid: 79e55d90fdb350241a0802b2907d28ff, type: 3}
+    pegColor: {r: 0.85, g: 0.88, b: 1, a: 1}
+    bumperColor: {r: 1, g: 0.55, b: 0.85, a: 1}
+    specialColor: {r: 1, g: 0.85, b: 0.25, a: 1}
+    wallColor: {r: 0.95, g: 0.62, b: 0.25, a: 1}
+    dividerColor: {r: 0.55, g: 0.85, b: 0.55, a: 1}
+    ballColor: {r: 1, g: 0.95, b: 0.45, a: 1}
+    slotColor: {r: 1, g: 1, b: 1, a: 0.1}
+    backgroundColor: {r: 0.13, g: 0.11, b: 0.2, a: 1}
+    createSlotAreas: 1
+    createBackground: 1
+    pegPunchEnabled: 1
+    pegPunchScale: 1.35
+    pegPunchDuration: 0.18

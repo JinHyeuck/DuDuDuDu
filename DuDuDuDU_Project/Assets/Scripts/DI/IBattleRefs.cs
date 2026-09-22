@@ -1,3 +1,4 @@
+using OJ.Battle;
 using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
@@ -58,6 +59,16 @@ namespace OJ.DI
         /// (해석은 자식 → 부모 단방향이다). 창구에 얹어야 배너와 선택 창이 닿는다.
         /// </summary>
         BountyManager Bounty { get; }
+
+        /// <summary>
+        /// 이 판의 전투 재화(SP·강화석). <see cref="Bounty"/> 와 같은 이유로 여기 있다 —
+        /// 씬 컴포넌트가 아니고, <c>UIService</c> 가 루트에서 찍는 다이얼로그
+        /// (다이스 상세·속성 강화)가 보유량을 읽어야 한다.
+        ///
+        /// 값 자체는 <c>GameManager.Run</c> 이 들고 이것은 창구일 뿐이다.
+        /// 그래서 판이 끝나면 따로 비울 것이 없다.
+        /// </summary>
+        BattlePointManager BattlePoints { get; }
 
         /// <summary>
         /// 무한의 탑. <see cref="Bounty"/> 와 같은 이유로 여기 있다 —

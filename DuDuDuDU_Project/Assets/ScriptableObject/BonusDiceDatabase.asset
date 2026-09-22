@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f959adc848bb235498553a85ed927d14, type: 3}
+  m_Name: BonusDiceDatabase
+  m_EditorClassIdentifier: OJ.Game::OJ.Pinball.BonusDiceDatabase
+  pinballTriggerTag: 3
+  diceCount: 5
+  rerollsPerCycle: 5
+  cyclesPerRound: 5
+  ballTable: 0300000005000000080000000c0000000f0000001400000019000000230000003c000000
+  pinRewards:
+  - tag: 1
+    label: "\uACE8\uB4DC \uD540"
+    requiredHits: 6
+    rewards:
+    - pointType: 0
+      amount: 3000
+  - tag: 2
+    label: "\uC18C\uD658\uAD8C \uD540"
+    requiredHits: 6
+    rewards:
+    - pointType: 100
+      amount: 5
+  - tag: 3
+    label: "\uC720\uBB3C\uAD8C \uD540"
+    requiredHits: 6
+    rewards:
+    - pointType: 4
+      amount: 2
+  - tag: 4
+    label: "\uC82C \uD540"
+    requiredHits: 7
+    rewards:
+    - pointType: 1
+      amount: 100
+  - tag: 5
+    label: "\uACE8\uB4DC \uB300\uBC15 \uD540"
+    requiredHits: 7
+    rewards:
+    - pointType: 0
+      amount: 10000
+  - tag: 6
+    label: "\uC82C \uB300\uBC15 \uD540"
+    requiredHits: 8
+    rewards:
+    - pointType: 1
+      amount: 300

@@ -47,6 +47,32 @@ namespace OJ.Pinball
         [SerializeField] private TMP_Text sessionText;
         [SerializeField] private TMP_Text gaugeText;
 
+        [Header("보상 라운드 — 휴릭 전환")]
+        [Tooltip("양면을 다 가진 부모. 이것을 Y축으로 돌려 판을 뒤집는다.")]
+        [SerializeField] private RectTransform boardPivot;
+
+        [Tooltip("핀볼 면. 판과 발사·배율 UI 가 여기 들어간다.")]
+        [SerializeField] private GameObject pinballSideRoot;
+
+        [Tooltip("보상 면. 프리팩에서 Y축 180도로 놓여 있어야 뒤집었을 때 바로 보인다.")]
+        [SerializeField] private GameObject bonusSideRoot;
+
+        [SerializeField] private UIBonusDicePanel bonusPanel;
+
+        [Tooltip("판 오른쪽에 뜨는 「보너스게임 가능」 안내. 세션이 끝나면 가운데로 이동한다.")]
+        [SerializeField] private RectTransform bonusBanner;
+
+        [SerializeField] private TMP_Text bonusBannerText;
+
+        [Tooltip("안내가 가운데로 가는 시간(초). 이게 끝나야 판이 돌기 시작한다.")]
+        [SerializeField] private float bannerMoveDuration = 0.5f;
+
+        [Tooltip("배율이 오를 때 출렁이는 시간(초).")]
+        [SerializeField] private float bannerPunchDuration = 0.35f;
+
+        [Tooltip("판이 돌아가는 시간(초).")]
+        [SerializeField] private float flipDuration = 0.55f;
+
         [Header("연출")]
         [Tooltip("드랍 연출이 떠오르는 높이(px).")]
         [SerializeField] private float dropRise = 90f;
@@ -97,6 +123,27 @@ namespace OJ.Pinball
         private bool labelsBuilt;
         private bool closing;
 
+        /// <summary>센터핀 게이지가 방금 다 찼다. <b>공이 전부 착지한 뒤에</b> 판을 돌린다.</summary>
+        private bool pendingBonusRound;
+
+        /// <summary>지금 보상 면이 앞에 있는가.</summary>
+        private bool showingBonus;
+
+        /// <summary>회전 진행도 0~1. 음수면 돌고 있지 않다.</summary>
+        private float flipT = -1f;
+
+        /// <summary>true 면 핀볼 → 보상 방향.</summary>
+        private bool flipForward;
+
+        /// <summary>안내가 프리팹에서 놓인 자리. 가운데로 갔다가 여기로 돌아온다.</summary>
+        private Vector2 bannerHome;
+
+        /// <summary>가운데로 가는 진행도 0~1. 음수면 움직이지 않는다.</summary>
+        private float bannerMoveT = -1f;
+
+        /// <summary>출렁임 진행도 0~1. 음수면 출렁이지 않는다.</summary>
+        private float bannerPunchT = -1f;
+
         /// <summary>
         /// 특수 핀 위에 붙인 게이지 글자. 태그 하나에 핀이 여럿일 수 있어 목록이다
         /// (<c>Assets/Pinball/README.md</c>: "같은 값을 여러 핀에 주면 한 그룹").
@@ -143,6 +190,13 @@ namespace OJ.Pinball
                 Debug.LogError("[핀볼] PinballPlayback 이 연결되지 않았다. 화면이 열려도 공이 안 나간다.");
             }
 
+            if (bonusPanel != null)
+                bonusPanel.OnRoundFinished += HandleBonusRoundFinished;
+
+            // 가운데로 보냈다가 되돌릴 자리다. 연출 중에 읽으면 이미 움직인 값이 잡힌다.
+            if (bonusBanner != null)
+                bannerHome = bonusBanner.anchoredPosition;
+
             // 백키도 닫기 버튼과 같은 판정을 받아야 한다. 이게 없으면 세션 도중에 백키로
             // 빠져나가 연출만 사라진다.
             BackKeyOverride = OnCloseClicked;
@@ -170,6 +224,9 @@ namespace OJ.Pinball
                 playback.OnLanded -= HandleLanded;
                 playback.OnAllLanded -= HandleAllLanded;
             }
+
+            if (bonusPanel != null)
+                bonusPanel.OnRoundFinished -= HandleBonusRoundFinished;
         }
 
         protected override void OnEnter()
@@ -183,6 +240,14 @@ namespace OJ.Pinball
             BuildSlotLabels();
             ClampSelectedMultiplier();
             Refresh();
+
+            // 보상 라운드가 진행 중인 채로 앱이 죽었을 수 있다. 그때는 전환 연출 없이
+            // 곧장 보상 면으로 연다 — 유저는 이미 그 판에 있었고, 판이 새로 돌아가면
+            // 무엇 때문에 돌았는지 알 수 없다.
+            if (BonusDiceManager.Instance != null && BonusDiceManager.Instance.InProgress)
+                SnapToBonusSide();
+            else
+                SnapToPinballSide();
         }
 
         protected override void OnExit()
@@ -198,6 +263,13 @@ namespace OJ.Pinball
 
             EndSession();
             ClearAllFx();
+
+            // 라운드 상태는 건드리지 않는다. 저장된 것이 정본이고, 다음에 들어오면 이어한다.
+            if (bonusPanel != null)
+                bonusPanel.ClosePanel();
+
+            pendingBonusRound = false;
+            flipT = -1f;
 
             if (PointManager.Instance != null)
                 PointManager.Instance.OnPointChanged -= HandlePointChanged;
@@ -339,6 +411,10 @@ namespace OJ.Pinball
                 return;
             }
 
+            // 판이 도는 중에 나가면 어느 면으로 끝났는지가 어긋난다. 회전은 짧으니 기다린다.
+            if (flipT >= 0f)
+                return;
+
             Exit();
         }
 
@@ -364,7 +440,35 @@ namespace OJ.Pinball
                 return;
 
             int multiplier = sessionMultiplier > 0 ? sessionMultiplier : 1;
-            IReadOnlyList<PointRewardEntry> rewards = manager.ResolveSpecialHit(tag, multiplier);
+            IReadOnlyList<PointRewardEntry> rewards =
+                manager.ResolveSpecialHit(tag, multiplier, out int completions);
+
+            // 센터핀은 경품표에 보상을 걸지 않는다 — 보상이 곧 보상 라운드다. 그래서
+            // rewards 가 비어 있고, "방금 다 찼다"는 completions 로만 알 수 있다.
+            //
+            // <b>라운드를 여기서 바로 연다.</b> 화면 전환은 공이 다 착지한 뒤로 미루지만,
+            // "기회가 생겼다"는 사실 자체는 지금 저장돼야 한다 — 전환을 기다리는 사이에
+            // 유저가 창을 닫거나 앱이 죽으면, 게이지는 이미 0 으로 돌아갔는데 라운드는
+            // 열린 적이 없는 상태가 되어 <b>한 판이 통째로 사라진다.</b>
+            if (completions > 0 && tag == BonusTriggerTag)
+            {
+                BonusDiceManager bonus = BonusDiceManager.Instance;
+                if (bonus != null)
+                {
+                    // 배율로 쏘면 한 세션에 게이지가 두세 번 찬다. 그때마다 라운드를 새로 여는
+                    // 대신 <b>한 판의 보상 배율</b>을 올린다 — 같은 판을 세 번 하게 만들 이유가 없다.
+                    for (int i = 0; i < completions; i++)
+                    {
+                        if (!bonus.StartRound())
+                            bonus.AddRewardMultiplier();
+                    }
+
+                    pendingBonusRound = true;
+                    bannerPunchT = 0f;      // 숫자가 올랐다는 것이 눈에 띄어야 한다
+                    RefreshBonusBanner();
+                }
+            }
+
             if (rewards.Count == 0)
                 return;     // 게이지만 올랐다. OnGaugeChanged 가 표시를 갱신한다.
 
@@ -389,6 +493,7 @@ namespace OJ.Pinball
             {
                 EndSession();
                 Refresh();
+                TryEnterBonusRound();
                 return;
             }
 
@@ -439,6 +544,7 @@ namespace OJ.Pinball
         {
             EndSession();
             Refresh();
+            TryEnterBonusRound();
         }
 
         private void EndSession()
@@ -448,6 +554,234 @@ namespace OJ.Pinball
             awaitingResult = false;
             sessionRewards.Clear();
             ClampSelectedMultiplier();
+        }
+
+        // ──────────────────────────────────────────────── 보상 라운드
+
+        /// <summary>보상 라운드를 여는 센터핀의 태그. 수치표가 정본이다.</summary>
+        private static int BonusTriggerTag => BonusDiceDatabaseProvider.GetDatabase().pinballTriggerTag;
+
+        /// <summary>
+        /// 센터핀 게이지가 찼다면 판을 돌려 보상 라운드로 들어간다.
+        ///
+        /// <b>세션이 완전히 끝난 뒤에만 부른다.</b> 공이 굴러가는 중이나 결과 팝업이 떠 있는
+        /// 동안 판이 돌아가면 무엇 때문에 돌았는지 안 보이고, 핀볼 쪽 연출도 잘린다.
+        /// </summary>
+        private void TryEnterBonusRound()
+        {
+            if (!pendingBonusRound || showingBonus || flipT >= 0f || closing)
+                return;
+
+            if (bonusPanel == null)
+            {
+                Debug.LogError(
+                    "[핀볼] 센터핀 게이지가 찼지만 UIBonusDicePanel 이 연결되지 않았다. " +
+                    "보상 라운드를 열지 못한다 — 프리팹 배선을 확인할 것.");
+                pendingBonusRound = false;
+                return;
+            }
+
+            pendingBonusRound = false;
+
+            // 라운드는 게이지가 찰 때 이미 열렸다. 여기서는 보여 주기만 하면 된다 —
+            // 패널의 BeginRound 도 이미 진행 중이면 아무것도 하지 않는다.
+            //
+            // <b>판을 곧장 뒤집지 않는다.</b> 세션이 끝나자마자 판이 돌아가면 왜 도는지
+            // 알 수 없다. 안내를 가운데로 보내 "이것 때문이다"를 먼저 보여 준 뒤에 뒤집는다.
+            if (bonusBanner == null)
+            {
+                StartFlip(true);
+                return;
+            }
+
+            bannerPunchT = -1f;
+            bannerMoveT = 0f;
+        }
+
+        private void HandleBonusRoundFinished()
+        {
+            if (!showingBonus)
+                return;
+
+            StartFlip(false);
+        }
+
+        /// <summary>판을 돌리기 시작한다. <paramref name="toBonus"/> 가 true 면 핀볼 → 보상.</summary>
+        private void StartFlip(bool toBonus)
+        {
+            flipForward = toBonus;
+            flipT = 0f;
+
+            if (toBonus)
+            {
+                // 판이 반쯤 돌았을 때 보상 면이 앞으로 나온다. 라운드는 다 돌고 나서 연다 —
+                // 주사위가 굴러가는 것을 돌아가는 판 위에서 보여 줄 이유가 없다.
+                if (playback != null && playback.IsBusy)
+                    playback.StopAll();
+            }
+        }
+
+        /// <summary>
+        /// 회전을 한 프레임 진행한다.
+        ///
+        /// <b>UniTask 가 아니라 <c>Update</c> 로 한 이유.</b> 화면이 회전 도중에 닫힐 수 있고,
+        /// 그때 await 가 살아 있으면 파괴된 <c>RectTransform</c> 을 만지게 된다.
+        /// 이 파일은 이미 드랍 연출 때문에 <c>Update</c> 를 돌고 있어 새 비용도 없다.
+        /// </summary>
+        private void TickFlip()
+        {
+            if (flipT < 0f)
+                return;
+
+            float duration = Mathf.Max(0.05f, flipDuration);
+            flipT += Time.deltaTime / duration;
+
+            bool done = flipT >= 1f;
+            float t = done ? 1f : flipT;
+
+            ApplyFlip(t);
+
+            if (!done)
+                return;
+
+            flipT = -1f;
+            showingBonus = flipForward;
+
+            if (flipForward)
+                bonusPanel?.BeginRound();
+            else
+                OnFlippedBackToPinball();
+        }
+
+        private void OnFlippedBackToPinball()
+        {
+            bonusPanel?.ClosePanel();
+            ClampSelectedMultiplier();
+            Refresh();
+        }
+
+        /// <summary>
+        /// 각도와 면 표시를 <paramref name="t"/>(0~1)에 맞춘다.
+        ///
+        /// <b>절반에서 면을 바꾼다.</b> uGUI 는 뒷면을 가리지 않아 두 면이 겹쳐 보이므로,
+        /// 90도를 넘는 순간 앞에 올 쪽만 켠다. 그래야 카드가 뒤집히는 것처럼 읽힌다.
+        /// </summary>
+        private void ApplyFlip(float t)
+        {
+            float eased = t * t * (3f - 2f * t);     // smoothstep. 시작과 끝이 부드럽다
+            float angle = flipForward ? Mathf.Lerp(0f, 180f, eased) : Mathf.Lerp(180f, 0f, eased);
+
+            if (boardPivot != null)
+                boardPivot.localRotation = Quaternion.Euler(0f, angle, 0f);
+
+            SetSide(flipForward ? t >= 0.5f : t < 0.5f);
+        }
+
+        private void SnapToBonusSide()
+        {
+            flipT = -1f;
+            showingBonus = true;
+            pendingBonusRound = false;
+
+            if (boardPivot != null)
+                boardPivot.localRotation = Quaternion.Euler(0f, 180f, 0f);
+
+            SetSide(true);
+            bonusPanel?.BeginRound();
+        }
+
+        private void SnapToPinballSide()
+        {
+            flipT = -1f;
+            showingBonus = false;
+
+            if (boardPivot != null)
+                boardPivot.localRotation = Quaternion.identity;
+
+            SetSide(false);
+        }
+
+        /// <summary>
+        /// 안내를 지금 상태에 맞춰 그린다. 라운드가 열려 있고 아직 핀볼 면일 때만 보인다.
+        /// </summary>
+        private void RefreshBonusBanner()
+        {
+            if (bonusBanner == null)
+                return;
+
+            BonusDiceManager bonus = BonusDiceManager.Instance;
+            bool show = !showingBonus && bonus != null && bonus.InProgress;
+
+            bonusBanner.gameObject.SetActive(show);
+            if (!show || bonusBannerText == null)
+                return;
+
+            int multiplier = bonus.RewardMultiplier;
+            bonusBannerText.text = multiplier > 1
+                ? "보너스게임 가능 x" + multiplier
+                : "보너스게임 가능";
+        }
+
+        /// <summary>
+        /// 안내의 출렁임과 가운데 이동을 한 프레임 진행한다.
+        ///
+        /// <b>이동이 끝나야 판이 돈다.</b> 두 연출이 겹치면 무엇 때문에 뒤집혔는지 안 읽힌다.
+        /// </summary>
+        private void TickBanner()
+        {
+            if (bonusBanner == null)
+                return;
+
+            if (bannerPunchT >= 0f)
+            {
+                bannerPunchT += Time.deltaTime / Mathf.Max(0.05f, bannerPunchDuration);
+
+                if (bannerPunchT >= 1f)
+                {
+                    bannerPunchT = -1f;
+                    bonusBanner.localScale = Vector3.one;
+                }
+                else
+                {
+                    // 한 번 크게 부풀었다 돌아온다. 사인 한 조각이면 충분하다.
+                    float punch = 1f + 0.35f * Mathf.Sin(bannerPunchT * Mathf.PI);
+                    bonusBanner.localScale = new Vector3(punch, punch, 1f);
+                }
+            }
+
+            if (bannerMoveT < 0f)
+                return;
+
+            bannerMoveT += Time.deltaTime / Mathf.Max(0.05f, bannerMoveDuration);
+
+            bool done = bannerMoveT >= 1f;
+            float t = done ? 1f : bannerMoveT;
+            float eased = t * t * (3f - 2f * t);
+
+            bonusBanner.anchoredPosition = Vector2.Lerp(bannerHome, Vector2.zero, eased);
+
+            float scale = Mathf.Lerp(1f, 1.4f, eased);
+            bonusBanner.localScale = new Vector3(scale, scale, 1f);
+
+            if (!done)
+                return;
+
+            // 제자리로 돌려놓고 감춘다. 다음 라운드에서 같은 자리에서 다시 시작해야 한다.
+            bannerMoveT = -1f;
+            bonusBanner.anchoredPosition = bannerHome;
+            bonusBanner.localScale = Vector3.one;
+            bonusBanner.gameObject.SetActive(false);
+
+            StartFlip(true);
+        }
+
+        private void SetSide(bool bonus)
+        {
+            if (pinballSideRoot != null)
+                pinballSideRoot.SetActive(!bonus);
+
+            if (bonusSideRoot != null)
+                bonusSideRoot.SetActive(bonus);
         }
 
         // ──────────────────────────────────────────────── 칸 경품 표시
@@ -701,6 +1035,9 @@ namespace OJ.Pinball
 
         private void Update()
         {
+            TickFlip();
+            TickBanner();
+
             if (activeFx.Count == 0)
                 return;
 
@@ -769,6 +1106,8 @@ namespace OJ.Pinball
                 closeButton.interactable = !SessionOpen;
 
             RefreshGauge();
+
+            RefreshBonusBanner();
         }
 
         private void RefreshLaunchButton(PinballManager manager, int multiplier)

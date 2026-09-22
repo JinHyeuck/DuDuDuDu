@@ -46,6 +46,18 @@ namespace OJ.Core
         /// <summary>이 세이브가 쓰여질 때의 스키마 버전. 반드시 JSON 첫 필드로 나간다.</summary>
         public int Version { get; set; } = CurrentVersion;
 
+        /// <summary>
+        /// 광고제거권을 샀는가.
+        ///
+        /// <b>컨텐츠 저장분이 아니라 계정 단위의 권리라 위쪽에 따로 둔다.</b>
+        /// 지금은 보상 라운드의 「바로 전액 받기」만 이것을 보지만,
+        /// 상점·다른 광고 지점도 같은 값을 보게 된다.
+        ///
+        /// <b>상품·결제 연동은 아직 없다.</b> <c>IRewardedAdService</c> 가 SDK 가 0 줄인 채
+        /// 포트를 먼저 둔 것과 같은 이유다 — 붙이는 날 바꿀 곳을 하나로 묶어 둔다.
+        /// </summary>
+        public bool AdFree { get; set; }
+
         /// <summary><c>PointType</c> 이름 → 보유량. (<c>OJ.Point.*</c>)</summary>
         public SortedDictionary<string, int> Points { get; } = NewIntMap();
 
@@ -108,6 +120,15 @@ namespace OJ.Core
         /// 사람"과 정확히 같다.
         /// </summary>
         public PinballSave Pinball { get; } = new PinballSave();
+
+        /// <summary>
+        /// 핀볼 보상 라운드(주사위 족보)의 진행분. (<c>OJ.Pinball.BonusDiceManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> <see cref="CurrentVersion"/> 주석의 규칙대로 필드를
+        /// <i>더하는</i> 것이라, 예전 세이브에는 이 키가 없고 그 상태는 "보상 라운드를
+        /// 한 번도 안 열어 본 사람"과 정확히 같다.
+        /// </summary>
+        public BonusDiceSave BonusDice { get; } = new BonusDiceSave();
 
         internal static SortedDictionary<string, int> NewIntMap()
         {
@@ -307,6 +328,46 @@ namespace OJ.Core
         /// (<c>tag:1</c> 꼴).
         /// </summary>
         public SortedDictionary<string, int> SpecialHitCounts { get; }
+            = new SortedDictionary<string, int>(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// 핀볼 보상 라운드의 진행분.
+    ///
+    /// <b><see cref="PinballSave"/> 와 저장 자리를 반드시 갈라 둔다.</b> 보상판의 핀을
+    /// 맞힌 것이 핀볼 게이지를 올리면, 보상 라운드가 끝나면서 또 보상 라운드를 여는
+    /// 무한 루프가 된다. 이름까지 다르게 둔 것은 그 둘을 헷갈리지 않기 위해서다.
+    ///
+    /// <b>주사위 눈과 락 상태는 여기 없다.</b> 굴림은 저장하지 않고 샷을 할 때만 굳힌다 —
+    /// 샷이 재화가 실제로 움직이는 유일한 순간이기 때문이다. 앱이 굴림 도중에 죽으면
+    /// 그 사이클의 주사위만 다시 굴린다.
+    /// </summary>
+    public sealed class BonusDiceSave
+    {
+        /// <summary>라운드가 열려 있는가. 재접속 시 이어할지 판정하는 값이다.</summary>
+        public bool InProgress { get; set; }
+
+        /// <summary>
+        /// 남은 사이클 수. 광고를 보면 여기에 1 이 더해지고 <b>그 즉시 저장된다</b> —
+        /// 굴히기 전에 앱이 죽으면 "광고는 봤는데 기회가 없다"가 된다.
+        /// </summary>
+        public int RemainingCycles { get; set; }
+
+        /// <summary>
+        /// 보상 배율. 센터핀 게이지를 한 번 더 채울 때마다 1 씩 오른다.
+        ///
+        /// <b>핀볼 배율 때문에 필요하다.</b> x100 으로 쏘면 한 세션에 센터핀 게이지가
+        /// 두세 번 차는데, 그것을 무시하면 크게 쏜 보람이 사라진다. 라운드를 여러 번 여는
+        /// 대신 <i>한 판의 보상</i>을 그만큼 곱한다 — 같은 판을 세 번 하게 만들 이유가 없다.
+        /// </summary>
+        public int RewardMultiplier { get; set; } = 1;
+
+        /// <summary>
+        /// 특수 핀 태그 → <b>이번 라운드의</b> 누적 적중 수.
+        /// 키는 <c>OJ.Pinball.BonusDiceManager</c> 가 만든다(<c>tag:1</c> 꼴).
+        /// 라운드가 끝나면 비운다.
+        /// </summary>
+        public SortedDictionary<string, int> PinCounts { get; }
             = new SortedDictionary<string, int>(StringComparer.Ordinal);
     }
 }

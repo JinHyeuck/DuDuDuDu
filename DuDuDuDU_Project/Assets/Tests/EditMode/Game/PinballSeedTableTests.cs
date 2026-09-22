@@ -10,6 +10,12 @@ namespace Pinball.EditorTools.Tests
     /// 기획자가 핀을 3픽셀 옮기고 재베이크를 잊으면 여기서 빨간불이 뜬다.
     /// 이걸 안 잡으면 겉보기엔 멀쩡하게 굴러가면서 표기 확률과 실제 지급이 어긋난 채로 라이브에 나간다.
     /// </summary>
+#if OJ_HEADLESS_RUNNER
+    // 헤드리스 러너는 에디터 밖이라 AssetDatabase 가 없다(내부 호출이 해결 안 돼 터진다).
+    // 컴파일은 그대로 되게 두고 실행만 빼다 — 에디터의 Test Runner 에서는 정상으로 돌고,
+    // 그곳이 이 테스트의 진짜 집이다.
+    [Ignore("AssetDatabase 가 필요해 Unity 에디터에서만 돌다.")]
+#endif
     public sealed class PinballSeedTableTests
     {
         private static SeedTable[] LoadAll()

@@ -66,7 +66,7 @@ namespace OJ.Stage
             };
 
             AddDistinctRewards(rewards, ElementScrollTypes, new[] { 20, 40 });
-            rewards.Add(new PointRewardEntry(PointType.SpecialDiceCore, Random.Range(5, 11)));
+            rewards.Add(new PointRewardEntry(PointType.RareStone, Random.Range(5, 11)));
             AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 3 });
             return rewards;
         }
@@ -139,7 +139,7 @@ namespace OJ.Stage
                 rewards.Add(new PointRewardEntry(PointType.Gold, 400 + StageRewardFormula.StageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 });
                 AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 });
-                rewards.Add(new PointRewardEntry(PointType.MythicScroll, 15));
+                rewards.Add(new PointRewardEntry(PointType.MythicStone, 15));
             }
 
             if ((rewardFlags & StageRewardTierFlags.Perfect) != 0)
@@ -147,7 +147,7 @@ namespace OJ.Stage
                 rewards.Add(new PointRewardEntry(PointType.Gold, 500 + StageRewardFormula.StageBonus(stageIndex)));
                 AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 });
                 rewards.Add(new PointRewardEntry(PointType.FreeGem, 150));
-                rewards.Add(new PointRewardEntry(PointType.MythicScroll, 10));
+                rewards.Add(new PointRewardEntry(PointType.MythicStone, 10));
             }
 
             return rewards;
@@ -179,7 +179,7 @@ namespace OJ.Stage
             AddScaledReward(rewards, elementTypes[0], 20, multiplier);
             AddScaledReward(rewards, elementTypes[1], 40, multiplier);
 
-            AddScaledReward(rewards, PointType.SpecialDiceCore, random.Next(5, 11), multiplier);
+            AddScaledReward(rewards, PointType.RareStone, random.Next(5, 11), multiplier);
 
             PointType equipmentType = EquipmentScrollTypes[random.Next(0, EquipmentScrollTypes.Length)];
             AddScaledReward(rewards, equipmentType, 3, multiplier);

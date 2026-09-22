@@ -228,6 +228,18 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 핀볼 보상 라운드(주사위 족보). 핀볼 게이지가 다 차면 열린다.
+            // 의존은 PointManager 뿐이라 순서 제약은 없고, 핀볼 뒤에 둔 것은 읽는 사람이
+            // 세이브 파일에서 둘을 붙여 보도록 하려는 것뿐이다.
+            builder.Register<BonusDiceManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
+            // 계정 단위 권리(지금은 광고제거권 하나). 소유자를 하나로 못 박아 둔 필드다.
+            builder.Register<EntitlementManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 통합 세이브. 7.5 이후 <b>이것이 유일한 진행도 저장소다.</b>
             // ISaveOnApplicationLifecycle 로 등록해 앱이 멈출 때 파일이 쓰이게 한다.
             //
@@ -272,6 +284,8 @@ namespace OJ.DI
             IdleRewardManager.Instance = container.Resolve<IdleRewardManager>();
             ShopPurchaseManager.Instance = container.Resolve<ShopPurchaseManager>();
             PinballManager.Instance = container.Resolve<PinballManager>();
+            BonusDiceManager.Instance = container.Resolve<BonusDiceManager>();
+            EntitlementManager.Instance = container.Resolve<EntitlementManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();

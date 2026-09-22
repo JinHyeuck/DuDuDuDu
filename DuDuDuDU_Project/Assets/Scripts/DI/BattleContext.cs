@@ -1,4 +1,5 @@
 using UnityEngine.Scripting;
+using OJ.Battle;
 using OJ.Bounty;
 using OJ.Dice;
 using OJ.Element;
@@ -40,6 +41,7 @@ namespace OJ.DI
         public BulletEffectPool BulletEffects { get; private set; }
         public DamageTextPool DamageTexts { get; private set; }
         public BountyManager Bounty { get; private set; }
+        public BattlePointManager BattlePoints { get; private set; }
         public TowerRunManager Tower { get; private set; }
         public DamageContributionTracker Contribution { get; private set; }
         public WaveRewindManager Rewind { get; private set; }
@@ -67,6 +69,7 @@ namespace OJ.DI
             BulletEffectPool bulletEffects,
             DamageTextPool damageTexts,
             BountyManager bounty,
+            BattlePointManager battlePoints,
             TowerRunManager tower,
             DamageContributionTracker contribution,
             WaveRewindManager rewind)
@@ -86,6 +89,7 @@ namespace OJ.DI
             BulletEffects = bulletEffects;
             DamageTexts = damageTexts;
             Bounty = bounty;
+            BattlePoints = battlePoints;
             Tower = tower;
             Contribution = contribution;
             Rewind = rewind;
@@ -113,6 +117,7 @@ namespace OJ.DI
             BulletEffects = null;
             DamageTexts = null;
             Bounty = null;
+            BattlePoints = null;
 
             // 탑도 같이 비운다. 판이 끝나 로비로 나간 뒤에도 IsActive 가 true 로 남으면
             // 다음 본편 전투가 탑 규칙(소환 금지·단일 웨이브)으로 돌아간다.
