@@ -5481,8 +5481,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 18, y: -18.7}
-  m_SizeDelta: {x: 90.8, y: 59.1}
+  m_AnchoredPosition: {x: -0, y: 40}
+  m_SizeDelta: {x: 210.89, y: 59.1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1217082532
 MonoBehaviour:
@@ -5504,7 +5504,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: x5
+  m_text: "2 \uC2A4\uD14C\uC774\uC9C0"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1319e6ce8b2025544ba5e48e37767109, type: 2}
   m_sharedMaterial: {fileID: 6938651417726590924, guid: 1319e6ce8b2025544ba5e48e37767109, type: 2}
@@ -5531,8 +5531,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
-  m_fontSizeBase: 40
+  m_fontSize: 40.4
+  m_fontSizeBase: 40.4
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -5755,7 +5755,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 34.44}
+  m_AnchoredPosition: {x: 15, y: -17}
   m_SizeDelta: {x: 0, y: -98.32}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1236664433
@@ -5778,7 +5778,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Sweep
+  m_text: "\uC18C\uD0D5"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1319e6ce8b2025544ba5e48e37767109, type: 2}
   m_sharedMaterial: {fileID: 6938651417726590924, guid: 1319e6ce8b2025544ba5e48e37767109, type: 2}
@@ -5805,8 +5805,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
-  m_fontSizeBase: 40
+  m_fontSize: 53.5
+  m_fontSizeBase: 53.5
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -7541,7 +7541,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -35.4, y: -19.6}
+  m_AnchoredPosition: {x: -65, y: -27}
   m_SizeDelta: {x: 115, y: 115}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1700496786
@@ -7793,6 +7793,7 @@ GameObject:
   - component: {fileID: 1784043870}
   - component: {fileID: 1784043869}
   - component: {fileID: 1784043868}
+  - component: {fileID: 1784043871}
   m_Layer: 5
   m_Name: Sweep
   m_TagString: Untagged
@@ -7904,6 +7905,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1784043866}
   m_CullTransparentMesh: 1
+--- !u!114 &1784043871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1784043866}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db1626c9511522845a4bbd775698b1d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: OJ.Game::OJ.Stage.UISweepLobbyButton
+  button: {fileID: 1784043868}
+  stateText: {fileID: 1217082532}
 --- !u!1 &1786387531
 GameObject:
   m_ObjectHideFlags: 0
