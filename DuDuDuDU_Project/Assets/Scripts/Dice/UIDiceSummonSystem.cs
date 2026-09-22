@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using TMPro;
 using VContainer;
 using OJ.Analytics;
+using OJ.Battle;
+using OJ.Core;
 using OJ.DI;
 using OJ.Hunting;
 using OJ.Relic;
@@ -27,11 +29,25 @@ namespace OJ.Dice
         public TMP_Text spText;
 
         [Header("SP Settings")]
-        public int currentSP = 100;
-        public int summonCost = 10;
-
         [SerializeField] private int summonsPerCostIncrease = 2;
-        private int summonsSinceLastCostIncrease = 0;
+
+        /// <summary>
+        /// 이 판의 SP. <b>값은 <c>RunState</c> 가 들고 여기는 창문이다.</b>
+        ///
+        /// 예전에는 여기 <c>public int currentSP = 100</c> 이 있었다. 직렬화 필드라
+        /// 프리팹에 박힌 100 이 판 시작값처럼 보였지만 실제로는
+        /// <see cref="SetStageStartSp"/> 가 매번 덮었고, 되돌리기를 위해 이 컴포넌트가
+        /// 자기만의 스냅샷 구조체를 따로 들고 있어야 했다.
+        /// 지금은 <c>RunState.WaveSnapshot</c> 이 한꺼번에 덮는다.
+        /// </summary>
+        public int currentSP => battle != null && battle.BattlePoints != null
+            ? battle.BattlePoints.Get(BattlePointType.SummonPoint)
+            : 0;
+
+        /// <summary>다음 소환 비용. <see cref="currentSP"/> 와 같은 이유로 여기 값이 없다.</summary>
+        public int summonCost => battle != null && battle.Game != null
+            ? battle.Game.Run.SummonCost
+            : 0;
 
         [Header("Dice Settings")]
         public List<DiceType> deckTypes = new()
@@ -53,68 +69,77 @@ namespace OJ.Dice
             if (summonButton != null)
                 summonButton.onClick.RemoveListener(OnSummonButton);
 
+            if (battle != null && battle.BattlePoints != null)
+                battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
         }
 
         private void Start()
         {
             summonButton.onClick.AddListener(OnSummonButton);
+
+            // SP 가 이 컴포넌트 밖(RunState)에 살게 되면서, 숫자가 바뀌는 것을 여기서
+            // 항상 볼 수는 없게 됐다 — 현상금 지급과 되돌리기가 창구를 거쳐 고친다.
+            // 그래서 구독한다. 안 걸면 되돌린 직후에 옛 숫자가 그대로 남는다.
+            if (battle != null && battle.BattlePoints != null)
+            {
+                battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
+                battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
+            }
+
             UpdateSPUI();
+        }
+
+        private void OnBattlePointChanged(BattlePointType battlePointType, int value)
+        {
+            if (battlePointType == BattlePointType.SummonPoint)
+                UpdateSPUI();
         }
 
         public void SetStageStartSp(int startSp, int startSummonCost = 10)
         {
-            currentSP = Mathf.Max(0, startSp);
-            summonCost = Mathf.Max(1, startSummonCost);
-            summonsSinceLastCostIncrease = 0;
-            UpdateSPUI();
-        }
+            if (battle == null || battle.Game == null)
+                return;
 
-        private void UpdateSPUI()
-        {
-            spText.text = $"{currentSP} / {summonCost}";
-            spText.color = currentSP >= summonCost ? Color.white : Color.red;
+            battle.Game.Run.SummonCost = Mathf.Max(1, startSummonCost);
+            battle.Game.Run.SummonsSinceLastCostIncrease = 0;
+
+            // 비용을 먼저 세우고 SP 를 창구로 넣는다. 창구가 이벤트를 내고 그것이
+            // UpdateSPUI 를 부르는데, 비용이 아직 옛 값이면 한 프레임 동안
+            // "새 SP / 옛 비용" 이 뜬다.
+            battle.BattlePoints?.Set(BattlePointType.SummonPoint, Mathf.Max(0, startSp));
+
+            UpdateSPUI();
         }
 
         /// <summary>
-        /// 소환 상태 묶음. 웨이브 되돌리기가 뜨고 되돌린다.
-        ///
-        /// <b><see cref="summonsSinceLastCostIncrease"/> 가 여기 있어야 하는 이유.</b>
-        /// 그것이 private 이라 밖에서 못 읽는데, 빠뜨리면 되돌린 뒤 <b>다음 소환 한 번의
-        /// 비용 상승 시점이 어긋난다</b> — 화면에는 "가끔 비용이 한 박자 늦게 오른다"
-        /// 로만 보여서 원인을 못 찾는다.
+        /// SP 표시를 지금 상태로 맞춘다. <b>되돌리기가 <c>RunState</c> 를 직접 고친 뒤에도
+        /// 부른다</b> — 그 경로는 창구를 거치지 않아 이벤트가 나지 않는다.
         /// </summary>
-        public struct SummonSnapshot
+        public void UpdateSPUI()
         {
-            public int CurrentSP;
-            public int SummonCost;
-            public int SummonsSinceLastCostIncrease;
+            if (spText == null)
+                return;
+
+            int sp = currentSP;
+            int cost = summonCost;
+
+            spText.text = $"{sp} / {cost}";
+            spText.color = sp >= cost ? Color.white : Color.red;
         }
 
-        public SummonSnapshot CaptureSnapshot()
-        {
-            return new SummonSnapshot
-            {
-                CurrentSP = currentSP,
-                SummonCost = summonCost,
-                SummonsSinceLastCostIncrease = summonsSinceLastCostIncrease,
-            };
-        }
-
-        public void RestoreSnapshot(in SummonSnapshot snapshot)
-        {
-            currentSP = snapshot.CurrentSP;
-            summonCost = snapshot.SummonCost;
-            summonsSinceLastCostIncrease = snapshot.SummonsSinceLastCostIncrease;
-            UpdateSPUI();
-        }
+        // SummonSnapshot · CaptureSnapshot · RestoreSnapshot 이 여기 있었다.
+        // SP · 소환 비용 · 비용 상승 카운터가 RunState 로 가면서 RunState.WaveSnapshot 이
+        // 셋을 한꺼번에 덮는다. 그쪽이 나은 이유는 <b>빠뜨림이 테스트에 잡힌다</b>는 것이다 —
+        // RunStateSnapshotTests 가 리플렉션으로 전 필드를 훑으므로, 필드를 늘리고
+        // 스냅샷에 넣는 것을 잊으면 필드 이름을 대고 실패한다. 손으로 쓴 구조체는
+        // 늘어난 필드를 모른다.
 
         public void AddSP(int addsp)
         {
             if (addsp <= 0)
                 return;
 
-            currentSP += addsp;
-            UpdateSPUI();
+            battle.BattlePoints?.Add(BattlePointType.SummonPoint, addsp);
         }
 
         private void OnSummonButton()
@@ -159,16 +184,18 @@ namespace OJ.Dice
             if (summonable.Count == 0)
                 return;
 
-            currentSP -= summonCost;
             int spentCost = summonCost;
+            battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, spentCost);
+
             bool skipCostIncrease = RelicManager.Instance != null && RelicManager.Instance.ShouldSkipSummonCostIncrease();
             if (!skipCostIncrease)
             {
-                summonsSinceLastCostIncrease++;
-                if (summonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
+                RunState run = battle.Game.Run;
+                run.SummonsSinceLastCostIncrease++;
+                if (run.SummonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
                 {
-                    summonCost++;
-                    summonsSinceLastCostIncrease = 0;
+                    run.SummonCost++;
+                    run.SummonsSinceLastCostIncrease = 0;
                 }
             }
             UpdateSPUI();

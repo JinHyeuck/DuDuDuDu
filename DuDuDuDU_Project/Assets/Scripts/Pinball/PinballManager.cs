@@ -232,6 +232,22 @@ namespace OJ.Pinball
         /// <returns>임계치에 닿아 지급한 보상. 못 닿았으면 빈 목록.</returns>
         public IReadOnlyList<PointRewardEntry> ResolveSpecialHit(int tag, int multiplier)
         {
+            return ResolveSpecialHit(tag, multiplier, out _);
+        }
+
+        /// <summary>
+        /// 위와 같되 <b>이번 적중으로 게이지를 몇 번 완주했는지</b>를 같이 내보낸다.
+        ///
+        /// <b>보상이 비어 있는 태그 때문에 필요하다.</b> 보상 라운드를 여는 센터핀은
+        /// 경품표에 보상을 걸지 않는다 — 보상이 곧 그 라운드이기 때문이다. 그러면 반환되는
+        /// 목록이 비어 있어서 "게이지만 올랐다"와 "방금 다 찼다"를 호출부가 구분할 수 없다.
+        /// </summary>
+        /// <param name="completions">이번 호출로 임계치를 넘은 횟수. 0 이면 아직 차는 중이다.</param>
+        public IReadOnlyList<PointRewardEntry> ResolveSpecialHit(
+            int tag, int multiplier, out int completions)
+        {
+            completions = 0;
+
             PinballSpecialReward rule = Database.GetSpecial(tag);
             if (rule == null)
             {
@@ -245,6 +261,7 @@ namespace OJ.Pinball
 
             SetGauge(tag, next);
             OnGaugeChanged?.Invoke();
+            completions = grantCount;
 
             if (grantCount <= 0 || rule.rewards == null)
                 return System.Array.Empty<PointRewardEntry>();

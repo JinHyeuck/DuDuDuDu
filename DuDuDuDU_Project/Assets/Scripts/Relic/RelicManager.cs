@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using OJ.Core;
 using UnityEngine;
 using UnityEngine.Scripting;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Hunting;
@@ -391,10 +392,10 @@ namespace OJ.Relic
         public void ApplyWaveClearRelics(Wall wall)
         {
             if (HasRelic(RelicId.BattleVault)
-                && PointManager.Instance != null
+                && battle.BattlePoints != null
                 && UnityEngine.Random.value * 100f <= GetPrimaryValue(RelicId.BattleVault))
             {
-                PointManager.Instance.Add(PointType.BattleEnhanceStone, 1);
+                battle.BattlePoints.Add(BattlePointType.EnhanceStone, 1);
             }
 
             if (wall != null && HasRelic(RelicId.RepairHammer))
@@ -742,8 +743,8 @@ namespace OJ.Relic
                 case PointType.IceScroll:
                 case PointType.PoisonScroll:
                 case PointType.ThunderScroll:
-                case PointType.MythicScroll:
-                case PointType.SpecialDiceCore:
+                case PointType.MythicStone:
+                case PointType.RareStone:
                 case PointType.WeaponScroll:
                 case PointType.HelmetScroll:
                 case PointType.ArmorScroll:

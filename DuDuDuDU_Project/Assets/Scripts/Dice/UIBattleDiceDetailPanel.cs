@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VContainer;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Point;
 using OJ.UI;
@@ -106,16 +107,16 @@ namespace OJ.Dice
 
             // 재화가 바뀌면 버튼의 켜짐/꺼짐이 바뀐다. 웨이브 클리어 보상이 이 창을
             // 열어 둔 채로 들어올 수 있으므로 구독해서 그 자리에서 갱신한다.
-            if (PointManager.Instance != null)
-                PointManager.Instance.OnPointChanged += OnPointChanged;
+            if (battle.BattlePoints != null)
+                battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
         }
 
         protected override void OnExit()
         {
             if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
-            if (PointManager.Instance != null)
-                PointManager.Instance.OnPointChanged -= OnPointChanged;
+            if (battle.BattlePoints != null)
+                battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
         }
 
         private void Update()
@@ -230,8 +231,8 @@ namespace OJ.Dice
         private void RefreshActionButtons()
         {
             bool canAct = battle.Game != null && battle.Game.inGameState == InGameState.Setting;
-            int owned = PointManager.Instance != null
-                ? PointManager.Instance.Get(PointType.BattleEnhanceStone)
+            int owned = battle.BattlePoints != null
+                ? battle.BattlePoints.Get(BattlePointType.EnhanceStone)
                 : 0;
 
             bool hasEvolvePath = DiceEvolution.TryGetEvolveTarget(currentDiceType, out DiceType evolveTarget);
@@ -401,10 +402,9 @@ namespace OJ.Dice
                 Refresh();
         }
 
-        private void OnPointChanged(PointType pointType, int value)
+        private void OnBattlePointChanged(BattlePointType battlePointType, int value)
         {
-            if (pointType == PointType.BattleEnhanceStone)
-                RefreshActionButtons();
+            RefreshActionButtons();
         }
 
         /// <summary>

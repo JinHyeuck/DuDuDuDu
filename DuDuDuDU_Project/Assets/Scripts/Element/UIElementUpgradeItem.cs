@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Point;
 using OJ.Utils;
@@ -59,7 +60,7 @@ namespace OJ.Element
             // 정상 화면처럼 그려서 덮어 버리므로 남기지 않는다.
             int level = battle.ElementUpgrade.GetLevel(elementType);
             int nextCost = battle.ElementUpgrade.GetNextUpgradeCost(elementType);
-            int ownedCoin = PointManager.Instance != null ? PointManager.Instance.Get(PointType.BattleEnhanceStone) : 0;
+            int ownedCoin = battle.BattlePoints != null ? battle.BattlePoints.Get(BattlePointType.EnhanceStone) : 0;
             ElementResource resource = StaticResource.Instance != null ? StaticResource.Instance.GetElementResource(elementType) : null;
 
             if (iconImage != null)
@@ -80,11 +81,8 @@ namespace OJ.Element
             if (costText != null)
                 costText.SetText("{0}", nextCost);
 
-            if (costIconImage != null && StaticResource.Instance != null && StaticResource.Instance.PointMetadataDatabase != null)
-            {
-                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.BattleEnhanceStone);
-                costIconImage.sprite = metadata != null ? metadata.icon : null;
-            }
+            if (costIconImage != null)
+                costIconImage.sprite = BattlePointUtility.GetIcon(BattlePointType.EnhanceStone);
 
             if (upgradeButton != null)
                 upgradeButton.interactable = ownedCoin >= nextCost;

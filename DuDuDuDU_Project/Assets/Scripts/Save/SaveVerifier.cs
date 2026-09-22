@@ -9,9 +9,12 @@ using OJ.Equipment;
 using OJ.IdleReward;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Pinball;
+using OJ.Shop;
 using OJ.Stage;
 using OJ.StageReward;
 using OJ.StageStar;
+using OJ.Tower;
 
 namespace OJ.Save
 {
@@ -144,6 +147,16 @@ namespace OJ.Save
             Collect(owners, StageRewardManager.Instance);
             Collect(owners, StageStarManager.Instance);
             Collect(owners, IdleRewardManager.Instance);
+
+            // 아래 여섯은 빠져 있었다. 이 진단은 「매니저가 들고 있는 것」과
+            // 「파일에 쓰인 것」을 대조하는 것인데, 소유자를 빠뜨리면 <b>그 조각은
+            // 양쪽 모두 비어 있어 항상 「일치」로 나온다.</b> 대조를 안 하는 것과 같다.
+            Collect(owners, DiceOwnershipManager.Instance);
+            Collect(owners, TowerProgressManager.Instance);
+            Collect(owners, ShopPurchaseManager.Instance);
+            Collect(owners, PinballManager.Instance);
+            Collect(owners, BonusDiceManager.Instance);
+            Collect(owners, EntitlementManager.Instance);
 
             sb.AppendLine("  세이브 조각 소유자 " + owners.Count + "개");
 

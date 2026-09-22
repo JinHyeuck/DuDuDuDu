@@ -45,10 +45,10 @@ namespace OJ.Game.Tests
         public void ToScrollTypeMapsSpecialAndKing()
         {
             foreach (DiceType special in DiceEvolution.SpecialTypes)
-                Assert.That(PointManager.ToScrollType(special), Is.EqualTo(PointType.SpecialDiceCore), special.ToString());
+                Assert.That(PointManager.ToScrollType(special), Is.EqualTo(PointType.RareStone), special.ToString());
 
             foreach (DiceType king in DiceEvolution.KingTypes)
-                Assert.That(PointManager.ToScrollType(king), Is.EqualTo(PointType.MythicScroll), king.ToString());
+                Assert.That(PointManager.ToScrollType(king), Is.EqualTo(PointType.MythicStone), king.ToString());
         }
 
         /// <summary>

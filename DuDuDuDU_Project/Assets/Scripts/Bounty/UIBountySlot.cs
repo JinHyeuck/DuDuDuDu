@@ -72,7 +72,7 @@ namespace OJ.Bounty
                 hpText.SetText("HP " + ShortNumberFormat.Format(hp));
 
             if (rewardText != null)
-                rewardText.SetText(FormatReward(definition));
+                rewardText.SetText(definition.FormatReward());
 
             if (icon != null)
             {
@@ -136,20 +136,6 @@ namespace OJ.Bounty
             text.color = c;
         }
 
-        private static string FormatReward(BountyDefinition definition)
-        {
-            string amount = ShortNumberFormat.Format(definition.rewardAmount);
-
-            switch (definition.rewardKind)
-            {
-                case BountyRewardKind.SummonPoint:
-                    return "SP +" + amount;
-                case BountyRewardKind.EnhanceStone:
-                    return "강화석 +" + amount;
-                default:
-                    return amount;
-            }
-        }
 
         private void OnClick()
         {

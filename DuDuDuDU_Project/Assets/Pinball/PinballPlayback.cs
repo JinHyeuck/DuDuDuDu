@@ -133,6 +133,12 @@ namespace Pinball
         {
             public int slot;
             public float dueTime;
+
+            /// <summary>지정된 시드. <see cref="hasSeed"/> 가 false 면 무시된다.</summary>
+            public uint seed;
+
+            /// <summary>호출부가 시드를 직접 골랐는가.</summary>
+            public bool hasSeed;
         }
 
         private PinballSimulator _sim;
@@ -222,6 +228,28 @@ namespace Pinball
                 }
             }
 
+            return Launch(slot, seed);
+        }
+
+        /// <summary>
+        /// 시드를 <b>지정해</b> 한 발 쏜다. 시드 풀에서 고르지 않는다.
+        ///
+        /// <b>호출부가 이미 결과를 확정한 경우에 쓴다.</b> 보상 라운드가 그렇다 —
+        /// 샷 버튼을 누르는 순간에 시드를 다 뽑아 <c>SeedTable.hitMask</c> 로 적중을 합산하고
+        /// 지급·저장까지 끝낸 뒤, 그 시드를 그대로 재생한다. 그래야 굴러가는 도중에
+        /// 앱이 죽거나 화면을 나가도 <b>보상과 진행도가 갈라지지 않는다.</b>
+        ///
+        /// 시드가 그 칸으로 가지 않으면 <b>발사하지 않고</b> -1 을 돌려준다 —
+        /// 표와 판이 어긋난 상태를 연출로 덮지 않기 위해서다.
+        /// </summary>
+        /// <returns>구슬 id. 실패하면 -1.</returns>
+        public int PlayForSeed(int slot, uint seed)
+        {
+            return _sim == null ? -1 : Launch(slot, seed);
+        }
+
+        private int Launch(int slot, uint seed)
+        {
             var ball = _ballPool.Count > 0 ? _ballPool.Pop() : new Ball();
             ball.Reset();
             ball.id = _nextId++;
@@ -280,6 +308,44 @@ namespace Pinball
             _sessionOpen = true;
         }
 
+        /// <summary>
+        /// 시드를 지정해 여러 발을 간격을 두고 순차 발사한다.
+        /// <paramref name="slots"/> 와 <paramref name="seeds"/> 는 인덱스가 대응해야 한다.
+        ///
+        /// 둘의 길이가 다르면 <b>짧은 쪽에 맞춘다</b> — 짝이 안 맞는 시드를 짐작으로
+        /// 쓰면 엉뚱한 칸으로 가는 구슬이 섞인다.
+        /// </summary>
+        public void PlayForSeeds(
+            IReadOnlyList<int> slots, IReadOnlyList<uint> seeds, float intervalSeconds = -1f)
+        {
+            if (slots == null || seeds == null) return;
+
+            int count = Mathf.Min(slots.Count, seeds.Count);
+            if (count == 0) return;
+
+            if (count != slots.Count || count != seeds.Count)
+            {
+                Debug.LogWarning(
+                    $"[Pinball] 칸({slots.Count})과 시드({seeds.Count}) 개수가 달라 {count}발만 쏴니다.", this);
+            }
+
+            float gap = intervalSeconds < 0f ? launchInterval : intervalSeconds;
+            float now = Time.time;
+
+            for (int i = 0; i < count; i++)
+            {
+                _pending.Add(new PendingLaunch
+                {
+                    slot = slots[i],
+                    seed = seeds[i],
+                    hasSeed = true,
+                    dueTime = now + gap * i,
+                });
+            }
+
+            _sessionOpen = true;
+        }
+
         /// <summary>대기 중인 발사를 취소하고 굴러가는 구슬을 전부 회수한다.</summary>
         public void StopAll(bool fireAllLandedCallback = false)
         {
@@ -324,11 +390,17 @@ namespace Pinball
             while (due < _pending.Count && _pending[due].dueTime <= now) due++;
             if (due == 0) return;
 
-            var slots = new int[due];
-            for (int i = 0; i < due; i++) slots[i] = _pending[i].slot;
+            var ready = new PendingLaunch[due];
+            for (int i = 0; i < due; i++) ready[i] = _pending[i];
             _pending.RemoveRange(0, due);
 
-            for (int i = 0; i < due; i++) PlayForSlot(slots[i]);
+            for (int i = 0; i < due; i++)
+            {
+                if (ready[i].hasSeed)
+                    PlayForSeed(ready[i].slot, ready[i].seed);
+                else
+                    PlayForSlot(ready[i].slot);
+            }
         }
 
         private void TickBalls()

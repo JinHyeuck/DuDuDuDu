@@ -47,7 +47,7 @@ namespace OJ.Dice
     public static class DiceEvolution
     {
         /// <summary>
-        /// 진화(상위 단계로) 비용. 재화는 <see cref="PointType.BattleEnhanceStone"/> 하나다.
+        /// 진화(상위 단계로) 비용. 재화는 <see cref="BattlePointType.EnhanceStone"/> 하나다.
         ///
         /// <b>비용 네 개는 전부 여기 있다.</b> 흩뿌려 두면 수급이 바뀔 때 한쪽만 고치게 된다.
         /// 지금 수급은 웨이브 클리어당 +1(<c>GameManager.HandleWaveCompleted</c>)이고

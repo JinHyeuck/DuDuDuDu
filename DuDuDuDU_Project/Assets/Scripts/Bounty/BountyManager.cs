@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Scripting;
 using OJ.Core;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Hunting;
 using OJ.Point;
@@ -208,10 +209,10 @@ namespace OJ.Bounty
 
             switch (definition.rewardKind)
             {
-                case BountyRewardKind.SummonPoint:
+                case BattlePointType.SummonPoint:
                     Run.PendingBountySummonPoint += definition.rewardAmount;
                     break;
-                case BountyRewardKind.EnhanceStone:
+                case BattlePointType.EnhanceStone:
                     Run.PendingBountyEnhanceStone += definition.rewardAmount;
                     break;
             }
@@ -263,7 +264,7 @@ namespace OJ.Bounty
                 battle.Summon.AddSP(summonPoint);
 
             if (enhanceStone > 0)
-                PointManager.Instance?.Add(PointType.BattleEnhanceStone, enhanceStone);
+                battle.BattlePoints?.Add(BattlePointType.EnhanceStone, enhanceStone);
 
             if (summonPoint > 0 || enhanceStone > 0)
                 Debug.Log("[현상금] 보상 지급 — SP " + summonPoint + " / 강화석 " + enhanceStone);

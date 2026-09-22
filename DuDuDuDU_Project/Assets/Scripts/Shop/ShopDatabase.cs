@@ -121,7 +121,7 @@ namespace OJ.Shop
         [Serializable]
         public sealed class StoneOffer
         {
-            public PointType stoneType = PointType.MythicScroll;
+            public PointType stoneType = PointType.MythicStone;
             public int amountPerPurchase = 5;
             public int costFreeGem = 500;
         }
@@ -225,7 +225,7 @@ namespace OJ.Shop
                     contents = new List<Reward>
                     {
                         new Reward(PointType.PaidGem, 250),
-                        new Reward(PointType.MythicScroll, 15),
+                        new Reward(PointType.MythicStone, 15),
                     },
                 },
             };
@@ -258,9 +258,9 @@ namespace OJ.Shop
             {
                 new DailyOffer { reward = new Reward(PointType.NormalScroll, 5), costType = PointType.FreeGem, cost = 50 },
                 new DailyOffer { reward = new Reward(PointType.Gold, 100000), costType = PointType.FreeGem, cost = 30 },
-                new DailyOffer { reward = new Reward(PointType.SpecialDiceCore, 3), costType = PointType.FreeGem, cost = 200 },
+                new DailyOffer { reward = new Reward(PointType.RareStone, 3), costType = PointType.FreeGem, cost = 200 },
                 new DailyOffer { reward = new Reward(PointType.WeaponScroll, 10), costType = PointType.FreeGem, cost = 80 },
-                new DailyOffer { reward = new Reward(PointType.SpecialDiceCore, 3), costType = PointType.FreeGem, cost = 150 },
+                new DailyOffer { reward = new Reward(PointType.RareStone, 3), costType = PointType.FreeGem, cost = 150 },
                 new DailyOffer { reward = new Reward(PointType.Gold, 300000), costType = PointType.FreeGem, cost = 70, discountPercent = 20 },
             };
 
@@ -288,12 +288,12 @@ namespace OJ.Shop
             // 스샷 레퍼런스대로 종류마다 3티어. 그리드가 3열이라 신화석 한 줄, 레어석 한 줄로 앉는다.
             stoneOffers = new List<StoneOffer>
             {
-                new StoneOffer { stoneType = PointType.MythicScroll, amountPerPurchase = 5, costFreeGem = 500 },
-                new StoneOffer { stoneType = PointType.MythicScroll, amountPerPurchase = 50, costFreeGem = 5000 },
-                new StoneOffer { stoneType = PointType.MythicScroll, amountPerPurchase = 150, costFreeGem = 15000 },
-                new StoneOffer { stoneType = PointType.SpecialDiceCore, amountPerPurchase = 5, costFreeGem = 500 },
-                new StoneOffer { stoneType = PointType.SpecialDiceCore, amountPerPurchase = 50, costFreeGem = 5000 },
-                new StoneOffer { stoneType = PointType.SpecialDiceCore, amountPerPurchase = 150, costFreeGem = 15000 },
+                new StoneOffer { stoneType = PointType.MythicStone, amountPerPurchase = 5, costFreeGem = 500 },
+                new StoneOffer { stoneType = PointType.MythicStone, amountPerPurchase = 50, costFreeGem = 5000 },
+                new StoneOffer { stoneType = PointType.MythicStone, amountPerPurchase = 150, costFreeGem = 15000 },
+                new StoneOffer { stoneType = PointType.RareStone, amountPerPurchase = 5, costFreeGem = 500 },
+                new StoneOffer { stoneType = PointType.RareStone, amountPerPurchase = 50, costFreeGem = 5000 },
+                new StoneOffer { stoneType = PointType.RareStone, amountPerPurchase = 150, costFreeGem = 15000 },
             };
 
             goldOffers = new List<GoldOffer>

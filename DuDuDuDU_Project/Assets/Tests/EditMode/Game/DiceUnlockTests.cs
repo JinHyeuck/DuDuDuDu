@@ -236,7 +236,7 @@ namespace OJ.Game.Tests
 
             Assert.That(second, Is.False, "이미 보유면 새로 얻은 것이 아니다");
             Assert.That(rewards, Has.Count.EqualTo(1));
-            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.SpecialDiceCore));
+            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.RareStone));
             Assert.That(rewards[0].Amount, Is.EqualTo(120));
         }
 
@@ -249,7 +249,7 @@ namespace OJ.Game.Tests
             DiceOwnershipManager.ShouldGrant(DiceType.KingFire, alreadyOwned: true, price: 200, rewards);
 
             Assert.That(rewards, Has.Count.EqualTo(1));
-            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.MythicScroll));
+            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.MythicStone));
             Assert.That(rewards[0].Amount, Is.EqualTo(200));
         }
 

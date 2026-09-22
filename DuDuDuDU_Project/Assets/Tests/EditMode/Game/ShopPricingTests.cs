@@ -154,7 +154,7 @@ namespace OJ.Game.Tests
             {
                 contents = new System.Collections.Generic.List<ShopDatabase.Reward>
                 {
-                    new ShopDatabase.Reward(PointType.MythicScroll, 15),
+                    new ShopDatabase.Reward(PointType.MythicStone, 15),
                     new ShopDatabase.Reward(PointType.PaidGem, 250),
                 },
             };

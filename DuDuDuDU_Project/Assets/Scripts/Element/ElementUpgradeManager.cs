@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Point;
@@ -78,21 +79,26 @@ namespace OJ.Element
                 return false;
 
             int cost = GetNextUpgradeCost(elementType);
-            if (!PointManager.Instance.TrySpend(PointType.BattleEnhanceStone, cost))
+            if (battle.BattlePoints == null || !battle.BattlePoints.TrySpend(BattlePointType.EnhanceStone, cost))
                 return false;
 
             SetLevel(elementType, GetLevel(elementType) + 1);
             return true;
         }
 
+        /// <summary>
+        /// 판을 새로 시작할 때 부른다.
+        ///
+        /// <b>강화석을 여기서 0 으로 밀던 줄이 사라졌다.</b> 이제 그것은
+        /// <c>RunState.BeginRun</c> 의 몫이다 — 런 범위 값을 한 곳에서 세우지 않으면
+        /// 하나만 빠뜨려도 이전 판 값이 다음 판으로 새는데, 그 사고를
+        /// <c>RunStateSnapshotTests</c> 가 리플렉션으로 막고 있다.
+        /// 이 매니저가 자기 몫(원소 레벨)만 보는 것이 맞다.
+        /// </summary>
         public void ResetRunState()
         {
             ResetAll();
-
-            if (PointManager.Instance != null)
-                PointManager.Instance.Set(PointType.BattleEnhanceStone, 0);
-            else
-                RefreshCoinUI();
+            RefreshCoinUI();
         }
 
         public void ResetAll(bool notify = true)
@@ -185,10 +191,10 @@ namespace OJ.Element
                 ElementUpgrade.onClick.AddListener(OnClickElementUpgrade);
             }
 
-            if (PointManager.Instance != null)
+            if (battle.BattlePoints != null)
             {
-                PointManager.Instance.OnPointChanged -= OnPointChanged;
-                PointManager.Instance.OnPointChanged += OnPointChanged;
+                battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
+                battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
             }
         }
 
@@ -197,8 +203,8 @@ namespace OJ.Element
             if (ElementUpgrade != null)
                 ElementUpgrade.onClick.RemoveListener(OnClickElementUpgrade);
 
-            if (PointManager.Instance != null)
-                PointManager.Instance.OnPointChanged -= OnPointChanged;
+            if (battle.BattlePoints != null)
+                battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
         }
 
         /// <summary>
@@ -213,24 +219,25 @@ namespace OJ.Element
             GameContainer.UI?.Show<UIElementUpgradePanel>();
         }
 
-        private void OnPointChanged(PointType pointType, int value)
+        // 종류를 거르지 않는다. 창구가 전투 재화만 내보내고 그중 강화석 말고는
+        // 이 UI 가 신경 쓸 것이 없어서, 걸러도 결과가 같고 안 걸러야 나중에
+        // 전투 재화가 늘었을 때 이 줄이 막지 않는다.
+        private void OnBattlePointChanged(BattlePointType battlePointType, int value)
         {
-            if (pointType != PointType.BattleEnhanceStone)
-                return;
-
             RefreshCoinUI();
         }
 
         private void RefreshCoinUI()
         {
-            if (coinAmountText != null)
-                coinAmountText.SetText("{0}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.BattleEnhanceStone) : 0);
+            int owned = battle != null && battle.BattlePoints != null
+                ? battle.BattlePoints.Get(BattlePointType.EnhanceStone)
+                : 0;
 
-            if (coinIconImage != null && StaticResource.Instance != null && StaticResource.Instance.PointMetadataDatabase != null)
-            {
-                PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(PointType.BattleEnhanceStone);
-                coinIconImage.sprite = metadata != null ? metadata.icon : null;
-            }
+            if (coinAmountText != null)
+                coinAmountText.SetText("{0}", owned);
+
+            if (coinIconImage != null)
+                coinIconImage.sprite = BattlePointUtility.GetIcon(BattlePointType.EnhanceStone);
         }
     }
 }

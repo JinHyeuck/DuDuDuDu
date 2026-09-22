@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using OJ.Analytics;
 using OJ.Core;
+using OJ.Battle;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Hunting;
@@ -272,13 +273,9 @@ namespace OJ.Rewind
             var captured = new WaveRewindSnapshot
             {
                 Run = battle.Game.Run.CaptureWaveSnapshot(),
-                Summon = battle.Summon.CaptureSnapshot(),
                 RelicFlags = RelicManager.Instance != null
                     ? RelicManager.Instance.CaptureRunFlags()
                     : default,
-                EnhanceStone = PointManager.Instance != null
-                    ? PointManager.Instance.Get(PointType.BattleEnhanceStone)
-                    : 0,
                 ElementLevels = CaptureElementLevels(),
                 Board = CaptureBoard(),
             };
@@ -467,9 +464,12 @@ namespace OJ.Rewind
                 game.wall.RestoreHp(snapshot.Run.WallHp);
 
             RestoreBoard();
-            battle.Summon.RestoreSnapshot(snapshot.Summon);
             RestoreElementLevels();
-            RestoreEnhanceStone();
+
+            // RunState 를 직접 되돌렸으므로 전투 재화 창구는 아무 이벤트도 내지 않았다.
+            // 그대로 두면 열려 있던 강화석·SP 표시가 옛 숫자를 든 채로 남는다.
+            battle.BattlePoints?.NotifyAllChanged();
+            battle.Summon.UpdateSPUI();
 
             // 판에 한 번뿐인 유물 표시. 안 되돌리면 되돌린 웨이브에서 터진 '최후의 벽' 이
             // 그 판 내내 다시 안 터진다.
@@ -538,27 +538,8 @@ namespace OJ.Rewind
                 battle.ElementUpgrade.SetLevel((ElementType)i, levels[i]);
         }
 
-        /// <summary>
-        /// 강화석을 스냅샷 값으로 되돌린다.
-        ///
-        /// <b>값이 같으면 아무것도 하지 않는다.</b> <c>PointManager.Set</c> 은 기본이
-        /// <b>즉시 파일 저장</b>이라, 안 바뀐 값을 쓰면 되돌릴 때마다 디스크를 한 번씩 친다.
-        /// 실제로 웨이브 <i>중</i> 에는 강화석이 늘지도 줄지도 않으므로(지급은 웨이브 클리어,
-        /// 소비는 관리 단계) 보통은 여기서 그냥 나간다. 그래도 뜨고 되돌리는 이유는
-        /// 그 사실이 <b>오늘의 사실</b>이기 때문이다 — 전투 중 지급 경로가 하나라도 생기면
-        /// 이 줄이 자동으로 그것을 막는다.
-        /// </summary>
-        private void RestoreEnhanceStone()
-        {
-            PointManager points = PointManager.Instance;
-            if (points == null)
-                return;
-
-            if (points.Get(PointType.BattleEnhanceStone) == snapshot.EnhanceStone)
-                return;
-
-            points.Set(PointType.BattleEnhanceStone, snapshot.EnhanceStone, saveNow: false);
-            points.SaveAll();
-        }
+        // RestoreEnhanceStone 이 여기 있었다. 강화석 하나만을 위한 복원 코드였고,
+        // 영구 저장소에 얹혀 있던 탓에 되돌릴 때마다 세이브 파일을 오갔다.
+        // 강화석이 RunState 로 가면서 RestoreWaveSnapshot 이 통째로 덮는다.
     }
 }

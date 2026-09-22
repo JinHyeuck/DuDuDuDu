@@ -7,6 +7,7 @@ using OJ.Dice;
 using OJ.Equipment;
 using OJ.Hunting;
 using OJ.Pinball;
+using OJ.Battle;
 using OJ.Point;
 using OJ.Relic;
 using OJ.Rewind;
@@ -67,6 +68,14 @@ namespace OJ.Utils
     public class StaticResource : MonoSingleton<StaticResource>
     {
         public PointMetadataDatabase PointMetadataDatabase;
+
+        /// <summary>
+        /// 전투 재화(SP·강화석)의 아이콘·표시명 정본.
+        /// <b>비어 있어도 조용히 돌아간다</b> — <c>BattlePointUtility</c> 의 폴백 표가
+        /// 이름을 한글로 잡아 주고 아이콘만 빈다. 위 Provider 들과 달리 울지 않는 이유는
+        /// 이것이 수치가 아니라 표시용이라, 없다고 게임 규칙이 달라지지 않기 때문이다.
+        /// </summary>
+        public BattlePointMetadataDatabase BattlePointMetadataDatabase;
         public DiceMetaDataDatabase DiceMetaDataDatabase;
         public GemDefinitionDatabase GemDefinitionDatabase;
         public RelicDatabase RelicDatabase;
@@ -94,6 +103,12 @@ namespace OJ.Utils
         /// 그 에셋은 <c>PinballPlayback</c> 이 인스펙터로 직접 물고 있어 여기 올리지 않는다.
         /// </summary>
         public PinballRewardDatabase PinballRewardDatabase;
+
+        /// <summary>
+        /// 핀볼 보상 라운드(주사위 족보)의 수치 정본 — 족보별 공 개수와 특수 핀 보상.
+        /// 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.
+        /// </summary>
+        public BonusDiceDatabase BonusDiceDatabase;
 
         /// <summary>
         /// 웨이브 되돌리기의 밸런스 손잡이. <b>비어 있어도 정상이다</b> —

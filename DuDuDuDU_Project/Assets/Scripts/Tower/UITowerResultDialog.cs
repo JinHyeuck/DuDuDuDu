@@ -549,12 +549,12 @@ namespace OJ.Tower
                 case PointType.Gold: return "골드";
                 case PointType.FreeGem: return "무료젬";
                 case PointType.PaidGem: return "유료젬";
-                case PointType.MythicScroll: return "신화석";
-                case PointType.SpecialDiceCore: return "레어석";
+                case PointType.MythicStone: return "신화석";
+                case PointType.RareStone: return "레어석";
 
-                // 탑은 더 이상 이것을 주지 않는다(사라지는 재화였다). 다른 경로가
-                // 결과창을 타고 들어올 수 있어 이름만 남겨 둔다.
-                case PointType.BattleEnhanceStone: return "강화석";
+                // 강화석 줄이 여기 있었다. 그 재화는 PointType 이 아니라
+                // BattlePointType 으로 갔다 — 결과창은 영구 재화만 그리므로
+                // 이제 이 스위치에 들어올 일 자체가 없다.
                 default: return pointType.ToString();
             }
         }

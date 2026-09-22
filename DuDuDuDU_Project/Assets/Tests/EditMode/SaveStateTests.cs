@@ -99,6 +99,17 @@ namespace OJ.Core.Tests
             state.Pinball.SpecialHitCounts["tag:1"] = 7;
             state.Pinball.SpecialHitCounts["tag:2"] = 14;
 
+            // 광고제거권. 상품은 아직 없고 플래그만 있다.
+            state.AdFree = true;
+
+            // 보상 라운드. PinCounts 는 핀볼 게이지와 <b>다른</b> 값이다 —
+            // 같은 키에 다른 수를 넣어 둘이 섞이면 바로 터지게 해 둔다.
+            state.BonusDice.InProgress = true;
+            state.BonusDice.RemainingCycles = 3;
+            state.BonusDice.RewardMultiplier = 4;
+            state.BonusDice.PinCounts["tag:1"] = 2;
+            state.BonusDice.PinCounts["tag:2"] = 5;
+
             return state;
         }
 
@@ -142,6 +153,17 @@ namespace OJ.Core.Tests
 
             CollectionAssert.AreEqual(
                 expected.Pinball.SpecialHitCounts, actual.Pinball.SpecialHitCounts, "pinball.specialHitCounts");
+
+            Assert.That(actual.AdFree, Is.EqualTo(expected.AdFree), "adFree");
+
+            Assert.That(actual.BonusDice.InProgress,
+                Is.EqualTo(expected.BonusDice.InProgress), "bonusDice.inProgress");
+            Assert.That(actual.BonusDice.RemainingCycles,
+                Is.EqualTo(expected.BonusDice.RemainingCycles), "bonusDice.remainingCycles");
+            Assert.That(actual.BonusDice.RewardMultiplier,
+                Is.EqualTo(expected.BonusDice.RewardMultiplier), "bonusDice.rewardMultiplier");
+            CollectionAssert.AreEqual(
+                expected.BonusDice.PinCounts, actual.BonusDice.PinCounts, "bonusDice.pinCounts");
         }
 
         // --- 직렬화 왕복 ------------------------------------------------------------------
@@ -333,6 +355,7 @@ namespace OJ.Core.Tests
             {
                 "{",
                 "  \"version\": 1,",
+                "  \"adFree\": false,",
                 "  \"points\": {",
                 "    \"Gold\": 10",
                 "  },",
@@ -387,6 +410,12 @@ namespace OJ.Core.Tests
                 "  },",
                 "  \"pinball\": {",
                 "    \"specialHitCounts\": {}",
+                "  },",
+                "  \"bonusDice\": {",
+                "    \"inProgress\": false,",
+                "    \"remainingCycles\": 0,",
+                "    \"rewardMultiplier\": 1,",
+                "    \"pinCounts\": {}",
                 "  }",
                 "}",
             })));

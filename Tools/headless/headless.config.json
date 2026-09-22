@@ -73,6 +73,35 @@
       "minTests": 3273
     },
     {
+      // 핀볼 물리 툴킷(Assets/Pinball). <b>여기 없으면 통째로 사각지대였다.</b>
+      //
+      // OJ.Game 이 Pinball.Runtime 을 참조하는데, 이 항목이 없으면 러너는 그 참조를
+      // ScriptAssemblies 에 남은 <i>낡은</i> DLL 로 때운다. 그러면 툴킷 소스를 고쳐도
+      // 러너는 옛 DLL 을 보고 초록불을 내고, 반대로 게임 코드가 방금 추가한 툴킷 API 를
+      // 부르면 "그런 메서드 없음"으로 엉뚱하게 죽는다 — 에디터를 열기 전에는 둘 다 안 드러난다.
+      "name": "Pinball.Runtime",
+      "sources": [ "DuDuDuDU_Project/Assets/Pinball" ],
+
+      // Assets/Pinball/Editor 는 Pinball.Editor 소속이다. 섞으면 런타임 어셈블리가
+      // UnityEditor 를 참조하게 되어 플레이어 빌드가 깨진다(45c168a 에서 한 번 겪었다).
+      "exclude": [ "Editor/*" ],
+
+      // uGUI(UnityEngine.UI)를 쓴다 — PinballBoardView 가 Graphic 을 만진다.
+      // asmdef 의 references 는 비어 있지만 autoReferenced 라 Unity 가 자동으로 이어 준다.
+      "references": [ "scriptAssemblies" ],
+      "excludeReferences": [ "Pinball.Runtime", "Pinball.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor" ],
+      "test": false
+    },
+    {
+      // 툴킷의 에디터 절반(Sim Lab, 시드 베이커). OJ.Game.Tests 가 SeedTableBaker.Verify 를
+      // 부르므로 참조 그래프에 실제로 들어 있다.
+      "name": "Pinball.Editor",
+      "sources": [ "DuDuDuDU_Project/Assets/Pinball/Editor" ],
+      "references": [ "Pinball.Runtime", "unityEditor", "scriptAssemblies" ],
+      "excludeReferences": [ "Pinball.Runtime", "Pinball.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor" ],
+      "test": false
+    },
+    {
       // 게임 코드 본체. 테스트 어셈블리가 아니라 "컴파일이 되는지"만 본다.
       //
       // 왜 필요한가: 이게 없으면 러너가 Assembly-CSharp 의 컴파일 오류를 통째로 못 본다.
@@ -95,12 +124,18 @@
       //                    (defines 에 UNITY_EDITOR 가 들어 있다). 예: SpritePointLightController.
       // scriptAssemblies → UniTask/TextMeshPro/uGUI 처럼 Unity 밖에서 만들 수 없는 패키지 DLL.
       //                    Assets/Plugins 는 별도 asmdef 라 소스로 넣지 않고 여기로 잇는다.
-      "references": [ "OJ.Core", "unityEditor", "scriptAssemblies" ],
+      "references": [ "OJ.Core", "Pinball.Runtime", "unityEditor", "scriptAssemblies" ],
 
       // Assembly-CSharp 의 에디터 절반. 이 러너는 Editor 코드를 컴파일하지 않으므로
       // ScriptAssemblies 에 남아 있는 것은 낡은 DLL 이다. 참조에 끼면 확장 메서드 탐색이
       // 그 안을 들여다보다 엉뚱한 오류를 낸다.
-      "excludeReferences": [ "OJ.Game.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor" ],
+      "excludeReferences": [
+        "OJ.Game.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor",
+
+        // 위에서 소스로 빌드한 것을 쓴다. 안 빼면 ScriptAssemblies 의 낡은 DLL 과 둘이 되어
+        // 같은 타입이 두 어셈블리에 있다는 오류가 난다.
+        "Pinball.Runtime", "Pinball.Editor"
+      ],
 
       // Utils/Extensions.cs 에 unsafe 블록이 2곳 있다. 끄면 CS0227 로 죽는다.
       // Unity 쪽 대응은 Player Settings 의 "Allow 'unsafe' Code".
@@ -120,14 +155,21 @@
 
       // OJ.Game.Editor 와 같은 참조 조합이다 — OJ.Game 에 대고 컴파일되는 것이 이미 증명된 목록이고,
       // ScriptAssemblies 에 남은 낡은 자기 자신을 빼야 하는 사정도 같다.
-      "references": [ "OJ.Core", "OJ.Game", "nunit", "unityEditor", "scriptAssemblies" ],
-      "excludeReferences": [ "OJ.Game.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor" ],
+      "references": [
+        "OJ.Core", "OJ.Game", "Pinball.Runtime", "Pinball.Editor",
+        "nunit", "unityEditor", "scriptAssemblies"
+      ],
+      "excludeReferences": [
+        "OJ.Game.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor",
+        "Pinball.Runtime", "Pinball.Editor"
+      ],
 
       "defines": [ "UNITY_EDITOR_ONLY_COMPILATION" ],
       "test": true,
 
       // 갱신 이력: 4 (다이스 언락 0단계 파일럿)
-      "minTests": 4
+      //            -> 18 (전투 재화 분리: BattlePointTests)
+      "minTests": 18
     },
     {
       // 에디터 도구. 여기 없으면 에디터 스크립트의 컴파일 오류를 러너가 통째로 못 본다 —
@@ -146,8 +188,13 @@
 
       // Unity 가 Assembly-CSharp-Editor 에 넣는 참조와 같다. Assembly-CSharp 을 보고,
       // ScriptAssemblies 에서 낡은 자기 자신은 빼야 한다.
-      "references": [ "OJ.Core", "OJ.Game", "unityEditor", "scriptAssemblies" ],
-      "excludeReferences": [ "OJ.Game.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor" ],
+      "references": [
+        "OJ.Core", "OJ.Game", "Pinball.Runtime", "unityEditor", "scriptAssemblies"
+      ],
+      "excludeReferences": [
+        "OJ.Game.Editor", "Assembly-CSharp", "Assembly-CSharp-Editor",
+        "Pinball.Runtime", "Pinball.Editor"
+      ],
 
       "unsafe": true,
       "test": false
@@ -158,6 +205,12 @@
   // (Unity 가 만든 DuDuDuDU_Project/OJ.Core.csproj 의 DefineConstants 에서 뽑았다.)
   // 에디터를 올려서 목록이 바뀌면 여기도 다시 뽑아 넣으면 된다.
   "defines": [
+    // <b>이 러너에서만 켜진다.</b> Unity 에디터 안에서는 없는 심볼이라,
+    // "컴파일은 되어야 하지만 에디터 밖에선 돌 수 없는" 테스트를 가리는 데 쓴다.
+    // 지금 대상은 AssetDatabase 를 쓰는 PinballSeedTableTests 하나다 — 그것만 빼면
+    // 파일이 통째로 컴파일 대상에서 빠져 오타가 에디터를 열 때까지 안 드러난다.
+    "OJ_HEADLESS_RUNNER",
+
     // 8.1 에서 메뉴로 켠 심볼. Unity 쪽 ProjectSettings 에만 있고 여기 없으면
     // 러너와 에디터의 컴파일 결과가 갈린다 — 이 도구의 존재 이유가 그 갈림을 없애는 것이다.
     "VCONTAINER_UNITASK_INTEGRATION",

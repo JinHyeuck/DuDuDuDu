@@ -61,7 +61,7 @@ namespace OJ.Bounty
             {
                 detailText.SetText(
                     "HP " + ShortNumberFormat.Format(hp) +
-                    "   " + FormatReward(definition));
+                    "   " + definition.FormatReward());
             }
 
             if (icon != null)
@@ -95,20 +95,6 @@ namespace OJ.Bounty
             Exit();
         }
 
-        private static string FormatReward(BountyDefinition definition)
-        {
-            string amount = ShortNumberFormat.Format(definition.rewardAmount);
-
-            switch (definition.rewardKind)
-            {
-                case BountyRewardKind.SummonPoint:
-                    return "SP +" + amount;
-                case BountyRewardKind.EnhanceStone:
-                    return "강화석 +" + amount;
-                default:
-                    return amount;
-            }
-        }
 
         // ──────────────────────────────────────────────────────────────
         // 에디터 굽기 전용.
