@@ -37,6 +37,21 @@ namespace OJ.IdleReward
         [Tooltip("받을 것이 있을 때만 켜진다. 비워도 동작한다.")]
         [SerializeField] private GameObject redDot;
 
+        [Header("월드 기준점")]
+        [Tooltip("이 오브젝트의 월드 위치를 따라간다. 비우면 씬에 놓인 자리 그대로 있는다.")]
+        [SerializeField] private Transform worldAnchor;
+
+        [Tooltip("기준점에서 픽셀 단위로 밀어낼 양. 아이콘이 기준점을 가릴 때 쓴다.")]
+        [SerializeField] private Vector2 screenOffset;
+
+        [Tooltip("월드 좌표를 화면으로 옮길 카메라. 비우면 Camera.main 을 쓴다.")]
+        [SerializeField] private Camera worldCamera;
+
+        /// <summary>
+        /// 이 위젯이 붙은 캔버스. <c>GetComponentInParent</c> 를 매 프레임 부르지 않으려고 잡아 둔다.
+        /// </summary>
+        private Canvas cachedCanvas;
+
         /// <summary>1초마다 갱신한다. 타이머가 초 단위라 그보다 자주 돌 이유가 없다.</summary>
         private float nextRefreshTime;
 
@@ -76,6 +91,51 @@ namespace OJ.IdleReward
 
             nextRefreshTime = Time.unscaledTime + 1f;
             Refresh();
+        }
+
+        /// <summary>
+        /// 기준점을 따라간다. <b>LateUpdate 여야 한다</b> — 카메라가 이번 프레임에 움직였다면
+        /// Update 에서 잡은 화면 좌표는 이미 낡은 값이고, 그러면 위젯이 한 프레임씩 끌려다닌다.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (worldAnchor == null)
+                return;
+
+            FollowWorldAnchor();
+        }
+
+        /// <summary>
+        /// 월드 위치를 부모 RectTransform 의 좌표로 옮긴다.
+        ///
+        /// <b>Overlay 캔버스는 uiCamera 가 null 이어야 한다.</b> 로비 캔버스가 Overlay 인데
+        /// 여기에 카메라를 넘기면 좌표가 화면 밖으로 튄다 — 위젯이 안 보이는 것으로만 드러나서
+        /// 원인을 찾기 어렵다. 그래서 캔버스 모드를 보고 정한다.
+        /// </summary>
+        private void FollowWorldAnchor()
+        {
+            Camera camera = worldCamera != null ? worldCamera : Camera.main;
+            if (camera == null)
+                return;
+
+            var rect = transform as RectTransform;
+            var parent = rect != null ? rect.parent as RectTransform : null;
+            if (parent == null)
+                return;
+
+            if (cachedCanvas == null)
+                cachedCanvas = rect.GetComponentInParent<Canvas>();
+
+            Camera uiCamera = cachedCanvas != null && cachedCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? cachedCanvas.worldCamera
+                : null;
+
+            Vector3 screenPoint = camera.WorldToScreenPoint(worldAnchor.position);
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    parent, screenPoint, uiCamera, out Vector2 localPoint))
+            {
+                rect.anchoredPosition = localPoint + screenOffset;
+            }
         }
 
         private void OnClickClaim()
@@ -145,6 +205,27 @@ namespace OJ.IdleReward
             int totalMinutes = Mathf.FloorToInt((float)time.TotalMinutes);
             return string.Format("{0:00}:{1:00}", totalMinutes, time.Seconds);
         }
+
+        // ── 에디터 도구용 ────────────────────────────────────────────
+
+        /// <summary>
+        /// 기준점을 물리고 그 자리로 즉시 옮긴다. <c>MeatFestivalLobbyInstaller</c> 가 부른다.
+        ///
+        /// <b>에디터에서는 LateUpdate 가 안 돈다.</b> 그래서 기준점만 물려 두면 플레이를
+        /// 눌러야 위젯이 움직이고, 그 사이에는 자리가 틀린 것처럼 보인다. 설치 직후 한 번
+        /// 맞춰 두면 씬 화면에서 바로 확인할 수 있다.
+        /// </summary>
+        public void BindWorldAnchor(Transform anchor)
+        {
+            worldAnchor = anchor;
+            cachedCanvas = null;
+
+            if (worldAnchor != null)
+                FollowWorldAnchor();
+        }
+
+        /// <summary>물려 둔 기준점. 도구가 이미 물렸는지 볼 때 쓴다.</summary>
+        public Transform WorldAnchor => worldAnchor;
 
         // ── 조립 (에디터 도구가 부른다) ──────────────────────────────
 
