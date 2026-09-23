@@ -42,12 +42,7 @@ namespace OJ.IdleReward
         [SerializeField] private TMP_FontAsset font;
         [SerializeField] private GameObject panel;
         [SerializeField] private GameObject autoView;
-        [SerializeField] private GameObject meatView;
         [SerializeField] private Button closeButton;
-        [SerializeField] private Button autoTabButton;
-        [SerializeField] private Button meatTabButton;
-        [SerializeField] private TMP_Text autoTabText;
-        [SerializeField] private TMP_Text meatTabText;
 
         [SerializeField] private TMP_Text stageText;
         [SerializeField] private TMP_Text autoTimerText;
@@ -57,13 +52,6 @@ namespace OJ.IdleReward
         [SerializeField] private Button autoClaimButton;
         [SerializeField] private TMP_Text autoClaimText;
 
-        [SerializeField] private TMP_Text meatStoredText;
-        [SerializeField] private TMP_Text meatTimerText;
-        [SerializeField] private List<Image> meatSetSlots = new List<Image>();
-        [SerializeField] private Button meatClaimButton;
-        [SerializeField] private TMP_Text meatClaimText;
-
-        private bool showingAuto = true;
         private float nextRefreshTime;
         private string rewardSignature = string.Empty;
 
@@ -109,16 +97,12 @@ namespace OJ.IdleReward
             base.OnLoad();
 
             if (closeButton != null) closeButton.onClick.AddListener(Exit);
-            if (autoTabButton != null) autoTabButton.onClick.AddListener(() => ShowTab(true));
-            if (meatTabButton != null) meatTabButton.onClick.AddListener(() => ShowTab(false));
             if (autoClaimButton != null) autoClaimButton.onClick.AddListener(ClaimAutoBattle);
-            if (meatClaimButton != null) meatClaimButton.onClick.AddListener(ClaimMeat);
         }
 
         protected override void OnEnter()
         {
             base.OnEnter();
-            ShowTab(showingAuto);
             Refresh(true);
         }
 
@@ -164,26 +148,19 @@ namespace OJ.IdleReward
             pigIcon.preserveAspect = true;
             SetAnchored(pigIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(82f, 0f), new Vector2(125f, 125f));
 
-            TMP_Text title = CreateText("Title", header.transform, "자동전투 보상 & 고기 축제", 45f, TextAlignmentOptions.Center, Color.white);
+            TMP_Text title = CreateText("Title", header.transform, "자동전투 보상", 45f, TextAlignmentOptions.Center, Color.white);
             SetAnchored(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(55f, 0f), new Vector2(690f, 100f));
 
             closeButton = CreateButton("CloseButton", panel.transform, "×", new Color(0.83f, 0.25f, 0.25f, 1f), out TMP_Text closeText);
             closeText.fontSize = 55f;
             SetAnchored(closeButton.GetComponent<RectTransform>(), new Vector2(1f, 1f), new Vector2(-55f, -55f), new Vector2(90f, 90f));
 
-            autoTabButton = CreateButton("AutoTab", panel.transform, "자동전투 보상", CyanColor, out autoTabText);
-            SetAnchored(autoTabButton.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(-220f, -230f), new Vector2(420f, 100f));
-
-            meatTabButton = CreateButton("MeatTab", panel.transform, "고기 축제", PanelInnerColor, out meatTabText);
-            SetAnchored(meatTabButton.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(220f, -230f), new Vector2(420f, 100f));
-
+            // 탭 바가 없다. 고기 축제가 로비 위젯(UIMeatFestivalLobbyButton)으로 나가면서
+            // 이 창에 남은 것이 자동전투 보상 하나뿐이고, 탭이 하나면 탭 바는 자리만 먹는다.
+            // 그만큼 내용이 위로 올라오고 세로가 늘었다.
             autoView = CreateRect("AutoBattleView", panel.transform);
-            SetAnchored(autoView.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(0f, -115f), new Vector2(840f, 960f));
+            SetAnchored(autoView.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(0f, -60f), new Vector2(840f, 1060f));
             BuildAutoView();
-
-            meatView = CreateRect("MeatFestivalView", panel.transform);
-            SetAnchored(meatView.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(0f, -115f), new Vector2(840f, 960f));
-            BuildMeatView();
         }
 
         private void BuildAutoView()
@@ -240,55 +217,7 @@ namespace OJ.IdleReward
             autoClaimButton.onClick.AddListener(ClaimAutoBattle);
         }
 
-        private void BuildMeatView()
-        {
-            TMP_Text guide = CreateText("Guide", meatView.transform, "6시간마다 고기 30개 · 최대 30세트 저장", 31f, TextAlignmentOptions.Center, MutedTextColor);
-            SetAnchored(guide.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -55f), new Vector2(810f, 70f));
 
-            meatStoredText = CreateText("StoredText", meatView.transform, string.Empty, 42f, TextAlignmentOptions.Center, Color.white);
-            SetAnchored(meatStoredText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -145f), new Vector2(800f, 80f));
-
-            meatTimerText = CreateText("TimerText", meatView.transform, string.Empty, 29f, TextAlignmentOptions.Center, MutedTextColor);
-            SetAnchored(meatTimerText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -215f), new Vector2(800f, 60f));
-
-            GameObject gridObject = CreateRect("MeatSetGrid", meatView.transform);
-            SetAnchored(gridObject.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -515f), new Vector2(730f, 500f));
-            GridLayoutGroup grid = gridObject.AddComponent<GridLayoutGroup>();
-            grid.spacing = new Vector2(15f, 15f);
-            grid.cellSize = new Vector2(108f, 68f);
-            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 6;
-            grid.childAlignment = TextAnchor.MiddleCenter;
-
-            Sprite staminaIcon = PointRewardUtility.GetPointIcon(PointType.Stamina);
-            for (int i = 0; i < IdleRewardManager.MaxMeatSetCount; i++)
-            {
-                Image slot = CreateImage("MeatSet_" + (i + 1), gridObject.transform, PanelInnerColor);
-                Image icon = CreateImage("Icon", slot.transform, Color.white);
-                icon.sprite = staminaIcon;
-                icon.preserveAspect = true;
-                SetAnchored(icon.rectTransform, new Vector2(0.30f, 0.5f), Vector2.zero, new Vector2(48f, 48f));
-                TMP_Text amount = CreateText("Amount", slot.transform, "×30", 23f, TextAlignmentOptions.Center, Color.white);
-                SetAnchored(amount.rectTransform, new Vector2(0.70f, 0.5f), Vector2.zero, new Vector2(58f, 50f));
-                meatSetSlots.Add(slot);
-            }
-
-            meatClaimButton = CreateButton("ClaimButton", meatView.transform, "일괄 수령", YellowColor, out meatClaimText);
-            SetAnchored(meatClaimButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0f, 75f), new Vector2(560f, 120f));
-            meatClaimButton.onClick.AddListener(ClaimMeat);
-        }
-
-        private void ShowTab(bool showAuto)
-        {
-            showingAuto = showAuto;
-            autoView.SetActive(showAuto);
-            meatView.SetActive(!showAuto);
-            SetButtonColor(autoTabButton, showAuto ? CyanColor : PanelInnerColor);
-            SetButtonColor(meatTabButton, showAuto ? PanelInnerColor : YellowColor);
-            autoTabText.color = showAuto ? Color.white : MutedTextColor;
-            meatTabText.color = showAuto ? MutedTextColor : Color.white;
-            Refresh(true);
-        }
 
         private void Refresh(bool forceCards)
         {
@@ -309,21 +238,6 @@ namespace OJ.IdleReward
             autoClaimButton.interactable = rewards.Count > 0;
             autoClaimText.SetText(rewards.Count > 0 ? "보상 수령" : "누적 중");
             RefreshRewardCards(rewards, forceCards);
-
-            int storedSets = manager.GetStoredMeatSetCount();
-            int meatAmount = storedSets * IdleRewardManager.MeatPerSet;
-            meatStoredText.SetText("저장 {0}/{1}세트  ·  고기 {2:#,##0}개", storedSets, IdleRewardManager.MaxMeatSetCount, meatAmount);
-            meatTimerText.SetText(storedSets >= IdleRewardManager.MaxMeatSetCount
-                ? "최대 저장량에 도달했습니다"
-                : "다음 세트까지 " + FormatTime(manager.GetTimeUntilNextMeatSet()));
-            meatClaimButton.interactable = storedSets > 0;
-            meatClaimText.SetText(storedSets > 0 ? "일괄 수령  ×{0:#,##0}" : "고기 준비 중", meatAmount);
-
-            for (int i = 0; i < meatSetSlots.Count; i++)
-            {
-                bool stored = i < storedSets;
-                meatSetSlots[i].color = stored ? new Color(0.18f, 0.55f, 0.78f, 1f) : new Color(0.10f, 0.15f, 0.29f, 0.55f);
-            }
         }
 
         private void RefreshRewardCards(IReadOnlyList<PointRewardEntry> rewards, bool force)
@@ -367,19 +281,6 @@ namespace OJ.IdleReward
             Refresh(true);
         }
 
-        private void ClaimMeat()
-        {
-            IdleRewardManager manager = IdleRewardManager.Instance;
-            if (manager == null || !manager.TryClaimMeat(out int meatAmount, out int setCount))
-                return;
-
-            var rewards = new List<PointRewardEntry>
-            {
-                new PointRewardEntry(PointType.Stamina, meatAmount),
-            };
-            ShowRewardResult(rewards, "고기 " + setCount + "세트를 일괄 수령했습니다.");
-            Refresh(true);
-        }
 
         /// <summary>
         /// 보상 결과창을 띄운다. (10.4)
@@ -467,11 +368,6 @@ namespace OJ.IdleReward
             return button;
         }
 
-        private static void SetButtonColor(Button button, Color color)
-        {
-            if (button != null && button.targetGraphic != null)
-                button.targetGraphic.color = color;
-        }
 
         private static void Stretch(RectTransform rectTransform)
         {
