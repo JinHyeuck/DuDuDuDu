@@ -7,7 +7,7 @@ namespace OJ.StageStar
     {
         public const int MaxStarsPerStage = 3;
         public const int StarsPerReward = 3;
-        public const int DiaRewardAmount = 100;
+        public const int DiaRewardAmount = 300;
 
         public static int GetStarCount(StageClearGrade grade)
         {

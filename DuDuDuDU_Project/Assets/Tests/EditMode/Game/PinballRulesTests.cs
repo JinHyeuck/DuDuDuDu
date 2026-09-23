@@ -22,7 +22,7 @@ namespace OJ.Game.Tests
     public sealed class PinballRulesTests
     {
         /// <summary>현재 판(<c>PinballBoard.asset</c>)의 실제 확률표.</summary>
-        private static readonly float[] Declared = { 0.20f, 0.22f, 0.16f, 0.22f, 0.20f };
+        private static readonly float[] Declared = { 0.2475f, 0.2475f, 0.01f, 0.2475f, 0.2475f };
 
         // ── 칸 추첨 ─────────────────────────────────────────────────────
 
@@ -32,14 +32,13 @@ namespace OJ.Game.Tests
         /// <b>그 차이는 수만 판을 돌려야 눈에 보인다.</b>
         /// </summary>
         [TestCase(0f, 0)]
-        [TestCase(0.1999f, 0)]
-        [TestCase(0.2f, 1)]       // 0.20 경계는 다음 칸의 시작이다
-        [TestCase(0.41f, 1)]
-        [TestCase(0.42f, 2)]      // 0.20 + 0.22
-        [TestCase(0.57f, 2)]
-        [TestCase(0.58f, 3)]      // + 0.16
-        [TestCase(0.79f, 3)]
-        [TestCase(0.8f, 4)]       // + 0.22
+        [TestCase(0.24f, 0)]
+        [TestCase(0.26f, 1)]
+        [TestCase(0.48f, 1)]
+        [TestCase(0.50f, 2)]      // 잭팟 칸. 0.495 ~ 0.505 뿐이다
+        [TestCase(0.52f, 3)]
+        [TestCase(0.74f, 3)]
+        [TestCase(0.77f, 4)]
         [TestCase(0.9999f, 4)]
         public void 칸_추첨이_누적구간_경계를_지킨다(float roll, int expected)
         {
@@ -397,6 +396,83 @@ namespace OJ.Game.Tests
                 PinballRewardDatabase.ValidateMultipliers(Tiers((1, 0), (2, 360), (3, 120)), out string error),
                 Is.False);
             Assert.That(error, Does.Contain("앞 단계보다 낮다"));
+        }
+
+        // ── 랜덤 1종 뽑기 (PinballSpecialReward.pickOneAtRandom) ──────
+
+        /// <summary>
+        /// 스크롤핀·장비핀이 쓰는 뽑기다. <b>가중치가 없어야 한다</b> —
+        /// 다섯 종 중 무엇이 나올지에 편향을 두면 특정 다이스만 크는데,
+        /// 그건 수급 설계가 아니라 사고다.
+        /// </summary>
+        [TestCase(0.00f, 0)]
+        [TestCase(0.19f, 0)]
+        [TestCase(0.20f, 1)]
+        [TestCase(0.50f, 2)]
+        [TestCase(0.99f, 4)]
+        public void 고르게_뽑는다(float roll, int expected)
+        {
+            Assert.AreEqual(expected, PinballRules.PickIndex(5, roll));
+        }
+
+        /// <summary>
+        /// <c>Random.value</c> 는 1 을 돌려줄 수 있다(경계 포함). 막지 않으면
+        /// 아주 드물게 인덱스가 범위를 벗어나 그 판의 보상이 통째로 날아간다.
+        /// </summary>
+        [Test]
+        public void 굴림이_1이어도_범위를_안_벗어난다()
+        {
+            Assert.AreEqual(4, PinballRules.PickIndex(5, 1f));
+            Assert.AreEqual(4, PinballRules.PickIndex(5, 1.5f));
+            Assert.AreEqual(0, PinballRules.PickIndex(5, -0.5f));
+        }
+
+        // ── 게이지 임박 (센터핀 연출) ─────────────────────────────────
+
+        /// <summary>
+        /// Base 핀볼의 최상위 기대는 재화가 아니라 <b>센터핀이 여는 보상 라운드</b>다(정책 1.55).
+        /// 이 판정이 화면의 색·굵기를 바꿔 임박을 알린다.
+        /// </summary>
+        [TestCase(0, 25, false)]
+        [TestCase(19, 25, false)]
+        [TestCase(20, 25, true)]
+        [TestCase(24, 25, true)]
+        public void 팔할을_넘으면_임박이다(int gauge, int required, bool expected)
+        {
+            Assert.AreEqual(expected, PinballRules.IsGaugeNearComplete(gauge, required, 80));
+        }
+
+        /// <summary>배율 발사로 임계치를 이미 넘긴 값이 들어와도 임박으로 본다.</summary>
+        [Test]
+        public void 임계치를_넘겨도_임박이다()
+        {
+            Assert.IsTrue(PinballRules.IsGaugeNearComplete(30, 25, 80));
+        }
+
+        [Test]
+        public void 게이지가_0이면_임박이_아니다()
+        {
+            Assert.IsFalse(PinballRules.IsGaugeNearComplete(0, 25, 80));
+            Assert.IsFalse(PinballRules.IsGaugeNearComplete(5, 0, 80), "임계치가 0 이면 판정할 것이 없다.");
+        }
+
+        [Test]
+        public void 목록이_비면_뽑지_않는다()
+        {
+            Assert.AreEqual(-1, PinballRules.PickIndex(0, 0.5f));
+            Assert.AreEqual(-1, PinballRules.PickIndex(-3, 0.5f));
+        }
+
+        /// <summary>모든 칸이 한 번씩은 나와야 한다. 못 나오는 종류가 있으면 그 다이스는 영영 안 큰다.</summary>
+        [Test]
+        public void 모든_종류가_뽑힐_수_있다()
+        {
+            const int Count = 6;
+            var seen = new HashSet<int>();
+            for (int i = 0; i < 1000; i++)
+                seen.Add(PinballRules.PickIndex(Count, i / 1000f));
+
+            Assert.AreEqual(Count, seen.Count);
         }
     }
 }

@@ -50,6 +50,20 @@ namespace OJ.Pinball
         [Tooltip("이 횟수만큼 맞으면 보상이 나가고 게이지가 0으로 돌아간다.")]
         [Min(1)] public int requiredHits = 10;
 
+        /// <summary>
+        /// 켜면 <see cref="rewards"/> 를 <b>전부 주지 않고 그 중 하나만</b> 뽑아 준다.
+        ///
+        /// 스크롤처럼 <b>종류가 여럿인 재화</b>를 위한 것이다. 다섯 종을 한 줄씩 나열해 두고
+        /// 켜면 "다이스 스크롤 랜덤 1종"이 된다 — 풀을 코드에 박지 않아도 되고, 무엇이
+        /// 나올 수 있는지가 에셋에 그대로 보인다.
+        ///
+        /// <b>임계치를 여러 번 넘으면 넘은 횟수만큼 따로 뽑는다.</b> 그래야 1배 N번과
+        /// N배 1번이 같아진다(정책 5.2의 압축 불변식) — 한 번 뽑아 N배로 주면 고배율일수록
+        /// 종류가 덜 갈려서 같은 티켓으로 다른 결과가 나온다.
+        /// </summary>
+        [Tooltip("켜면 목록에서 하나만 뽑아 준다. 스크롤처럼 종류가 여럿인 재화용.")]
+        public bool pickOneAtRandom;
+
         public List<PinballReward> rewards = new List<PinballReward>();
     }
 
@@ -145,28 +159,78 @@ namespace OJ.Pinball
             specialRewards.Clear();
             PopulateMultiplierDefaults();
 
-            int[] golds = { 1000, 2000, 5000, 2000, 1000 };
+            // 칸별 경품. <b>가운데 칸이 잭팟이다</b> — 판의 declaredProbability 가
+            // 0.2475 / 0.2475 / <b>0.01</b> / 0.2475 / 0.2475 라 100발에 한 번 걸린다.
+            //
+            // <b>확률을 깎는 것이 잭팟의 핵심이다.</b> 예전에는 다섯 칸이 0.16~0.22 로 고르고
+            // 금액이 1000~5000 이었다. 그 모양으로는 무엇을 얹어도 대박이 안 나온다 —
+            // 고기는 특히 그렇다. 발당 최소 1개씩만 줘도 96발이면 96개인데 회수율 상한
+            // (r = 0.35, 하루 126개)이 거의 다 차서 잭팟에 쓸 몫이 안 남는다.
+            // 한 칸을 1% 로 깎으면 나머지 99% 가 1개씩이어도 그 칸에 25개를 넣을 수 있다.
+            //
+            //   고기 기댓값 = 0.99 x 1 + 0.01 x 25 = 1.24  ->  하루 119개, r = 0.331
+            //   골드 기댓값 = 248.5                        ->  하루 23,856 (수요의 2.6배)
+            //
+            // 골드도 예전 1000/2000/5000 에서 1/10 로 낮췄다. 발당 2,080 은 하루 199,680 이고
+            // 강화 수요(lv20 부근 9,000)의 22배라 골드가 아무 제약이 아니었다.
+            int[] golds = { 100, 200, 10000, 200, 100 };
+            int[] stamina = { 1, 1, 25, 1, 1 };
             for (int i = 0; i < golds.Length; i++)
             {
-                var slot = new PinballSlotReward { label = golds[i] + " 골드" };
+                bool jackpot = stamina[i] > 1;
+                var slot = new PinballSlotReward
+                {
+                    label = (jackpot ? "대박! " : string.Empty) +
+                            golds[i].ToString("N0") + " 골드 + 고기 " + stamina[i],
+                };
                 slot.rewards.Add(new PinballReward(PointType.Gold, golds[i]));
+                slot.rewards.Add(new PinballReward(PointType.Stamina, stamina[i]));
                 slotRewards.Add(slot);
             }
 
-            var gold = new PinballSpecialReward { tag = 1, label = "황금핀", requiredHits = 10 };
-            gold.rewards.Add(new PinballReward(PointType.FreeGem, 10));
-            specialRewards.Add(gold);
+            // <b>무료젬 10 이었다.</b> 무료젬은 티어 6 이라 여기 있을 물건이 아니다 —
+            // Base 는 티어 3 공급처이고, 상위 재화는 Pinball_Bonus 한 곳에서만 나와야
+            // 성장 페이스가 한 손잡이에 모인다(정책 3.2 · 5.1).
+            //
+            // 다이스 스크롤은 티어 3 이라 Base 와 티어가 맞고, 고기가 아니라서
+            // 루프 회수율 r 을 건드리지 않는다.
+            //
+            // 100장인 근거: 소탕이 종당 하루 1,152장을 주므로(정책 1.5) 이 핀이 하루
+            // 다섯 번쯤 차면 종당 100장, 약 9% 다. 그 이상이면 "Scroll 이 강화 게이트"
+            // (정책 7.1)가 핀볼로 우회된다 — Gold 를 게이트로 못 쓰는 이유와 같은 논리다.
+            var scrollPin = new PinballSpecialReward
+            {
+                tag = 1, label = "스크롤핀", requiredHits = 10, pickOneAtRandom = true,
+            };
+            scrollPin.rewards.Add(new PinballReward(PointType.NormalScroll, 100));
+            scrollPin.rewards.Add(new PinballReward(PointType.FireScroll, 100));
+            scrollPin.rewards.Add(new PinballReward(PointType.IceScroll, 100));
+            scrollPin.rewards.Add(new PinballReward(PointType.PoisonScroll, 100));
+            scrollPin.rewards.Add(new PinballReward(PointType.ThunderScroll, 100));
+            specialRewards.Add(scrollPin);
 
             // <b>전투 재화를 주면 안 된다.</b> 핀볼은 로비 컨텐츠라, 판이 시작될 때 0 으로
             // 밀리는 재화(SP·강화석)를 여기서 주면 받자마자 사라진다 — 탑이 먼저 같은
             // 함정에 빠졌고 같은 이유로 신화석으로 갈아탔다(TowerRunManager.BuildClearRewards).
             //
-            // 레어석인 이유: requiredHits 15 는 기본 판에서 가장 어려운 조건이라
-            // 황금핀(무료젬 10)보다 윗급이어야 하고, 핀볼이 주는 것 중에
-            // <b>다이스 성장</b> 축이 비어 있었다.
-            var bomb = new PinballSpecialReward { tag = 2, label = "폭탄핀", requiredHits = 15 };
-            bomb.rewards.Add(new PinballReward(PointType.RareStone, 1));
-            specialRewards.Add(bomb);
+            // <b>강화석 → 레어석 → 장비 스크롤로 두 번 바뀌었다.</b> 레어석은 티어 4 라
+            // 대표 수급처가 Pinball_Bonus 이고(정책 2장), 거기 레어석 핀(75)이 생긴 지금은
+            // Base 가 1개씩 흘리는 것이 원칙만 새게 한다. 당시 근거였던 "핀볼에 다이스 성장
+            // 축이 비어 있다"도 보너스 라운드가 채웠다.
+            //
+            // 10장인 근거: 소탕이 종당 하루 48장을 주므로(정책 1.5) 이 핀이 하루 세 번쯤
+            // 차면 종당 약 5장, 11% 다. 스크롤핀(tag 1)과 같은 비율이다.
+            var equipPin = new PinballSpecialReward
+            {
+                tag = 2, label = "장비핀", requiredHits = 15, pickOneAtRandom = true,
+            };
+            equipPin.rewards.Add(new PinballReward(PointType.WeaponScroll, 10));
+            equipPin.rewards.Add(new PinballReward(PointType.HelmetScroll, 10));
+            equipPin.rewards.Add(new PinballReward(PointType.ArmorScroll, 10));
+            equipPin.rewards.Add(new PinballReward(PointType.RingScroll, 10));
+            equipPin.rewards.Add(new PinballReward(PointType.ShoesScroll, 10));
+            equipPin.rewards.Add(new PinballReward(PointType.NecklaceScroll, 10));
+            specialRewards.Add(equipPin);
         }
 
         /// <summary>칸 하나의 경품. 범위를 벗어나면 null.</summary>

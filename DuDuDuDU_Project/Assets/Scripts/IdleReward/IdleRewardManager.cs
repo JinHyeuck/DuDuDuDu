@@ -24,11 +24,50 @@ namespace OJ.IdleReward
     [Preserve]
     public sealed class IdleRewardManager : ISaveStateOwner
     {
-        public const double AutoBattleMaxSeconds = 8d * 60d * 60d;
-        public const double SecondsPerAutoBattleClear = 20d * 60d;
-        public const double MeatSetIntervalSeconds = 6d * 60d * 60d;
+        /// <summary>
+        /// 방치 자동전투 누적 상한. <b>24시간에 24회</b>가 되도록 시간당 1회로 맞췄다.
+        ///
+        /// 예전에는 8시간에 24회(20분당 1회)였는데, 수령하면
+        /// <see cref="TryClaimAutoBattle"/> 가 타이머를 되감으므로 하루 세 번 받으면
+        /// <b>72회</b>가 나왔다. 그게 소탕(고기 72회분)의 세 배를 공짜로 주는 셈이라
+        /// 고기가 게이트 구실을 못 했고, 정책 4장의 루프 회수율 r 도 공급의 1/4 에만
+        /// 작용했다(<c>Docs/CurrencyPolicy.md</c>).
+        ///
+        /// 지금 식은 수령 빈도와 무관하게 하루 24회로 수렴한다 — 8시간마다 받으면
+        /// 8회씩 세 번이고, 하루에 한 번 받으면 24회다.
+        /// </summary>
+        public const double AutoBattleMaxSeconds = 24d * 60d * 60d;
+
+        /// <summary>시간당 1회. <see cref="AutoBattleMaxSeconds"/> 와 짝이다.</summary>
+        public const double SecondsPerAutoBattleClear = 60d * 60d;
+
+        /// <summary>
+        /// 고기 한 세트가 구워지는 데 걸리는 시간. <b>2시간</b>이다.
+        ///
+        /// 예전에는 6시간이었다. 짧게 바꾼 것은 수급량 때문이 아니라 <b>로비 연출</b> 때문이다 —
+        /// 모닥불 위의 고기가 익어 가는 것이 곧 이 타이머이고, 6시간짜리는 한 번 보고 나면
+        /// 다시 볼 이유가 없다. 2시간이면 하루에 열두 번 익는다.
+        /// </summary>
+        public const double MeatSetIntervalSeconds = 2d * 60d * 60d;
+
+        /// <summary>
+        /// 세트당 고기. <b>하루 360개</b>(2시간마다 30 x 12)다.
+        ///
+        /// 소탕 1회가 고기 5 이므로(<c>SweepRules.StaminaCostPerSweep</c>) 하루 72회고,
+        /// 방치 24회와 합쳐 96회다. 예전에는 방치가 72회·소탕이 24회여서 공급의 1/4 에만
+        /// 고기가 붙었는데, 총량은 그대로 두고 <b>구성을 뒤집었다</b> —
+        /// 이제 3/4 이 고기를 먹으므로 루프 r 이 전체에 작용한다.
+        /// </summary>
         public const int MeatPerSet = 30;
-        public const int MaxMeatSetCount = 30;
+
+        /// <summary>
+        /// 저장 가능한 세트 수. 60세트 x 30개 = <b>1,800개</b>이고, 소탕으로 치면 360회다.
+        ///
+        /// 2시간 주기이므로 <b>5일</b>치다. 이 값의 뜻은 양이 아니라 "며칠 안 들어와도
+        /// 넘치지 않는가"다. 넘치면 그 뒤로는 버려지므로 <b>화면이 가득 찼음을 알려야 한다</b> —
+        /// 로비 모닥불의 세트 뱃지가 그 자리다.
+        /// </summary>
+        public const int MaxMeatSetCount = 60;
 
         /// <summary>
         /// 과도기 다리. <b>대입은 <see cref="GameContainer"/> 에서만 한다.</b>

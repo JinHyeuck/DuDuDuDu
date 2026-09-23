@@ -83,6 +83,21 @@ namespace OJ.Pinball
         /// <summary>핀 위 게이지 글자색. 흰 보상 수량과 구별되어야 한 눈에 읽힌다.</summary>
         private static readonly Color GaugeColor = new Color(1f, 0.84f, 0.38f, 1f);
 
+        /// <summary>임박했을 때의 게이지 색. 평소 노랑에서 <b>주황</b>으로 넘어간다.</summary>
+        private static readonly Color GaugeNearColor = new Color(1f, 0.42f, 0.20f, 1f);
+
+        /// <summary>이 비율을 넘으면 임박으로 본다. <c>PinballRules.IsGaugeNearComplete</c> 참고.</summary>
+        private const int GaugeNearPercent = 80;
+
+        private const float GaugeFontSize = 24f;
+        private const float GaugeNearFontSize = 30f;
+
+        // 보상 아이콘 크기. 예전에는 44~52 였는데 <b>판 위에서 무엇이 걸렸는지 안 보였다</b> —
+        // 핀볼은 "저 칸에 뭐가 있나"를 보고 쏘는 게임이라 아이콘이 안 읽히면 조준이 무의미해진다.
+        private const float SpecialIconSize = 68f;
+        private const float SlotIconSize = 80f;
+        private const float DropFxIconSize = 64f;
+
         /// <summary>배율 버튼 하나.</summary>
         [System.Serializable]
         public sealed class MultiplierOption
@@ -872,17 +887,17 @@ namespace OJ.Pinball
                     image.sprite = icon;
                     image.raycastTarget = false;
                     image.preserveAspect = true;
-                    iconRect.sizeDelta = new Vector2(44f, 44f);
-                    iconRect.anchoredPosition = new Vector2(0f, 82f);
+                    iconRect.sizeDelta = new Vector2(SpecialIconSize, SpecialIconSize);
+                    iconRect.anchoredPosition = new Vector2(0f, 98f);
                 }
 
-                TMP_Text amount = NewLabel("Amount", holder, BuildSpecialRewardText(rule), 24f);
-                amount.rectTransform.sizeDelta = new Vector2(140f, 50f);
-                amount.rectTransform.anchoredPosition = new Vector2(0f, 48f);
+                TMP_Text amount = NewLabel("Amount", holder, BuildSpecialRewardText(rule), 26f);
+                amount.rectTransform.sizeDelta = new Vector2(180f, 50f);
+                amount.rectTransform.anchoredPosition = new Vector2(0f, 50f);
             }
 
             // 누적 카운트. 실시간으로 차야 하므로 참조를 들고 있는다.
-            TMP_Text gauge = NewLabel("Gauge", holder, string.Empty, 24f);
+            TMP_Text gauge = NewLabel("Gauge", holder, string.Empty, GaugeFontSize);
             gauge.color = GaugeColor;
             gauge.rectTransform.sizeDelta = new Vector2(140f, 40f);
             gauge.rectTransform.anchoredPosition = new Vector2(0f, hasReward ? 20f : 48f);
@@ -899,6 +914,32 @@ namespace OJ.Pinball
         private static string BuildSpecialRewardText(PinballSpecialReward rule)
         {
             var builder = new StringBuilder();
+
+            // 랜덤 1종 핀은 목록을 그대로 세로로 쌓으면 "100" 이 다섯 줄 나온다.
+            // 나올 수 있는 <b>금액</b>만 추려서 한 줄로 보여 준다 — 종류는 아이콘이 말하고,
+            // 여기서 유저가 알고 싶은 것은 "얼마짜리가 걸렸나"다.
+            if (rule.pickOneAtRandom)
+            {
+                var shown = new List<int>();
+                for (int i = 0; i < rule.rewards.Count; i++)
+                {
+                    int amount = rule.rewards[i].amount;
+                    if (!shown.Contains(amount))
+                        shown.Add(amount);
+                }
+
+                shown.Sort();
+                for (int i = 0; i < shown.Count; i++)
+                {
+                    if (i > 0)
+                        builder.Append(" / ");
+
+                    builder.Append(shown[i].ToString("N0"));
+                }
+
+                return builder.ToString();
+            }
+
             for (int i = 0; i < rule.rewards.Count; i++)
             {
                 if (i > 0)
@@ -928,13 +969,13 @@ namespace OJ.Pinball
                 image.sprite = icon;
                 image.raycastTarget = false;
                 image.preserveAspect = true;
-                iconRect.sizeDelta = new Vector2(52f, 52f);
-                iconRect.anchoredPosition = new Vector2(0f, 26f);
+                iconRect.sizeDelta = new Vector2(SlotIconSize, SlotIconSize);
+                iconRect.anchoredPosition = new Vector2(0f, 36f);
             }
 
-            TMP_Text amount = NewLabel("Amount", holder, BuildSlotText(rewards), 26f);
-            amount.rectTransform.sizeDelta = new Vector2(120f, 60f);
-            amount.rectTransform.anchoredPosition = new Vector2(0f, icon != null ? -26f : 0f);
+            TMP_Text amount = NewLabel("Amount", holder, BuildSlotText(rewards), 30f);
+            amount.rectTransform.sizeDelta = new Vector2(150f, 60f);
+            amount.rectTransform.anchoredPosition = new Vector2(0f, icon != null ? -34f : 0f);
         }
 
         private static string BuildSlotText(IReadOnlyList<PinballReward> rewards)
@@ -1021,12 +1062,12 @@ namespace OJ.Pinball
             fx.icon = iconRect.gameObject.AddComponent<Image>();
             fx.icon.raycastTarget = false;
             fx.icon.preserveAspect = true;
-            iconRect.sizeDelta = new Vector2(44f, 44f);
-            iconRect.anchoredPosition = new Vector2(-34f, 0f);
+            iconRect.sizeDelta = new Vector2(DropFxIconSize, DropFxIconSize);
+            iconRect.anchoredPosition = new Vector2(-46f, 0f);
 
-            fx.label = NewLabel("Amount", root, string.Empty, 30f);
-            fx.label.rectTransform.sizeDelta = new Vector2(180f, 44f);
-            fx.label.rectTransform.anchoredPosition = new Vector2(34f, 0f);
+            fx.label = NewLabel("Amount", root, string.Empty, 34f);
+            fx.label.rectTransform.sizeDelta = new Vector2(200f, 50f);
+            fx.label.rectTransform.anchoredPosition = new Vector2(42f, 0f);
 
             fx.group.blocksRaycasts = false;
             fx.group.interactable = false;
@@ -1214,13 +1255,24 @@ namespace OJ.Pinball
                 if (rule == null)
                     continue;
 
-                string text = manager.GetGauge(pair.Key) + " / " + rule.requiredHits;
+                int gauge = manager.GetGauge(pair.Key);
+                string text = gauge + " / " + rule.requiredHits;
+
+                // 임박하면 색·굵기·크기가 같이 바뀐다. Base 핀볼의 최상위 기대는 재화가
+                // 아니라 이 게이지가 여는 보상 라운드라(정책 1.55), 숫자만으로는 그 임박이
+                // 읽히지 않는다. 셋을 같이 바꾸는 것은 색만으로는 작은 글자에서 잘 안 보여서다.
+                bool near = PinballRules.IsGaugeNearComplete(gauge, rule.requiredHits, GaugeNearPercent);
 
                 List<TMP_Text> labels = pair.Value;
                 for (int i = 0; i < labels.Count; i++)
                 {
-                    if (labels[i] != null)
-                        labels[i].text = text;
+                    if (labels[i] == null)
+                        continue;
+
+                    labels[i].text = text;
+                    labels[i].color = near ? GaugeNearColor : GaugeColor;
+                    labels[i].fontStyle = near ? FontStyles.Bold : FontStyles.Normal;
+                    labels[i].fontSize = near ? GaugeNearFontSize : GaugeFontSize;
                 }
             }
         }

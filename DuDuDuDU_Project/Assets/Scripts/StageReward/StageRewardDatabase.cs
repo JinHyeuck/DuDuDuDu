@@ -142,7 +142,7 @@ namespace OJ.StageReward
 
             AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 }, stageIndex);
             AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 }, stageIndex);
-            rewards.Add(new StageRewardEntry(PointType.MythicStone, 15));
+            rewards.Add(new StageRewardEntry(PointType.MythicStone, 25));
             return rewards;
         }
 
@@ -154,8 +154,8 @@ namespace OJ.StageReward
             };
 
             AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 }, stageIndex);
-            rewards.Add(new StageRewardEntry(PointType.FreeGem, 150));
-            rewards.Add(new StageRewardEntry(PointType.MythicStone, 10));
+            rewards.Add(new StageRewardEntry(PointType.FreeGem, 300));
+            rewards.Add(new StageRewardEntry(PointType.MythicStone, 40));
 
             return rewards;
         }

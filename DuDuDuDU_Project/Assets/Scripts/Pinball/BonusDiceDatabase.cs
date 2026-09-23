@@ -100,11 +100,18 @@ namespace OJ.Pinball
                 },
                 new BonusPinReward
                 {
-                    // 강화석이었다. 전투 재화라 로비에서 받아도 판이 시작되면 사라진다
-                    // (PinballRewardDatabase.PopulateDefaults 의 폭탄핀 주석 참고).
-                    // 동료 핀(골드 3000 / 유물권 2 / 무료젬 100)과 같은 중간 티어로 맞춘다.
-                    tag = 2, label = "소환권 핀", requiredHits = 6,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.NormalScroll, 5) },
+                    // 강화석 → 소환권 → 레어석으로 두 번 바뀌었다.
+                    //
+                    // 소환권(NormalScroll)은 티어 3 이라 여기 있을 물건이 아니었다. 그것은
+                    // 소탕이 하루 1,152장을 뿌리는 재화라(정책 1.5) 보너스 라운드에서 5장을
+                    // 받아 봐야 아무 일도 일어나지 않는다.
+                    //
+                    // 레어석인 이유: 재화 표가 레어석의 <b>대표 수급처를 Pinball_Bonus</b> 로
+                    // 잡고 있는데(정책 2장) 이 표에 레어석이 아예 없었다. 게다가 소탕이
+                    // 하루 720개를 뿌리고 있어서 말과 구현이 정반대였다 — 소탕 쪽을 빼고
+                    // 이리로 옮겼다(StageRewardCalculator.AddAutoBattleClearRewards 주석).
+                    tag = 2, label = "레어석 핀", requiredHits = 6,
+                    rewards = new List<PinballReward> { new PinballReward(PointType.RareStone, 75) },
                 },
                 new BonusPinReward
                 {
@@ -118,13 +125,21 @@ namespace OJ.Pinball
                 },
                 new BonusPinReward
                 {
-                    tag = 5, label = "골드 대박 핀", requiredHits = 7,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.Gold, 10000) },
+                    // 골드 10000 이었다. 골드는 소탕이 하루 14,400 을 주는 재화라(정책 1.5)
+                    // 상위 재화 자리를 하나 잡아먹고 있었다. 신화석은 재화 표상 대표 수급처가
+                    // 여기인데(정책 2장) 이 표에 없었다 — 레어석과 같은 사정이다.
+                    //
+                    // 킹 다이스 강화 재료이고 lv20 부근 한 레벨이 75 이므로, 하루 두 라운드면
+                    // 킹 1종 +1렙 안팎이 된다. 킹은 탑이 여는 최상위 축이라 이 속도가 맞다.
+                    tag = 5, label = "신화석 핀", requiredHits = 7,
+                    rewards = new List<PinballReward> { new PinballReward(PointType.MythicStone, 40) },
                 },
                 new BonusPinReward
                 {
+                    // 300 이었다. 젬 핀(tag 4)과 합쳐 라운드당 150 이 되도록 낮췄다 —
+                    // 하루 두 라운드면 300 이고, 그것이 보석뽑기 1회 값이다(상점 8.2).
                     tag = 6, label = "젬 대박 핀", requiredHits = 8,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.FreeGem, 300) },
+                    rewards = new List<PinballReward> { new PinballReward(PointType.FreeGem, 50) },
                 },
             };
         }

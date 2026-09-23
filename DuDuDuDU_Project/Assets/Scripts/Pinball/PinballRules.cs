@@ -128,5 +128,50 @@ namespace OJ.Pinball
         {
             return ticketCount >= requiredTickets;
         }
+
+        /// <summary>
+        /// 목록에서 하나를 <b>고르게</b> 뽑는다. <c>PinballSpecialReward.pickOneAtRandom</c> 이 쓴다.
+        ///
+        /// <see cref="DrawSlot"/> 과 달리 가중치가 없다 — 스크롤 다섯 종 중 무엇이 나올지에
+        /// 편향을 두면 특정 다이스만 크는데, 그건 수급 설계가 아니라 사고다.
+        ///
+        /// <paramref name="roll"/> 은 [0, 1) 이다. 1 이상이 들어와도 마지막 칸에서 멈춘다 —
+        /// <c>Random.value</c> 가 1 을 돌려줄 수 있어서(경계 포함) 여기서 막지 않으면
+        /// 아주 드물게 범위를 벗어난다.
+        /// </summary>
+        /// <summary>
+        /// 게이지가 <b>거의 다 찼는가</b>. 화면이 임박을 알리는 기준이다.
+        ///
+        /// <b>왜 이 판정이 필요한가.</b> Base 핀볼이 주는 것은 티어 1~3 뿐이고, 최상위 기대는
+        /// 재화가 아니라 <b>센터핀이 여는 보상 라운드</b>다(정책 1.55). 그런데 게이지가
+        /// "12 / 25" 같은 숫자로만 보이면 그 임박이 읽히지 않는다 — 숫자는 심장을 뛰게
+        /// 하지 못한다. 80% 를 넘는 순간 색과 굵기가 바뀌면 남은 몇 발이 의미를 갖는다.
+        /// </summary>
+        /// <param name="nearPercent">임박으로 볼 비율. 80 이면 80% 다.</param>
+        public static bool IsGaugeNearComplete(int gauge, int requiredHits, int nearPercent)
+        {
+            if (requiredHits <= 0 || gauge <= 0)
+                return false;
+
+            // <b>비율을 float 로 받지 않는다.</b> 25 * 0.8f 는 20.0000003 이고,
+            // 20f / 25f 는 Mono 가 확장정밀도로 계산해 0.8f 리터럴보다 <b>작게</b> 나온다 —
+            // 어느 쪽으로 써도 게이지 20/25 라는 딱 경계인 칸이 조용히 빠졌다.
+            // 정수로 양변에 100 을 곱하면 그런 자리가 없다.
+            //
+            // 임계치를 이미 넘긴 값이 들어와도(배율 발사) 임박으로 본다.
+            return gauge * 100 >= requiredHits * nearPercent;
+        }
+
+        public static int PickIndex(int count, float roll)
+        {
+            if (count <= 0)
+                return -1;
+
+            if (roll < 0f)
+                roll = 0f;
+
+            int index = (int)(roll * count);
+            return index >= count ? count - 1 : index;
+        }
     }
 }

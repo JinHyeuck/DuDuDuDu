@@ -269,12 +269,35 @@ namespace OJ.Pinball
             // 배율이 크면 한 번 맞는 것으로 임계치를 여러 번 넘는다. 넘은 횟수만큼 준다 —
             // 1회로 깎으면 배율을 올릴수록 특수 핀이 손해가 된다.
             var rewards = new List<PointRewardEntry>();
-            for (int i = 0; i < rule.rewards.Count; i++)
+
+            if (rule.pickOneAtRandom && rule.rewards.Count > 0)
             {
-                PinballReward reward = rule.rewards[i];
-                rewards.Add(new PointRewardEntry(
-                    reward.pointType, PinballRules.ScaleAmount(reward.amount, grantCount)));
+                // 목록에서 하나만 뽑는 핀(스크롤처럼 종류가 여럿인 재화)이다.
+                //
+                // <b>넘은 횟수만큼 따로 뽑는다.</b> 한 번 뽑아 grantCount 배로 주면
+                // 고배율일수록 종류가 덜 갈려서, 같은 티켓으로 1배 N번과 N배 1번의 결과가
+                // 달라진다 — 정책 5.2 의 압축 불변식이 깨지는 자리다.
+                for (int i = 0; i < grantCount; i++)
+                {
+                    int index = PinballRules.PickIndex(rule.rewards.Count, UnityEngine.Random.value);
+                    if (index < 0)
+                        continue;
+
+                    PinballReward picked = rule.rewards[index];
+                    rewards.Add(new PointRewardEntry(picked.pointType, picked.amount));
+                }
             }
+            else
+            {
+                for (int i = 0; i < rule.rewards.Count; i++)
+                {
+                    PinballReward reward = rule.rewards[i];
+                    rewards.Add(new PointRewardEntry(
+                        reward.pointType, PinballRules.ScaleAmount(reward.amount, grantCount)));
+                }
+            }
+
+            rewards = PointRewardUtility.MergeRewards(rewards);
 
             GrantWithoutSave(rewards);
             return rewards;
