@@ -27,6 +27,22 @@ namespace OJ.Stage
         };
 
         /// <summary>
+        /// 클리어 1회가 주는 원소 스크롤. 풀에서 두 종을 뽑아 앞에서부터 나눠 준다.
+        ///
+        /// <b>예전에는 20 / 40 이었다.</b> 그러면 종당 하루 1,252장이 들어오는데 다이스
+        /// 마일스톤(3·6·9·12)까지 필요한 것이 1,188장이라 <b>첫날에 넷이 다 지나갔다</b> —
+        /// 12레벨까지를 어렵게 만들려던 설계가 통째로 무의미해지는 자리였다.
+        ///
+        /// 2 / 4(회당 6장)로 줄여 종당 115장이 되었고, 마일스톤이 열흘에 걸쳐 열린다
+        /// (lv3 0.3일 · lv6 1.9일 · lv9 5일 · lv12 9.5일).
+        ///
+        /// <b>비용을 올리는 쪽으로는 못 고친다.</b> 강화 비용이 선형이라 초반을 늘리면
+        /// 후반이 같은 배수로 늘어난다 — lv12 를 열흘로 만들자고 비용을 올리면 lv100 이
+        /// 78일에서 580일이 된다. 공급을 줄이는 쪽만 초반에만 듣는다.
+        /// </summary>
+        private static readonly int[] ElementScrollAmounts = { 2, 4 };
+
+        /// <summary>
         /// 클리어 1회가 주는 핀볼 티켓.
         ///
         /// <b>여기가 티켓의 유일한 수급처다.</b> 이 줄이 생기기 전에는 프로젝트 어디에서도
@@ -79,7 +95,7 @@ namespace OJ.Stage
                 new PointRewardEntry(PointType.Gold, GetGuaranteedNormalGold(stageIndex)),
             };
 
-            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 20, 40 });
+            AddDistinctRewards(rewards, ElementScrollTypes, ElementScrollAmounts);
             AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 3 });
             rewards.Add(new PointRewardEntry(PointType.PinballTicket, PinballTicketPerClear));
             return rewards;
@@ -190,8 +206,8 @@ namespace OJ.Stage
 
             PointType[] elementTypes = (PointType[])ElementScrollTypes.Clone();
             Shuffle(elementTypes, random);
-            AddScaledReward(rewards, elementTypes[0], 20, multiplier);
-            AddScaledReward(rewards, elementTypes[1], 40, multiplier);
+            for (int i = 0; i < ElementScrollAmounts.Length && i < elementTypes.Length; i++)
+                AddScaledReward(rewards, elementTypes[i], ElementScrollAmounts[i], multiplier);
 
             // 레어석은 여기서 주지 않는다. 티어 4 재화라 재화 표상 대표 수급처가
             // Pinball_Bonus 이고(정책 2장·3.2), 소탕은 티어 2 공급처다. 예전에는 소탕이

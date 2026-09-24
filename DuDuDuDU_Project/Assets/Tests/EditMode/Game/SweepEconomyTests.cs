@@ -174,16 +174,16 @@ namespace OJ.Game.Tests
         /// 근거는 각각 이렇다.
         /// <list type="bullet">
         /// <item>무료젬 300 — 보석뽑기 1회 값(상점 8.2)</item>
-        /// <item>레어석 150 — 레어 다이스 1종 +3렙 (lv20 부근 50/렙)</item>
-        /// <item>신화석 80 — 킹 다이스 1종 +1렙 (lv20 부근 75/렙)</item>
+        /// <item>레어석 50 — 레어 5종을 전부 lv12 까지 3주. 기본 다이스(열흘)보다 느려야 한다</item>
+        /// <item>신화석 40 — 킹 5종을 전부 lv12 까지 6주. 최상위 축이라 가장 느리다</item>
         /// </list>
         /// </summary>
         [Test]
         public void 상위_재화_일일_페이스가_고정돼_있다()
         {
             Assert.AreEqual(300, SweepEconomy.DailyFromBonus(SweepEconomy.BonusFreeGemPerRound), "무료젬");
-            Assert.AreEqual(150, SweepEconomy.DailyFromBonus(SweepEconomy.BonusRareStonePerRound), "레어석");
-            Assert.AreEqual(80, SweepEconomy.DailyFromBonus(SweepEconomy.BonusMythicStonePerRound), "신화석");
+            Assert.AreEqual(50, SweepEconomy.DailyFromBonus(SweepEconomy.BonusRareStonePerRound), "레어석");
+            Assert.AreEqual(40, SweepEconomy.DailyFromBonus(SweepEconomy.BonusMythicStonePerRound), "신화석");
             Assert.AreEqual(4, SweepEconomy.DailyFromBonus(SweepEconomy.BonusRelicTicketPerRound), "유물권");
         }
 

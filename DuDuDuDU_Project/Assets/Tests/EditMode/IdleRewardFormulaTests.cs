@@ -44,10 +44,10 @@ namespace OJ.Core.Tests
         // 다시 뜬 경우에도 테스트가 통과해 버린다. 손으로 박아 두면 그 상황에서 실패하고,
         // 상수 변경은 실제로 사람이 봐야 하는 변경이다.
         // 곱셈 형태까지 원본과 똑같이 유지한다 — 상수 접기 결과는 같지만 diff 로 1:1 대조하려는 것이다.
-        private const double AutoBattleMaxSeconds = 8d * 60d * 60d;
-        private const double SecondsPerAutoBattleClear = 20d * 60d;
-        private const double MeatSetIntervalSeconds = 6d * 60d * 60d;
-        private const int MaxMeatSetCount = 30;
+        private const double AutoBattleMaxSeconds = 24d * 60d * 60d;
+        private const double SecondsPerAutoBattleClear = 60d * 60d;
+        private const double MeatSetIntervalSeconds = 2d * 60d * 60d;
+        private const int MaxMeatSetCount = 60;
 
         /// <summary>담당 접두사별로 골든에 있어야 하는 키 개수.</summary>
         /// <remarks>

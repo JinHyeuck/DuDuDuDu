@@ -171,9 +171,10 @@ namespace OJ.Pinball
             //   고기 기댓값 = 0.99 x 1 + 0.01 x 25 = 1.24  ->  하루 119개, r = 0.331
             //   골드 기댓값 = 248.5                        ->  하루 23,856 (수요의 2.6배)
             //
-            // 골드도 예전 1000/2000/5000 에서 1/10 로 낮췄다. 발당 2,080 은 하루 199,680 이고
-            // 강화 수요(lv20 부근 9,000)의 22배라 골드가 아무 제약이 아니었다.
-            int[] golds = { 100, 200, 10000, 200, 100 };
+            // 골드는 1000/2000/5000 -> 100/200/10000 -> 지금 값으로 두 번 내렸다.
+            // 마지막 인하는 <b>골드를 병목으로 만들기 위한 것</b>이다(StageRewardFormula
+            // .GuaranteedNormalGold 주석). 발당 6.96 으로 하루 668 이다.
+            int[] golds = { 3, 5, 300, 5, 3 };
             int[] stamina = { 1, 1, 25, 1, 1 };
             for (int i = 0; i < golds.Length; i++)
             {
@@ -195,18 +196,18 @@ namespace OJ.Pinball
             // 다이스 스크롤은 티어 3 이라 Base 와 티어가 맞고, 고기가 아니라서
             // 루프 회수율 r 을 건드리지 않는다.
             //
-            // 100장인 근거: 소탕이 종당 하루 1,152장을 주므로(정책 1.5) 이 핀이 하루
-            // 다섯 번쯤 차면 종당 100장, 약 9% 다. 그 이상이면 "Scroll 이 강화 게이트"
+            // 10장인 근거: 소탕이 종당 하루 115장을 주므로(정책 1.5) 이 핀이 하루
+            // 다섯 번쯤 차면 종당 10장, 약 9% 다. 그 이상이면 "Scroll 이 강화 게이트"
             // (정책 7.1)가 핀볼로 우회된다 — Gold 를 게이트로 못 쓰는 이유와 같은 논리다.
             var scrollPin = new PinballSpecialReward
             {
                 tag = 1, label = "스크롤핀", requiredHits = 10, pickOneAtRandom = true,
             };
-            scrollPin.rewards.Add(new PinballReward(PointType.NormalScroll, 100));
-            scrollPin.rewards.Add(new PinballReward(PointType.FireScroll, 100));
-            scrollPin.rewards.Add(new PinballReward(PointType.IceScroll, 100));
-            scrollPin.rewards.Add(new PinballReward(PointType.PoisonScroll, 100));
-            scrollPin.rewards.Add(new PinballReward(PointType.ThunderScroll, 100));
+            scrollPin.rewards.Add(new PinballReward(PointType.NormalScroll, 10));
+            scrollPin.rewards.Add(new PinballReward(PointType.FireScroll, 10));
+            scrollPin.rewards.Add(new PinballReward(PointType.IceScroll, 10));
+            scrollPin.rewards.Add(new PinballReward(PointType.PoisonScroll, 10));
+            scrollPin.rewards.Add(new PinballReward(PointType.ThunderScroll, 10));
             specialRewards.Add(scrollPin);
 
             // <b>전투 재화를 주면 안 된다.</b> 핀볼은 로비 컨텐츠라, 판이 시작될 때 0 으로

@@ -96,7 +96,7 @@ namespace OJ.Pinball
                 new BonusPinReward
                 {
                     tag = 1, label = "골드 핀", requiredHits = 6,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.Gold, 3000) },
+                    rewards = new List<PinballReward> { new PinballReward(PointType.Gold, 200) },
                 },
                 new BonusPinReward
                 {
@@ -111,7 +111,7 @@ namespace OJ.Pinball
                     // 하루 720개를 뿌리고 있어서 말과 구현이 정반대였다 — 소탕 쪽을 빼고
                     // 이리로 옮겼다(StageRewardCalculator.AddAutoBattleClearRewards 주석).
                     tag = 2, label = "레어석 핀", requiredHits = 6,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.RareStone, 75) },
+                    rewards = new List<PinballReward> { new PinballReward(PointType.RareStone, 25) },
                 },
                 new BonusPinReward
                 {
@@ -132,7 +132,7 @@ namespace OJ.Pinball
                     // 킹 다이스 강화 재료이고 lv20 부근 한 레벨이 75 이므로, 하루 두 라운드면
                     // 킹 1종 +1렙 안팎이 된다. 킹은 탑이 여는 최상위 축이라 이 속도가 맞다.
                     tag = 5, label = "신화석 핀", requiredHits = 7,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.MythicStone, 40) },
+                    rewards = new List<PinballReward> { new PinballReward(PointType.MythicStone, 20) },
                 },
                 new BonusPinReward
                 {

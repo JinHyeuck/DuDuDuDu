@@ -154,10 +154,10 @@ namespace OJ.Stage
         public const int BonusFreeGemPerRound = 150;
 
         /// <summary>1회 완주 레어석. 레어석 핀.</summary>
-        public const int BonusRareStonePerRound = 75;
+        public const int BonusRareStonePerRound = 25;
 
         /// <summary>1회 완주 신화석. 신화석 핀.</summary>
-        public const int BonusMythicStonePerRound = 40;
+        public const int BonusMythicStonePerRound = 20;
 
         /// <summary>1회 완주 유물권. 유물권 핀.</summary>
         public const int BonusRelicTicketPerRound = 2;
