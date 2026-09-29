@@ -33,12 +33,12 @@ namespace OJ.Stage
         /// 마일스톤(3·6·9·12)까지 필요한 것이 1,188장이라 <b>첫날에 넷이 다 지나갔다</b> —
         /// 12레벨까지를 어렵게 만들려던 설계가 통째로 무의미해지는 자리였다.
         ///
-        /// 2 / 4(회당 6장)로 줄여 종당 115장이 되었고, 마일스톤이 열흘에 걸쳐 열린다
-        /// (lv3 0.3일 · lv6 1.9일 · lv9 5일 · lv12 9.5일).
+        /// 2 / 4(회당 6장)로 줄여 스크롤핀까지 합쳐 종당 125장이 되었고, 마일스톤이
+        /// 열흘에 걸쳐 열린다 (lv3 0.3일 · lv6 2.0일 · lv12 9.7일).
         ///
         /// <b>비용을 올리는 쪽으로는 못 고친다.</b> 강화 비용이 선형이라 초반을 늘리면
-        /// 후반이 같은 배수로 늘어난다 — lv12 를 열흘로 만들자고 비용을 올리면 lv100 이
-        /// 78일에서 580일이 된다. 공급을 줄이는 쪽만 초반에만 듣는다.
+        /// 후반이 같은 배수로 늘어난다 — lv12 를 열흘로 만들자고 비용을 올리면 lv3 도
+        /// 같이 무거워져서 "3까지는 쉽게"가 깨진다. 공급 축소만 초반에 선택적으로 듣는다.
         /// </summary>
         private static readonly int[] ElementScrollAmounts = { 2, 4 };
 
@@ -153,35 +153,6 @@ namespace OJ.Stage
             return scaledRewards;
         }
 
-        public static List<PointRewardEntry> BuildBonusRewards(int stageIndex, StageRewardTierFlags rewardFlags)
-        {
-            var rewards = new List<PointRewardEntry>();
-
-            if ((rewardFlags & StageRewardTierFlags.Minimum) != 0)
-            {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 300 + StageRewardFormula.StageBonus(stageIndex)));
-                AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50 });
-                AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10 });
-            }
-
-            if ((rewardFlags & StageRewardTierFlags.Half) != 0)
-            {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 400 + StageRewardFormula.StageBonus(stageIndex)));
-                AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 });
-                AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 });
-                rewards.Add(new PointRewardEntry(PointType.MythicStone, 25));
-            }
-
-            if ((rewardFlags & StageRewardTierFlags.Perfect) != 0)
-            {
-                rewards.Add(new PointRewardEntry(PointType.Gold, 500 + StageRewardFormula.StageBonus(stageIndex)));
-                AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 });
-                rewards.Add(new PointRewardEntry(PointType.FreeGem, 300));
-                rewards.Add(new PointRewardEntry(PointType.MythicStone, 40));
-            }
-
-            return rewards;
-        }
 
         private static void AddDistinctRewards(List<PointRewardEntry> rewards, PointType[] pool, int[] amounts)
         {

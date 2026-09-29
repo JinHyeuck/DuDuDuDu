@@ -189,12 +189,16 @@ namespace OJ.Dice
             if (nameText != null) nameText.SetText(meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : currentDiceType.ToString());
             // 미보유에 "Lv. 1" 을 적으면 <b>이미 가진 것처럼</b> 읽힌다. 레벨 자체는 남아
             // 있지만(언락 전에도 올릴 수 있었다) 그 숫자가 지금 뜻하는 것은 없다.
+            bool maxLevel = owned && level >= Define.MaxDiceLevel;
+
             if (levelText != null)
             {
-                if (owned)
-                    levelText.SetText("Lv. {0}", level);
-                else
+                if (!owned)
                     levelText.SetText("미보유");
+                else if (maxLevel)
+                    levelText.SetText("Lv. {0}  MAX", level);
+                else
+                    levelText.SetText("Lv. {0}", level);
             }
             if (coolTimeText != null) coolTimeText.SetText("{0:0.0}", cooldown);
             if (descText != null) descText.SetText(BuildDescriptionText(meta, level));
@@ -238,6 +242,26 @@ namespace OJ.Dice
 
             if (owned)
             {
+                // <b>만렙이면 비용 자리에 MAX 를 적는다.</b> 버튼만 잠그면 유저는 눌러 보고
+                // 아무 일도 안 일어나는 것으로 알게 된다 — 이유가 화면에 있어야 한다.
+                // 남은 비용을 그대로 두면 "돈은 있는데 왜 안 되지"가 된다.
+                bool atMaxLevel = DiceLevelManager.Instance != null &&
+                                  DiceLevelManager.Instance.IsMaxLevel(currentDiceType);
+
+                if (atMaxLevel)
+                {
+                    if (goldCostText != null)
+                        goldCostText.SetText("MAX");
+
+                    if (scrollCostText != null)
+                        scrollCostText.SetText("MAX");
+
+                    if (upgradeButton != null)
+                        upgradeButton.interactable = false;
+
+                    return;
+                }
+
                 // <b>보유/필요 순서다.</b> 재화 표기는 프로젝트 전체가 이 순서를 쓴다 —
                 // 앞이 "지금 얼마 있나", 뒤가 "얼마가 드는가".
                 if (goldCostText != null)

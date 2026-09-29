@@ -96,13 +96,28 @@ namespace OJ.Equipment
                 equipmentTypeText.SetText(UIEquipmentText.GetEquipmentName(equipmentType));
             RefreshEquipmentItem(level, attack);
 
-            // 보유/필요 순서. 다이스 강화·해금 창과 같은 순서라야 같은 모양이 같은 뜻이 된다.
-            if (goldCostText != null)
-                goldCostText.SetText("{0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0, goldCost);
-
             PointType scrollType = PointManager.ToEquipmentScrollType(equipmentType);
-            if (scrollCostText != null)
-                scrollCostText.SetText("{0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(scrollType) : 0, scrollCost);
+            bool maxLevel = EquipmentManager.Instance.IsMaxLevel(equipmentType);
+
+            // <b>만렙이면 비용 자리에 MAX 를 적는다.</b> 버튼만 잠그면 유저는 눌러 보고
+            // 아무 일도 안 일어나는 것으로 알게 된다 — 이유가 화면에 있어야 한다.
+            if (maxLevel)
+            {
+                if (goldCostText != null)
+                    goldCostText.SetText("MAX");
+
+                if (scrollCostText != null)
+                    scrollCostText.SetText("MAX");
+            }
+            else
+            {
+                // 보유/필요 순서. 다이스 강화·해금 창과 같은 순서라야 같은 모양이 같은 뜻이 된다.
+                if (goldCostText != null)
+                    goldCostText.SetText("{0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0, goldCost);
+
+                if (scrollCostText != null)
+                    scrollCostText.SetText("{0}/{1}", PointManager.Instance != null ? PointManager.Instance.Get(scrollType) : 0, scrollCost);
+            }
             SetImage(scrollCostIconImage, GetScrollCostIconSprite(scrollType), false);
 
             BuildSlotIfNeeded();
@@ -229,7 +244,10 @@ namespace OJ.Equipment
                                   !string.IsNullOrEmpty(EquipmentManager.Instance.GetEquippedGemId(equipmentType, selectedSlotIndex));
 
             if (levelUpButton != null)
-                levelUpButton.interactable = EquipmentManager.Instance != null;
+            {
+                levelUpButton.interactable = EquipmentManager.Instance != null &&
+                                             !EquipmentManager.Instance.IsMaxLevel(equipmentType);
+            }
             if (equipButton != null)
                 equipButton.interactable = slotReady && hasSelectedGem;
             if (unequipButton != null)
