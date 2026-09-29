@@ -29,7 +29,6 @@ namespace OJ.Shop
         {
             "성장 패키지",
             "보석뽑기",
-            "일일상점",
             "유료젬 상점",
             "무료젬 상점",
             "다이스석 상점",
@@ -39,36 +38,27 @@ namespace OJ.Shop
         [Header("섹션 본체")]
         [SerializeField] private RectTransform growthBody;
         [SerializeField] private RectTransform gemDrawBody;
-        [SerializeField] private RectTransform dailyBody;
         [SerializeField] private RectTransform paidGemBody;
         [SerializeField] private RectTransform freeGemBody;
         [SerializeField] private RectTransform stoneBody;
         [SerializeField] private RectTransform goldBody;
 
-        [Header("머리글 보조 칸")]
-        [SerializeField] private TMP_Text dailyTimerText;
         [SerializeField] private TMP_Text freeGemRateText;
 
-        [Header("일일상점 갱신")]
-        [SerializeField] private RectTransform dailyGrid;
-        [SerializeField] private UIShopDailyRefreshBar refreshBar;
 
         [Header("템플릿 (프리팹 안에 꺼진 채로 들어 있다)")]
         [SerializeField] private UIShopGrowthBanner growthTemplate;
         [SerializeField] private UIShopOfferCard cardTemplate;
-        [SerializeField] private UIShopDailySlot dailySlotTemplate;
         [SerializeField] private UIShopGridCard gridCardTemplate;
 
         private readonly List<UIShopGrowthBanner> growthBanners = new List<UIShopGrowthBanner>();
         private readonly List<UIShopOfferCard> gemBoxCards = new List<UIShopOfferCard>();
-        private readonly List<UIShopDailySlot> dailySlots = new List<UIShopDailySlot>();
         private readonly List<UIShopGridCard> paidGemCards = new List<UIShopGridCard>();
         private readonly List<UIShopGridCard> freeGemCards = new List<UIShopGridCard>();
         private readonly List<UIShopGridCard> stoneCards = new List<UIShopGridCard>();
         private readonly List<UIShopGridCard> goldCards = new List<UIShopGridCard>();
 
         /// <summary>다음 갱신 표기를 몇 초마다 다시 그릴지. 초 단위로 적히므로 1초면 된다.</summary>
-        private float timerRefreshAt;
 
         protected override void OnLoad()
         {
@@ -76,7 +66,6 @@ namespace OJ.Shop
             // 항목 하나</b>가 남아, 그것이 진짜 상품인지 굽다 만 흔적인지 알 수 없다.
             SetTemplateActive(growthTemplate, false);
             SetTemplateActive(cardTemplate, false);
-            SetTemplateActive(dailySlotTemplate, false);
             SetTemplateActive(gridCardTemplate, false);
         }
 
@@ -131,20 +120,6 @@ namespace OJ.Shop
             dialog.Open(rewards, "구매한 상품을 받았습니다.");
         }
 
-        private void Update()
-        {
-            // 갱신 타이머만 매초 다시 적는다. 전체 Refresh 를 매초 돌리면 재화가 안 바뀌어도
-            // 일곱 섹션이 통째로 다시 그려진다.
-            if (!isEnter || dailyTimerText == null)
-                return;
-
-            if (Time.unscaledTime < timerRefreshAt)
-                return;
-
-            timerRefreshAt = Time.unscaledTime + 1f;
-            dailyTimerText.SetText("갱신까지 " +
-                ShopText.FormatTimer(ShopPurchaseManager.TimeUntilReset(DateTime.Now)));
-        }
 
         private void OnPointChanged(PointType pointType, int value) => RefreshAll();
 
@@ -156,7 +131,6 @@ namespace OJ.Shop
 
             RefreshGrowth(db);
             RefreshGemDraw(db);
-            RefreshDaily(db);
             RefreshPaidGem(db);
             RefreshFreeGem(db);
             RefreshStone(db);
@@ -296,51 +270,6 @@ namespace OJ.Shop
             return sprites;
         }
 
-        // ── 8.3 일일상점 ──────────────────────────────────────────────
-
-        private void RefreshDaily(ShopDatabase db)
-        {
-            IReadOnlyList<ShopDatabase.DailyOffer> offers = db.DailyOffers;
-            EnsurePool(dailySlots, dailySlotTemplate, dailyGrid, offers.Count);
-
-            ShopPurchaseManager purchases = ShopPurchaseManager.Instance;
-
-            for (int i = 0; i < dailySlots.Count; i++)
-            {
-                bool used = i < offers.Count;
-                dailySlots[i].gameObject.SetActive(used);
-                if (!used)
-                    continue;
-
-                ShopDatabase.DailyOffer offer = offers[i];
-                int index = i;
-
-                bool sold = purchases != null && purchases.IsDailySlotSold(index);
-                int cost = ShopPurchaseManager.DiscountedCost(offer.cost, offer.discountPercent);
-
-                dailySlots[i].Bind(offer, sold, Affordable(offer.costType, cost),
-                    () => Report(purchases?.TryBuyDailySlot(index)));
-            }
-
-            if (dailyTimerText != null)
-            {
-                dailyTimerText.SetText("갱신까지 " +
-                    ShopText.FormatTimer(ShopPurchaseManager.TimeUntilReset(DateTime.Now)));
-            }
-
-            if (refreshBar != null)
-            {
-                int adUsed = purchases != null ? purchases.GetAdRefreshCount() : 0;
-                int gemUsed = purchases != null ? purchases.GetGemRefreshCount() : 0;
-
-                refreshBar.Bind(
-                    adUsed, db.DailyAdRefreshPerDay,
-                    () => Report(purchases?.TryRefreshDailyByAd()),
-                    gemUsed, db.DailyGemRefreshPerDay, db.DailyGemRefreshCost,
-                    Affordable(PointType.FreeGem, db.DailyGemRefreshCost),
-                    () => Report(purchases?.TryRefreshDailyByGem()));
-            }
-        }
 
         // ── 8.4 유료젬 상점 ───────────────────────────────────────────
 
@@ -566,23 +495,16 @@ namespace OJ.Shop
             page.growthBody = BuildSection(content, 0, font, out _, SectionBody.Vertical);
             page.gemDrawBody = BuildSection(content, 1, font, out _, SectionBody.Horizontal);
 
-            // 일일상점만 본체가 두 겹이다 — 6칸 그리드 + 그 아래 갱신 버튼 줄.
-            // 그리드에 갱신 버튼을 같이 넣으면 그것도 슬롯 한 칸으로 앉는다.
-            page.dailyBody = BuildSection(content, 2, font, out page.dailyTimerText, SectionBody.Vertical);
-            page.dailyGrid = BuildGridChild(page.dailyBody, UIShopDailySlot.SlotHeight);
-            page.refreshBar = UIShopDailyRefreshBar.Create(page.dailyBody, font);
-
             // 재화 상점 셋은 레퍼런스 스샷대로 3열 카드다(수량 티어가 나란히 비교돼야 한다).
-            page.paidGemBody = BuildSection(content, 3, font, out _, SectionBody.Grid);
-            page.freeGemBody = BuildSection(content, 4, font, out page.freeGemRateText, SectionBody.Grid);
-            page.stoneBody = BuildSection(content, 5, font, out _, SectionBody.Grid);
-            page.goldBody = BuildSection(content, 6, font, out _, SectionBody.Grid);
+            page.paidGemBody = BuildSection(content, 2, font, out _, SectionBody.Grid);
+            page.freeGemBody = BuildSection(content, 3, font, out page.freeGemRateText, SectionBody.Grid);
+            page.stoneBody = BuildSection(content, 4, font, out _, SectionBody.Grid);
+            page.goldBody = BuildSection(content, 5, font, out _, SectionBody.Grid);
 
             // 템플릿은 꺼진 채로 프리팹에 들어간다. 복제될 때 부모가 바뀌므로 어디에
             // 두어도 되지만, 각자 쓰이는 섹션 밑에 두면 프리팹을 열었을 때 눈에 띈다.
             page.growthTemplate = UIShopGrowthBanner.Create(page.growthBody, font);
             page.cardTemplate = UIShopOfferCard.Create(page.gemDrawBody, font);
-            page.dailySlotTemplate = UIShopDailySlot.Create(page.dailyGrid, font);
             page.gridCardTemplate = UIShopGridCard.Create(page.paidGemBody, font);
 
             return page;

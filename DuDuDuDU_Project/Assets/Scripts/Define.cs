@@ -206,6 +206,36 @@ namespace OJ
     {
         public const int MaxEquipmentSlot = 5;
         public static readonly int[] EquipmentSlotUnlockLevels = { 1, 10, 20, 30, 40};
+
+        /// <summary>
+        /// 다이스 최대 레벨. <b>마일스톤의 마지막이 12 이고 거기가 끝이다.</b>
+        ///
+        /// <c>DiceMetaDataDatabase</c> 의 마일스톤이 3·6·9·12 인데, 그 위로는 레벨이 올라도
+        /// 새로 열리는 것이 없다 — 공격력만 선형으로 늘 뿐이다. 상한이 없던 시절에는
+        /// 재화만 있으면 무한히 올라갔고, 그러면 "무엇을 목표로 키우는가"가 사라진다.
+        /// </summary>
+        public const int MaxDiceLevel = 12;
+
+        /// <summary>
+        /// 장비 최대 레벨. <b>보석 슬롯이 마지막으로 열리는 레벨</b>이다.
+        ///
+        /// <see cref="EquipmentSlotUnlockLevels"/> 의 끝값을 그대로 쓴다 — 표를 늘리면
+        /// 상한도 같이 따라간다. 상수로 40 을 또 적으면 표와 어긋나는 날이 온다.
+        /// </summary>
+        public static int MaxEquipmentLevel
+        {
+            get
+            {
+                int max = 1;
+                for (int i = 0; i < EquipmentSlotUnlockLevels.Length; i++)
+                {
+                    if (EquipmentSlotUnlockLevels[i] > max)
+                        max = EquipmentSlotUnlockLevels[i];
+                }
+
+                return max;
+            }
+        }
     }
 
 }

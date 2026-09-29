@@ -113,13 +113,24 @@ namespace OJ.Equipment
             return GetUpgradeCost(equipmentType, GetLevel(equipmentType));
         }
 
+        /// <summary>이미 최대 레벨인가. 버튼을 잠그거나 "MAX" 를 적을 때 쓴다.</summary>
+        public bool IsMaxLevel(EquipmentType equipmentType)
+        {
+            return GetLevel(equipmentType) >= Define.MaxEquipmentLevel;
+        }
+
         public bool TryLevelUp(EquipmentType equipmentType)
         {
+            // <b>재화를 쓰기 전에 막는다.</b> TrySpend 뒤에 검사하면 만렙인 장비에
+            // 골드와 스크롤만 날아간다.
+            if (IsMaxLevel(equipmentType))
+                return false;
+
             (int goldCost, int scrollCost) = GetNextUpgradeCost(equipmentType);
             if (!points.TrySpendEquipmentUpgrade(equipmentType, goldCost, scrollCost))
                 return false;
 
-            levels[equipmentType] = GetLevel(equipmentType) + 1;
+            levels[equipmentType] = Mathf.Min(GetLevel(equipmentType) + 1, Define.MaxEquipmentLevel);
             SaveAll();
 
             OnEquipmentChanged?.Invoke(equipmentType);

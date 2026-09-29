@@ -115,30 +115,20 @@ namespace OJ.Game.Tests
         // ── 구매 키 ───────────────────────────────────────────────────
 
         /// <summary>
-        /// 여러 용도가 한 표를 나눠 쓴다. 접두사가 겹치면 <b>일일상점 0번을 산 것이 골드 0번을
-        /// 산 것으로 읽혀</b> SOLD 와 누진이 동시에 틀어진다.
+        /// 여러 용도가 한 표를 나눠 쓴다. 접두사가 겹치면 한 섹션의 구매가 다른 섹션으로
+        /// 읽혀 누진이 틀어진다.
+        ///
+        /// <b>일일상점과 갱신 키는 사라졌다.</b> 그 섹션을 삭제하면서 같이 빠졌고
+        /// (Docs/CurrencyPolicy.md 6.3), 지금 이 표를 쓰는 것은 골드 상점 누진뿐이다.
+        /// 표 자체(DailyPurchaseCounts)와 날짜 리셋은 그 누진이 쓰므로 남아 있다.
         /// </summary>
         [Test]
-        public void 구매_키는_용도끼리_안_겹친다()
+        public void 구매_키가_섹션끼리_안_겹친다()
         {
-            string daily = ShopPurchaseManager.DailySlotKey(0);
-            string gold = ShopPurchaseManager.GoldKey(0);
-
-            Assert.That(daily, Is.EqualTo("daily:0"));
-            Assert.That(gold, Is.EqualTo("gold:0"));
-            Assert.That(new[] { daily, gold, ShopPurchaseManager.AdRefreshKey,
-                ShopPurchaseManager.GemRefreshKey }, Is.Unique);
-        }
-
-        /// <summary>
-        /// 갱신 횟수 키는 <b>슬롯 키와 다른 접두사</b>여야 한다. 같은 접두사를 쓰면
-        /// 갱신이 SOLD 를 지울 때 자기 횟수까지 지워 <b>갱신이 무한</b>이 된다.
-        /// </summary>
-        [Test]
-        public void 갱신_키는_슬롯_키와_접두사가_다르다()
-        {
-            Assert.That(ShopPurchaseManager.AdRefreshKey, Does.Not.StartWith("daily:"));
-            Assert.That(ShopPurchaseManager.GemRefreshKey, Does.Not.StartWith("daily:"));
+            Assert.That(ShopPurchaseManager.GoldKey(0), Is.EqualTo("gold:0"));
+            Assert.That(
+                new[] { ShopPurchaseManager.GoldKey(0), ShopPurchaseManager.GoldKey(1) },
+                Is.Unique);
         }
 
         // ── 성장 패키지 구성품 표기 (기획서 8.1-3) ──────────────────────

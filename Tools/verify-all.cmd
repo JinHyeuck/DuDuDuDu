@@ -2,7 +2,7 @@
 rem All static verification in one place. From repo root:  Tools\verify-all.cmd
 rem   --quick   skip the headless test run (encoding / namespaces / missing scripts only)
 rem
-rem Why one entry point: four separate checks that nobody remembers to run are
+rem Why one entry point: separate checks that nobody remembers to run are
 rem the same as no checks. Exit code is nonzero if any of them fails.
 rem
 rem The Korean output comes from the Python scripts themselves; this file stays
@@ -26,6 +26,10 @@ if errorlevel 1 set /a FAIL+=1
 
 echo.
 python Tools\verify_singleton_count.py
+if errorlevel 1 set /a FAIL+=1
+
+echo.
+python Tools\verify_font_atlas.py
 if errorlevel 1 set /a FAIL+=1
 
 if /i "%~1"=="--quick" goto :done

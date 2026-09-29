@@ -82,17 +82,9 @@ namespace OJ.Shop
             public List<int> rarityWeights = new List<int>();
         }
 
-        // ── 8.3 일일상점 ──────────────────────────────────────────────
-        [Serializable]
-        public sealed class DailyOffer
-        {
-            public Reward reward = new Reward(PointType.Gold, 100000);
-            public PointType costType = PointType.FreeGem;
-            public int cost = 30;
-
-            /// <summary>0 이면 정가. 기획서 8.3 "확률적으로 할인 슬롯 등장".</summary>
-            [Range(0, 90)] public int discountPercent;
-        }
+        // 8.3 일일상점은 삭제했다. 핀볼이 들어오면서 역할이 8.6 다이스석 상점 ·
+        // 8.7 골드 상점과 겹쳤고, 유지비(일일 리셋 · 슬롯 랜덤 · 갱신 2종 · 할인 슬롯)만
+        // 남았다. 근거는 Docs/CurrencyPolicy.md 6.3 에 있다.
 
         // ── 8.4 유료젬 상점 ───────────────────────────────────────────
         [Serializable]
@@ -147,18 +139,9 @@ namespace OJ.Shop
         [Header("8.2 보석뽑기")]
         [SerializeField] private List<GemBox> gemBoxes = new List<GemBox>();
 
-        [Header("8.3 일일상점")]
-        [Tooltip("슬롯 6칸 고정 (2행 x 3열).")]
-        [SerializeField] private List<DailyOffer> dailyOffers = new List<DailyOffer>();
 
-        [Tooltip("하루에 광고를 보고 갱신할 수 있는 횟수.")]
-        [SerializeField] private int dailyAdRefreshPerDay = 2;
 
-        [Tooltip("하루에 무료젬으로 갱신할 수 있는 횟수.")]
-        [SerializeField] private int dailyGemRefreshPerDay = 3;
 
-        [Tooltip("무료젬 갱신 1회 비용.")]
-        [SerializeField] private int dailyGemRefreshCost = 1000;
 
         [Header("8.4 유료젬 상점")]
         [SerializeField] private List<PaidGemOffer> paidGemOffers = new List<PaidGemOffer>();
@@ -178,18 +161,12 @@ namespace OJ.Shop
 
         public IReadOnlyList<GrowthPackage> GrowthPackages => growthPackages;
         public IReadOnlyList<GemBox> GemBoxes => gemBoxes;
-        public IReadOnlyList<DailyOffer> DailyOffers => dailyOffers;
-        public int DailyAdRefreshPerDay => Mathf.Max(0, dailyAdRefreshPerDay);
-        public int DailyGemRefreshPerDay => Mathf.Max(0, dailyGemRefreshPerDay);
-        public int DailyGemRefreshCost => Mathf.Max(0, dailyGemRefreshCost);
         public IReadOnlyList<PaidGemOffer> PaidGemOffers => paidGemOffers;
         public int FreeGemPerPaidGem => Mathf.Max(1, freeGemPerPaidGem);
         public IReadOnlyList<int> FreeGemExchangeUnits => freeGemExchangeUnits;
         public IReadOnlyList<StoneOffer> StoneOffers => stoneOffers;
         public IReadOnlyList<GoldOffer> GoldOffers => goldOffers;
 
-        /// <summary>일일상점 슬롯 수. 기획서 8.3 "6칸 고정 (2행 × 3열)".</summary>
-        public const int DailySlotCount = 6;
 
         /// <summary>
         /// 기획서의 예시 수치로 채운다. <b>에셋이 없을 때의 폴백이자 새 에셋의 초기값</b>이다.
@@ -254,15 +231,6 @@ namespace OJ.Shop
                 },
             };
 
-            dailyOffers = new List<DailyOffer>
-            {
-                new DailyOffer { reward = new Reward(PointType.NormalScroll, 5), costType = PointType.FreeGem, cost = 50 },
-                new DailyOffer { reward = new Reward(PointType.Gold, 100000), costType = PointType.FreeGem, cost = 30 },
-                new DailyOffer { reward = new Reward(PointType.RareStone, 3), costType = PointType.FreeGem, cost = 200 },
-                new DailyOffer { reward = new Reward(PointType.WeaponScroll, 10), costType = PointType.FreeGem, cost = 80 },
-                new DailyOffer { reward = new Reward(PointType.RareStone, 3), costType = PointType.FreeGem, cost = 150 },
-                new DailyOffer { reward = new Reward(PointType.Gold, 300000), costType = PointType.FreeGem, cost = 70, discountPercent = 20 },
-            };
 
             // 기획서 8.4 예시 5종. 10원 = 1젬이 한 줄도 어긋나지 않아야 한다 — 묶음 할인이 없다는
             // 것이 이 표의 내용 전부다.
@@ -278,9 +246,6 @@ namespace OJ.Shop
                 new PaidGemOffer { gemAmount = 5000, priceWon = 50000 },
             };
 
-            dailyAdRefreshPerDay = 2;
-            dailyGemRefreshPerDay = 3;
-            dailyGemRefreshCost = 1000;
 
             freeGemPerPaidGem = 1;
             freeGemExchangeUnits = new List<int> { 100, 500, 1000 };
@@ -315,8 +280,6 @@ namespace OJ.Shop
             if (growthPackages.Count > 2)
                 problems.Add("성장 패키지가 " + growthPackages.Count + "개다. 동시 노출은 최대 2개다 (기획서 8.1-2).");
 
-            if (dailyOffers.Count != DailySlotCount)
-                problems.Add("일일상점 슬롯이 " + dailyOffers.Count + "개다. 6칸 고정이다 (기획서 8.3).");
 
             for (int i = 0; i < paidGemOffers.Count; i++)
             {

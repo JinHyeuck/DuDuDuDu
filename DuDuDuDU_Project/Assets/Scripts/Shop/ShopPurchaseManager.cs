@@ -65,8 +65,6 @@ namespace OJ.Shop
         // ── 구매 키 ────────────────────────────────────────────────────
         // 세이브에 그대로 문자열로 들어간다. 바꾸면 그날의 기록이 초기화되므로
         // (다음 날이면 어차피 리셋되는 값이라) 사고는 아니지만, 이유 없이 바꾸지 말 것.
-
-        public static string DailySlotKey(int slotIndex) => "daily:" + slotIndex;
         public static string GoldKey(int offerIndex) => "gold:" + offerIndex;
 
         // ── 조회 ───────────────────────────────────────────────────────
@@ -80,8 +78,6 @@ namespace OJ.Shop
             state.DailyPurchaseCounts.TryGetValue(key, out int count);
             return count;
         }
-
-        public bool IsDailySlotSold(int slotIndex) => GetTodayCount(DailySlotKey(slotIndex)) > 0;
 
         /// <summary>
         /// 누진 단가. 기획서 8.6-2(다이스석, 검토)·8.7-2(골드, 확정) 가 같은 식을 쓴다.
@@ -107,22 +103,6 @@ namespace OJ.Shop
 
         // ── 구매 ───────────────────────────────────────────────────────
 
-        /// <summary>일일상점 슬롯. 산 슬롯은 비우지 않고 SOLD 로 남긴다(기획서 8.3).</summary>
-        public ShopPurchaseResult TryBuyDailySlot(int slotIndex)
-        {
-            ShopDatabase db = ShopDatabaseProvider.Database;
-            if (db == null || slotIndex < 0 || slotIndex >= db.DailyOffers.Count)
-                return Invalid("일일상점 슬롯 " + slotIndex);
-
-            if (IsDailySlotSold(slotIndex))
-                return ShopPurchaseResult.AlreadySold;
-
-            ShopDatabase.DailyOffer offer = db.DailyOffers[slotIndex];
-            int cost = DiscountedCost(offer.cost, offer.discountPercent);
-
-            return Settle(offer.costType, cost, offer.reward.pointType, offer.reward.amount,
-                DailySlotKey(slotIndex));
-        }
 
         /// <summary>
         /// 다이스석. <b>일일 한도도 누진도 없다</b> — 무료젬만 내면 그만큼 들어온다.
@@ -351,71 +331,10 @@ namespace OJ.Shop
             return granted;
         }
 
-        // ── 일일상점 갱신 ──────────────────────────────────────────────
+        // ── 일일상점 갱신 ──────────────────────────────────────────────        public int GetGemRefreshCount() => GetTodayCount(GemRefreshKey);
 
-        public static string AdRefreshKey => "refresh:ad";
-        public static string GemRefreshKey => "refresh:gem";
 
-        public int GetAdRefreshCount() => GetTodayCount(AdRefreshKey);
-        public int GetGemRefreshCount() => GetTodayCount(GemRefreshKey);
 
-        /// <summary>광고를 보고 갱신. 하루 <c>DailyAdRefreshPerDay</c> 회.</summary>
-        public ShopPurchaseResult TryRefreshDailyByAd()
-        {
-            ShopDatabase db = ShopDatabaseProvider.Database;
-            if (db == null)
-                return Invalid("일일상점 갱신");
-
-            if (GetAdRefreshCount() >= db.DailyAdRefreshPerDay)
-                return ShopPurchaseResult.RefreshLimitReached;
-
-            // 광고 재생은 IRewardedAdService 가 붙으면 여기로 들어온다. 지금은 본 것으로 친다 —
-            // 현금 결제와 같은 판단이고, 이유도 같다(막아 두면 갱신 로직을 못 눌러 본다).
-            Debug.LogWarning("[상점] 광고를 본 것으로 처리한다(광고 SDK 미연동).");
-
-            ClearDailySlots();
-            Record(AdRefreshKey);
-            OnPurchaseStateChanged?.Invoke();
-            return ShopPurchaseResult.Success;
-        }
-
-        /// <summary>무료젬으로 갱신. 하루 <c>DailyGemRefreshPerDay</c> 회.</summary>
-        public ShopPurchaseResult TryRefreshDailyByGem()
-        {
-            ShopDatabase db = ShopDatabaseProvider.Database;
-            if (db == null)
-                return Invalid("일일상점 갱신");
-
-            if (GetGemRefreshCount() >= db.DailyGemRefreshPerDay)
-                return ShopPurchaseResult.RefreshLimitReached;
-
-            PointManager points = PointManager.Instance;
-            if (points == null)
-                return Invalid("PointManager 가 없다");
-
-            if (!points.TrySpend(PointType.FreeGem, db.DailyGemRefreshCost))
-                return ShopPurchaseResult.NotEnoughCurrency;
-
-            ClearDailySlots();
-            Record(GemRefreshKey);
-            OnPurchaseStateChanged?.Invoke();
-            return ShopPurchaseResult.Success;
-        }
-
-        /// <summary>
-        /// SOLD 표시만 지운다. <b>갱신 횟수는 남긴다</b> — 그것까지 지우면 갱신이 무한이 된다.
-        ///
-        /// 진열 품목 자체를 다시 뽑지는 않는다. 뽑기 풀과 등급 가중치가 미정이라
-        /// (기획서 10장 "일일상점 갱신 시각 / 수동 갱신 비용") 지금은 <b>같은 6칸이 다시
-        /// 살아나는</b> 것까지가 갱신이다. 풀이 정해지면 여기서 다시 굴린다.
-        /// </summary>
-        private void ClearDailySlots()
-        {
-            ResetIfDateChanged(DateTime.Now);
-
-            for (int i = 0; i < ShopDatabase.DailySlotCount; i++)
-                state.DailyPurchaseCounts.Remove(DailySlotKey(i));
-        }
 
         // ── 내부 ───────────────────────────────────────────────────────
 

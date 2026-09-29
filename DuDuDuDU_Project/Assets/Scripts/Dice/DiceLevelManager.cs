@@ -95,7 +95,9 @@ namespace OJ.Dice
             if (diceType == DiceType.Max)
                 return;
 
-            int clamped = Mathf.Max(1, level);
+            // 상한을 여기서도 자른다. TryLevelUp 이 이미 막지만, 세이브 로드와 치트도
+            // 이 경로로 들어온다 — 한 곳만 막으면 12를 넘긴 값이 조용히 들어앉는다.
+            int clamped = Mathf.Clamp(level, 1, Define.MaxDiceLevel);
             levels[diceType] = clamped;
             OnDiceLevelChanged?.Invoke(diceType, clamped);
 
@@ -108,9 +110,21 @@ namespace OJ.Dice
             }
         }
 
+        /// <summary>이미 최대 레벨인가. 버튼을 잠그거나 "MAX" 를 적을 때 쓴다.</summary>
+        public bool IsMaxLevel(DiceType diceType)
+        {
+            return GetLevel(diceType) >= Define.MaxDiceLevel;
+        }
+
         public bool TryLevelUp(DiceType diceType)
         {
             int currentLevel = GetLevel(diceType);
+
+            // <b>재화를 쓰기 전에 막는다.</b> TrySpend 뒤에 검사하면 만렙인 다이스에
+            // 골드와 스크롤만 날아간다.
+            if (currentLevel >= Define.MaxDiceLevel)
+                return false;
+
             var cost = DiceMetaDataProvider.GetUpgradeCost(diceType, currentLevel);
 
             var costs = new Dictionary<PointType, int>

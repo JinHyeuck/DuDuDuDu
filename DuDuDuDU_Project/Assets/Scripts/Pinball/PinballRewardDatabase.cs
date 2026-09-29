@@ -173,8 +173,8 @@ namespace OJ.Pinball
             //
             // 골드는 1000/2000/5000 -> 100/200/10000 -> 지금 값으로 두 번 내렸다.
             // 마지막 인하는 <b>골드를 병목으로 만들기 위한 것</b>이다(StageRewardFormula
-            // .GuaranteedNormalGold 주석). 발당 6.96 으로 하루 668 이다.
-            int[] golds = { 3, 5, 300, 5, 3 };
+            // .GuaranteedNormalGold 주석). 발당 21.375 로 하루 2,052 다.
+            int[] golds = { 10, 15, 900, 15, 10 };
             int[] stamina = { 1, 1, 25, 1, 1 };
             for (int i = 0; i < golds.Length; i++)
             {

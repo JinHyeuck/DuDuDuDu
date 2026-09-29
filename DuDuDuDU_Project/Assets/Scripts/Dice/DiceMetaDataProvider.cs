@@ -110,7 +110,7 @@ namespace OJ.Dice
 
             // 4.3 이전에는 이 우회가 킹 다이스 5종에서 <b>항상</b> 탔다. MergeMeta 가 강화 비용을
             // 코드 기본값에서 가져왔는데 CreateMythicDefault 는 네 값을 0 으로 두기 때문이다.
-            // 이제 에셋이 있으면 그 값(260/270/255/280/250 …)이 그대로 와서 이 분기가 거짓이 된다.
+            // 이제 에셋이 있으면 그 값(265/90/4/6)이 그대로 와서 이 분기가 거짓이 된다.
             // 산 것을 죽인 게 아니라 같은 표가 두 군데 있었을 뿐이다 — 값은 한 자리도 안 바뀐다.
             //
             // <b>지우지 말 것.</b> "이제 안 탄다"는 에셋이 있을 때 이야기다. 이 분기는 두 경우에
@@ -428,20 +428,15 @@ namespace OJ.Dice
         {
             switch (diceType)
             {
+                // 킹 5종은 같은 등급이므로 <b>같은 비용</b>을 쓴다. 예전에는 250~280 골드로
+                // 조금씩 달랐는데, 같은 등급끼리 값이 갈리면 유저가 이유 없이 싼 쪽만 키운다.
+                // 그건 빌드 선택이 아니라 표의 실수다.
                 case DiceType.KingNormal:
-                    cost = BuildUpgradeCost(currentLevel, 260, 90, 15, 3);
-                    return true;
                 case DiceType.KingFire:
-                    cost = BuildUpgradeCost(currentLevel, 270, 92, 16, 3);
-                    return true;
                 case DiceType.KingIce:
-                    cost = BuildUpgradeCost(currentLevel, 255, 88, 15, 3);
-                    return true;
                 case DiceType.KingThunder:
-                    cost = BuildUpgradeCost(currentLevel, 280, 96, 16, 3);
-                    return true;
                 case DiceType.KingPoison:
-                    cost = BuildUpgradeCost(currentLevel, 250, 86, 15, 3);
+                    cost = BuildUpgradeCost(currentLevel, 265, 90, 4, 6);
                     return true;
                 default:
                     cost = (0, 0);

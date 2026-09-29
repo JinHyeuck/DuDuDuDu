@@ -96,7 +96,7 @@ namespace OJ.Pinball
                 new BonusPinReward
                 {
                     tag = 1, label = "골드 핀", requiredHits = 6,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.Gold, 200) },
+                    rewards = new List<PinballReward> { new PinballReward(PointType.Gold, 300) },
                 },
                 new BonusPinReward
                 {
