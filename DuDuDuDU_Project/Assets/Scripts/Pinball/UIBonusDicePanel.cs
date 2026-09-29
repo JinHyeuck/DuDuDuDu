@@ -50,6 +50,21 @@ namespace OJ.Pinball
         [Tooltip("보상판 전용 PinballBoard. 특수 핀 태그의 정본이다.")]
         [SerializeField] private PinballBoard board;
 
+        /// <summary>
+        /// 보상 라운드에서 공이 연달아 나가는 간격(초). <b>기본 판보다 짧다.</b>
+        ///
+        /// <c>PinballPlayback.launchInterval</c> 은 0.35초인데, 그것은 유저가 한 발씩 쏘는
+        /// 기본 판 기준이다. 여기는 한 사이클에 3~15발이 <b>자동으로</b> 나가는 자리라
+        /// 같은 값을 쓰면 15발에 5초가 걸려서 "쏟아지는 느낌"이 안 난다.
+        ///
+        /// 짧을수록 공이 겹쳐 보인다(<c>PinballPlayback</c> 주석: "0.3초 이상이면 거의
+        /// 눈에 띄지 않는다"). 보상 라운드는 겹치는 편이 오히려 맞아서 일부러 짧게 잡았다 —
+        /// 과하면 이 값만 올리면 된다.
+        /// </summary>
+        [Tooltip("보상 라운드의 연속 발사 간격(초). 기본 판(0.35)보다 짧게 둔다.")]
+        [Min(0f)]
+        [SerializeField] private float launchInterval = 0.12f;
+
         [Header("주사위")]
         [SerializeField] private List<DiceSlot> diceSlots = new List<DiceSlot>();
 
@@ -331,7 +346,7 @@ namespace OJ.Pinball
 
             if (playback != null)
             {
-                playback.PlayForSeeds(slotBuffer, seedBuffer);
+                playback.PlayForSeeds(slotBuffer, seedBuffer, launchInterval);
             }
             else
             {

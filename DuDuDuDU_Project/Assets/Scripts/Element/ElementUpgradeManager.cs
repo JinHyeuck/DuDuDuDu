@@ -29,7 +29,17 @@ namespace OJ.Element
 
         void Awake()
         {
+            // <b>여기서 battle 을 건드리면 안 된다.</b> VContainer 의 주입은 Awake 뒤에
+            // 붙으므로 이 시점의 battle 은 null 이다 — 예전에 BindUI 가 여기 있어서
+            // battle.BattlePoints 에서 NullReferenceException 이 났다.
+            // (같은 함정을 UIBoard·MonsterSpawner 주석이 먼저 적어 두었다.)
+            //
+            // ResetAll 은 levels 딕셔너리만 채우므로 주입과 무관하다.
             ResetAll(false);
+        }
+
+        private void Start()
+        {
             BindUI();
             RefreshCoinUI();
         }
@@ -191,7 +201,9 @@ namespace OJ.Element
                 ElementUpgrade.onClick.AddListener(OnClickElementUpgrade);
             }
 
-            if (battle.BattlePoints != null)
+            // battle 이 아직 없을 수 있다 — 주입 전에 파괴되거나, 이 컴포넌트가
+            // 스코프 밖에서 찍힌 경우다. 그때는 이벤트를 걸 대상 자체가 없다.
+            if (battle != null && battle.BattlePoints != null)
             {
                 battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
                 battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
@@ -203,7 +215,8 @@ namespace OJ.Element
             if (ElementUpgrade != null)
                 ElementUpgrade.onClick.RemoveListener(OnClickElementUpgrade);
 
-            if (battle.BattlePoints != null)
+            // OnDestroy 는 Start 전에도 돌 수 있다(씬이 바로 바뀌는 경우).
+            if (battle != null && battle.BattlePoints != null)
                 battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
         }
 
