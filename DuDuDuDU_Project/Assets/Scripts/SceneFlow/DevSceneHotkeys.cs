@@ -8,6 +8,7 @@ using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.Hunting;
+using OJ.IdleReward;
 using OJ.Point;
 using OJ.Relic;
 using OJ.Save;
@@ -26,6 +27,7 @@ namespace OJ.SceneFlow
     /// 잦으므로 씬 전환을 상태와 무관하게 뚫어 둔다.
     ///
     ///   F1 / F2 / F3   Title / Lobby / Battle
+    ///   F4             시간 2시간 당기기 (고기 1세트 · 자동전투 2회). Shift 면 24시간
     ///   F5             현재 씬 다시 로드
     ///   F6             배선 진단 덤프 (StaticResource 와 데이터베이스 6종)
     ///   F7             계산식 골든 기준선 뜨기 (3단계)
@@ -43,7 +45,7 @@ namespace OJ.SceneFlow
             var go = new GameObject(nameof(DevSceneHotkeys));
             go.AddComponent<DevSceneHotkeys>();
             DontDestroyOnLoad(go);
-            Debug.Log("[Dev] 씬 핫키: F1 Title / F2 Lobby / F3 Battle / F5 재로드 / F6 배선 진단");
+            Debug.Log("[Dev] 씬 핫키: F1 Title / F2 Lobby / F3 Battle / F4 시간당기기 / F5 재로드 / F6 배선 진단");
         }
 
         private void Update()
@@ -54,6 +56,8 @@ namespace OJ.SceneFlow
                 SceneFlowManager.LoadLobby();
             else if (Input.GetKeyDown(KeyCode.F3))
                 SceneFlowManager.LoadBattle();
+            else if (Input.GetKeyDown(KeyCode.F4))
+                AdvanceIdleTime();
             else if (Input.GetKeyDown(KeyCode.F5))
                 SceneFlowManager.Reload();
             else if (Input.GetKeyDown(KeyCode.F6))
@@ -69,6 +73,44 @@ namespace OJ.SceneFlow
 
             if (traceClicks && Input.GetMouseButtonDown(0))
                 TraceClick();
+        }
+
+        // --- 시간 당기기 (F4) ----------------------------------------------------------
+
+        /// <summary>
+        /// 방치 보상 타이머를 과거로 밀어 시간이 흐른 것처럼 만든다.
+        ///
+        /// <b>기기 시계를 돌리지 않는다.</b> 시계를 돌리면 상점 일일 리셋·출석 같은 다른
+        /// 날짜 판정까지 같이 움직여서 무엇이 왜 바뀌었는지 알 수 없게 된다.
+        ///
+        /// 기본 2시간인 것은 그것이 <b>고기 한 세트</b>이기 때문이다
+        /// (<c>IdleRewardManager.MeatSetIntervalSeconds</c>). 한 번 누를 때마다 한 세트씩
+        /// 늘어나는 편이 "얼마나 당겼는지"를 세기 쉽다. Shift 를 누르면 하루치다.
+        /// </summary>
+        private static void AdvanceIdleTime()
+        {
+            IdleRewardManager manager = IdleRewardManager.Instance;
+            if (manager == null)
+            {
+                Debug.LogWarning("[Dev] IdleRewardManager 가 없다. 로비에서 눌러야 한다.");
+                return;
+            }
+
+            bool big = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            // <b>System.TimeSpan 으로 적는다.</b> 이 파일은 using System 을 일부러 빼 두었다 —
+            // 넣으면 System.Object 와 UnityEngine.Object 가 부딪혀 아래 Describe 가 깨진다.
+            System.TimeSpan amount = big
+                ? System.TimeSpan.FromHours(24d)
+                : System.TimeSpan.FromSeconds(IdleRewardManager.MeatSetIntervalSeconds);
+
+            manager.DevAdvanceTime(amount);
+
+            int sets = manager.GetStoredMeatSetCount();
+            int meat = sets * IdleRewardManager.MeatPerSet;
+            Debug.Log(
+                $"[Dev] 시간 {amount.TotalHours:0.#}시간 당겼다 | " +
+                $"고기 {sets}/{IdleRewardManager.MaxMeatSetCount}세트 ({meat}개, 소탕 {meat / 5}회분) | " +
+                $"자동전투 누적 {manager.GetAutoBattleElapsed().TotalHours:0.#}시간");
         }
 
         // --- 클릭 대상 추적 (F8) --------------------------------------------------------

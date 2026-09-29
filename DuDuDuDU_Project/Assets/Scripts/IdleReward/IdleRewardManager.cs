@@ -305,6 +305,35 @@ namespace OJ.IdleReward
             return IdleRewardFormula.ElapsedSeconds(startUtcTicks, utcNow.Ticks);
         }
 
+#if UNITY_EDITOR || DEV_DEFINE
+        /// <summary>
+        /// <b>개발용.</b> 타이머 기준 시각을 과거로 밀어 시간이 흐른 것처럼 만든다.
+        ///
+        /// 기기 시계를 건드리지 않는다 — 시계를 돌리면 상점 일일 리셋·출석 같은 다른
+        /// 날짜 판정까지 같이 움직여서 무엇이 왜 바뀌었는지 알 수 없게 된다.
+        /// 여기는 방치 보상 두 타이머의 <b>시작점만</b> 옮긴다.
+        ///
+        /// 쌓인 양은 각자 상한에서 잘린다(고기 <see cref="MaxMeatSetCount"/> 세트,
+        /// 자동전투 <see cref="AutoBattleMaxSeconds"/>). 그래서 많이 당겨도 꽉 찬 상태가
+        /// 될 뿐 넘치지 않는다.
+        /// </summary>
+        public void DevAdvanceTime(TimeSpan amount)
+        {
+            if (amount <= TimeSpan.Zero)
+                return;
+
+            long ticks = amount.Ticks;
+
+            // 0 이하로 내려가면 IdleRewardFormula.ElapsedSeconds 가 "저장값 없음"으로 보고
+            // 경과를 0 으로 눌러 버린다 — 당겼는데 오히려 비는 꼴이 된다.
+            autoBattleStartUtcTicks = Math.Max(1L, autoBattleStartUtcTicks - ticks);
+            meatFestivalStartUtcTicks = Math.Max(1L, meatFestivalStartUtcTicks - ticks);
+
+            Save();
+            OnChanged?.Invoke();
+        }
+#endif
+
         private int BuildRewardSeed(int stageIndex)
         {
             unchecked
