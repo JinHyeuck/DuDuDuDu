@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &7320244317685558339
+--- !u!1 &5568390692333947554
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,42 +8,42 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6505159380862650282}
-  - component: {fileID: 7459025233251939689}
-  - component: {fileID: 8880202767979408004}
-  - component: {fileID: 5160955876374937825}
-  - component: {fileID: 999945935910027509}
-  - component: {fileID: 6633984448261290718}
+  - component: {fileID: 7409281450400742749}
+  - component: {fileID: 7355745181425643583}
+  - component: {fileID: 6626713035814806099}
+  - component: {fileID: 3476517107244786835}
+  - component: {fileID: 3277618954509938004}
+  - component: {fileID: 2044157225239961934}
   m_Layer: 12
-  m_Name: Monster_Golem
+  m_Name: Bounty_4
   m_TagString: Monster
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6505159380862650282
+--- !u!4 &7409281450400742749
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7320244317685558339}
+  m_GameObject: {fileID: 5568390692333947554}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 651.2553, y: 1009.3152, z: 0}
   m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &7459025233251939689
+--- !u!212 &7355745181425643583
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7320244317685558339}
+  m_GameObject: {fileID: 5568390692333947554}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -85,7 +85,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: d691d0580d928cb408e4d7e845304306, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6d46267ac4420df45a43d5762030b49b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -95,33 +95,33 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &8880202767979408004
+--- !u!114 &6626713035814806099
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7320244317685558339}
+  m_GameObject: {fileID: 5568390692333947554}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f459a1be1aef884dac13ec59a7e3020, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MonsterID: 5
+  MonsterID: 9
   _hp: 3
   defense: 0
   attackDamage: 2
   attackInterval: 0.5
-  moveSpeed: 0.18
+  moveSpeed: 0.5
   ApplyMoveSpeed: 2
-  characterAnimation: {fileID: 5160955876374937825}
---- !u!114 &5160955876374937825
+  characterAnimation: {fileID: 3476517107244786835}
+--- !u!114 &3476517107244786835
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7320244317685558339}
+  m_GameObject: {fileID: 5568390692333947554}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6dff869a18d6f1d4f8690cf55b02c5fb, type: 3}
@@ -132,34 +132,34 @@ MonoBehaviour:
     AniDefaultFrameTime: 0.2
     FrameTime: 0.2
     AniSprites:
-    - {fileID: 21300000, guid: d691d0580d928cb408e4d7e845304306, type: 3}
-    - {fileID: 21300000, guid: 55326ebb4536f6b4698cb8bf70a1c2d7, type: 3}
-    - {fileID: 21300000, guid: e434a25c1dea3274ea108744b93ce3a3, type: 3}
-    - {fileID: 21300000, guid: c8d1c3ebfabc43f42af5e99084755707, type: 3}
-    - {fileID: 21300000, guid: ad62e9f4046fd794ca52708c4854f2b2, type: 3}
-    - {fileID: 21300000, guid: 2ed1fbb17626e094b8d922378718fdd0, type: 3}
-    - {fileID: 21300000, guid: 5c4642fcd4e684c49a18e9b5e8519b6f, type: 3}
-    - {fileID: 21300000, guid: c4cfb6d49c907794dbd2d22d22a10251, type: 3}
-    - {fileID: 21300000, guid: a21df8f333a81874982830b581c2e3b4, type: 3}
-    - {fileID: 21300000, guid: b905f6842ba697a4cacd4d86cbf532c9, type: 3}
-    - {fileID: 21300000, guid: dd8d24f7f6f40ad43b6b7b5a42cefb4c, type: 3}
-    - {fileID: 21300000, guid: 6bfa0fd098e0e0e41a62ad474ad64000, type: 3}
-    - {fileID: 21300000, guid: 5f3336cbb540cf74ba4661a3fe3836c2, type: 3}
-    - {fileID: 21300000, guid: a038b4e78fb94904abbde82bbe5ae790, type: 3}
-    - {fileID: 21300000, guid: a395566cfd38f924aab60f0f8e754200, type: 3}
-    - {fileID: 21300000, guid: 46a11f24eb09d0a469b3524ad93d8614, type: 3}
+    - {fileID: 21300000, guid: 6d46267ac4420df45a43d5762030b49b, type: 3}
+    - {fileID: 21300000, guid: 1920b59c779e21c458bca167b3f57013, type: 3}
+    - {fileID: 21300000, guid: 8d32126ba9eef594eae10cff57d1626f, type: 3}
+    - {fileID: 21300000, guid: ff12714c11f9cd84fa0e685836ef2faf, type: 3}
+    - {fileID: 21300000, guid: 560d612d21e8cc44ea22966f2759ad9c, type: 3}
+    - {fileID: 21300000, guid: 9e3e21c1202995744873a72884a72cb8, type: 3}
+    - {fileID: 21300000, guid: ad11956c6690dd249915dbb0995140a1, type: 3}
+    - {fileID: 21300000, guid: 457e597aa3b79a746893a82b00d20375, type: 3}
+    - {fileID: 21300000, guid: f5d5531ede12b53418af2cf88194f9c2, type: 3}
+    - {fileID: 21300000, guid: 8f3bd5109b29a86478bb7590b91447db, type: 3}
+    - {fileID: 21300000, guid: 9553ccd5a22a9a84bad803eb20dc2bfd, type: 3}
+    - {fileID: 21300000, guid: 4ab4f019b3c28ae4fbf029e95989dfd6, type: 3}
+    - {fileID: 21300000, guid: 38a55e12969f5a74ab993bdacbbd461e, type: 3}
+    - {fileID: 21300000, guid: f43e939c29bf0cc429875fcf639c3dfb, type: 3}
+    - {fileID: 21300000, guid: 761d4474e28ef844996151fc92e78774, type: 3}
+    - {fileID: 21300000, guid: 565f6a387345f924e8a1e439f2bb11e2, type: 3}
     Loop: 1
     AniAndAction: 13
-  spriteRenderer: {fileID: 7459025233251939689}
+  spriteRenderer: {fileID: 7355745181425643583}
   CurrentAni: 13
---- !u!50 &999945935910027509
+--- !u!50 &3277618954509938004
 Rigidbody2D:
   serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7320244317685558339}
+  m_GameObject: {fileID: 5568390692333947554}
   m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
@@ -179,13 +179,13 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!58 &6633984448261290718
+--- !u!58 &2044157225239961934
 CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7320244317685558339}
+  m_GameObject: {fileID: 5568390692333947554}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -213,5 +213,5 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0.09}
-  m_Radius: 0.33
+  m_Offset: {x: 0, y: 0}
+  m_Radius: 0.36
