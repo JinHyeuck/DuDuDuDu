@@ -15,7 +15,7 @@ namespace OJ.IdleReward
     ///
     /// <b>2. 세트 그리드가 감당이 안 된다.</b> 옛 탭은 세트마다 칸을 하나씩 그렸는데
     /// (6열 x 5행 = 30칸), 저장 상한이 60세트가 되면서 6열 x 10행이 되어 팝업이 못 담는다.
-    /// 애초에 유저가 알고 싶은 것은 "몇 세트 있나" 하나이고, 그건 숫자 하나로 충분하다.
+    /// 애초에 유저가 알고 싶은 것은 "지금 누르면 몇 개 들어오나" 하나이고, 그건 숫자 하나로 충분하다.
     ///
     /// <b>가득 참을 반드시 알린다.</b> 2시간에 한 세트라 60세트는 5일이다 — 주말을 한 번
     /// 건너뛰면 닿는 거리이고, 그 뒤로 구워지는 고기는 조용히 버려진다.
@@ -28,7 +28,7 @@ namespace OJ.IdleReward
 
         [SerializeField] private Button button;
 
-        [Tooltip("저장된 세트 수. \"x5\" 꼴로 찍힌다.")]
+        [Tooltip("받으면 들어올 고기 수. 한 세트가 30개이므로 한 세트일 때 \"x30\" 이 된다.")]
         [SerializeField] private TMP_Text countText;
 
         [Tooltip("다음 세트까지 남은 시간. 가득 차면 \"가득\" 이 된다.")]
@@ -176,7 +176,10 @@ namespace OJ.IdleReward
 
             if (countText != null)
             {
-                countText.SetText("x{0}", setCount);
+                // <b>세트가 아니라 고기 개수를 찍는다.</b> 세트는 내부 단위일 뿐이라
+                // "x3" 을 본 유저가 고기 90개를 떠올릴 방법이 없다 — 소탕 한 번이 5개인데
+                // 화면의 3 과는 아무 관계가 없어서, 받기 전에 몇 번 돌 수 있는지 셀 수 없다.
+                countText.SetText("x{0}", MeatFestivalRules.TotalMeat(setCount, IdleRewardManager.MeatPerSet));
                 countText.color = full ? FullCountColor : NormalCountColor;
             }
 
