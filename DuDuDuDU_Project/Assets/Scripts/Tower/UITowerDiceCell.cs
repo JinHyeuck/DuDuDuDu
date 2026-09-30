@@ -103,7 +103,7 @@ namespace OJ.Tower
 
             // 정체는 아이콘이 나른다. 스프라이트가 아직 없는 다이스는 아이콘을 끄고
             // 이름만 남긴다 — 빈 흰 사각형이 뜨는 것보다 낫다.
-            Sprite iconSprite = DiceMetaDataProvider.GetIcon(diceType);
+            Sprite iconSprite = DiceMetaDataProvider.GetIcon(diceType, star);
             if (icon != null)
             {
                 icon.enabled = iconSprite != null;

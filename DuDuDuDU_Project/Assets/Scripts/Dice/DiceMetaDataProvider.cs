@@ -165,6 +165,31 @@ namespace OJ.Dice
             return null;
         }
 
+        /// <summary>
+        /// 성급을 아는 자리의 아이콘. 그 성급 그림이 있으면 그것, 없으면 <see cref="GetIcon(DiceType)"/>.
+        /// </summary>
+        public static Sprite GetIcon(DiceType diceType, int star)
+        {
+            var meta = GetMeta(diceType);
+            if (meta != null && meta.starIcons != null)
+            {
+                int index = star - 1;
+                if (index >= 0 && index < meta.starIcons.Length && meta.starIcons[index] != null)
+                    return meta.starIcons[index];
+            }
+
+            return GetIcon(diceType);
+        }
+
+        /// <summary>
+        /// 성급이 그림으로 드러나는가. 그렇다면 "x4" 같은 숫자 표기는 겹친다.
+        /// </summary>
+        public static bool HasStarIcons(DiceType diceType)
+        {
+            var meta = GetMeta(diceType);
+            return meta != null && meta.starIcons != null && meta.starIcons.Length > 1;
+        }
+
         public static Sprite GetProjectileSprite(DiceType diceType)
         {
             var meta = GetMeta(diceType);

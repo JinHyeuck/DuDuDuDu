@@ -23,6 +23,14 @@ namespace OJ.Dice
             public string displayName;
             [TextArea(2, 4)] public string description;
             public Sprite icon;
+
+            /// <summary>
+            /// 성급별 아이콘. [0] 이 1성이다. 비어 있거나 그 성급 칸이 없으면 <see cref="icon"/> 을 쓴다.
+            /// 기본 다이스(일반·불·얼음·번개·독)가 머지로 성급이 오르면 그림이 바뀐다
+            /// (Ui_Merge_{속성}_1~4). 예전에는 그림 하나에 "x4" 숫자만 올렸다.
+            /// </summary>
+            public Sprite[] starIcons = new Sprite[0];
+
             public Color color = Color.white;
             public Sprite projectileSprite;
             public BulletEffect primaryEffect;

@@ -309,6 +309,9 @@ namespace OJ.Tower
                 UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Popup_Bg_Selcet"), 4f,
                 new Vector2(CardWidth + 8f + 16f, CardHeight + 7f + 16f), Vector2.zero, true);
 
+            // 테두리 그림이 흰색으로 바뀌었다(4297f64). 색은 여기서 입힌다.
+            card.highlightEdge.color = UITowerUIFactory.Hex(0x00FF24);
+
             return card;
         }
     }
