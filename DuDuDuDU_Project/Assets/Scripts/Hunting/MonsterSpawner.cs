@@ -34,8 +34,11 @@ namespace OJ.Hunting
 
         // 현상금 전용 프리팹(prefabOverride)을 위한 풀. 보스를 빌려 쓰는 기본 경로는
         // 보스 풀을 그대로 타므로 여기 들어오지 않는다.
-        private readonly Dictionary<int, Queue<Monster>> bountyMonsterPools = new Dictionary<int, Queue<Monster>>();
-        private readonly HashSet<Monster> bountyMonsterInstances = new HashSet<Monster>();
+        // 키는 MonsterID 가 아니라 프리팹 자체다 — 등급별 프리팹이 서로 복제해 만들어져
+        // ID 가 같으면, ID 로 묶는 순간 먼저 찍힌 등급의 몸이 모든 등급에 재활용된다.
+        private readonly Dictionary<Monster, Queue<Monster>> bountyMonsterPools = new Dictionary<Monster, Queue<Monster>>();
+        // 인스턴스 → 그것을 찍은 프리팹. 돌려받을 때 어느 풀로 갈지 여기서 찾는다.
+        private readonly Dictionary<Monster, Monster> bountyMonsterInstances = new Dictionary<Monster, Monster>();
 
         public List<Monster> monsterPrefab;
         public List<Monster> bossMonsterPrefab;
@@ -315,12 +318,12 @@ namespace OJ.Hunting
 
             monster.gameObject.SetActive(false);
 
-            if (bountyMonsterInstances.Contains(monster))
+            if (bountyMonsterInstances.TryGetValue(monster, out Monster bountyPrefab))
             {
-                if (!bountyMonsterPools.TryGetValue(monster.MonsterID, out Queue<Monster> bountyPool))
+                if (!bountyMonsterPools.TryGetValue(bountyPrefab, out Queue<Monster> bountyPool))
                 {
                     bountyPool = new Queue<Monster>();
-                    bountyMonsterPools.Add(monster.MonsterID, bountyPool);
+                    bountyMonsterPools.Add(bountyPrefab, bountyPool);
                 }
 
                 bountyPool.Enqueue(monster);
@@ -417,8 +420,8 @@ namespace OJ.Hunting
             if (definition.prefabOverride == null)
                 return GetBossMonster();
 
-            int id = definition.prefabOverride.MonsterID;
-            if (bountyMonsterPools.TryGetValue(id, out Queue<Monster> pool) && pool.Count > 0)
+            Monster prefab = definition.prefabOverride;
+            if (bountyMonsterPools.TryGetValue(prefab, out Queue<Monster> pool) && pool.Count > 0)
             {
                 Monster pooled = pool.Dequeue();
                 pooled.gameObject.SetActive(true);
@@ -427,12 +430,12 @@ namespace OJ.Hunting
 
             // 풀에 없으면 그 자리에서 찍는다. 현상금은 웨이브당 한 마리라 예열 없이도
             // 늘어나지 않는다 — 그래서 RebuildPools 가 미리 만들어 두지 않는다.
-            GameObject obj = resolver.Instantiate(definition.prefabOverride.gameObject, transform);
+            GameObject obj = resolver.Instantiate(prefab.gameObject, transform);
             Monster spawned = obj.GetComponent<Monster>();
-            if (!bountyMonsterPools.ContainsKey(id))
-                bountyMonsterPools.Add(id, new Queue<Monster>());
+            if (!bountyMonsterPools.ContainsKey(prefab))
+                bountyMonsterPools.Add(prefab, new Queue<Monster>());
 
-            bountyMonsterInstances.Add(spawned);
+            bountyMonsterInstances.Add(spawned, prefab);
             return spawned;
         }
 
@@ -529,7 +532,7 @@ namespace OJ.Hunting
             InitializePools(bossMonsterPrefab, bossMonsterPools, bossMonsterIdList, true);
         }
 
-        private static void DestroyPooledMonsters(Dictionary<int, Queue<Monster>> pools)
+        private static void DestroyPooledMonsters<TKey>(Dictionary<TKey, Queue<Monster>> pools)
         {
             foreach (Queue<Monster> pool in pools.Values)
             {

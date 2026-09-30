@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Battle;
 using OJ.Core;
 
 namespace OJ.Bounty
@@ -24,9 +25,15 @@ namespace OJ.Bounty
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text hpText;
         [SerializeField] private TMP_Text rewardText;
+        [Tooltip("보상 재화 아이콘. 비워 두면 rewardText 옆에 런타임으로 만든다.")]
+        [SerializeField] private Image rewardIcon;
         [SerializeField] private TMP_Text lockText;
 
+        private const float RewardIconGap = 6f;
+
         private Action<int> clickHandler;
+        private Vector2 rewardTextBasePosition;
+        private bool rewardTextBaseCaptured;
 
         public int Grade => grade;
 
@@ -71,8 +78,7 @@ namespace OJ.Bounty
             if (hpText != null)
                 hpText.SetText("HP " + ShortNumberFormat.Format(hp));
 
-            if (rewardText != null)
-                rewardText.SetText(definition.FormatReward());
+            BindReward(definition);
 
             if (icon != null)
             {
@@ -97,12 +103,110 @@ namespace OJ.Bounty
                 hpText.SetText(string.Empty);
 
             if (rewardText != null)
+            {
+                RestoreRewardTextPosition();
                 rewardText.SetText("이번 판은 부르지 않아요");
+            }
+
+            if (rewardIcon != null)
+                rewardIcon.gameObject.SetActive(false);
 
             if (icon != null)
                 icon.enabled = false;
 
             ApplyDim(unlocked);
+        }
+
+        /// <summary>
+        /// 보상을 <b>[재화 아이콘] +수량</b> 으로 적는다. 아이콘을 못 구하면(메타데이터 미등록)
+        /// 예전처럼 재화 이름을 글자로 적는다 — 수량만 덩그러니 남으면 무엇을 주는지 모른다.
+        ///
+        /// 글자가 가운데 정렬이라 아이콘과 글자를 <b>한 덩어리로 묶어 가운데</b>에 놓는다.
+        /// 수량 자릿수에 따라 폭이 바뀌므로 매번 preferredWidth 로 다시 잰다.
+        /// </summary>
+        private void BindReward(BountyDefinition definition)
+        {
+            if (rewardText == null)
+                return;
+
+            RestoreRewardTextPosition();
+
+            Sprite sprite = BattlePointUtility.GetIcon(definition.rewardKind);
+            if (sprite == null)
+            {
+                if (rewardIcon != null)
+                    rewardIcon.gameObject.SetActive(false);
+
+                rewardText.SetText(definition.FormatReward());
+                return;
+            }
+
+            rewardText.SetText("+" + ShortNumberFormat.Format(definition.rewardAmount));
+
+            Image iconImage = EnsureRewardIcon();
+            iconImage.gameObject.SetActive(true);
+            iconImage.sprite = sprite;
+
+            float iconSize = iconImage.rectTransform.sizeDelta.x;
+            float textWidth = rewardText.GetPreferredValues(rewardText.text).x;
+            float total = iconSize + RewardIconGap + textWidth;
+
+            // 덩어리의 왼쪽 끝이 -total/2. 아이콘은 그 자리에서, 글자는 아이콘 뒤에서 시작한다.
+            // 글자는 가운데 정렬이므로 글자 중심 = 왼쪽 끝 + 아이콘 + 간격 + 글자폭/2.
+            float textCenter = -total * 0.5f + iconSize + RewardIconGap + textWidth * 0.5f;
+            rewardText.rectTransform.anchoredPosition = rewardTextBasePosition + new Vector2(textCenter, 0f);
+
+            RectTransform iconRect = iconImage.rectTransform;
+            iconRect.anchoredPosition = rewardTextBasePosition +
+                                        new Vector2(-total * 0.5f + iconSize * 0.5f, 0f);
+        }
+
+        private void RestoreRewardTextPosition()
+        {
+            if (!rewardTextBaseCaptured)
+            {
+                rewardTextBasePosition = rewardText.rectTransform.anchoredPosition;
+                rewardTextBaseCaptured = true;
+            }
+
+            rewardText.rectTransform.anchoredPosition = rewardTextBasePosition;
+        }
+
+        /// <summary>
+        /// 이미 구워진 프리팹에는 아이콘 칸이 없다. 다시 구우면 손으로 고친 폰트·버튼이
+        /// 날아가므로, 비어 있으면 rewardText 의 형제로 그 자리에서 만든다.
+        /// </summary>
+        private Image EnsureRewardIcon()
+        {
+            if (rewardIcon != null)
+                return rewardIcon;
+
+            RectTransform textRect = rewardText.rectTransform;
+            rewardIcon = CreateRewardIcon(textRect.parent, rewardText.fontSize * 1.2f);
+
+            // 글자 칸의 기준점과 같은 점에 앵커를 둬야 anchoredPosition 을 그대로 나눠 쓸 수 있다.
+            RectTransform iconRect = rewardIcon.rectTransform;
+            Vector2 anchor = (textRect.anchorMin + textRect.anchorMax) * 0.5f;
+            iconRect.anchorMin = anchor;
+            iconRect.anchorMax = anchor;
+            iconRect.pivot = new Vector2(0.5f, 0.5f);
+
+            // 글자 바로 뒤 형제로 두어 그리기 순서를 글자와 맞춘다.
+            rewardIcon.transform.SetSiblingIndex(rewardText.transform.GetSiblingIndex() + 1);
+            return rewardIcon;
+        }
+
+        private static Image CreateRewardIcon(Transform parent, float size)
+        {
+            var go = new GameObject("RewardIcon", typeof(RectTransform), typeof(Image));
+            go.layer = parent.gameObject.layer;
+            go.transform.SetParent(parent, false);
+
+            var image = go.GetComponent<Image>();
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.rectTransform.sizeDelta = new Vector2(size, size);
+            return image;
         }
 
         /// <summary>
@@ -119,11 +223,17 @@ namespace OJ.Bounty
             SetAlpha(rewardText, alpha);
 
             if (icon != null && icon.enabled)
-            {
-                Color c = icon.color;
-                c.a = alpha;
-                icon.color = c;
-            }
+                SetAlpha(icon, alpha);
+
+            if (rewardIcon != null)
+                SetAlpha(rewardIcon, alpha);
+        }
+
+        private static void SetAlpha(Image image, float alpha)
+        {
+            Color c = image.color;
+            c.a = alpha;
+            image.color = c;
         }
 
         private static void SetAlpha(TMP_Text text, float alpha)
@@ -196,6 +306,11 @@ namespace OJ.Bounty
             UIBountyUIFactory.SetRect(slot.rewardText.rectTransform,
                 new Vector2(size.x - 16f, 34f), new Vector2(0f, -halfHeight + 36f));
             slot.rewardText.textWrappingMode = TextWrappingModes.Normal;
+
+            slot.rewardIcon = CreateRewardIcon(background.transform, 30f);
+            UIBountyUIFactory.SetRect(slot.rewardIcon.rectTransform,
+                new Vector2(30f, 30f), new Vector2(0f, -halfHeight + 36f));
+            slot.rewardIcon.gameObject.SetActive(false);
 
             slot.lockText = UIBountyUIFactory.CreateText("Lock", background.transform, "앞 등급을 먼저", 24f,
                 TextAlignmentOptions.Center, LockTextColor, font);
