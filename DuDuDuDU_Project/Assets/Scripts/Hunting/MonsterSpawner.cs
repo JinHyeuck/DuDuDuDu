@@ -24,6 +24,13 @@ namespace OJ.Hunting
         // 이 필드는 Start 이후(ConfigureTheme/SpawnNext)에서만 쓴다.
         [Inject] private IObjectResolver resolver;
 
+        /// <summary>
+        /// 보스 웨이브의 보스가 나온 순간 운다. 경고 띠(<see cref="UIBattleWarning"/>)를 띄우는
+        /// <see cref="GameManager"/> 가 듣는다 — 스포너가 UI 를 직접 부르지 않게 한다
+        /// (현상금의 <c>BountyManager.OnSpawned</c> 와 같은 모양).
+        /// </summary>
+        public event System.Action OnBossSpawned;
+
         public int poolSize = 20;
 
         private Dictionary<int, Queue<Monster>> monsterPools = new Dictionary<int, Queue<Monster>>();
@@ -478,6 +485,8 @@ namespace OJ.Hunting
             float monsterScale = battle.Game.GetCurrentWaveBossScale();
             monster.SetCombatStats(monsterHp, monsterDefense, monsterScale);
             bossSpawnedInWave = true;
+
+            OnBossSpawned?.Invoke();
         }
 
         private void InitializePools(

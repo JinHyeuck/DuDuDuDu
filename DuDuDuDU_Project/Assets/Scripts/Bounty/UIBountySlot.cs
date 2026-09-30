@@ -82,7 +82,7 @@ namespace OJ.Bounty
 
             if (icon != null)
             {
-                icon.enabled = true;
+                icon.enabled = definition.icon != null;
                 icon.sprite = definition.icon;
 
                 // 아이콘 에셋이 아직 없으면 스프라이트 없는 Image 가 흰 사각형으로 그려진다.
@@ -97,7 +97,7 @@ namespace OJ.Bounty
         private void BindNoneSlot(bool unlocked)
         {
             if (nameText != null)
-                nameText.SetText("현상금 선택 X");
+                nameText.SetText("사냥 안하기");
 
             if (hpText != null)
                 hpText.SetText(string.Empty);
@@ -105,7 +105,7 @@ namespace OJ.Bounty
             if (rewardText != null)
             {
                 RestoreRewardTextPosition();
-                rewardText.SetText("이번 판은 부르지 않아요");
+                rewardText.SetText(string.Empty);
             }
 
             if (rewardIcon != null)
@@ -253,76 +253,103 @@ namespace OJ.Bounty
         }
 
         // ──────────────────────────────────────────────────────────────
-        // 에디터 굽기 전용.
+        // 에디터 굽기 전용. 시안: Art/Layout/Wanted_Layout(2).png — 수치는 Docs/WantedUIArtPort.md
         // ──────────────────────────────────────────────────────────────
 
-        private static readonly Color SlotColor = new Color(0.14f, 0.17f, 0.31f, 1f);
-        private static readonly Color SelectedEdgeColor = new Color(1f, 0.84f, 0.38f, 1f);
-        private static readonly Color MutedTextColor = new Color(0.78f, 0.84f, 0.94f, 1f);
-        private static readonly Color HpTextColor = new Color(1f, 0.86f, 0.55f, 1f);
-        private static readonly Color RewardTextColor = new Color(0.72f, 0.92f, 1f, 1f);
-        private static readonly Color LockTextColor = new Color(1f, 0.55f, 0.52f, 1f);
+        /// <summary>카드(Wanted_Bg x2)의 보이는 크기. 시안 x65~216 · y1421~1678.</summary>
+        internal static readonly Vector2 VisibleSize = new Vector2(152f, 258f);
 
-        /// <summary>에디터 굽기 전용. <see cref="UIBountySelectDialog.Create"/> 가 부른다.</summary>
+        private static readonly Color CardTextColor = new Color(0x86 / 255f, 0x57 / 255f, 0x31 / 255f, 1f);
+        private static readonly Color SelectedEdgeColor = new Color(1f, 0.87f, 0f, 1f);
+        private static readonly Color LockTextColor = new Color(0.83f, 0f, 0.15f, 1f);
+
+        /// <summary>
+        /// 에디터 굽기 전용. <see cref="UIBountySelectDialog.Create"/> 가 부른다.
+        /// <paramref name="designCenter"/> 는 카드의 보이는 중심(시안 좌표).
+        /// </summary>
         internal static UIBountySlot Create(
-            Transform parent, int grade, Vector2 size, Vector2 position, TMP_FontAsset font)
+            Transform parent, int grade, Vector2 designCenter, Vector2 parentDesignCenter,
+            TMP_FontAsset font, Material plainMaterial)
         {
-            // 선택 테두리를 <b>배경의 형제로, 배경보다 먼저</b> 만든다. 자식으로 넣으면
-            // uGUI 가 자식을 부모 위에 그려서 테두리가 칸 내용을 통째로 덮는다.
-            Image edge = UIBountyUIFactory.CreateImage("Slot" + grade + "Edge", parent, SelectedEdgeColor);
-            UIBountyUIFactory.SetRect(edge.rectTransform, size + new Vector2(8f, 8f), position);
-            edge.raycastTarget = false;
+            Vector2 position = UIBountyUIFactory.Local(designCenter.x, designCenter.y, parentDesignCenter);
 
-            Image background = UIBountyUIFactory.CreateImage("Slot" + grade, parent, SlotColor);
-            UIBountyUIFactory.SetRect(background.rectTransform, size, position);
+            // 선택 테두리를 <b>카드의 형제로, 카드보다 먼저</b> 만든다. 자식으로 넣으면
+            // uGUI 가 자식을 부모 위에 그려서 테두리가 카드 내용을 통째로 덮는다.
+            Image edge = UIBountyUIFactory.CreateSprite("Slot" + grade + "Edge", parent,
+                UIBountyUIFactory.LoadSprite("Upgrade/Ui_Popup_SmallBox"), 2f,
+                VisibleSize + new Vector2(12f + 26f, 12f + 26f), position, true);
+            edge.color = SelectedEdgeColor;
+            edge.enabled = false;
 
-            var slot = background.gameObject.AddComponent<UIBountySlot>();
+            // 카드 루트 = 보이는 크기의 투명 판. <b>클릭 면적을 보이는 종이에 맞추려는 것이다</b> —
+            // 종이 그림은 투명 여백 때문에 보이는 것보다 사방 48~68px 크고, 그것을 클릭 면적으로
+            // 쓰면 이웃 카드(틈 8px)를 누른 탭을 이 카드가 가로챈다.
+            Image hit = UIBountyUIFactory.CreateImage("Slot" + grade, parent, new Color(1f, 1f, 1f, 0f));
+            UIBountyUIFactory.SetRect(hit.rectTransform, VisibleSize, position);
+
+            var slot = hit.gameObject.AddComponent<UIBountySlot>();
             slot.grade = grade;
-            slot.background = background;
             slot.selectionEdge = edge;
 
-            slot.button = background.gameObject.AddComponent<Button>();
-            slot.button.targetGraphic = background;
+            slot.background = UIBountyUIFactory.CreateSprite("Background", hit.transform,
+                UIBountyUIFactory.LoadSprite("Ingame/Wanted_Bg"), 2f,
+                UIBountyUIFactory.WantedBgRect(VisibleSize.x, VisibleSize.y, 2f), Vector2.zero, true);
 
-            float halfHeight = size.y * 0.5f;
+            slot.button = hit.gameObject.AddComponent<Button>();
 
-            slot.nameText = UIBountyUIFactory.CreateText("Name", background.transform, "이름", 30f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UIBountyUIFactory.SetRect(slot.nameText.rectTransform,
-                new Vector2(size.x - 16f, 40f), new Vector2(0f, halfHeight - 30f));
+            // 누름·잠김 색은 종이에 먹인다. 투명 판에 먹이면 아무 변화도 안 보인다.
+            slot.button.targetGraphic = slot.background;
 
-            slot.icon = UIBountyUIFactory.CreateImage("Icon", background.transform, Color.white);
-            UIBountyUIFactory.SetRect(slot.icon.rectTransform, new Vector2(120f, 120f), new Vector2(0f, 6f));
-            slot.icon.preserveAspect = true;
-            slot.icon.raycastTarget = false;
+            Transform card = hit.transform;
 
-            slot.hpText = UIBountyUIFactory.CreateText("Hp", background.transform, "HP 0", 26f,
-                TextAlignmentOptions.Center, HpTextColor, font);
-            UIBountyUIFactory.SetRect(slot.hpText.rectTransform,
-                new Vector2(size.x - 16f, 34f), new Vector2(0f, -halfHeight + 72f));
-
-            slot.rewardText = UIBountyUIFactory.CreateText("Reward", background.transform, "보상", 26f,
-                TextAlignmentOptions.Center, RewardTextColor, font);
-            UIBountyUIFactory.SetRect(slot.rewardText.rectTransform,
-                new Vector2(size.x - 16f, 34f), new Vector2(0f, -halfHeight + 36f));
-            slot.rewardText.textWrappingMode = TextWrappingModes.Normal;
-
-            slot.rewardIcon = CreateRewardIcon(background.transform, 30f);
-            UIBountyUIFactory.SetRect(slot.rewardIcon.rectTransform,
-                new Vector2(30f, 30f), new Vector2(0f, -halfHeight + 36f));
-            slot.rewardIcon.gameObject.SetActive(false);
-
-            slot.lockText = UIBountyUIFactory.CreateText("Lock", background.transform, "앞 등급을 먼저", 24f,
-                TextAlignmentOptions.Center, LockTextColor, font);
-            UIBountyUIFactory.SetRect(slot.lockText.rectTransform,
-                new Vector2(size.x - 16f, 32f), new Vector2(0f, halfHeight - 64f));
-
-            // "소환 X" 칸은 X 표시가 아이콘을 대신한다. 스크린샷의 첫 칸 그대로다.
             if (grade == 0)
             {
-                TMP_Text cross = UIBountyUIFactory.CreateText("Cross", background.transform, "X", 96f,
-                    TextAlignmentOptions.Center, MutedTextColor, font);
-                UIBountyUIFactory.SetRect(cross.rectTransform, new Vector2(140f, 140f), new Vector2(0f, 6f));
+                // "사냥 안하기" 칸 — 초상 대신 빨간 X, 이름은 X 아래.
+                UIBountyUIFactory.CreateCross(card,
+                    UIBountyUIFactory.Local(designCenter.x, 1531f, designCenter), 84f, 20f);
+
+                slot.nameText = UIBountyUIFactory.CreateText("Name", card, "사냥 안하기", 18f,
+                    TextAlignmentOptions.Center, CardTextColor, font, plainMaterial);
+                UIBountyUIFactory.SetRect(slot.nameText.rectTransform, new Vector2(VisibleSize.x - 8f, 28f),
+                    UIBountyUIFactory.Local(designCenter.x, 1595f, designCenter));
+            }
+            else
+            {
+                slot.nameText = UIBountyUIFactory.CreateText("Name", card, "이름", 18f,
+                    TextAlignmentOptions.Center, CardTextColor, font, plainMaterial);
+                UIBountyUIFactory.SetRect(slot.nameText.rectTransform, new Vector2(VisibleSize.x - 8f, 28f),
+                    UIBountyUIFactory.Local(designCenter.x, 1463f, designCenter));
+
+                // 초상 칸(113², cda280). 몬스터를 1.4배로 넣고 칸이 자른다(시안 "클리핑마스크").
+                Image portrait = UIBountyUIFactory.CreateImage("Portrait", card, UIBountyUIFactory.Hex(0xCDA280));
+                UIBountyUIFactory.SetRect(portrait.rectTransform, new Vector2(113f, 113f),
+                    UIBountyUIFactory.Local(designCenter.x, 1542f, designCenter));
+                portrait.raycastTarget = false;
+                portrait.gameObject.AddComponent<RectMask2D>();
+
+                slot.icon = UIBountyUIFactory.CreateImage("Icon", portrait.transform, Color.white);
+                float iconSize = 128f * UIBountyBanner.MonsterScale;
+                UIBountyUIFactory.SetRect(slot.icon.rectTransform, new Vector2(iconSize, iconSize), Vector2.zero);
+                slot.icon.preserveAspect = true;
+                slot.icon.raycastTarget = false;
+                slot.icon.enabled = false;
+
+                // 보상 — [재화 아이콘] 수량. 시안은 금화 아이콘이지만 실제로 주는 재화의 아이콘을 쓴다.
+                Vector2 rewardPos = UIBountyUIFactory.Local(designCenter.x, 1637f, designCenter);
+
+                slot.rewardText = UIBountyUIFactory.CreateText("Reward", card, "0", 25f,
+                    TextAlignmentOptions.Center, CardTextColor, font, plainMaterial);
+                UIBountyUIFactory.SetRect(slot.rewardText.rectTransform, new Vector2(VisibleSize.x - 8f, 34f), rewardPos);
+
+                slot.rewardIcon = CreateRewardIcon(card, 30f);
+                UIBountyUIFactory.SetRect(slot.rewardIcon.rectTransform, new Vector2(30f, 30f), rewardPos);
+                slot.rewardIcon.gameObject.SetActive(false);
+
+                // 잠김 — 초상 칸 아래쪽에 겹친다. 칸 안에 빈자리가 없어 보상 줄을 가리지 않는 곳을 골랐다.
+                slot.lockText = UIBountyUIFactory.CreateText("Lock", card, "앞 등급을 먼저", 18f,
+                    TextAlignmentOptions.Center, LockTextColor, font, plainMaterial);
+                UIBountyUIFactory.SetRect(slot.lockText.rectTransform, new Vector2(VisibleSize.x - 8f, 28f),
+                    UIBountyUIFactory.Local(designCenter.x, 1585f, designCenter));
             }
 
             return slot;

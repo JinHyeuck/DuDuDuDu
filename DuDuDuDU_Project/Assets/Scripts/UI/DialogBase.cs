@@ -81,12 +81,21 @@ namespace OJ.UI
             hintedStyle = style;
         }
 
+        /// <summary>
+        /// 에디터 굽기 전용. 코드로 굽는 창이 <see cref="openStyle"/> 을 정할 때 쓴다 —
+        /// 제 연출을 따로 가진 창(<c>UIBattleWarning</c>)은 None 이어야 두 연출이 겹치지 않는다.
+        /// </summary>
+        protected void BakeOpenStyle(DialogOpenStyle style)
+        {
+            openStyle = style;
+        }
+
         private DialogOpenStyle ResolvedOpenStyle =>
             openStyle == DialogOpenStyle.Auto ? hintedStyle : openStyle;
 
         /// <summary>
         /// 진행 중인 연출을 무효화하는 순번. 닫히거나 다시 열리면 올라간다.
-        /// (<c>UIBountyCallout</c>·<c>UIDice</c> 와 같은 방식 — 토큰을 들고 다니는 것보다
+        /// (<c>UIBattleWarning</c>·<c>UIDice</c> 와 같은 방식 — 토큰을 들고 다니는 것보다
         /// 이 코드베이스에서 읽기 쉽다.)
         /// </summary>
         private int openSequence;

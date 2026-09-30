@@ -95,16 +95,17 @@ namespace OJ.Bounty
             BountyDefinition definition = bounty.GetDefinition(grade);
 
             if (titleText != null)
-                titleText.SetText("이번 웨이브 현상금");
+                titleText.SetText("현재 현상금");
 
             if (definition == null)
             {
                 if (nameText != null)
-                    nameText.SetText("현상금 선택 X");
+                    nameText.SetText("현상금 X");
 
                 if (detailText != null)
-                    detailText.SetText("눌러서 고를 수 있어요");
+                    detailText.SetText("현상금을 골라보세요");
 
+                // 빈 칸은 빈 채로 둔다 — 시안의 "현상금 X" 상태가 그렇다.
                 if (icon != null)
                     icon.enabled = false;
 
@@ -123,12 +124,11 @@ namespace OJ.Bounty
 
             if (icon != null)
             {
-                icon.enabled = true;
+                icon.enabled = definition.icon != null;
                 icon.sprite = definition.icon;
                 icon.color = definition.tint;
             }
         }
-
 
         private void OnClickChange()
         {
@@ -136,25 +136,22 @@ namespace OJ.Bounty
         }
 
         // ──────────────────────────────────────────────────────────────
-        // 에디터 굽기 전용.
+        // 에디터 굽기 전용. 시안: Art/Layout/Wanted_Layout(2).png — 수치는 Docs/WantedUIArtPort.md
         // ──────────────────────────────────────────────────────────────
 
-        private static readonly Color BannerColor = new Color(0.086f, 0.11f, 0.23f, 0.92f);
-        private static readonly Color BannerEdgeColor = new Color(0.42f, 0.56f, 0.85f, 1f);
-        private static readonly Color ChangeColor = new Color(0.24f, 0.55f, 0.92f, 1f);
-        private static readonly Color MutedTextColor = new Color(0.78f, 0.84f, 0.94f, 1f);
-
-        private const float BannerWidth = 760f;
-        private const float BannerHeight = 200f;
+        /// <summary>띠(Wanted_Bg x3)의 보이는 사각형 — 시안 x209~887 · y800~971.</summary>
+        private static readonly Vector2 BannerCenter = new Vector2(548f, 885.5f);
+        private const float BannerVisibleWidth = 679f;
+        private const float BannerVisibleHeight = 172f;
 
         /// <summary>
-        /// 띠가 놓이는 높이. 선택 창(<c>UIBountySelectDialog</c>)은 이보다 아래를
-        /// 중심으로 펼쳐지므로 둘이 겹치지 않는다.
+        /// 몬스터 그림 배율. 128px 그림 안에 몬스터가 작게 들어 있어서 1:1 로 두면 칸이 빈다.
+        /// 시안 주석 "몬스터 1.4배 / 클리핑마스크" — 넘치는 것은 칸이 자른다.
         /// </summary>
-        private const float BannerCenterY = 560f;
+        internal const float MonsterScale = 1.4f;
 
         /// <summary>에디터 굽기 전용.</summary>
-        public static UIBountyBanner Create(Transform parent, TMP_FontAsset font)
+        public static UIBountyBanner Create(Transform parent, TMP_FontAsset font, Material plainMaterial)
         {
             GameObject root = UIBountyUIFactory.CreateRect("UIBountyBanner", parent);
             UIBountyUIFactory.Stretch(root.GetComponent<RectTransform>());
@@ -163,7 +160,8 @@ namespace OJ.Bounty
             // 화면 전체로 늘리면 아래 다이스 보드 클릭을 통째로 먹는다.
             GameObject view = UIBountyUIFactory.CreateRect("DialogView", root.transform);
             UIBountyUIFactory.SetRect(view.GetComponent<RectTransform>(),
-                new Vector2(BannerWidth + 8f, BannerHeight + 8f), new Vector2(0f, BannerCenterY));
+                new Vector2(BannerVisibleWidth, BannerVisibleHeight),
+                UIBountyUIFactory.Pos(BannerCenter.x, BannerCenter.y));
 
             var banner = root.AddComponent<UIBountyBanner>();
             banner.dialogView = view;
@@ -172,45 +170,60 @@ namespace OJ.Bounty
             // 백키 스택에 얹으면 관리 단계에서 뒤로가기가 이 띠를 먼저 먹는다.
             banner.UseBackBtn = false;
 
-            Image edge = UIBountyUIFactory.CreateImage("Edge", view.transform, BannerEdgeColor);
-            UIBountyUIFactory.SetRect(edge.rectTransform,
-                new Vector2(BannerWidth + 8f, BannerHeight + 8f), Vector2.zero);
-            edge.raycastTarget = false;
+            // 띠 그림. view 기준 (0,0) 이 띠의 보이는 중심이다.
+            Image background = UIBountyUIFactory.CreateSprite("Background", view.transform,
+                UIBountyUIFactory.LoadSprite("Ingame/Wanted_Bg"), 3f,
+                UIBountyUIFactory.WantedBgRect(BannerVisibleWidth, BannerVisibleHeight, 3f), Vector2.zero, true);
 
-            Image background = UIBountyUIFactory.CreateImage("Background", view.transform, BannerColor);
-            UIBountyUIFactory.SetRect(background.rectTransform,
-                new Vector2(BannerWidth, BannerHeight), Vector2.zero);
+            // 띠 바탕은 클릭을 먹는다 — 버튼 옆을 살짝 빗나간 탭이 그 아래 필드로 새지 않게.
+            background.raycastTarget = true;
 
-            banner.icon = UIBountyUIFactory.CreateImage("Icon", background.transform, Color.white);
+            // 초상 칸(123², cda280). 몬스터는 1.4배로 넣고 칸이 자른다.
+            Image portrait = UIBountyUIFactory.CreateImage("Portrait", view.transform, UIBountyUIFactory.Hex(0xCDA280));
+            UIBountyUIFactory.SetRect(portrait.rectTransform, new Vector2(123f, 123f),
+                UIBountyUIFactory.Local(291.5f, 886.5f, BannerCenter));
+            portrait.raycastTarget = false;
+            portrait.gameObject.AddComponent<RectMask2D>();
+
+            banner.icon = UIBountyUIFactory.CreateImage("Icon", portrait.transform, Color.white);
             UIBountyUIFactory.SetRect(banner.icon.rectTransform,
-                new Vector2(128f, 128f), new Vector2(-292f, 0f));
+                new Vector2(128f * MonsterScale, 128f * MonsterScale), Vector2.zero);
             banner.icon.preserveAspect = true;
             banner.icon.raycastTarget = false;
+            banner.icon.enabled = false;
 
-            banner.titleText = UIBountyUIFactory.CreateText("Title", background.transform,
-                "이번 웨이브 현상금", 26f, TextAlignmentOptions.Left, MutedTextColor, font);
-            UIBountyUIFactory.SetRect(banner.titleText.rectTransform,
-                new Vector2(340f, 34f), new Vector2(-30f, 56f));
+            // 글자 셋. 왼쪽 끝 x365 에 맞춘다.
+            const float TextLeft = 365f;
+            const float TextWidth = 310f;
+            float textCenterX = TextLeft + TextWidth * 0.5f;
 
-            banner.nameText = UIBountyUIFactory.CreateText("Name", background.transform,
-                "현상금 선택 X", 38f, TextAlignmentOptions.Left, Color.white, font);
-            UIBountyUIFactory.SetRect(banner.nameText.rectTransform,
-                new Vector2(340f, 48f), new Vector2(-30f, 8f));
+            banner.titleText = UIBountyUIFactory.CreateText("Title", view.transform,
+                "현재 현상금", 30f, TextAlignmentOptions.Left, UIBountyUIFactory.Hex(0x906544), font, plainMaterial);
+            UIBountyUIFactory.SetRect(banner.titleText.rectTransform, new Vector2(TextWidth, 40f),
+                UIBountyUIFactory.Local(textCenterX, 843f, BannerCenter));
 
-            banner.detailText = UIBountyUIFactory.CreateText("Detail", background.transform,
-                "", 26f, TextAlignmentOptions.Left, MutedTextColor, font);
-            UIBountyUIFactory.SetRect(banner.detailText.rectTransform,
-                new Vector2(340f, 34f), new Vector2(-30f, -42f));
+            banner.nameText = UIBountyUIFactory.CreateText("Name", view.transform,
+                "현상금 X", 35f, TextAlignmentOptions.Left, Color.white, font);
+            UIBountyUIFactory.SetRect(banner.nameText.rectTransform, new Vector2(TextWidth, 48f),
+                UIBountyUIFactory.Local(textCenterX, 887f, BannerCenter));
 
-            Image change = UIBountyUIFactory.CreateImage("ChangeButton", background.transform, ChangeColor);
-            UIBountyUIFactory.SetRect(change.rectTransform,
-                new Vector2(180f, 96f), new Vector2(268f, 0f));
+            banner.detailText = UIBountyUIFactory.CreateText("Detail", view.transform,
+                "현상금을 골라보세요", 25f, TextAlignmentOptions.Left, UIBountyUIFactory.Hex(0xB78F6F), font, plainMaterial);
+            UIBountyUIFactory.SetRect(banner.detailText.rectTransform, new Vector2(TextWidth, 34f),
+                UIBountyUIFactory.Local(textCenterX, 930f, BannerCenter));
+
+            // 선택하기 — Big_Btn_Yellow x3, 보이는 176x103 · 중심 (769.5, 884).
+            UIBountyUIFactory.ButtonRect(769.5f, 884f, 176f, 103f, 3f, out Vector2 buttonSize, out Vector2 buttonPos);
+            Vector2 bannerPos = UIBountyUIFactory.Pos(BannerCenter.x, BannerCenter.y);
+            Image change = UIBountyUIFactory.CreateSprite("ChangeButton", view.transform,
+                UIBountyUIFactory.LoadSprite("Ingame/Big_Btn_Yellow"), 3f, buttonSize, buttonPos - bannerPos, true);
+            change.raycastTarget = true;
             banner.changeButton = change.gameObject.AddComponent<Button>();
             banner.changeButton.targetGraphic = change;
 
-            TMP_Text changeLabel = UIBountyUIFactory.CreateText("Label", change.transform, "변경", 34f,
+            TMP_Text changeLabel = UIBountyUIFactory.CreateText("Label", change.transform, "선택하기", 25f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UIBountyUIFactory.SetRect(changeLabel.rectTransform, new Vector2(180f, 48f), Vector2.zero);
+            UIBountyUIFactory.SetRect(changeLabel.rectTransform, buttonSize, Vector2.zero);
 
             return banner;
         }

@@ -120,6 +120,9 @@ namespace OJ.Hunting
                 battle.Bounty.OnSpawned -= OnBountySpawned;
             }
 
+            if (battle != null && battle.Spawner != null)
+                battle.Spawner.OnBossSpawned -= OnBossSpawned;
+
             if (PlayUI != null) PlayUI.onClick.RemoveListener(OnClick_PlayUI);
             if (Pause != null) Pause.onClick.RemoveListener(OnClick_Pause);
             if (Speed != null) Speed.onClick.RemoveListener(OnClick_Speed);
@@ -132,6 +135,7 @@ namespace OJ.Hunting
             // 구독을 Awake 로 올리면 그때는 아직 null 이다.
             battle.Bounty.OnWaveResolved += OnBountyResolved;
             battle.Bounty.OnSpawned += OnBountySpawned;
+            battle.Spawner.OnBossSpawned += OnBossSpawned;
 
             InitializeStage();
 
@@ -208,15 +212,24 @@ namespace OJ.Hunting
         }
 
         /// <summary>
-        /// 현상금이 화면에 나왔다. 알림 띠를 잠깐 띄운다.
+        /// 현상금이 화면에 나왔다. 경고 띠(보라)를 잠깐 띄운다.
         ///
         /// <c>Show</c> 가 아니라 <c>Get</c> 으로 받는 것은 <c>Play</c> 가 내용을 채우고
         /// <c>Enter</c> 까지 스스로 부르기 때문이다 — <c>ShowWaveRewardPreview</c> 와 같은 이유다.
         /// </summary>
         private void OnBountySpawned(OJ.Bounty.BountyDefinition definition)
         {
-            UIBountyCallout callout = GameContainer.UI?.Get<UIBountyCallout>();
-            callout?.Play(definition, battle.Bounty.GetHp(battle.Bounty.ActiveGrade));
+            // 정의가 없으면 띄우지 않는다. 스폰 자체가 데이터 사고이고, 띠가 그 사고를 가린다.
+            if (definition == null)
+                return;
+
+            GameContainer.UI?.Get<UIBattleWarning>()?.Play(BattleWarningKind.Bounty);
+        }
+
+        /// <summary>보스 웨이브의 보스가 나왔다. 경고 띠(빨강)를 띄운다.</summary>
+        private void OnBossSpawned()
+        {
+            GameContainer.UI?.Get<UIBattleWarning>()?.Play(BattleWarningKind.Boss);
         }
 
         public void OnClick_PlayUI()
@@ -373,9 +386,9 @@ namespace OJ.Hunting
             if (state == InGameState.Setting)
             {
                 GameContainer.UI?.Show<UIBountyBanner>();
-                // 등장 알림은 스스로 1.8초 뒤에 사라지지만, 그 전에 웨이브가 끝나면
+                // 경고 띠는 스스로 2초쯤 뒤에 사라지지만, 그 전에 웨이브가 끝나면
                 // 관리 단계까지 따라 들어온다. 남은 시간을 기다리지 않고 여기서 거둔다.
-                GameContainer.UI?.Hide<UIBountyCallout>();
+                GameContainer.UI?.Hide<UIBattleWarning>();
             }
             else
             {
@@ -529,7 +542,7 @@ namespace OJ.Hunting
             // 거두는 것은 결과창이 실제로 뜨기 직전이다.
             GameContainer.UI?.Hide<UIBountyBanner>();
             GameContainer.UI?.Hide<UIBountySelectDialog>();
-            GameContainer.UI?.Hide<UIBountyCallout>();
+            GameContainer.UI?.Hide<UIBattleWarning>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
             GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
