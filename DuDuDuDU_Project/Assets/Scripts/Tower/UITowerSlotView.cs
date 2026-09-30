@@ -31,7 +31,7 @@ namespace OJ.Tower
 
             // 정체는 아이콘이 나른다(인게임 UIDice 와 같다). 스프라이트가 없으면
             // 아이콘을 끄고 이름을 대신 띄운다 — 빈 칸처럼 보이면 안 된다.
-            Sprite iconSprite = DiceMetaDataProvider.GetIcon(entry.DiceType);
+            Sprite iconSprite = DiceMetaDataProvider.GetIcon(entry.DiceType, entry.Star);
             bool hasIcon = iconSprite != null;
 
             if (icon != null)

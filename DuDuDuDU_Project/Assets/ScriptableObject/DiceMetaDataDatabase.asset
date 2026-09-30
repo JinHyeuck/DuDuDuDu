@@ -16,8 +16,15 @@ MonoBehaviour:
   - diceType: 0
     elementType: 00000000
     displayName: Normal Dice
-    description: "\uAC00\uC7A5 \uAC00\uAE4C\uC6B4 \uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD569\uB2C8\uB2E4. \uBD80\uAC00 \uD6A8\uACFC\uB294 \uC5C6\uC9C0\uB9CC \uCFE8\uD0C0\uC784\uC774 \uC9E7\uC544 \uAFB8\uC900\uD788 \uD53C\uD574\uB97C \uC313\uC2B5\uB2C8\uB2E4."
-    icon: {fileID: 21300000, guid: 4d973f7ac9795ce4088d704bb85781b6, type: 3}
+    description: "\uAC00\uC7A5 \uAC00\uAE4C\uC6B4 \uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD569\uB2C8\uB2E4.
+      \uBD80\uAC00 \uD6A8\uACFC\uB294 \uC5C6\uC9C0\uB9CC \uCFE8\uD0C0\uC784\uC774
+      \uC9E7\uC544 \uAFB8\uC900\uD788 \uD53C\uD574\uB97C \uC313\uC2B5\uB2C8\uB2E4."
+    icon: {fileID: 21300000, guid: 067088351f85b4a42ae4a5985df8c88f, type: 3}
+    starIcons:
+    - {fileID: 21300000, guid: 067088351f85b4a42ae4a5985df8c88f, type: 3}
+    - {fileID: 21300000, guid: 1e5bca630e465344a82d057e68df5e7d, type: 3}
+    - {fileID: 21300000, guid: 34d8d80a614d832459998a7432fb2c17, type: 3}
+    - {fileID: 21300000, guid: 11d06adf78eb8b441aed98520fdc9f5d, type: 3}
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
@@ -47,8 +54,15 @@ MonoBehaviour:
   - diceType: 1
     elementType: 01000000
     displayName: Fire Dice
-    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uBA85\uC911 \uC9C0\uC810 \uC8FC\uBCC0\uC73C\uB85C \uD3ED\uBC1C\uC744 \uC77C\uC73C\uD0B5\uB2C8\uB2E4. \uC801\uC774 \uBAB0\uB824 \uC788\uC744\uC218\uB85D \uAC15\uD574\uC9D1\uB2C8\uB2E4."
-    icon: {fileID: 21300000, guid: 7696b0be71cfa71478b7baa78a13f2fe, type: 3}
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uBA85\uC911
+      \uC9C0\uC810 \uC8FC\uBCC0\uC73C\uB85C \uD3ED\uBC1C\uC744 \uC77C\uC73C\uD0B5\uB2C8\uB2E4.
+      \uC801\uC774 \uBAB0\uB824 \uC788\uC744\uC218\uB85D \uAC15\uD574\uC9D1\uB2C8\uB2E4."
+    icon: {fileID: 21300000, guid: e8bf1d68a879277459fedfaa29450835, type: 3}
+    starIcons:
+    - {fileID: 21300000, guid: e8bf1d68a879277459fedfaa29450835, type: 3}
+    - {fileID: 21300000, guid: db3d4da2d6a54f042abb2b7de8926a2b, type: 3}
+    - {fileID: 21300000, guid: 7e7cab5208abf8f4fb324554b9cb6f65, type: 3}
+    - {fileID: 21300000, guid: ee0bb329b1cd5844cb85bfaccc459c72, type: 3}
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
     primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
@@ -78,8 +92,15 @@ MonoBehaviour:
   - diceType: 2
     elementType: 02000000
     displayName: Ice Dice
-    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uB454\uD654\uB97C \uAC81\uB2C8\uB2E4. \uBCBD\uAE4C\uC9C0 \uC624\uB294 \uC2DC\uAC04\uC744 \uBC8C\uC5B4 \uC8FC\uB294 \uBC29\uC5B4\uD615 \uB2E4\uC774\uC2A4\uC785\uB2C8\uB2E4."
-    icon: {fileID: 21300000, guid: 9c836575ead9d834e815d3c107cae561, type: 3}
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uB454\uD654\uB97C
+      \uAC81\uB2C8\uB2E4. \uBCBD\uAE4C\uC9C0 \uC624\uB294 \uC2DC\uAC04\uC744 \uBC8C\uC5B4
+      \uC8FC\uB294 \uBC29\uC5B4\uD615 \uB2E4\uC774\uC2A4\uC785\uB2C8\uB2E4."
+    icon: {fileID: 21300000, guid: bab408ebfdb926e478e311bb161fd8ad, type: 3}
+    starIcons:
+    - {fileID: 21300000, guid: bab408ebfdb926e478e311bb161fd8ad, type: 3}
+    - {fileID: 21300000, guid: 0f7b080244e3df747bc49840c05a746e, type: 3}
+    - {fileID: 21300000, guid: a95b9f7eec45159469e8a53e6f58a926, type: 3}
+    - {fileID: 21300000, guid: d1d938a85519eb844886a5d2e71a1f2e, type: 3}
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
     primaryEffect: {fileID: 6103362265939469095, guid: 58c07020562237d4aa1da19bcf357c9f, type: 3}
@@ -108,8 +129,15 @@ MonoBehaviour:
   - diceType: 3
     elementType: 03000000
     displayName: Thunder Dice
-    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uBA74 \uBC88\uAC1C\uAC00 \uC8FC\uBCC0\uC73C\uB85C \uC804\uC774\uB429\uB2C8\uB2E4. \uB113\uAC8C \uD37C\uC9C4 \uC801\uC744 \uD6D1\uB294 \uB370 \uC88B\uC2B5\uB2C8\uB2E4."
-    icon: {fileID: 21300000, guid: 2112e4e5d9a3abf4d8f014181b253c46, type: 3}
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uBA74 \uBC88\uAC1C\uAC00
+      \uC8FC\uBCC0\uC73C\uB85C \uC804\uC774\uB429\uB2C8\uB2E4. \uB113\uAC8C \uD37C\uC9C4
+      \uC801\uC744 \uD6D1\uB294 \uB370 \uC88B\uC2B5\uB2C8\uB2E4."
+    icon: {fileID: 21300000, guid: 6149ef06183b36c4ab0c81eb11c901cf, type: 3}
+    starIcons:
+    - {fileID: 21300000, guid: 6149ef06183b36c4ab0c81eb11c901cf, type: 3}
+    - {fileID: 21300000, guid: 9ff212d8c59c65749aaeb023542f1253, type: 3}
+    - {fileID: 21300000, guid: 6fbc7e15689ad4d43b29bbee56071588, type: 3}
+    - {fileID: 21300000, guid: e9a4a46712b593c4fa064cd30b2af3d2, type: 3}
     color: {r: 1, g: 0.8745098, b: 0, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
     primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
@@ -140,8 +168,16 @@ MonoBehaviour:
   - diceType: 4
     elementType: 04000000
     displayName: Poison Dice
-    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uC911\uB3C5\uC744 \uAC81\uB2C8\uB2E4. \uC911\uB3C5\uC740 \uB0A8\uC740 \uCCB4\uB825\uC5D0 \uBE44\uB840\uD574 \uD53C\uD574\uB97C \uC8FC\uBBC0\uB85C \uCCB4\uB825\uC774 \uB450\uAEBC\uC6B4 \uC801\uC77C\uC218\uB85D \uC544\uD515\uB2C8\uB2E4."
-    icon: {fileID: 21300000, guid: 8fcb08c1ad2c999448d7b0a094617431, type: 3}
+    description: "\uC801 \uD558\uB098\uB97C \uACF5\uACA9\uD558\uACE0 \uC911\uB3C5\uC744
+      \uAC81\uB2C8\uB2E4. \uC911\uB3C5\uC740 \uB0A8\uC740 \uCCB4\uB825\uC5D0 \uBE44\uB840\uD574
+      \uD53C\uD574\uB97C \uC8FC\uBBC0\uB85C \uCCB4\uB825\uC774 \uB450\uAEBC\uC6B4
+      \uC801\uC77C\uC218\uB85D \uC544\uD515\uB2C8\uB2E4."
+    icon: {fileID: 21300000, guid: 76a754bc647322641a645590f9694b76, type: 3}
+    starIcons:
+    - {fileID: 21300000, guid: 76a754bc647322641a645590f9694b76, type: 3}
+    - {fileID: 21300000, guid: d8ca86a2e905d8d46a5431b94dea0d9e, type: 3}
+    - {fileID: 21300000, guid: ada80ee8bbfcd534396e1659b1e5ab34, type: 3}
+    - {fileID: 21300000, guid: a58b0679062cbac4f8fa6837b74f306b, type: 3}
     color: {r: 0, g: 0.75686276, b: 0.03137255, a: 1}
     projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
     primaryEffect: {fileID: 4216511622742515432, guid: 30b65cdddffe4f74a8e548dcb6928ec4, type: 3}
@@ -171,8 +207,13 @@ MonoBehaviour:
   - diceType: 100
     elementType: 00000000
     displayName: Tornado Dice
-    description: "\uB178\uB9D0 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801\uC744 \uACF5\uACA9\uD558\uBA74\uC11C \uC8FC\uBCC0\uC758 \uC801\uB4E4\uC744 \uBA85\uC911 \uC9C0\uC810\uC73C\uB85C \uB04C\uC5B4\uB2F9\uACA8, \uB4A4\uC774\uC5B4 \uC624\uB294 \uAD11\uC5ED \uACF5\uACA9\uC774 \uD55C \uBC88\uC5D0 \uC4F8\uC5B4 \uB2F4\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4."
+    description: "\uB178\uB9D0 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4.
+      \uC801\uC744 \uACF5\uACA9\uD558\uBA74\uC11C \uC8FC\uBCC0\uC758 \uC801\uB4E4\uC744
+      \uBA85\uC911 \uC9C0\uC810\uC73C\uB85C \uB04C\uC5B4\uB2F9\uACA8, \uB4A4\uC774\uC5B4
+      \uC624\uB294 \uAD11\uC5ED \uACF5\uACA9\uC774 \uD55C \uBC88\uC5D0 \uC4F8\uC5B4
+      \uB2F4\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: fce5978a8e2e642d1b9d797008f38bf2, type: 3}
+    starIcons: []
     color: {r: 0.68, g: 0.78, b: 0.96, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 6035269022472480307, guid: cbcdcea8a9a9a48618e1bea16ddf022e, type: 3}
@@ -203,8 +244,13 @@ MonoBehaviour:
   - diceType: 101
     elementType: 04000000
     displayName: Stun Dice
-    description: "\uD3EC\uC774\uC98C \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801 \uD558\uB098\uB97C \uAC15\uD558\uAC8C \uB54C\uB9AC\uACE0 \uD655\uB960\uB85C \uAE30\uC808\uC2DC\uCF1C \uBC1C\uC744 \uBB36\uC2B5\uB2C8\uB2E4. \uBCBD \uC55E\uAE4C\uC9C0 \uBC00\uB824\uC628 \uC801\uC744 \uB04A\uC5B4 \uB0BC \uB54C \uBBFF\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+    description: "\uD3EC\uC774\uC98C \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C
+      \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801 \uD558\uB098\uB97C \uAC15\uD558\uAC8C
+      \uB54C\uB9AC\uACE0 \uD655\uB960\uB85C \uAE30\uC808\uC2DC\uCF1C \uBC1C\uC744
+      \uBB36\uC2B5\uB2C8\uB2E4. \uBCBD \uC55E\uAE4C\uC9C0 \uBC00\uB824\uC628 \uC801\uC744
+      \uB04A\uC5B4 \uB0BC \uB54C \uBBFF\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: f4ae75e80a9d34a74a31484109b782da, type: 3}
+    starIcons: []
     color: {r: 0.62, g: 0.51, b: 0.97, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
     primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
@@ -235,8 +281,13 @@ MonoBehaviour:
   - diceType: 102
     elementType: 01000000
     displayName: Armor Break Dice
-    description: "\uD30C\uC774\uC5B4 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801\uC758 \uBC29\uC5B4\uB825\uC744 \uAE4E\uC544 \uADF8 \uB4A4\uB85C \uB4E4\uC5B4\uAC00\uB294 \uBAA8\uB4E0 \uACF5\uACA9\uC744 \uB354 \uC544\uD504\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4. \uB2E8\uB2E8\uD55C \uC801\uACFC \uBCF4\uC2A4\uC5D0\uAC8C \uD2B9\uD788 \uAC15\uD569\uB2C8\uB2E4."
+    description: "\uD30C\uC774\uC5B4 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C
+      \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801\uC758 \uBC29\uC5B4\uB825\uC744 \uAE4E\uC544
+      \uADF8 \uB4A4\uB85C \uB4E4\uC5B4\uAC00\uB294 \uBAA8\uB4E0 \uACF5\uACA9\uC744
+      \uB354 \uC544\uD504\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4. \uB2E8\uB2E8\uD55C \uC801\uACFC
+      \uBCF4\uC2A4\uC5D0\uAC8C \uD2B9\uD788 \uAC15\uD569\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: b2cf1c4783c3f418fabea07364adc7f8, type: 3}
+    starIcons: []
     color: {r: 0.93, g: 0.26, b: 0.18, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
     primaryEffect: {fileID: 6035269022472480307, guid: 8374f16e5aac91a4ab4545e73c05f41e, type: 3}
@@ -266,8 +317,13 @@ MonoBehaviour:
   - diceType: 103
     elementType: 02000000
     displayName: Wind Dice
-    description: "\uC544\uC774\uC2A4 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uBCBD \uC55E\uC5D0 \uBAB0\uB9B0 \uC801\uB4E4\uC744 \uD55C\uAEBC\uBC88\uC5D0 \uB54C\uB9AC\uACE0 \uD655\uB960\uB85C \uB4A4\uCABD\uAE4C\uC9C0 \uBC00\uC5B4\uB0C5\uB2C8\uB2E4. \uCD1D\uC54C\uC744 \uC3D8\uC9C0 \uC54A\uACE0 \uBCBD \uC55E \uC804\uCCB4\uB97C \uC9C1\uC811 \uCE69\uB2C8\uB2E4."
+    description: "\uC544\uC774\uC2A4 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C
+      \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uBCBD \uC55E\uC5D0 \uBAB0\uB9B0 \uC801\uB4E4\uC744
+      \uD55C\uAEBC\uBC88\uC5D0 \uB54C\uB9AC\uACE0 \uD655\uB960\uB85C \uB4A4\uCABD\uAE4C\uC9C0
+      \uBC00\uC5B4\uB0C5\uB2C8\uB2E4. \uCD1D\uC54C\uC744 \uC3D8\uC9C0 \uC54A\uACE0
+      \uBCBD \uC55E \uC804\uCCB4\uB97C \uC9C1\uC811 \uCE69\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8409b8d4e7b75425c98a50fd4cef60b8, type: 3}
+    starIcons: []
     color: {r: 0.56, g: 0.93, b: 0.9, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
     primaryEffect: {fileID: 5367087045388389193, guid: cbf61fb85b6e6ce49bf13c3c3212b3b1, type: 3}
@@ -297,8 +353,12 @@ MonoBehaviour:
   - diceType: 104
     elementType: 03000000
     displayName: Time Dice
-    description: "\uC36C\uB354 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4. \uC801\uC744 \uACF5\uACA9\uD558\uB294 \uB3D9\uC2DC\uC5D0 \uB2E4\uB978 \uB2E4\uC774\uC2A4\uC758 \uB0A8\uC740 \uCFE8\uD0C0\uC784\uC744 \uB2F9\uACA8, \uBCF4\uB4DC \uC804\uCCB4\uC758 \uD654\uB825\uC744 \uB04C\uC5B4\uC62C\uB9BD\uB2C8\uB2E4."
+    description: "\uC36C\uB354 \uB2E4\uC774\uC2A4\uAC00 \uC9C4\uD654\uD55C \uBAA8\uC2B5\uC785\uB2C8\uB2E4.
+      \uC801\uC744 \uACF5\uACA9\uD558\uB294 \uB3D9\uC2DC\uC5D0 \uB2E4\uB978 \uB2E4\uC774\uC2A4\uC758
+      \uB0A8\uC740 \uCFE8\uD0C0\uC784\uC744 \uB2F9\uACA8, \uBCF4\uB4DC \uC804\uCCB4\uC758
+      \uD654\uB825\uC744 \uB04C\uC5B4\uC62C\uB9BD\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: eb3cbc299964142c0848fca7f35b4097, type: 3}
+    starIcons: []
     color: {r: 1, g: 0.84, b: 0.48, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 4819325212830902733, guid: 264bf956871fd914687aa4ca58e3fc3f, type: 3}
@@ -327,8 +387,12 @@ MonoBehaviour:
   - diceType: 200
     elementType: 00000000
     displayName: King Normal
-    description: "\uD1A0\uB124\uC774\uB3C4 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801\uACFC \uADF8 \uC8FC\uBCC0\uC744 \uCCAB \uD0C0 70%, \uC774\uC5B4\uC11C 0.2\uCD08 \uAC04\uACA9\uC73C\uB85C 10%\uC529 \uC138 \uBC88 \uB354 \uB450\uB4DC\uB9BD\uB2C8\uB2E4."
+    description: "\uD1A0\uB124\uC774\uB3C4 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294
+      \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801\uACFC \uADF8 \uC8FC\uBCC0\uC744
+      \uCCAB \uD0C0 70%, \uC774\uC5B4\uC11C 0.2\uCD08 \uAC04\uACA9\uC73C\uB85C 10%\uC529
+      \uC138 \uBC88 \uB354 \uB450\uB4DC\uB9BD\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: e0417207cd18f4a47abbfee0c73b95ef, type: 3}
+    starIcons: []
     color: {r: 0.82745105, g: 0.8117648, b: 0.9686275, a: 1}
     projectileSprite: {fileID: 21300000, guid: c48a21b830fffd34e91605c869aca197, type: 3}
     primaryEffect: {fileID: 4819325212830902733, guid: fdd406d448f9fb14bbca761a6a71c436, type: 3}
@@ -360,8 +424,12 @@ MonoBehaviour:
   - diceType: 201
     elementType: 01000000
     displayName: King Fire
-    description: "\uC544\uBA38\uBE0C\uB808\uC774\uD06C \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC77C\uBC18 \uD3ED\uBC1C\uBCF4\uB2E4 \uD6E8\uC52C \uB113\uC740 \uAC15\uD654 \uD3ED\uBC1C\uB85C \uBB34\uB9AC\uB97C \uD1B5\uC9F8\uB85C \uD0DC\uC6C1\uB2C8\uB2E4."
+    description: "\uC544\uBA38\uBE0C\uB808\uC774\uD06C \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294
+      \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC77C\uBC18 \uD3ED\uBC1C\uBCF4\uB2E4
+      \uD6E8\uC52C \uB113\uC740 \uAC15\uD654 \uD3ED\uBC1C\uB85C \uBB34\uB9AC\uB97C
+      \uD1B5\uC9F8\uB85C \uD0DC\uC6C1\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 8a5316ab16cef479ea73b9eba37c0f7c, type: 3}
+    starIcons: []
     color: {r: 1, g: 0.015686275, b: 0.18039216, a: 1}
     projectileSprite: {fileID: 21300000, guid: a16af3e642361e04cb2438b8d1fa3ce8, type: 3}
     primaryEffect: {fileID: 4819325212830902733, guid: 8506dc546abd7f94db77c132326fb0f8, type: 3}
@@ -392,8 +460,11 @@ MonoBehaviour:
   - diceType: 202
     elementType: 02000000
     displayName: King Ice
-    description: "\uC708\uB4DC \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801\uACFC \uADF8 \uC8FC\uBCC0\uC744 \uD568\uAED8 \uB54C\uB9AC\uACE0 \uAC15\uD55C \uB454\uD654\uB97C \uAC81\uB2C8\uB2E4."
+    description: "\uC708\uB4DC \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294
+      \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801\uACFC \uADF8 \uC8FC\uBCC0\uC744
+      \uD568\uAED8 \uB54C\uB9AC\uACE0 \uAC15\uD55C \uB454\uD654\uB97C \uAC81\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: f2c17ecc362ac4189bce91d992af2c63, type: 3}
+    starIcons: []
     color: {r: 0, g: 0.40000004, b: 1, a: 1}
     projectileSprite: {fileID: 21300000, guid: 9aa419bd53399bf4ea14f594c0ab934d, type: 3}
     primaryEffect: {fileID: 6103362265939469095, guid: ef0988c9d8f8c8d4691851c24b335119, type: 3}
@@ -423,8 +494,12 @@ MonoBehaviour:
   - diceType: 203
     elementType: 03000000
     displayName: King Thunder
-    description: "\uD0C0\uC784 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uBC88\uAC1C\uAC00 \uB354 \uB9CE\uC740 \uC801\uC5D0\uAC8C \uC804\uC774\uB418\uC5B4 \uB113\uAC8C \uD37C\uC9C4 \uBB34\uB9AC\uB97C \uD55C \uBC88\uC5D0 \uD6D1\uC2B5\uB2C8\uB2E4."
+    description: "\uD0C0\uC784 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294
+      \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uBC88\uAC1C\uAC00 \uB354 \uB9CE\uC740
+      \uC801\uC5D0\uAC8C \uC804\uC774\uB418\uC5B4 \uB113\uAC8C \uD37C\uC9C4 \uBB34\uB9AC\uB97C
+      \uD55C \uBC88\uC5D0 \uD6D1\uC2B5\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 7379251cca103456b90508362193a5f4, type: 3}
+    starIcons: []
     color: {r: 1, g: 0.8745099, b: 0, a: 1}
     projectileSprite: {fileID: 21300000, guid: e78f67c9ae29e994cb3c91b14105bea2, type: 3}
     primaryEffect: {fileID: 4216511622742515432, guid: 83a7eb1f17782d34fa67f0f23e9c3a68, type: 3}
@@ -455,8 +530,12 @@ MonoBehaviour:
   - diceType: 204
     elementType: 04000000
     displayName: King Poison
-    description: "\uC2A4\uD134 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294 \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801 \uD558\uB098\uB97C \uB54C\uB9AC\uACE0 \uC911\uB3C5\uACFC \uB454\uD654\uB97C \uD568\uAED8 \uAC78\uC5B4 \uC624\uB798 \uBD99\uC7A1\uC544 \uB461\uB2C8\uB2E4."
+    description: "\uC2A4\uD134 \uB2E4\uC774\uC2A4\uAC00 \uB3C4\uB2EC\uD558\uB294
+      \uCD5C\uC885 \uD615\uD0DC\uC785\uB2C8\uB2E4. \uC801 \uD558\uB098\uB97C \uB54C\uB9AC\uACE0
+      \uC911\uB3C5\uACFC \uB454\uD654\uB97C \uD568\uAED8 \uAC78\uC5B4 \uC624\uB798
+      \uBD99\uC7A1\uC544 \uB461\uB2C8\uB2E4."
     icon: {fileID: 21300000, guid: 5f060361b8d6a405f896c7747aadb085, type: 3}
+    starIcons: []
     color: {r: 0, g: 0.7568628, b: 0.03137255, a: 1}
     projectileSprite: {fileID: 21300000, guid: 26c0fe1b95a38ac4eaf6ec5fa76a7a46, type: 3}
     primaryEffect: {fileID: 4216511622742515432, guid: 25c4c5a83a3eae64095cea20684f8e78, type: 3}
