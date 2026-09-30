@@ -10,9 +10,10 @@ using OJ.UI;
 namespace OJ.Bounty
 {
     /// <summary>
-    /// 현상금 선택 창. 가로 3칸 세로 2줄, <b>첫 칸이 "소환 X"</b> 이고 나머지 다섯이 등급이다.
+    /// 현상금 선택 창. 다이스 보드 자리에 가로 한 줄 여섯 장, <b>첫 장이 "사냥 안하기"</b> 이고
+    /// 나머지 다섯이 등급이다(시안 <c>Art/Layout/Wanted_Layout.png</c>).
     ///
-    /// <b>왜 첫 칸이 소환 X 인가.</b> 이 시스템의 실제 결정은 "몇 등급을 켤까" 가 아니라
+    /// <b>왜 첫 장이 사냥 안하기 인가.</b> 이 시스템의 실제 결정은 "몇 등급을 켤까" 가 아니라
     /// <b>"이번 판은 여기서 멈출까"</b> 다. 머지가 꼬였을 때 끄는 것이 유일한 탈출구인데,
     /// 그것을 목록 끝에 두거나 별도 버튼으로 빼면 급할 때 못 찾는다.
     ///
@@ -30,7 +31,6 @@ namespace OJ.Bounty
         [Header("Layout")]
         [SerializeField] private RectTransform panel;
         [SerializeField] private Button outsideButton;
-        [SerializeField] private Button closeButton;
 
         [SerializeField] private List<UIBountySlot> slots = new List<UIBountySlot>();
 
@@ -79,34 +79,20 @@ namespace OJ.Bounty
 
         // ──────────────────────────────────────────────────────────────
         // 아래는 에디터 굽기 전용. 런타임에 부르지 않는다.
-        // 값을 아는 것은 코드이므로 인스펙터에 좌표를 옮겨 적지 않는다
-        // (UIBattleDiceDetailPanel 과 같은 이유).
+        // 시안: Art/Layout/Wanted_Layout(2).png — 수치는 Docs/WantedUIArtPort.md
         // ──────────────────────────────────────────────────────────────
 
-        private static readonly Color PanelColor = new Color(0.086f, 0.11f, 0.23f, 0.98f);
-        private static readonly Color PanelEdgeColor = new Color(0.42f, 0.56f, 0.85f, 1f);
-        private static readonly Color CloseColor = new Color(0.62f, 0.24f, 0.28f, 1f);
+        /// <summary>판(Ui_Popup_Bg x4)의 보이는 사각형 — 시안 x27~1057 · y1301~1722. 다이스 보드를 덮는 자리다.</summary>
+        private static readonly Vector2 PanelCenter = new Vector2(542f, 1511.5f);
+        private static readonly Vector2 PanelVisible = new Vector2(1031f, 422f);
 
-        // 칸 여섯 개가 들어가는 판의 크기. 3x2 라서 한 칸이 (Width - 좌우여백 - 가로틈 2)/3 이다.
-        // 이 세 수를 고치면 SlotWidth/SlotHeight 가 따라 바뀌므로 아래 식을 그대로 둘 것.
-        private const float PanelWidth = 1000f;
-        private const float PanelHeight = 700f;
-        private const float PanelPadding = 24f;
-        private const float SlotGap = 16f;
-        private const float HeaderHeight = 60f;
-
-        private const float SlotWidth = (PanelWidth - PanelPadding * 2f - SlotGap * 2f) / 3f;
-        private const float SlotHeight = (PanelHeight - PanelPadding * 2f - SlotGap - HeaderHeight) / 2f;
-
-        /// <summary>
-        /// 판이 놓이는 높이. 화면 중상위의 빈 영역 —
-        /// 위로는 웨이브 게이지, 아래로는 벽과 다이스 보드 사이다.
-        /// 1080x1920 기준이며 <c>UIService</c> 의 팝업 캔버스가 같은 해상도로 스케일한다.
-        /// </summary>
-        private const float PanelCenterY = 300f;
+        /// <summary>카드 첫 장의 보이는 중심과 간격. 여섯 장이 160px 간격으로 선다.</summary>
+        private const float FirstCardX = 140.5f;
+        private const float CardSpacing = 160f;
+        private const float CardY = 1549.5f;
 
         /// <summary>에디터 굽기 전용.</summary>
-        public static UIBountySelectDialog Create(Transform parent, TMP_FontAsset font)
+        public static UIBountySelectDialog Create(Transform parent, TMP_FontAsset font, Material plainMaterial)
         {
             GameObject root = UIBountyUIFactory.CreateRect("UIBountySelectDialog", parent);
             UIBountyUIFactory.Stretch(root.GetComponent<RectTransform>());
@@ -118,61 +104,42 @@ namespace OJ.Bounty
             dialog.dialogView = view;
             dialog.UseBackBtn = true;
 
-            // 화면 전체를 덮는 투명 버튼. 바깥을 누르면 닫힌다.
-            // alpha 0 인 Image 는 그려지지 않지만 레이캐스트는 받는다 — 빼면 클릭이 뒤로 샌다.
-            Image blocker = UIBountyUIFactory.CreateImage("OutsideCatcher", view.transform, new Color(0f, 0f, 0f, 0.55f));
+            // 화면 전체를 덮는 투명 버튼. 바깥을 누르면 닫힌다. 시안에 어둡게 깔린 막이
+            // 없어서 투명이다 — alpha 0 인 Image 는 안 그려지지만 레이캐스트는 받는다.
+            Image blocker = UIBountyUIFactory.CreateImage("OutsideCatcher", view.transform, new Color(0f, 0f, 0f, 0f));
             UIBountyUIFactory.Stretch(blocker.rectTransform);
             dialog.outsideButton = blocker.gameObject.AddComponent<Button>();
             dialog.outsideButton.targetGraphic = blocker;
             dialog.outsideButton.transition = Selectable.Transition.None;
             dialog.AddExitButton(dialog.outsideButton);
 
-            // 테두리는 판의 <b>형제</b>여야 한다. 자식으로 넣으면 uGUI 가 부모 위에 그려서
-            // 테두리 색이 칸 여섯 개를 통째로 덮는다.
-            Image edge = UIBountyUIFactory.CreateImage("Edge", view.transform, PanelEdgeColor);
-            UIBountyUIFactory.SetRect(edge.rectTransform,
-                new Vector2(PanelWidth + 8f, PanelHeight + 8f), new Vector2(0f, PanelCenterY));
-            edge.raycastTarget = false;
+            // 판. Ui_Popup_Bg 는 사방 3px 투명 여백이 있어 x4 로 12px 씩 키운다.
+            Image panelImage = UIBountyUIFactory.CreateSprite("Panel", view.transform,
+                UIBountyUIFactory.LoadSprite("Upgrade/Ui_Popup_Bg"), 4f,
+                PanelVisible + new Vector2(24f, 24f), UIBountyUIFactory.Pos(PanelCenter.x, PanelCenter.y), true);
 
-            Image panelImage = UIBountyUIFactory.CreateImage("Panel", view.transform, PanelColor);
-            UIBountyUIFactory.SetRect(panelImage.rectTransform,
-                new Vector2(PanelWidth, PanelHeight), new Vector2(0f, PanelCenterY));
+            // 판은 클릭을 먹어야 한다. 안 그러면 카드 사이 틈을 누른 탭이 뒤의 투명 막에 닿아 창이 닫힌다.
+            panelImage.raycastTarget = true;
             dialog.panel = panelImage.rectTransform;
 
-            float headerY = PanelHeight * 0.5f - PanelPadding - HeaderHeight * 0.5f;
-
-            TMP_Text title = UIBountyUIFactory.CreateText("Title", dialog.panel, "현상금 몬스터", 40f,
-                TextAlignmentOptions.Left, Color.white, font);
-            UIBountyUIFactory.SetRect(title.rectTransform,
-                new Vector2(PanelWidth - PanelPadding * 2f - 80f, HeaderHeight),
-                new Vector2(-40f, headerY));
-
-            Image close = UIBountyUIFactory.CreateImage("CloseButton", dialog.panel, CloseColor);
-            UIBountyUIFactory.SetRect(close.rectTransform, new Vector2(64f, 64f),
-                new Vector2(PanelWidth * 0.5f - PanelPadding - 32f, headerY));
-            dialog.closeButton = close.gameObject.AddComponent<Button>();
-            dialog.closeButton.targetGraphic = close;
-            dialog.AddExitButton(dialog.closeButton);
-
-            TMP_Text closeLabel = UIBountyUIFactory.CreateText("Label", close.transform, "X", 36f,
+            TMP_Text title = UIBountyUIFactory.CreateText("Title", dialog.panel, "현상금", 40f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UIBountyUIFactory.SetRect(closeLabel.rectTransform, new Vector2(64f, 64f), Vector2.zero);
+            UIBountyUIFactory.SetRect(title.rectTransform, new Vector2(400f, 60f),
+                UIBountyUIFactory.Local(PanelCenter.x, 1360f, PanelCenter));
 
-            // 칸 여섯 개. 인덱스 0 이 "소환 X"(등급 0)이고 1..5 가 등급이다.
-            // 왼쪽 위에서 오른쪽으로, 그다음 아랫줄 — 스크린샷의 배치 그대로다.
-            float gridTop = headerY - HeaderHeight * 0.5f - SlotGap;
+            // 카드 받침(Ui_Popup_SmallBox x4, 636481). 보이는 978x298 · x52~1029 · y1399~1696.
+            // 여백이 왼·위 6 · 오른·아래 7px 이라 Image 중심이 보이는 중심보다 (2, 2) 치우친다.
+            Image tray = UIBountyUIFactory.CreateSprite("Tray", dialog.panel,
+                UIBountyUIFactory.LoadSprite("Upgrade/Ui_Popup_SmallBox"), 4f,
+                new Vector2(978f + 52f, 298f + 52f),
+                UIBountyUIFactory.Local(540.5f + 2f, 1547.5f + 2f, PanelCenter), true);
+            tray.color = UIBountyUIFactory.Hex(0x636481);
 
+            // 칸 여섯 개. 인덱스 0 이 "사냥 안하기"(등급 0)이고 1..5 가 등급이다.
             for (int index = 0; index <= BountyFormula.GradeCount; index++)
             {
-                int column = index % 3;
-                int row = index / 3;
-
-                float x = -(SlotWidth + SlotGap) + column * (SlotWidth + SlotGap);
-                float y = gridTop - SlotHeight * 0.5f - row * (SlotHeight + SlotGap);
-
-                UIBountySlot slot = UIBountySlot.Create(
-                    dialog.panel, index, new Vector2(SlotWidth, SlotHeight), new Vector2(x, y), font);
-
+                var center = new Vector2(FirstCardX + CardSpacing * index, CardY);
+                UIBountySlot slot = UIBountySlot.Create(dialog.panel, index, center, PanelCenter, font, plainMaterial);
                 dialog.slots.Add(slot);
             }
 

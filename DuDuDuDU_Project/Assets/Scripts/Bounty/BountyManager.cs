@@ -48,7 +48,7 @@ namespace OJ.Bounty
         public event Action OnWaveResolved;
 
         /// <summary>
-        /// 현상금이 화면에 나온 순간 운다. 등장 콜아웃(<see cref="UIBountyCallout"/>)이
+        /// 현상금이 화면에 나온 순간 운다. 경고 띠(<c>UIBattleWarning</c>)가
         /// 이걸 듣는다.
         ///
         /// <b>왜 알려야 하나.</b> 현상금은 일반 몬스터가 스무 마리 쏟아지는 틈에 섞여

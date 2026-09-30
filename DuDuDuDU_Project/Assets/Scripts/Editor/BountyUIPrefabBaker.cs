@@ -1,14 +1,16 @@
-using System.Linq;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
 using OJ.Bounty;
+using OJ.Hunting;
 
 namespace OJ.EditorTools
 {
     /// <summary>
-    /// 현상금 UI 셋(<see cref="UIBountyBanner"/>·<see cref="UIBountySelectDialog"/>·
-    /// <see cref="UIBountyCallout"/>)을 프리팹으로 굽는다.
+    /// 현상금 UI 둘(<see cref="UIBountyBanner"/>·<see cref="UIBountySelectDialog"/>)과
+    /// 보스·현상금 경고 띠(<see cref="UIBattleWarning"/>)를 프리팹으로 굽는다.
+    /// 시안은 <c>Art/Layout/Wanted_Layout*.png</c> · <c>Warning_Layout*.png</c>, 수치는
+    /// <c>Docs/WantedUIArtPort.md</c>.
     ///
     /// <b>왜 손으로 안 짜나.</b> 선택 창은 3x2 칸 여섯 개에 칸마다 글자 넷이라 손으로 놓으면
     /// 좌표 서른 개를 인스펙터에 옮겨 적게 된다. 값을 아는 것은 코드이고, 옮겨 적는 순간
@@ -26,31 +28,50 @@ namespace OJ.EditorTools
         private const string SelectPath =
             "Assets/Prefab/Refactory/BattleScene/UIBountySelectDialog.prefab";
 
-        private const string CalloutPath =
+        private const string WarningPath =
+            "Assets/Prefab/Refactory/BattleScene/UIBattleWarning.prefab";
+
+        /// <summary>
+        /// 경고 띠로 대체된 옛 현상금 알림. 남아 있으면 카탈로그가 클래스 없는 프리팹을
+        /// 들고 있게 되므로 굽기가 치운다(휴지통으로 — 되돌릴 수 있게).
+        /// </summary>
+        private const string ObsoleteCalloutPath =
             "Assets/Prefab/Refactory/BattleScene/UIBountyCallout.prefab";
 
         [MenuItem("OJ/개발/현상금/UI 프리팹 굽기")]
         private static void Bake()
         {
-            TMP_FontAsset font = FindKoreanFont();
-            if (font == null)
-            {
-                // 폰트 없이 구우면 한글이 전부 네모로 저장된다. 그 상태로 저장하는 것이
-                // 최악이라 여기서 멈춘다.
-                Debug.LogError("[굽기] 한글 TMP 폰트를 못 찾았다. 프리팹을 만들지 않는다.");
+            // 폰트는 PSD(Art/0PSD/인게임관련.psd)의 글자 레이어를 따른다 — 현상금 띠·창은
+            // NotoSansKR-Black, 경고 띠 문구는 BM HANNA 다. 없으면 멈춘다: 폰트 없이 구우면
+            // 한글이 전부 네모로 저장되고, 다른 폰트로 대신 구우면 조용히 시안과 달라진다.
+            TMP_FontAsset noto = LoadFont(NotoFontPath);
+            TMP_FontAsset hanna = LoadFont(HannaFontPath);
+            if (noto == null || hanna == null)
                 return;
+
+            // 색 글자(갈색 등)는 외곽선이 없다. 없으면 기본(외곽선) 머티리얼로 굽고 알린다 —
+            // 멈출 만한 일은 아니지만 모르고 지나가면 시안과 다르게 나온다.
+            Material plain = FindPlainMaterial(noto);
+            if (plain == null)
+                Debug.LogWarning("[굽기] '" + noto.name + " Material_NoneOutLine' 을 못 찾았다. 색 글자에도 외곽선이 붙는다.");
+
+            BakeOne("__BountyBannerBakeRoot", BannerPath, noto,
+                (parent, f) => UIBountyBanner.Create(parent, f, plain).gameObject);
+
+            BakeOne("__BountySelectBakeRoot", SelectPath, noto,
+                (parent, f) => UIBountySelectDialog.Create(parent, f, plain).gameObject);
+
+            BakeOne("__BattleWarningBakeRoot", WarningPath, hanna,
+                (parent, f) => UIBattleWarning.Create(parent, f).gameObject);
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(ObsoleteCalloutPath) != null)
+            {
+                bool trashed = AssetDatabase.MoveAssetToTrash(ObsoleteCalloutPath);
+                Debug.Log("[굽기] 옛 현상금 알림 프리팹을 " + (trashed ? "휴지통으로 옮겼다: " : "치우지 못했다: ") +
+                          ObsoleteCalloutPath);
             }
 
-            BakeOne("__BountyBannerBakeRoot", BannerPath, font,
-                (parent, f) => UIBountyBanner.Create(parent, f).gameObject);
-
-            BakeOne("__BountySelectBakeRoot", SelectPath, font,
-                (parent, f) => UIBountySelectDialog.Create(parent, f).gameObject);
-
-            BakeOne("__BountyCalloutBakeRoot", CalloutPath, font,
-                (parent, f) => UIBountyCallout.Create(parent, f).gameObject);
-
-            Debug.Log("[굽기] 현상금 UI 세 개를 구웠다." + System.Environment.NewLine +
+            Debug.Log("[굽기] 현상금 UI 두 개와 경고 띠를 구웠다." + System.Environment.NewLine +
                       "  다음: OJ/개발/다이얼로그 카탈로그/훑어서 갱신 을 돌려 등재할 것.");
         }
 
@@ -91,19 +112,24 @@ namespace OJ.EditorTools
         }
 
         /// <summary>
-        /// 한글이 들어 있는 TMP 폰트를 고른다. 이름이 아니라 <b>실제 글리프 보유</b>로 고르고
-        /// 경로로 정렬해 실행마다 같은 것이 뽑히게 한다(멱등성).
-        /// <c>UIBattleDiceDetailPanelBaker</c> 와 같은 판정이다.
+        /// 폰트 옆의 외곽선 없는 머티리얼(<c>{폰트} Material_NoneOutLine</c>). 폰트마다 하나씩 있다.
         /// </summary>
-        private static TMP_FontAsset FindKoreanFont()
+        private static Material FindPlainMaterial(TMP_FontAsset font)
         {
-            const int Sample = '가';
+            string folder = System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(font));
+            string path = folder + "/" + font.name + " Material_NoneOutLine.mat";
+            return AssetDatabase.LoadAssetAtPath<Material>(path.Replace('\\', '/'));
+        }
 
-            return AssetDatabase.FindAssets("t:TMP_FontAsset")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .OrderBy(p => p, System.StringComparer.Ordinal)
-                .Select(AssetDatabase.LoadAssetAtPath<TMP_FontAsset>)
-                .FirstOrDefault(f => f != null && f.HasCharacter(Sample));
+        private const string NotoFontPath = "Assets/NotoSansKR-Black/NotoSansKR-Black SDF.asset";
+        private const string HannaFontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
+
+        private static TMP_FontAsset LoadFont(string path)
+        {
+            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
+            if (font == null)
+                Debug.LogError("[굽기] 폰트가 없다: " + path + " — 프리팹을 만들지 않는다.");
+            return font;
         }
     }
 }
