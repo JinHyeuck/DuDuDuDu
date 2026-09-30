@@ -14,7 +14,7 @@ using OJ.Tower;
 namespace OJ.DI
 {
     /// <summary>
-    /// BattleScene 의 자식 스코프. 씬에 상주하는 매니저 14개를 컨테이너에 잇는다.
+    /// BattleScene 의 자식 스코프. 씬에 상주하는 매니저 13개를 컨테이너에 잇는다.
     /// (MIGRATION_BASELINE 8.3b)
     ///
     /// <b>씬 파일을 건드리지 않는다.</b> 이 스코프의 GameObject 를 씬에 배치하지 않고
@@ -95,7 +95,6 @@ namespace OJ.DI
         protected override void Configure(IContainerBuilder builder)
         {
             // 비활성 오브젝트도 찾는다(FindComponentProvider 가 includeInactive: true).
-            // BattleScene 의 UIDiceBoardUI 가 실제로 비활성이라 이 성질에 기대고 있다.
             //
             // 못 찾으면 VContainerException 을 던진다 — 조용히 null 이 되지 않는다.
             // 그것이 이 방식을 쓰는 이유의 절반이다.
@@ -106,7 +105,6 @@ namespace OJ.DI
             builder.RegisterComponentInHierarchy<AttackContent>();
             builder.RegisterComponentInHierarchy<MergeSystem>();
             builder.RegisterComponentInHierarchy<UIBoard>();
-            builder.RegisterComponentInHierarchy<UIDiceBoardUI>();
             builder.RegisterComponentInHierarchy<UIDiceSummonSystem>();
             builder.RegisterComponentInHierarchy<DiceTypeStarManager>();
             builder.RegisterComponentInHierarchy<ElementUpgradeManager>();
@@ -166,7 +164,6 @@ namespace OJ.DI
                 resolver.Resolve<AttackContent>(),
                 resolver.Resolve<MergeSystem>(),
                 resolver.Resolve<UIBoard>(),
-                resolver.Resolve<UIDiceBoardUI>(),
                 resolver.Resolve<UIDiceSummonSystem>(),
                 resolver.Resolve<DiceTypeStarManager>(),
                 resolver.Resolve<ElementUpgradeManager>(),
@@ -179,7 +176,7 @@ namespace OJ.DI
                 contribution,
                 rewind);
 
-            // 등록한 14개 말고도 씬에는 창구가 필요한 컴포넌트가 있다
+            // 등록한 13개 말고도 씬에는 창구가 필요한 컴포넌트가 있다
             // (Wall · PlayerFireRateUI · UIRemoveDice). 그것들은 다른 곳에서
             // 해석될 일이 없어 <b>등록만으로는 주입이 닿지 않는다.</b> 그래서 씬을 한 번 훑는다.
             //
@@ -193,7 +190,7 @@ namespace OJ.DI
             for (int i = 0; i < roots.Length; i++)
                 resolver.InjectGameObject(roots[i]);
 
-            Debug.Log("[배틀] 스코프 빌드 완료 — 매니저 14개 연결, 씬 루트 " +
+            Debug.Log("[배틀] 스코프 빌드 완료 — 매니저 13개 연결, 씬 루트 " +
                       roots.Length + "개 주입. 이 줄이 어떤 Start 로그보다 먼저 나와야 한다.");
         }
 

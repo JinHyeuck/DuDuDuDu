@@ -156,14 +156,16 @@ namespace OJ.Headless
                 {
                     string name = Path.GetFileName(file);
 
-                    // Unity 규약: 이름이 '.' 으로 시작하거나 ~ 로 끝나는 폴더는 임포트되지 않는다.
-                    if (file.Replace('\\', '/').Split('/').Any(part => part.StartsWith(".", StringComparison.Ordinal) || part.EndsWith("~", StringComparison.Ordinal)))
-                        continue;
-
                     // 파일 이름과 소스 루트 기준 상대 경로 둘 다에 패턴을 대 본다. 폴더 단위로 빼야 하는
                     // 경우(Assembly-CSharp 에서 Editor 폴더와 다른 asmdef 소속 폴더를 걷어내는 것)가
                     // 실제 용례라 이름만으로는 부족하다.
                     string withinSourceRoot = RelativeSourcePath(rootFull, file);
+
+                    // Unity 규약: 이름이 '.' 으로 시작하거나 ~ 로 끝나는 폴더는 임포트되지 않는다.
+                    // <b>소스 루트 안쪽만 본다.</b> 절대 경로 전체를 보면 리포가 `.claude/worktrees/…`
+                    // 같은 점 폴더 아래에 있을 때 모든 파일이 걸러져 "소스를 하나도 못 찾았다"로 죽는다.
+                    if (withinSourceRoot.Split('/').Any(part => part.StartsWith(".", StringComparison.Ordinal) || part.EndsWith("~", StringComparison.Ordinal)))
+                        continue;
 
                     // include 가 비어 있지 않으면 "적어도 하나에 맞아야 한다"가 된다.
                     // Assembly-CSharp-Editor 처럼 <b>흩어진 Editor 폴더만</b> 모으는 어셈블리가

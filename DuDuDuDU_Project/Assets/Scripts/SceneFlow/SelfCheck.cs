@@ -292,8 +292,8 @@ namespace OJ.SceneFlow
                 ("GameManager", battle.Game), ("PlayerController", battle.Player),
                 ("MonsterManager", battle.Monsters), ("MonsterSpawner", battle.Spawner),
                 ("AttackContent", battle.Attack), ("MergeSystem", battle.Merge),
-                ("UIBoard", battle.Board), ("UIDiceBoardUI", battle.BoardUI),
-                ("UIDiceSummonSystem", battle.Summon), ("DiceTypeStarManager", battle.DiceStars),
+                ("UIBoard", battle.Board), ("UIDiceSummonSystem", battle.Summon),
+                ("DiceTypeStarManager", battle.DiceStars),
                 ("ElementUpgradeManager", battle.ElementUpgrade), ("BulletPool", battle.Bullets),
                 ("BulletEffectPool", battle.BulletEffects), ("DamageTextPool", battle.DamageTexts),
             };
@@ -309,7 +309,7 @@ namespace OJ.SceneFlow
             }
 
             if (missing == 0)
-                Line(sb, Ok, "매니저 14개", "전부 연결됨");
+                Line(sb, Ok, "매니저 13개", "전부 연결됨");
         }
 
         private static void CheckSceneFlow(StringBuilder sb)
