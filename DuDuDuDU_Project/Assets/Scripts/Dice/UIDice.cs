@@ -89,7 +89,8 @@ namespace OJ.Dice
 
         public void Refresh()
         {
-            bool showStarUI = DiceMetaDataProvider.ShowStarUI(Type);
+            // 성급이 그림으로 바뀌는 다이스는 숫자를 끈다 — 같은 정보가 두 번 보인다.
+            bool showStarUI = DiceMetaDataProvider.ShowStarUI(Type) && !DiceMetaDataProvider.HasStarIcons(Type);
             if (StarText != null)
             {
                 StarText.gameObject.SetActive(showStarUI);
@@ -100,7 +101,7 @@ namespace OJ.Dice
             DiceType diceType = Type;
 
             Color typeColor = DiceMetaDataProvider.GetColor(diceType);
-            Sprite typeSprite = DiceMetaDataProvider.GetIcon(diceType);
+            Sprite typeSprite = DiceMetaDataProvider.GetIcon(diceType, Star);
 
             if (ShootEffectImage != null)
                 ShootEffectImage.color = typeColor;
