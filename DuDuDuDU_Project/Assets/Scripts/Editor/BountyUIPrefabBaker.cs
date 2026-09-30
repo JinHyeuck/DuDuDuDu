@@ -1,4 +1,3 @@
-using System.Linq;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -42,28 +41,27 @@ namespace OJ.EditorTools
         [MenuItem("OJ/개발/현상금/UI 프리팹 굽기")]
         private static void Bake()
         {
-            TMP_FontAsset font = FindKoreanFont();
-            if (font == null)
-            {
-                // 폰트 없이 구우면 한글이 전부 네모로 저장된다. 그 상태로 저장하는 것이
-                // 최악이라 여기서 멈춘다.
-                Debug.LogError("[굽기] 한글 TMP 폰트를 못 찾았다. 프리팹을 만들지 않는다.");
+            // 폰트는 PSD(Art/0PSD/인게임관련.psd)의 글자 레이어를 따른다 — 현상금 띠·창은
+            // NotoSansKR-Black, 경고 띠 문구는 BM HANNA 다. 없으면 멈춘다: 폰트 없이 구우면
+            // 한글이 전부 네모로 저장되고, 다른 폰트로 대신 구우면 조용히 시안과 달라진다.
+            TMP_FontAsset noto = LoadFont(NotoFontPath);
+            TMP_FontAsset hanna = LoadFont(HannaFontPath);
+            if (noto == null || hanna == null)
                 return;
-            }
 
             // 색 글자(갈색 등)는 외곽선이 없다. 없으면 기본(외곽선) 머티리얼로 굽고 알린다 —
             // 멈출 만한 일은 아니지만 모르고 지나가면 시안과 다르게 나온다.
-            Material plain = FindPlainMaterial(font);
+            Material plain = FindPlainMaterial(noto);
             if (plain == null)
-                Debug.LogWarning("[굽기] '" + font.name + " Material_NoneOutLine' 을 못 찾았다. 색 글자에도 외곽선이 붙는다.");
+                Debug.LogWarning("[굽기] '" + noto.name + " Material_NoneOutLine' 을 못 찾았다. 색 글자에도 외곽선이 붙는다.");
 
-            BakeOne("__BountyBannerBakeRoot", BannerPath, font,
+            BakeOne("__BountyBannerBakeRoot", BannerPath, noto,
                 (parent, f) => UIBountyBanner.Create(parent, f, plain).gameObject);
 
-            BakeOne("__BountySelectBakeRoot", SelectPath, font,
+            BakeOne("__BountySelectBakeRoot", SelectPath, noto,
                 (parent, f) => UIBountySelectDialog.Create(parent, f, plain).gameObject);
 
-            BakeOne("__BattleWarningBakeRoot", WarningPath, font,
+            BakeOne("__BattleWarningBakeRoot", WarningPath, hanna,
                 (parent, f) => UIBattleWarning.Create(parent, f).gameObject);
 
             if (AssetDatabase.LoadAssetAtPath<GameObject>(ObsoleteCalloutPath) != null)
@@ -123,20 +121,15 @@ namespace OJ.EditorTools
             return AssetDatabase.LoadAssetAtPath<Material>(path.Replace('\\', '/'));
         }
 
-        /// <summary>
-        /// 한글이 들어 있는 TMP 폰트를 고른다. 이름이 아니라 <b>실제 글리프 보유</b>로 고르고
-        /// 경로로 정렬해 실행마다 같은 것이 뽑히게 한다(멱등성).
-        /// <c>UIBattleDiceDetailPanelBaker</c> 와 같은 판정이다.
-        /// </summary>
-        private static TMP_FontAsset FindKoreanFont()
-        {
-            const int Sample = '가';
+        private const string NotoFontPath = "Assets/NotoSansKR-Black/NotoSansKR-Black SDF.asset";
+        private const string HannaFontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
 
-            return AssetDatabase.FindAssets("t:TMP_FontAsset")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .OrderBy(p => p, System.StringComparer.Ordinal)
-                .Select(AssetDatabase.LoadAssetAtPath<TMP_FontAsset>)
-                .FirstOrDefault(f => f != null && f.HasCharacter(Sample));
+        private static TMP_FontAsset LoadFont(string path)
+        {
+            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
+            if (font == null)
+                Debug.LogError("[굽기] 폰트가 없다: " + path + " — 프리팹을 만들지 않는다.");
+            return font;
         }
     }
 }

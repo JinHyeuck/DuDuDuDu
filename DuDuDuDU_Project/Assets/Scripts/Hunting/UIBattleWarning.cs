@@ -274,7 +274,7 @@ namespace OJ.Hunting
         /// <summary>WARNING! 글자(256² 그림) x3 — 시안에서 중심 약 (470, 590).</summary>
         private static readonly Vector2 WarningFontCenter = new Vector2(470f, 590f);
 
-        /// <summary>등장 문구 90pt ffc000 — 중심 약 (527, 893).</summary>
+        /// <summary>등장 문구 — PSD 글자 레이어 BM HANNA 95.5pt ffc000 + 외곽선, 중심 약 (527, 893).</summary>
         private static readonly Vector2 MessageCenter = new Vector2(527f, 893f);
 
         /// <summary>에디터 굽기 전용.</summary>
@@ -352,7 +352,7 @@ namespace OJ.Hunting
                 new Vector2(256f, 256f), SkullOffset(BossSkullCenter), false);
 
             // ── 문구 ─────────────────────────────────────────────────
-            warning.messageText = UIBountyUIFactory.CreateText("Message", content.transform, "보스등장!!!", 90f,
+            warning.messageText = UIBountyUIFactory.CreateText("Message", content.transform, "보스등장!!!", 95.5f,
                 TextAlignmentOptions.Center, UIBountyUIFactory.Hex(0xFFC000), font);
             UIBountyUIFactory.SetRect(warning.messageText.rectTransform, new Vector2(1000f, 130f),
                 UIBountyUIFactory.Pos(MessageCenter.x, MessageCenter.y));

@@ -337,8 +337,9 @@ namespace OJ.Bounty
                 // 보상 — [재화 아이콘] 수량. 시안은 금화 아이콘이지만 실제로 주는 재화의 아이콘을 쓴다.
                 Vector2 rewardPos = UIBountyUIFactory.Local(designCenter.x, 1637f, designCenter);
 
+                // 흰 글자 + 외곽선. 시안 주석은 "25pt/865731" 이지만 PSD 글자 레이어는 흰색(외곽선 3)이다.
                 slot.rewardText = UIBountyUIFactory.CreateText("Reward", card, "0", 25f,
-                    TextAlignmentOptions.Center, CardTextColor, font, plainMaterial);
+                    TextAlignmentOptions.Center, Color.white, font);
                 UIBountyUIFactory.SetRect(slot.rewardText.rectTransform, new Vector2(VisibleSize.x - 8f, 34f), rewardPos);
 
                 slot.rewardIcon = CreateRewardIcon(card, 30f);

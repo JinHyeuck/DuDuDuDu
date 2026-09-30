@@ -203,8 +203,8 @@ namespace OJ.Bounty
                 UIBountyUIFactory.Local(textCenterX, 843f, BannerCenter));
 
             banner.nameText = UIBountyUIFactory.CreateText("Name", view.transform,
-                "현상금 X", 35f, TextAlignmentOptions.Left, Color.white, font);
-            UIBountyUIFactory.SetRect(banner.nameText.rectTransform, new Vector2(TextWidth, 48f),
+                "현상금 X", 40f, TextAlignmentOptions.Left, Color.white, font);
+            UIBountyUIFactory.SetRect(banner.nameText.rectTransform, new Vector2(TextWidth, 54f),
                 UIBountyUIFactory.Local(textCenterX, 887f, BannerCenter));
 
             banner.detailText = UIBountyUIFactory.CreateText("Detail", view.transform,
