@@ -309,8 +309,9 @@ namespace OJ.Tower
                 UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Popup_Bg_Selcet"), 4f,
                 new Vector2(CardWidth + 8f + 16f, CardHeight + 7f + 16f), Vector2.zero, true);
 
-            // 테두리 그림이 흰색으로 바뀌었다(4297f64). 색은 여기서 입힌다.
-            card.highlightEdge.color = UITowerUIFactory.Hex(0x00FF24);
+            // 테두리 그림이 흰색으로 바뀌었다(4297f64). 층 카드는 예전 그림 색(#FFDE00 노랑)을 그대로 입힌다 —
+            // 초록(#00FF24)은 편성 화면의 다이스 선택 테두리 색이다(UITowerDiceCell, 사용자 지시 2026-10-01).
+            card.highlightEdge.color = UITowerUIFactory.Hex(0xFFDE00);
 
             return card;
         }

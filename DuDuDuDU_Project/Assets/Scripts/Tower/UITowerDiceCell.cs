@@ -20,8 +20,9 @@ namespace OJ.Tower
         [SerializeField] private Image selectionEdge;
 
         /// <summary>
-        /// 칸 바탕 두 장. 선택되면 노란 테두리 그림(Bg_Prs)으로 바꾼다 — 시안은 선택을
-        /// 테두리 색으로만 말한다. 비어 있으면(옛 프리팹) 아래 <see cref="selectionEdge"/> 가 대신한다.
+        /// 칸 바탕. 예전에는 선택되면 노란 테두리 그림(Bg_Prs)으로 바꿨다. 지금은 바탕은 그대로 두고
+        /// <see cref="selectionEdge"/>(선택 테두리 <c>Infinity_Popup_Bg_Selcet</c>, 초록)를 켠다 —
+        /// <c>selectedSprite</c> 는 옛 프리팹 호환용으로만 남아 있고 새로 굽는 칸은 비워 둔다.
         /// </summary>
         [SerializeField] private Sprite normalSprite;
         [SerializeField] private Sprite selectedSprite;
@@ -288,7 +289,16 @@ namespace OJ.Tower
             var cell = background.gameObject.AddComponent<UITowerDiceCell>();
             cell.background = background;
             cell.normalSprite = normal;
-            cell.selectedSprite = UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Skill_Selcet_Bg_Prs");
+
+            // 선택 테두리 — 4297f64 에서 바뀐 흰 테두리 그림에 #00FF24 를 입힌다(사용자 지시 2026-10-01).
+            // 그림은 1px 선이 32 안에 2px 여백을 두고 있어 x4 로 4px 선이 되고, 이것이 옛 Bg_Prs 의
+            // 노란 선(2px x2)과 같은 굵기·같은 자리다. 아이콘보다 먼저 만들어 아이콘 밑에 깐다 —
+            // 옛 노란 선도 바탕 그림이라 아이콘 아래에 있었다.
+            cell.selectionEdge = UITowerUIFactory.CreateSprite("SelectionEdge", background.transform,
+                UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Popup_Bg_Selcet"), 4f,
+                size + new Vector2(16f, 16f), Vector2.zero, true);
+            cell.selectionEdge.color = UITowerUIFactory.Hex(0x00FF24);
+            cell.selectionEdge.enabled = false;
 
             cell.icon = UITowerUIFactory.CreateImage("Icon", background.transform, Color.white);
             UITowerUIFactory.SetRect(cell.icon.rectTransform, new Vector2(IconSize, IconSize), Vector2.zero);
