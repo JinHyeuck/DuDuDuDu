@@ -39,7 +39,6 @@ namespace OJ.Dice
             AddStars(type, star);
             // 창구가 주는 참조는 씬 안에서 null 이 될 수 없으므로 ?. 를 지웠다.
             // 여기서 터진다면 그것은 배선 사고이고, 조용히 넘어가는 대신 울어야 한다.
-            battle.BoardUI.UpdateTypeStars();
             battle.Player.RefreshDice();
             OnDiceInventoryChanged?.Invoke();
         }
@@ -47,7 +46,6 @@ namespace OJ.Dice
         public void OnDiceRemove(DiceType type, int star)
         {
             RemoveStars(type, star);
-            battle.BoardUI.UpdateTypeStars();
             battle.Player.RefreshDice();
             OnDiceInventoryChanged?.Invoke();
         }
@@ -137,7 +135,6 @@ namespace OJ.Dice
             for (int i = 0; i < starKeys.Count; i++)
                 typeStarCounts[starKeys[i]] = 0;
 
-            battle.BoardUI.UpdateTypeStars();
             OnDiceInventoryChanged?.Invoke();
         }
 

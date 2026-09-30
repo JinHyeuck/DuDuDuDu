@@ -33,7 +33,6 @@ namespace OJ.DI
         public AttackContent Attack { get; private set; }
         public MergeSystem Merge { get; private set; }
         public UIBoard Board { get; private set; }
-        public UIDiceBoardUI BoardUI { get; private set; }
         public UIDiceSummonSystem Summon { get; private set; }
         public DiceTypeStarManager DiceStars { get; private set; }
         public ElementUpgradeManager ElementUpgrade { get; private set; }
@@ -61,7 +60,6 @@ namespace OJ.DI
             AttackContent attack,
             MergeSystem merge,
             UIBoard board,
-            UIDiceBoardUI boardUI,
             UIDiceSummonSystem summon,
             DiceTypeStarManager diceStars,
             ElementUpgradeManager elementUpgrade,
@@ -81,7 +79,6 @@ namespace OJ.DI
             Attack = attack;
             Merge = merge;
             Board = board;
-            BoardUI = boardUI;
             Summon = summon;
             DiceStars = diceStars;
             ElementUpgrade = elementUpgrade;
@@ -109,7 +106,6 @@ namespace OJ.DI
             Attack = null;
             Merge = null;
             Board = null;
-            BoardUI = null;
             Summon = null;
             DiceStars = null;
             ElementUpgrade = null;

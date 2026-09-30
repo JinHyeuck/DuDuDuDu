@@ -9,9 +9,9 @@ using OJ.Tower;
 namespace OJ.DI
 {
     /// <summary>
-    /// BattleScene 에 상주하는 매니저 14개로 가는 창구. (MIGRATION_BASELINE 8.3b)
+    /// BattleScene 에 상주하는 매니저 13개로 가는 창구. (MIGRATION_BASELINE 8.3b)
     ///
-    /// <b>왜 서로 주입하지 않고 홀더를 두나.</b> 14개 중 <b>9개가 하나의 강결합 덩어리</b>다 —
+    /// <b>왜 서로 주입하지 않고 홀더를 두나.</b> 13개 중 <b>9개가 하나의 강결합 덩어리</b>다 —
     /// <c>GameManager → UIDiceSummonSystem → DiceTypeStarManager → PlayerController →
     /// GameManager</c> 처럼 되돌아온다. VContainer 는 <c>ContainerBuilder.Build</c> 에서
     /// <c>TypeAnalyzer.CheckCircularDependency</c> 를 <b>무조건</b> 부르고 필드·프로퍼티
@@ -43,7 +43,6 @@ namespace OJ.DI
         AttackContent Attack { get; }
         MergeSystem Merge { get; }
         UIBoard Board { get; }
-        UIDiceBoardUI BoardUI { get; }
         UIDiceSummonSystem Summon { get; }
         DiceTypeStarManager DiceStars { get; }
         ElementUpgradeManager ElementUpgrade { get; }

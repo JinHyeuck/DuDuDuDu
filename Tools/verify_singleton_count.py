@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""B무리 매니저 14개의 `X.Instance` 호출부가 <b>늘지 않았는지</b> 센다. (8.3b)
+"""B무리 매니저 13개의 `X.Instance` 호출부가 <b>늘지 않았는지</b> 센다. (8.3b)
 
 만들어진 이유: 8.3b 는 호출부 272곳을 열 개 트랜치로 나눠 지운다. 그 작업의 실패는
 "에러가 난다"가 아니라 <b>"줄어야 할 숫자가 안 줄었다"</b> 또는 <b>"지우는 동안 딴 데서
@@ -42,7 +42,6 @@ BASELINE = {
     'AttackContent': 0,
     'MergeSystem': 0,
     'UIBoard': 0,
-    'UIDiceBoardUI': 0,
     'UIDiceSummonSystem': 0,
     'DiceTypeStarManager': 0,
     'ElementUpgradeManager': 0,
