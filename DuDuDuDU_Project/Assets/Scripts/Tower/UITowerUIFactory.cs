@@ -1,6 +1,8 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Utils;
 
 namespace OJ.Tower
 {
@@ -189,6 +191,225 @@ namespace OJ.Tower
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+        }
+
+        // ── 아트 시안 (Art/Layout/Infinity_Layout*.png) ─────────────────────
+        //
+        // 층 선택·편성 두 화면은 성 안의 한 장면이다. 두 화면이 같은 틀(뒷벽·성 프레임·
+        // 횃불·타이틀·뒤로 버튼)을 쓰므로 그 틀을 여기서 한 번만 만든다.
+        //
+        // <b>좌표는 시안 픽셀 그대로 적는다.</b> 캔버스가 1080x1920 폭 맞춤이라 시안 좌표가
+        // 곧 화면 좌표이고, <see cref="Pos"/> 가 그것을 중앙 기준 anchoredPosition 으로 바꾼다.
+        // 옮겨 적을 때 뺄셈을 손으로 하면 그 자리에서 오차가 난다.
+
+        internal const string ArtRoot = "Art/";
+
+        internal static readonly Color ScreenBase = Hex(0x1D1C30);
+        internal static readonly Color TextMuted = Hex(0xAAAACC);
+        internal static readonly Color TextGold = Hex(0xFFDE00);
+        internal static readonly Color TextCyan = Hex(0x00F6FF);
+        internal static readonly Color RewardBoxColor = new Color(0.14f, 0.13f, 0.24f, 1f);
+
+        /// <summary>
+        /// 패널이 놓이는 세로 축. 시안의 패널·카드·버튼이 전부 x=550 을 중심으로 대칭이다
+        /// (성 프레임 그림 자체가 오른쪽으로 10px 치우쳐 있다). 540 으로 두면 패널이
+        /// 프레임 기둥 안쪽에서 한쪽으로 쏠려 보인다.
+        /// </summary>
+        internal const float PanelCenterX = 550f;
+
+        /// <summary>패널·카드의 <b>보이는</b> 폭. 시안 x169~932.</summary>
+        internal const float PanelWidth = 764f;
+
+        // ── 스프라이트 투명 여백 ──────────────────────────────────────────
+        //
+        // 킷 스프라이트는 32px 안에 그림이 조금 작게 들어 있다(패널 사방 3px, 버튼 좌우 4·위 6·
+        // 아래 2px). 시안에서 잰 것은 <b>보이는 외곽선</b>이므로 Image 크기는 그 여백 x 배율만큼
+        // 더 커야 한다. 이것을 빼먹으면 모든 패널·버튼이 한 둘레씩 작게 나온다.
+
+        /// <summary>Infinity_Popup_Bg_* · Number_* 의 여백(3px) x4.</summary>
+        internal const float PanelPad = 12f;
+
+        /// <summary>보이는 패널 크기 → Image 크기.</summary>
+        internal static Vector2 PanelRect(float visibleWidth, float visibleHeight)
+        {
+            return new Vector2(visibleWidth + PanelPad * 2f, visibleHeight + PanelPad * 2f);
+        }
+
+        /// <summary>
+        /// 버튼(Btn_Gray · Big_Btn_Yellow · Btn_PurpleGray)의 보이는 사각형 → Image 크기·중심.
+        /// 여백이 위(6px)가 아래(2px)보다 커서 중심이 (6-2)/2 x 배율 만큼 위로 간다.
+        /// </summary>
+        internal static void ButtonRect(
+            float visibleCenterX, float visibleCenterY, float visibleWidth, float visibleHeight, float pixelScale,
+            out Vector2 size, out Vector2 position)
+        {
+            size = new Vector2(visibleWidth + 8f * pixelScale, visibleHeight + 8f * pixelScale);
+            position = Pos(visibleCenterX, visibleCenterY - 2f * pixelScale);
+        }
+
+        internal static Color Hex(int rgb)
+        {
+            return new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
+        }
+
+        /// <summary>시안 좌표(좌상단 원점, 1080x1920) → 화면 중앙 기준 anchoredPosition.</summary>
+        internal static Vector2 Pos(float designX, float designY)
+        {
+            return new Vector2(designX - 540f, 960f - designY);
+        }
+
+        /// <summary>
+        /// 스프라이트를 읽는다. <b>없으면 멈춘다.</b> 굽기가 null 스프라이트로 끝나면
+        /// 흰 사각형만 가득한 프리팹이 조용히 저장되고, 그것은 실행해 보기 전에는 모른다.
+        /// </summary>
+        internal static Sprite LoadSprite(string pathUnderArt)
+        {
+            Sprite sprite = Resources.Load<Sprite>(ArtRoot + pathUnderArt);
+            if (sprite == null)
+                throw new InvalidOperationException("[탑 굽기] 스프라이트가 없다: Resources/" + ArtRoot + pathUnderArt);
+            return sprite;
+        }
+
+        /// <summary>
+        /// 스프라이트 이미지 한 장. <paramref name="pixelScale"/> 는 시안의 "x4배" 다.
+        /// 9슬라이스면 테두리가 그 배율로 그려지고(<c>pixelsPerUnitMultiplier = 1/배율</c>,
+        /// 이 프로젝트의 다른 픽셀 UI 와 같은 방식), 가운데만 늘어난다.
+        /// </summary>
+        internal static Image CreateSprite(
+            string name, Transform parent, Sprite sprite, float pixelScale,
+            Vector2 size, Vector2 position, bool sliced)
+        {
+            Image image = CreateImage(name, parent, Color.white);
+            image.sprite = sprite;
+            image.raycastTarget = false;
+
+            if (sliced)
+            {
+                image.type = Image.Type.Sliced;
+                image.fillCenter = true;
+                image.pixelsPerUnitMultiplier = 1f / pixelScale;
+            }
+
+            SetRect(image.rectTransform, size, position);
+            return image;
+        }
+
+        /// <summary>스프라이트 버튼 + 라벨. 시안의 버튼 셋(노랑·회청·보라회색)이 전부 이 모양이다.</summary>
+        internal static Button CreateSpriteButton(
+            string name, Transform parent, Sprite sprite, float pixelScale, Vector2 size, Vector2 position,
+            string label, float fontSize, Color textColor, TMP_FontAsset font)
+        {
+            Image image = CreateSprite(name, parent, sprite, pixelScale, size, position, true);
+            image.raycastTarget = true;
+
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            if (label != null)
+            {
+                TMP_Text text = CreateText("Label", image.transform, label, fontSize,
+                    TextAlignmentOptions.Center, textColor, font);
+
+                // Image 중심은 위 여백 때문에 보이는 버튼보다 조금 위에 있고, 보이는 버튼의
+                // 윗면은 아래 턱 때문에 또 조금 위에 있다. 둘이 거의 상쇄돼 가운데에 둔다.
+                SetRect(text.rectTransform, size, Vector2.zero);
+            }
+
+            return button;
+        }
+
+        /// <summary>
+        /// 성 화면의 틀. 두 화면(층 선택·편성)이 같은 것을 쓴다.
+        ///
+        /// 반환하는 뒤로 버튼은 <c>DialogBase.AddExitButton</c> 에 물려야 한다 —
+        /// 이 틀이 전체 화면을 덮으므로 바깥을 눌러 닫는 길이 없다.
+        /// </summary>
+        internal static void CreateCastleScreen(
+            Transform parent, TMP_FontAsset font, out TMP_Text title, out Button backButton)
+        {
+            // 바탕. 레이캐스트를 켜서 뒤의 로비 버튼이 눌리지 않게 막는다.
+            Image baseFill = CreateImage("Base", parent, ScreenBase);
+            Stretch(baseFill.rectTransform);
+
+            // 뒷벽과 성 프레임. 배율·위치는 시안과 픽셀 대조로 맞춘 값이다
+            // (프레임 x3.5 에서 평균 색 오차 4.7). 시안 주석의 "x3배" 로는 폭이 모자란다.
+            CreateSprite("BackWall", parent, LoadSprite("InfinityMode/Infinity_Bg_Back"), 2.35f,
+                new Vector2(2406f, 2406f), Pos(540f, 863f), false);
+
+            CreateSprite("CastleFrame", parent, LoadSprite("InfinityMode/Infinity_Bg"), 3.5f,
+                new Vector2(1792f, 1792f), Pos(550f, 897f), false);
+
+            // 횃불 여섯 개. 받침(x4)과 불꽃(x3, 다섯 장 반복). 불꽃은 시안 주석이 x2 지만
+            // 픽셀 대조로는 x3 이다(오차 1.4).
+            Sprite holder = LoadSprite("InfinityMode/Dungeon_Fire_Bg");
+            var flames = new Sprite[5];
+            for (int i = 0; i < flames.Length; i++)
+                flames[i] = LoadSprite("InfinityMode/Dungeon_Fire_" + i);
+
+            Vector2[] holders =
+            {
+                new Vector2(83f, 486f), new Vector2(96f, 919f), new Vector2(83f, 1335f),
+                new Vector2(1007f, 486f), new Vector2(1002f, 919f), new Vector2(1007f, 1335f),
+            };
+
+            for (int i = 0; i < holders.Length; i++)
+            {
+                Vector2 h = holders[i];
+                CreateSprite("TorchHolder" + i, parent, holder, 4f, new Vector2(128f, 128f), Pos(h.x, h.y), false);
+
+                Image flame = CreateSprite("TorchFlame" + i, parent, flames[0], 3f,
+                    new Vector2(138f, 135f), Pos(h.x - 1f, h.y - 79.5f), false);
+
+                // 여섯 개가 같은 박자로 깜빡이면 기계처럼 보인다. 시작 장을 엇갈린다.
+                var flipbook = flame.gameObject.AddComponent<UIImageFlipbook>();
+                flipbook.BakeSetup(flames, 0.12f, i % flames.Length);
+            }
+
+            title = CreateText("Title", parent, "무한의 탑", 45f, TextAlignmentOptions.Center, Color.white, font);
+            SetRect(title.rectTransform, new Vector2(460f, 80f), Pos(540f, 180f));
+
+            // 뒤로 — 보이는 버튼 x12~175 · y1735~1903 (x5), 화살표 x4.
+            ButtonRect(93.5f, 1819f, 164f, 169f, 5f, out Vector2 backSize, out Vector2 backPos);
+            backButton = CreateSpriteButton("Back", parent, LoadSprite("Ingame/Btn_Gray"), 5f,
+                backSize, backPos, null, 0f, Color.white, font);
+            CreateSprite("Icon", backButton.transform, LoadSprite("Main/Icon_Back"), 4f,
+                new Vector2(128f, 128f), Vector2.zero, false);
+        }
+
+        /// <summary>
+        /// "보상 목록" 오버레이. 층 선택과 편성 두 화면이 같은 것을 띄운다 —
+        /// 내용을 만드는 곳도 <see cref="TowerRewardListText"/> 하나다.
+        /// </summary>
+        internal static GameObject CreateRewardOverlay(
+            Transform parent, TMP_FontAsset font, out TMP_Text body, out Button closeButton)
+        {
+            GameObject overlay = CreateRect("RewardOverlay", parent);
+            Stretch(overlay.GetComponent<RectTransform>());
+
+            Image dim = CreateImage("Dim", overlay.transform, new Color(0f, 0f, 0f, 0.6f));
+            Stretch(dim.rectTransform);
+            var block = dim.gameObject.AddComponent<Button>();
+            block.targetGraphic = dim;
+            block.transition = Selectable.Transition.None;
+
+            CreateSprite("Panel", overlay.transform, LoadSprite("InfinityMode/Infinity_Popup_Bg_Dark"), 4f,
+                PanelRect(PanelWidth, 1200f), Pos(PanelCenterX, 880f), true);
+
+            TMP_Text overlayTitle = CreateText("Title", overlay.transform, "보상 목록", 45f,
+                TextAlignmentOptions.Center, Color.white, font);
+            SetRect(overlayTitle.rectTransform, new Vector2(700f, 70f), Pos(PanelCenterX, 350f));
+
+            body = CreateText("Body", overlay.transform, string.Empty, 30f,
+                TextAlignmentOptions.TopLeft, Color.white, font);
+            SetRect(body.rectTransform, new Vector2(680f, 900f), Pos(PanelCenterX, 860f));
+            body.textWrappingMode = TextWrappingModes.Normal;
+
+            ButtonRect(PanelCenterX, 1574f, 360f, 150f, 3f, out Vector2 closeSize, out Vector2 closePos);
+            closeButton = CreateSpriteButton("Close", overlay.transform, LoadSprite("Ingame/Btn_Gray"), 3f,
+                closeSize, closePos, "닫기", 45f, Color.white, font);
+
+            overlay.SetActive(false);
+            return overlay;
         }
 
         /// <summary>

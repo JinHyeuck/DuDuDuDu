@@ -20,6 +20,13 @@ namespace OJ.Tower
         [SerializeField] private Image selectionEdge;
 
         /// <summary>
+        /// 칸 바탕 두 장. 선택되면 노란 테두리 그림(Bg_Prs)으로 바꾼다 — 시안은 선택을
+        /// 테두리 색으로만 말한다. 비어 있으면(옛 프리팹) 아래 <see cref="selectionEdge"/> 가 대신한다.
+        /// </summary>
+        [SerializeField] private Sprite normalSprite;
+        [SerializeField] private Sprite selectedSprite;
+
+        /// <summary>
         /// 다이스의 <b>정체는 아이콘이 나른다.</b> 인게임 <c>UIDice</c>·
         /// <c>UIDiceGrowthItem</c> 이 그렇고, 탑만 글자로 적으면 같은 다이스가
         /// 화면마다 다르게 보인다. 아래 <see cref="label"/> 은 아이콘 밑의 이름이다.
@@ -112,11 +119,19 @@ namespace OJ.Tower
                 // 여기서 칠하는 것은 <b>상태</b>뿐이다 — 잠긴 칸은 어둡게, 한도 도달 칸은
                 // 흐리게. 둘을 다르게 그려야 "못 가진 것" 과 "지금은 못 넣는 것" 이
                 // 구별되고, 그래야 수집 목표가 규칙 안내에 묻히지 않는다.
-                Color color = UITowerUIFactory.CardColor;
+                bool hasArt = normalSprite != null;
+                if (hasArt)
+                    background.sprite = selected && selectedSprite != null ? selectedSprite : normalSprite;
+
+                // 그림이 있으면 흰색이 원래 색이다. 상태는 밝기로만 누른다.
+                Color baseColor = hasArt ? Color.white : UITowerUIFactory.CardColor;
+                Color dimColor = hasArt ? new Color(0.45f, 0.45f, 0.5f, 1f) : UITowerUIFactory.CardDimColor;
+
+                Color color = baseColor;
                 if (!unlocked)
-                    color = UITowerUIFactory.CardDimColor;
+                    color = dimColor;
                 else if (tierFull && !selected)
-                    color = Color.Lerp(color, UITowerUIFactory.CardDimColor, 0.55f);
+                    color = Color.Lerp(baseColor, dimColor, 0.55f);
 
                 background.color = color;
             }
@@ -249,75 +264,63 @@ namespace OJ.Tower
         // 에디터 굽기 전용.
         // ──────────────────────────────────────────────────────────────
 
-        /// <summary>칸 안에서 아이콘이 차지하는 크기. 이름 한 줄을 밑에 남긴 값이다.</summary>
-        private const float IconSize = 74f;
+        /// <summary>
+        /// 아이콘 Image 크기. 시안 "스킬 아이콘 1.7배" — 아이콘 스프라이트가 64px 안에 45px 그림이라
+        /// 64 x 1.7 = 109 로 잡아야 보이는 그림이 약 76 이 된다.
+        /// </summary>
+        private const float IconSize = 109f;
 
+        /// <summary>
+        /// 칸 하나. 시안 Infinity_Layout_Skill — 바탕 Infinity_Skill_Selcet_Bg_Normal x2 (96x96),
+        /// 선택 시 Bg_Prs 로 바뀌고 오른쪽 위에 체크 배지가 뜬다. 이름·성급 글자는 없다 —
+        /// 성급은 줄 왼쪽 라벨이, 정체는 아이콘이 말한다.
+        /// </summary>
         internal static UITowerDiceCell Create(
             Transform parent, Vector2 size, Vector2 position, TMP_FontAsset font)
         {
-            // 선택 테두리를 배경의 <b>형제로, 배경보다 먼저</b> 만든다. 자식으로 넣으면
-            // uGUI 가 자식을 부모 위에 그려서 테두리가 칸 내용을 덮는다.
-            Image edge = UITowerUIFactory.CreateImage("Edge", parent, UITowerUIFactory.GoldText);
-            UITowerUIFactory.SetRect(edge.rectTransform, size + new Vector2(8f, 8f), position);
-            edge.raycastTarget = false;
+            Sprite normal = UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Skill_Selcet_Bg_Normal");
 
-            Image background = UITowerUIFactory.CreateImage("Cell", parent, UITowerUIFactory.CardColor);
-            UITowerUIFactory.SetRect(background.rectTransform, size, position);
+            // size 는 보이는 칸(96). 그림은 사방 7px 여백이 있어 x2 로 14px 씩 더 크다.
+            Image background = UITowerUIFactory.CreateSprite("Cell", parent, normal, 2f,
+                size + new Vector2(28f, 28f), position, true);
+            background.raycastTarget = true;
 
             var cell = background.gameObject.AddComponent<UITowerDiceCell>();
             cell.background = background;
-            cell.selectionEdge = edge;
+            cell.normalSprite = normal;
+            cell.selectedSprite = UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Skill_Selcet_Bg_Prs");
 
-            // 아이콘이 칸의 대부분을 차지한다 — 인게임에서 다이스를 구별하는 것이
-            // 아이콘이기 때문이다. 이름은 그 밑의 작은 캡션이고, 아이콘이 아직 없는
-            // 다이스에서는 그 이름이 유일한 단서가 된다.
             cell.icon = UITowerUIFactory.CreateImage("Icon", background.transform, Color.white);
-            UITowerUIFactory.SetRect(cell.icon.rectTransform,
-                new Vector2(IconSize, IconSize), new Vector2(0f, size.y * 0.5f - IconSize * 0.5f - 12f));
+            UITowerUIFactory.SetRect(cell.icon.rectTransform, new Vector2(IconSize, IconSize), Vector2.zero);
             cell.icon.preserveAspect = true;
             cell.icon.raycastTarget = false;
 
-            cell.label = UITowerUIFactory.CreateText("Name", background.transform, "Normal", 19f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UITowerUIFactory.SetRect(cell.label.rectTransform,
-                new Vector2(size.x - 8f, 26f), new Vector2(0f, -size.y * 0.5f + 18f));
-            // 이름이 길어도 칸을 넘지 않게 한 줄로 잘라 준다. 줄바꿈을 허용하면
-            // 두 줄짜리 칸과 한 줄짜리 칸이 섞여 격자가 흔들려 보인다.
-            cell.label.textWrappingMode = TextWrappingModes.NoWrap;
-            cell.label.overflowMode = TextOverflowModes.Ellipsis;
+            // 잠김: 칸을 어둡게 덮고 자물쇠를 얹는다.
+            Image lockDim = UITowerUIFactory.CreateImage("Lock", background.transform, new Color(0f, 0f, 0f, 0.5f));
+            UITowerUIFactory.SetRect(lockDim.rectTransform, size - new Vector2(12f, 12f), Vector2.zero);
+            lockDim.raycastTarget = false;
+            cell.lockIcon = lockDim.gameObject;
 
-            // 성급은 왼쪽 위, 선택 체크는 오른쪽 위. 둘을 같은 모서리에 두면 4성 다이스를
-            // 골랐을 때 겹친다.
-            cell.starLabel = UITowerUIFactory.CreateText("Star", background.transform, "x4", 21f,
-                TextAlignmentOptions.TopLeft, UITowerUIFactory.GoldText, font);
-            UITowerUIFactory.SetRect(cell.starLabel.rectTransform,
-                new Vector2(52f, 26f), new Vector2(-size.x * 0.5f + 30f, size.y * 0.5f - 15f));
+            UITowerUIFactory.CreateSprite("LockIcon", lockDim.transform,
+                UITowerUIFactory.LoadSprite("Upgrade/Icon_lock"), 2f,
+                new Vector2(64f, 64f), Vector2.zero, false);
 
-            cell.checkMark = UITowerUIFactory.CreateImage("Check", background.transform, UITowerUIFactory.GoldText);
-            UITowerUIFactory.SetRect(cell.checkMark.rectTransform,
-                new Vector2(20f, 20f), new Vector2(size.x * 0.5f - 14f, size.y * 0.5f - 14f));
-            cell.checkMark.raycastTarget = false;
+            // 선택 배지 — 오른쪽 위 모서리에 걸친다.
+            cell.checkMark = UITowerUIFactory.CreateSprite("Check", background.transform,
+                UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Skill_Selcet_Check_Bg"), 2f,
+                new Vector2(64f, 64f), new Vector2(size.x * 0.5f - 15f, size.y * 0.5f - 15f), false);
 
-            Image lockImage = UITowerUIFactory.CreateImage("Lock", background.transform,
-                new Color(0f, 0f, 0f, 0.55f));
-            UITowerUIFactory.SetRect(lockImage.rectTransform, size, Vector2.zero);
-            lockImage.raycastTarget = false;
-            cell.lockIcon = lockImage.gameObject;
-
-            TMP_Text lockText = UITowerUIFactory.CreateText("LockMark", lockImage.transform, "잠김", 20f,
-                TextAlignmentOptions.Center, UITowerUIFactory.MutedText, font);
-            UITowerUIFactory.SetRect(lockText.rectTransform, size, Vector2.zero);
-
+            // NEW 배지 — 획득 직후 한 번(기획서 5.4). 시안에 없지만 기존 기능이라 남긴다.
             Image badge = UITowerUIFactory.CreateImage("NewBadge", background.transform,
                 new Color(0.95f, 0.35f, 0.42f, 1f));
             UITowerUIFactory.SetRect(badge.rectTransform,
-                new Vector2(50f, 24f), new Vector2(-size.x * 0.5f + 26f, -size.y * 0.5f + 14f));
+                new Vector2(52f, 28f), new Vector2(-size.x * 0.5f + 22f, -size.y * 0.5f + 14f));
             badge.raycastTarget = false;
             cell.newBadge = badge.gameObject;
 
-            TMP_Text badgeText = UITowerUIFactory.CreateText("Text", badge.transform, "NEW", 16f,
+            TMP_Text badgeText = UITowerUIFactory.CreateText("Text", badge.transform, "NEW", 18f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UITowerUIFactory.SetRect(badgeText.rectTransform, new Vector2(50f, 24f), Vector2.zero);
+            UITowerUIFactory.SetRect(badgeText.rectTransform, new Vector2(52f, 28f), Vector2.zero);
 
             return cell;
         }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -37,6 +36,7 @@ namespace OJ.Tower
 
         [Header("현재 진행 요약")]
         [SerializeField] private TMP_Text currentFloorText;
+        [SerializeField] private TMP_Text currentConceptText;
         [SerializeField] private Image bandGaugeFill;
         [SerializeField] private TMP_Text bandGaugeText;
 
@@ -127,8 +127,17 @@ namespace OJ.Tower
                     : "기록 없음");
             }
 
+            // 시안은 층과 이름을 두 칸으로 나눈다(층은 금색 왼쪽, 이름은 흰색 가운데).
+            // 옛 프리팹처럼 이름 칸이 없으면 한 줄로 합쳐 적는다.
             if (currentFloorText != null)
-                currentFloorText.SetText(highestUnlocked + "층 · " + currentPlan.DisplayName);
+            {
+                currentFloorText.SetText(currentConceptText != null
+                    ? highestUnlocked + "층"
+                    : highestUnlocked + "층 · " + currentPlan.DisplayName);
+            }
+
+            if (currentConceptText != null)
+                currentConceptText.SetText(currentPlan.DisplayName);
 
             RefreshBandGauge(highestUnlocked);
             RefreshGoalBanner(progress, highestUnlocked);
@@ -267,7 +276,7 @@ namespace OJ.Tower
                 return;
 
             if (rewardOverlayText != null)
-                rewardOverlayText.SetText(BuildRewardListText());
+                rewardOverlayText.SetText(TowerRewardListText.Build());
 
             rewardOverlay.SetActive(true);
         }
@@ -278,75 +287,28 @@ namespace OJ.Tower
                 rewardOverlay.SetActive(false);
         }
 
-        /// <summary>
-        /// 앞으로 받을 것들. <b>다 보여 주지 않는다</b> — 300층치를 늘어놓으면 목록이
-        /// 아니라 표가 되고, 기획서 5.2 가 지키려는 "다음 한 층" 의 초점이 흐려진다.
-        /// 다음 구간 보상 다섯 개와 남은 다이스 해금까지만 적는다.
-        /// </summary>
-        private static string BuildRewardListText()
-        {
-            TowerProgressManager progress = TowerProgressManager.Instance;
-            if (progress == null)
-                return string.Empty;
-
-            var sb = new StringBuilder();
-            int floor = progress.HighestUnlockedFloor;
-
-            sb.AppendLine("<b>구간 보상</b>");
-            int band = TowerFormula.BandOf(floor);
-            for (int i = 0; i < 5 && band + i <= TowerFormula.BandCount; i++)
-            {
-                int lastFloor = TowerFormula.ClampFloor(
-                    TowerFormula.BandStartFloor(band + i) + TowerFormula.FloorsPerBand - 1);
-
-                sb.Append("  ").Append(lastFloor).Append("층 — 다이아 ")
-                    .Append(TowerFormula.BandRewardDia(lastFloor))
-                    .Append(" · 신화 스크롤 ")
-                    .Append(TowerFormula.BandRewardMaterial(lastFloor))
-                    .AppendLine();
-            }
-
-            sb.AppendLine();
-            sb.AppendLine("<b>다이스 해금</b>");
-
-            // <b>기준이 층에서 보유로 바뀌었다.</b> 예전에는 "아직 안 올라간 층" 을 남은
-            // 해금으로 셌지만, 이제 같은 다이스를 별·스테이지로 먼저 얻을 수 있다 —
-            // 그러면 층은 안 올라갔어도 이미 갖고 있고, 목록에 남겨 두면 거짓말이 된다.
-            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
-            IReadOnlyList<DiceUnlockDefinition> unlocks = DiceUnlockDatabaseProvider.Database.Definitions;
-            bool anyLocked = false;
-            for (int i = 0; i < unlocks.Count; i++)
-            {
-                DiceUnlockDefinition unlock = unlocks[i];
-                if (unlock == null || unlock.towerFloor <= 0)
-                    continue;
-
-                if (ownership != null && ownership.IsOwned(unlock.diceType))
-                    continue;
-
-                anyLocked = true;
-                sb.Append("  ").Append(unlock.towerFloor).Append("층 — ").Append(unlock.diceType).AppendLine();
-            }
-
-            if (!anyLocked)
-                sb.AppendLine("  모두 사용할 수 있어요");
-
-            sb.AppendLine();
-            sb.Append("층 최초 클리어 시 골드 ")
-                .Append(TowerFormula.FirstClearGold(floor))
-                .Append(" (").Append(floor).Append("층 기준)");
-
-            return sb.ToString();
-        }
-
         // ──────────────────────────────────────────────────────────────
         // 아래는 에디터 굽기 전용. 런타임에 부르지 않는다.
         // 값을 아는 것은 코드이므로 인스펙터에 좌표를 옮겨 적지 않는다.
         // ──────────────────────────────────────────────────────────────
 
-        private const float PanelWidth = 980f;
-        private const float PanelHeight = 1560f;
-        private const float GaugeWidth = 880f;
+        /// <summary>
+        /// 구간 게이지의 폭. 시안의 "강화 업그레이드 때 쓰던 게이지 688x19" 다.
+        /// 런타임 <see cref="RefreshBandGauge"/> 도 이 값으로 채움 폭을 계산한다.
+        /// </summary>
+        private const float GaugeWidth = 688f;
+        private const float GaugeHeight = 19f;
+
+        /// <summary>
+        /// 목록 영역. 시안의 첫 카드가 진행 패널 바로 밑(y 480)에서 시작하고 하단 버튼 위(y 1490)에서 잘린다.
+        /// </summary>
+        private const float ListTop = 480f;
+        private const float ListBottom = 1490f;
+
+        /// <summary>
+        /// 카드 사이 간격. 시안의 카드 간격이 172~184 로 조금씩 흔들려서 평균(≈179)을 쓴다.
+        /// </summary>
+        private const float CardSpacing = 7f;
 
         /// <summary>에디터 굽기 전용.</summary>
         public static UITowerFloorSelectDialog Create(Transform parent, TMP_FontAsset font)
@@ -361,119 +323,84 @@ namespace OJ.Tower
             dialog.dialogView = view;
             dialog.UseBackBtn = true;
 
-            Image blocker = UITowerUIFactory.CreateImage("Backdrop", view.transform, UITowerUIFactory.Backdrop);
-            UITowerUIFactory.Stretch(blocker.rectTransform);
-            var blockerButton = blocker.gameObject.AddComponent<Button>();
-            blockerButton.targetGraphic = blocker;
-            blockerButton.transition = Selectable.Transition.None;
-            dialog.AddExitButton(blockerButton);
+            // 성 화면 틀 — 전체 화면이라 바깥을 눌러 닫는 길이 없다. 뒤로 버튼이 그 길이다.
+            UITowerUIFactory.CreateCastleScreen(view.transform, font, out dialog.titleText, out Button back);
+            dialog.AddExitButton(back);
 
-            Image edge = UITowerUIFactory.CreateImage("Edge", view.transform, UITowerUIFactory.PanelEdge);
-            UITowerUIFactory.SetRect(edge.rectTransform, new Vector2(PanelWidth + 8f, PanelHeight + 8f), Vector2.zero);
-            edge.raycastTarget = false;
+            Transform p = view.transform;
+            float cx = UITowerUIFactory.PanelCenterX;
 
-            Image panel = UITowerUIFactory.CreateImage("Panel", view.transform, UITowerUIFactory.PanelColor);
-            UITowerUIFactory.SetRect(panel.rectTransform, new Vector2(PanelWidth, PanelHeight), Vector2.zero);
-            Transform p = panel.transform;
+            // (1) 현재 진행 — Infinity_Popup_Bg_Dark x4, 764x216 (y 267~483)
+            UITowerUIFactory.CreateSprite("Summary", p,
+                UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Popup_Bg_Dark"), 4f,
+                UITowerUIFactory.PanelRect(UITowerUIFactory.PanelWidth, 216f), UITowerUIFactory.Pos(cx, 375f), true);
 
-            float top = PanelHeight * 0.5f;
+            TMP_Text caption = UITowerUIFactory.CreateText("Caption", p, "현재 진행", 30f,
+                TextAlignmentOptions.Left, UITowerUIFactory.TextMuted, font);
+            UITowerUIFactory.SetRect(caption.rectTransform, new Vector2(300f, 40f), UITowerUIFactory.Pos(343f, 305f));
 
-            // 헤더
-            dialog.titleText = UITowerUIFactory.CreateText("Title", p, "무한의 탑", 44f,
-                TextAlignmentOptions.Left, Color.white, font);
-            UITowerUIFactory.SetRect(dialog.titleText.rectTransform,
-                new Vector2(500f, 60f), new Vector2(-220f, top - 60f));
-
-            dialog.bestFloorText = UITowerUIFactory.CreateText("Best", p, "최고 25층", 32f,
-                TextAlignmentOptions.Right, UITowerUIFactory.GoldText, font);
-            UITowerUIFactory.SetRect(dialog.bestFloorText.rectTransform,
-                new Vector2(380f, 60f), new Vector2(260f, top - 60f));
-
-            var closeButton = UITowerUIFactory.CreateButton("Close", p, "X",
-                new Vector2(64f, 64f), new Vector2(PanelWidth * 0.5f - 50f, top - 58f),
-                UITowerUIFactory.DangerColor, Color.white, 34f, font);
-            dialog.AddExitButton(closeButton);
-
-            // (1) 현재 진행 요약
-            Image summary = UITowerUIFactory.CreateImage("Summary", p, UITowerUIFactory.CardColor);
-            UITowerUIFactory.SetRect(summary.rectTransform, new Vector2(920f, 190f), new Vector2(0f, top - 210f));
-
-            TMP_Text summaryCaption = UITowerUIFactory.CreateText("Caption", summary.transform, "현재 진행", 24f,
-                TextAlignmentOptions.Left, UITowerUIFactory.MutedText, font);
-            UITowerUIFactory.SetRect(summaryCaption.rectTransform, new Vector2(880f, 30f), new Vector2(0f, 62f));
-
-            dialog.currentFloorText = UITowerUIFactory.CreateText("Current", summary.transform,
-                "26층 · 고방어 부대", 38f, TextAlignmentOptions.Left, Color.white, font);
+            dialog.currentFloorText = UITowerUIFactory.CreateText("CurrentFloor", p, "102층", 40f,
+                TextAlignmentOptions.Left, UITowerUIFactory.TextGold, font);
             UITowerUIFactory.SetRect(dialog.currentFloorText.rectTransform,
-                new Vector2(880f, 48f), new Vector2(0f, 20f));
+                new Vector2(170f, 52f), UITowerUIFactory.Pos(280f, 357f));
 
-            dialog.bandGaugeFill = UITowerUIFactory.CreateGauge("BandGauge", summary.transform,
-                new Vector2(GaugeWidth, 18f), new Vector2(0f, -22f), UITowerUIFactory.Accent);
+            dialog.currentConceptText = UITowerUIFactory.CreateText("CurrentConcept", p, "혼합 부대 + 보호막 적", 40f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UITowerUIFactory.SetRect(dialog.currentConceptText.rectTransform,
+                new Vector2(500f, 52f), UITowerUIFactory.Pos(545f, 357f));
 
-            dialog.bandGaugeText = UITowerUIFactory.CreateText("BandGaugeText", summary.transform,
-                "구간 보상까지 4층", 24f, TextAlignmentOptions.Left, UITowerUIFactory.MutedText, font);
+            // 게이지 — 트랙과 채움. 채움은 트랙의 자식으로 왼쪽에 붙어 폭만 바뀐다.
+            Image track = UITowerUIFactory.CreateSprite("BandGauge", p,
+                UITowerUIFactory.LoadSprite("Upgrade/Upgrade_Gauge_Bg"), 1f,
+                new Vector2(GaugeWidth, GaugeHeight), UITowerUIFactory.Pos(193f + GaugeWidth * 0.5f, 400f), true);
+
+            Image fill = UITowerUIFactory.CreateSprite("Fill", track.transform,
+                UITowerUIFactory.LoadSprite("Upgrade/Upgrade_Gauge_Full"), 1f,
+                new Vector2(GaugeWidth, GaugeHeight), Vector2.zero, true);
+            RectTransform fillRect = fill.rectTransform;
+            fillRect.anchorMin = new Vector2(0f, 0f);
+            fillRect.anchorMax = new Vector2(0f, 1f);
+            fillRect.pivot = new Vector2(0f, 0.5f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = new Vector2(GaugeWidth * 0.5f, 0f);
+            dialog.bandGaugeFill = fill;
+
+            dialog.bandGaugeText = UITowerUIFactory.CreateText("BandGaugeText", p, "구간 보상까지 3층", 30f,
+                TextAlignmentOptions.Left, UITowerUIFactory.TextMuted, font);
             UITowerUIFactory.SetRect(dialog.bandGaugeText.rectTransform,
-                new Vector2(880f, 30f), new Vector2(0f, -58f));
+                new Vector2(500f, 40f), UITowerUIFactory.Pos(443f, 432f));
 
-            // (2) 목표 배너
-            Image banner = UITowerUIFactory.CreateImage("GoalBanner", p, UITowerUIFactory.AccentSoft);
-            UITowerUIFactory.SetRect(banner.rectTransform, new Vector2(920f, 76f), new Vector2(0f, top - 344f));
-
-            dialog.unlockGoalText = UITowerUIFactory.CreateText("UnlockGoal", banner.transform,
-                "30층 · KingFire 해금", 26f, TextAlignmentOptions.Left, Color.white, font);
-            UITowerUIFactory.SetRect(dialog.unlockGoalText.rectTransform,
-                new Vector2(440f, 60f), new Vector2(-230f, 0f));
-
-            dialog.bandRewardText = UITowerUIFactory.CreateText("BandReward", banner.transform,
-                "30층 · 다이아 22 · 신화 스크롤 27", 24f, TextAlignmentOptions.Right, UITowerUIFactory.GoldText, font);
-            UITowerUIFactory.SetRect(dialog.bandRewardText.rectTransform,
-                new Vector2(440f, 60f), new Vector2(230f, 0f));
-
-            // (3) 층 카드 목록
-            const float listHeight = 940f;
+            // (2) 층 카드 목록
+            float listHeight = ListBottom - ListTop;
             dialog.listContent = UITowerUIFactory.CreateScrollList("FloorList", p,
-                new Vector2(920f, listHeight), new Vector2(0f, top - 344f - 38f - listHeight * 0.5f - 16f), 12f);
+                new Vector2(UITowerUIFactory.PanelWidth + 24f, listHeight),
+                UITowerUIFactory.Pos(cx, ListTop + listHeight * 0.5f), CardSpacing);
+
+            // 카드 그림(여백 포함)이 카드 칸보다 사방 12px 크다. 좌우 여유는 그것을 받는다.
+            // 위쪽은 시안처럼 패널에 바짝 붙인다.
+            var layout = dialog.listContent.GetComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(12, 12, 0, 8);
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = false;
+            layout.childForceExpandWidth = false;
 
             dialog.cardTemplate = UITowerFloorCard.Create(dialog.listContent, font);
 
-            // 하단 버튼
-            float bottomY = -PanelHeight * 0.5f + 70f;
+            // (3) 하단 버튼 — 보이는 360x150, 시안 y 1499~1649
+            UITowerUIFactory.ButtonRect(362.5f, 1574f, 360f, 150f, 3f, out Vector2 rewardSize, out Vector2 rewardPos);
+            dialog.rewardListButton = UITowerUIFactory.CreateSpriteButton("RewardList", p,
+                UITowerUIFactory.LoadSprite("Ingame/Btn_Gray"), 3f, rewardSize, rewardPos,
+                "보상 목록", 45f, Color.white, font);
 
-            dialog.rewardListButton = UITowerUIFactory.CreateButton("RewardList", p, "보상 목록",
-                new Vector2(420f, 96f), new Vector2(-240f, bottomY),
-                UITowerUIFactory.CardColor, Color.white, 32f, font);
-
-            dialog.challengeButton = UITowerUIFactory.CreateButton("Challenge", p, "26층 도전",
-                new Vector2(420f, 96f), new Vector2(240f, bottomY),
-                UITowerUIFactory.Accent, Color.white, 34f, font);
+            UITowerUIFactory.ButtonRect(749.5f, 1574f, 360f, 150f, 3f, out Vector2 challengeSize, out Vector2 challengePos);
+            dialog.challengeButton = UITowerUIFactory.CreateSpriteButton("Challenge", p,
+                UITowerUIFactory.LoadSprite("Ingame/Big_Btn_Yellow"), 3f, challengeSize, challengePos,
+                "102층 도전", 45f, Color.white, font);
             dialog.challengeLabel = dialog.challengeButton.GetComponentInChildren<TMP_Text>();
 
-            // 보상 목록 오버레이. 판 위에 통째로 덮는다.
-            GameObject overlay = UITowerUIFactory.CreateRect("RewardOverlay", p);
-            UITowerUIFactory.Stretch(overlay.GetComponent<RectTransform>());
-            dialog.rewardOverlay = overlay;
-
-            Image overlayBg = UITowerUIFactory.CreateImage("Dim", overlay.transform, new Color(0.05f, 0.06f, 0.12f, 0.97f));
-            UITowerUIFactory.Stretch(overlayBg.rectTransform);
-            var overlayBlock = overlayBg.gameObject.AddComponent<Button>();
-            overlayBlock.targetGraphic = overlayBg;
-            overlayBlock.transition = Selectable.Transition.None;
-
-            TMP_Text overlayTitle = UITowerUIFactory.CreateText("Title", overlay.transform, "보상 목록", 40f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UITowerUIFactory.SetRect(overlayTitle.rectTransform, new Vector2(880f, 60f), new Vector2(0f, top - 80f));
-
-            dialog.rewardOverlayText = UITowerUIFactory.CreateText("Body", overlay.transform, string.Empty, 28f,
-                TextAlignmentOptions.TopLeft, Color.white, font);
-            UITowerUIFactory.SetRect(dialog.rewardOverlayText.rectTransform,
-                new Vector2(860f, 1100f), new Vector2(0f, 60f));
-            dialog.rewardOverlayText.textWrappingMode = TextWrappingModes.Normal;
-
-            dialog.rewardOverlayCloseButton = UITowerUIFactory.CreateButton("OverlayClose", overlay.transform, "닫기",
-                new Vector2(420f, 96f), new Vector2(0f, bottomY),
-                UITowerUIFactory.Accent, Color.white, 32f, font);
-
-            overlay.SetActive(false);
+            // 보상 목록 오버레이 — 화면 전체를 덮는다.
+            dialog.rewardOverlay = UITowerUIFactory.CreateRewardOverlay(view.transform, font,
+                out dialog.rewardOverlayText, out dialog.rewardOverlayCloseButton);
 
             return dialog;
         }

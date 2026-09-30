@@ -28,6 +28,12 @@ namespace OJ.Tower
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text slotCountText;
 
+        /// <summary>
+        /// 층 표기("102층"). 시안은 층과 화면 제목을 나눠 적는다. 옛 프리팹처럼 없으면
+        /// <see cref="titleText"/> 한 줄에 합쳐 적는다.
+        /// </summary>
+        [SerializeField] private TMP_Text floorText;
+
         [Header("(1) 적 정보")]
         [SerializeField] private TMP_Text enemyHeadlineText;
         [SerializeField] private TMP_Text enemyDetailText;
@@ -48,6 +54,13 @@ namespace OJ.Tower
         [Header("하단")]
         [SerializeField] private Button recommendButton;
         [SerializeField] private Button startButton;
+        [SerializeField] private TMP_Text startLabel;
+        [SerializeField] private Button rewardListButton;
+
+        [Header("보상 목록 오버레이")]
+        [SerializeField] private GameObject rewardOverlay;
+        [SerializeField] private TMP_Text rewardOverlayText;
+        [SerializeField] private Button rewardOverlayCloseButton;
 
         [Header("토스트")]
         [SerializeField] private GameObject toastRoot;
@@ -78,6 +91,12 @@ namespace OJ.Tower
             if (startButton != null)
                 startButton.onClick.AddListener(OnClickStart);
 
+            if (rewardListButton != null)
+                rewardListButton.onClick.AddListener(OpenRewardOverlay);
+
+            if (rewardOverlayCloseButton != null)
+                rewardOverlayCloseButton.onClick.AddListener(CloseRewardOverlay);
+
             HideToast();
         }
 
@@ -94,6 +113,12 @@ namespace OJ.Tower
 
             if (startButton != null)
                 startButton.onClick.RemoveListener(OnClickStart);
+
+            if (rewardListButton != null)
+                rewardListButton.onClick.RemoveListener(OpenRewardOverlay);
+
+            if (rewardOverlayCloseButton != null)
+                rewardOverlayCloseButton.onClick.RemoveListener(CloseRewardOverlay);
 
             base.OnDestroy();
         }
@@ -140,6 +165,7 @@ namespace OJ.Tower
         {
             transform.SetAsLastSibling();
             HideToast();
+            CloseRewardOverlay();
             Refresh();
         }
 
@@ -164,11 +190,17 @@ namespace OJ.Tower
 
             TowerProgressManager progress = TowerProgressManager.Instance;
 
-            if (titleText != null)
+            // 새 프리팹: 제목 자리는 성 타이틀("무한의 탑")이고 층은 따로 적는다.
+            if (floorText != null)
+                floorText.SetText(plan.Floor + "층");
+            else if (titleText != null)
                 titleText.SetText(plan.Floor + "층 · 다이스 편성");
 
             if (slotCountText != null)
-                slotCountText.SetText(loadout.Count + " / " + TowerFormula.TotalSlotCount);
+                slotCountText.SetText(loadout.Count + "/" + TowerFormula.TotalSlotCount);
+
+            if (startLabel != null)
+                startLabel.SetText(plan.Floor + "층 도전");
 
             RefreshEnemyInfo();
             RefreshSlotBar();
@@ -181,30 +213,45 @@ namespace OJ.Tower
             }
         }
 
+        /// <summary>
+        /// 적 정보. 시안 Infinity_Layout_Skill 의 줄 구성을 따른다 —
+        /// "혼합 부대 x9" / 특징 한 줄씩 / (노란) 공략.
+        ///
+        /// <b>가운뎃점(·)·곱하기(×)를 쓰지 않는다.</b> BM HANNA 아틀라스에 문자 항목은 있지만
+        /// 그림이 비어 있어 빈칸으로 찍힌다(글자 수 검사도 통과해 버린다). 그래서 줄을 나누고
+        /// 개수는 시안처럼 영문 x 로 적는다.
+        /// </summary>
         private void RefreshEnemyInfo()
         {
             if (enemyHeadlineText != null)
-                enemyHeadlineText.SetText(plan.BuildEnemySummary());
+                enemyHeadlineText.SetText(TowerConceptText.NameOf(plan.Concepts[0]) + " x" + plan.MonsterCount);
 
             if (enemyDetailText != null)
             {
                 var sb = new StringBuilder();
-                sb.Append("체력 ").Append(ShortNumberFormat.Format(plan.MonsterHp));
-                sb.Append(" · 방어력 ").Append(plan.MonsterDefense);
-
-                if (plan.ShieldHitCharges > 0)
-                    sb.Append(" · 보호막 ").Append(plan.ShieldHitCharges).Append("타");
-
-                if (plan.RegenPercentPerSecond > 0f)
-                    sb.Append(" · 초당 회복 ").Append(plan.RegenPercentPerSecond.ToString("0.#")).Append('%');
-
-                // 분열이 있으면 <b>총 처치 수</b>를 같이 적는다. 위 헤드라인은 "분열형 적 ×8"
-                // 인데 전투 게이지는 24 를 목표로 잡으므로(자식까지 세니까), 여기서 잇지
-                // 않으면 두 화면이 서로 다른 말을 하는 것처럼 보인다.
-                if (plan.SplitChildCount > 0)
+                for (int i = 0; i < plan.Concepts.Count && i < 2; i++)
                 {
-                    sb.Append(" · 분열 ").Append(plan.SplitChildCount).Append("마리");
-                    sb.Append(" (총 ").Append(plan.KillTarget).Append("마리 처치)");
+                    if (i > 0)
+                        sb.Append('\n');
+                    sb.Append(TowerConceptText.FeatureOf(plan.Concepts[i]));
+                }
+
+                // 특징이 한 줄뿐이면 남는 줄에 수치를 적는다. 두 줄이면 칸이 없다 —
+                // 같은 수치는 길게 눌러 보는 다이스 상세와 결과 화면에도 있다.
+                if (plan.Concepts.Count < 2)
+                {
+                    sb.Append('\n');
+                    sb.Append("체력 ").Append(ShortNumberFormat.Format(plan.MonsterHp));
+                    sb.Append(", 방어력 ").Append(plan.MonsterDefense);
+
+                    if (plan.ShieldHitCharges > 0)
+                        sb.Append(", 보호막 ").Append(plan.ShieldHitCharges).Append("타");
+
+                    // 분열이 있으면 <b>총 처치 수</b>를 같이 적는다. 헤드라인은 "분열형 적 x8"
+                    // 인데 전투 게이지는 24 를 목표로 잡으므로(자식까지 세니까), 여기서 잇지
+                    // 않으면 두 화면이 서로 다른 말을 하는 것처럼 보인다.
+                    if (plan.SplitChildCount > 0)
+                        sb.Append(", 총 ").Append(plan.KillTarget).Append("마리 처치");
                 }
 
                 enemyDetailText.SetText(sb.ToString());
@@ -282,9 +329,31 @@ namespace OJ.Tower
 
         private void SetRowCapacity(int row, string name, int used, int capacity)
         {
+            // 이름은 금색, 개수는 흰색(시안). 한 칸에 두 색을 쓰려고 리치 텍스트로 적는다.
             TMP_Text text = rowCapacityTexts[row];
             if (text != null)
-                text.SetText(name + "\n" + used + " / " + capacity);
+                text.SetText("<color=#FFDE00>" + name + "</color>\n" + used + "/" + capacity);
+        }
+
+        // ── 보상 목록 ───────────────────────────────────────────────────
+        //
+        // 층 선택 화면과 같은 오버레이다. 본문도 TowerRewardListText 하나에서 나온다.
+
+        private void OpenRewardOverlay()
+        {
+            if (rewardOverlay == null)
+                return;
+
+            if (rewardOverlayText != null)
+                rewardOverlayText.SetText(TowerRewardListText.Build());
+
+            rewardOverlay.SetActive(true);
+        }
+
+        private void CloseRewardOverlay()
+        {
+            if (rewardOverlay != null)
+                rewardOverlay.SetActive(false);
         }
 
         // ── 입력 ────────────────────────────────────────────────────────
@@ -362,7 +431,7 @@ namespace OJ.Tower
             // 장비 보너스 없이 계산하므로 그대로 넘긴다.
             string trait = DiceTraitText.Short(diceType, level, GameContainer.Battle);
             if (!string.IsNullOrEmpty(trait))
-                sb.Append("  ·  ").Append(trait);
+                sb.Append(", ").Append(trait);
 
             return sb.ToString();
         }
@@ -467,12 +536,17 @@ namespace OJ.Tower
         // 아래는 에디터 굽기 전용. 런타임에 부르지 않는다.
         // ──────────────────────────────────────────────────────────────
 
-        private const float PanelWidth = 1000f;
-        private const float PanelHeight = 1700f;
-        private const float SlotSize = 108f;
-        private const float SlotGap = 12f;
-        private const float CellSize = 128f;
-        private const float CellGap = 14f;
+        // 시안 Infinity_Layout_Skill 실측값(시안 픽셀, 좌상단 원점).
+        private const float SlotSize = 88f;
+        private const float SlotStartX = 245f;
+        private const float SlotPitch = 101.2f;
+        private const float SlotRowY = 643f;
+        private const float CellSize = 96f;   // 보이는 크기. 그림은 여백 7px x2 만큼 더 크다
+        private const float GridStartX = 388f;
+        private const float GridPitchX = 117.25f;
+        private const float GridStartY = 795f;
+        private const float GridPitchY = 110f;
+        private const float RowLabelX = 248f;
         private const int GridColumns = 5;
         private const int GridRows = 6;
 
@@ -489,94 +563,84 @@ namespace OJ.Tower
             dialog.dialogView = view;
             dialog.UseBackBtn = true;
 
-            Image blocker = UITowerUIFactory.CreateImage("Backdrop", view.transform, UITowerUIFactory.Backdrop);
-            UITowerUIFactory.Stretch(blocker.rectTransform);
-            var blockerButton = blocker.gameObject.AddComponent<Button>();
-            blockerButton.targetGraphic = blocker;
-            blockerButton.transition = Selectable.Transition.None;
+            UITowerUIFactory.CreateCastleScreen(view.transform, font, out dialog.titleText, out Button back);
+            dialog.AddExitButton(back);
 
-            Image panel = UITowerUIFactory.CreateImage("Panel", view.transform, UITowerUIFactory.PanelColor);
-            UITowerUIFactory.SetRect(panel.rectTransform, new Vector2(PanelWidth, PanelHeight), Vector2.zero);
-            Transform p = panel.transform;
+            Transform p = view.transform;
+            float cx = UITowerUIFactory.PanelCenterX;
 
-            float top = PanelHeight * 0.5f;
+            // (1) 적 정보 — Infinity_Popup_Bg_Dark x4, 764x274 (y 265~539)
+            UITowerUIFactory.CreateSprite("EnemyInfo", p,
+                UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Popup_Bg_Dark"), 4f,
+                UITowerUIFactory.PanelRect(UITowerUIFactory.PanelWidth, 274f), UITowerUIFactory.Pos(cx, 402f), true);
 
-            // 헤더
-            dialog.titleText = UITowerUIFactory.CreateText("Title", p, "26층 · 다이스 편성", 40f,
+            TMP_Text caption = UITowerUIFactory.CreateText("Caption", p, "현재 진행", 30f,
+                TextAlignmentOptions.Left, UITowerUIFactory.TextMuted, font);
+            UITowerUIFactory.SetRect(caption.rectTransform, new Vector2(300f, 40f), UITowerUIFactory.Pos(343f, 305f));
+
+            dialog.floorText = UITowerUIFactory.CreateText("Floor", p, "102층", 40f,
+                TextAlignmentOptions.Left, UITowerUIFactory.TextGold, font);
+            UITowerUIFactory.SetRect(dialog.floorText.rectTransform, new Vector2(170f, 52f), UITowerUIFactory.Pos(280f, 348f));
+
+            TMP_Text formationTitle = UITowerUIFactory.CreateText("FormationTitle", p, "다이스 편성", 40f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UITowerUIFactory.SetRect(formationTitle.rectTransform, new Vector2(400f, 52f), UITowerUIFactory.Pos(cx, 348f));
+
+            dialog.slotCountText = UITowerUIFactory.CreateText("SlotCount", p, "6/7", 30f,
+                TextAlignmentOptions.Right, UITowerUIFactory.TextGold, font);
+            UITowerUIFactory.SetRect(dialog.slotCountText.rectTransform, new Vector2(160f, 40f), UITowerUIFactory.Pos(825f, 350f));
+
+            // 설명 박스 — Ui_Popup_SmallBox x3.5, 검정 알파 40%. 보이는 710x132 + 여백 6px x3.5.
+            Image descBox = UITowerUIFactory.CreateSprite("DescBox", p,
+                UITowerUIFactory.LoadSprite("Upgrade/Ui_Popup_SmallBox"), 3.5f,
+                new Vector2(710f + 42f, 132f + 42f), UITowerUIFactory.Pos(cx, 449f), true);
+            descBox.color = new Color(0f, 0f, 0f, 0.4f);
+
+            dialog.enemyHeadlineText = UITowerUIFactory.CreateText("Headline", p, "혼합 부대 x9", 25f,
                 TextAlignmentOptions.Left, Color.white, font);
-            UITowerUIFactory.SetRect(dialog.titleText.rectTransform,
-                new Vector2(600f, 56f), new Vector2(-170f, top - 54f));
-
-            dialog.slotCountText = UITowerUIFactory.CreateText("SlotCount", p, "2 / 7", 34f,
-                TextAlignmentOptions.Right, UITowerUIFactory.GoldText, font);
-            UITowerUIFactory.SetRect(dialog.slotCountText.rectTransform,
-                new Vector2(240f, 56f), new Vector2(310f, top - 54f));
-
-            var closeButton = UITowerUIFactory.CreateButton("Close", p, "X",
-                new Vector2(60f, 60f), new Vector2(PanelWidth * 0.5f - 46f, top - 52f),
-                UITowerUIFactory.DangerColor, Color.white, 32f, font);
-            dialog.AddExitButton(closeButton);
-
-            // (1) 적 정보
-            Image enemyBox = UITowerUIFactory.CreateImage("EnemyInfo", p,
-                new Color(0.20f, 0.12f, 0.16f, 1f));
-            UITowerUIFactory.SetRect(enemyBox.rectTransform, new Vector2(940f, 200f), new Vector2(0f, top - 200f));
-
-            TMP_Text enemyCaption = UITowerUIFactory.CreateText("Caption", enemyBox.transform, "이 층의 적", 24f,
-                TextAlignmentOptions.Left, UITowerUIFactory.MutedText, font);
-            UITowerUIFactory.SetRect(enemyCaption.rectTransform, new Vector2(900f, 30f), new Vector2(0f, 68f));
-
-            dialog.enemyHeadlineText = UITowerUIFactory.CreateText("Headline", enemyBox.transform,
-                "고방어 부대 ×1 · 받는 피해를 크게 감소", 32f, TextAlignmentOptions.Left, Color.white, font);
             UITowerUIFactory.SetRect(dialog.enemyHeadlineText.rectTransform,
-                new Vector2(900f, 44f), new Vector2(0f, 26f));
-            dialog.enemyHeadlineText.textWrappingMode = TextWrappingModes.Normal;
+                new Vector2(680f, 34f), UITowerUIFactory.Pos(552f, 399f));
+            dialog.enemyHeadlineText.textWrappingMode = TextWrappingModes.NoWrap;
+            dialog.enemyHeadlineText.overflowMode = TextOverflowModes.Ellipsis;
 
-            dialog.enemyDetailText = UITowerUIFactory.CreateText("Detail", enemyBox.transform,
-                "체력 0 · 방어력 0", 26f, TextAlignmentOptions.Left, UITowerUIFactory.MutedText, font);
+            // 상세는 두 줄까지 받는다(시안의 둘째·셋째 줄).
+            dialog.enemyDetailText = UITowerUIFactory.CreateText("Detail", p, "빠른 적과 단단한 적이 함께등장\n일정 타격을 막는 보호막 보유", 25f,
+                TextAlignmentOptions.TopLeft, Color.white, font);
             UITowerUIFactory.SetRect(dialog.enemyDetailText.rectTransform,
-                new Vector2(900f, 34f), new Vector2(0f, -18f));
+                new Vector2(680f, 66f), UITowerUIFactory.Pos(552f, 449f));
+            dialog.enemyDetailText.textWrappingMode = TextWrappingModes.Normal;
 
-            dialog.counterTagText = UITowerUIFactory.CreateText("Tags", enemyBox.transform,
-                "방어 감소 · 단일 고화력", 26f, TextAlignmentOptions.Left, UITowerUIFactory.GoldText, font);
+            dialog.counterTagText = UITowerUIFactory.CreateText("Tags", p, "약한 대로 조합 다단 공격", 25f,
+                TextAlignmentOptions.Left, UITowerUIFactory.TextGold, font);
             UITowerUIFactory.SetRect(dialog.counterTagText.rectTransform,
-                new Vector2(900f, 34f), new Vector2(0f, -60f));
+                new Vector2(680f, 34f), UITowerUIFactory.Pos(552f, 494f));
 
-            // (2) 선택 슬롯 바 — 7칸
-            Image slotBox = UITowerUIFactory.CreateImage("SlotBar", p, UITowerUIFactory.CardColor);
-            UITowerUIFactory.SetRect(slotBox.rectTransform, new Vector2(940f, 176f), new Vector2(0f, top - 400f));
+            // (2) 선택한 조합 — Infinity_Popup_Bg_Light x4, 764x196 (y 548~744)
+            UITowerUIFactory.CreateSprite("SlotBar", p,
+                UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Popup_Bg_Light"), 4f,
+                UITowerUIFactory.PanelRect(UITowerUIFactory.PanelWidth, 196f), UITowerUIFactory.Pos(cx, 646f), true);
 
-            TMP_Text slotCaption = UITowerUIFactory.CreateText("Caption", slotBox.transform, "선택한 다이스", 24f,
-                TextAlignmentOptions.Left, UITowerUIFactory.MutedText, font);
-            UITowerUIFactory.SetRect(slotCaption.rectTransform, new Vector2(900f, 28f), new Vector2(0f, 62f));
-
-            float slotTotalWidth = TowerFormula.TotalSlotCount * SlotSize + (TowerFormula.TotalSlotCount - 1) * SlotGap;
-            float slotStartX = -slotTotalWidth * 0.5f + SlotSize * 0.5f;
+            TMP_Text slotCaption = UITowerUIFactory.CreateText("SlotCaption", p, "선택한 조합", 30f,
+                TextAlignmentOptions.Left, UITowerUIFactory.TextGold, font);
+            UITowerUIFactory.SetRect(slotCaption.rectTransform, new Vector2(300f, 40f), UITowerUIFactory.Pos(348f, 573f));
 
             for (int i = 0; i < TowerFormula.TotalSlotCount; i++)
             {
-                UITowerSlotView slot = UITowerSlotView.Create(
-                    slotBox.transform,
+                UITowerSlotView slot = UITowerSlotView.Create(p,
                     new Vector2(SlotSize, SlotSize),
-                    new Vector2(slotStartX + i * (SlotSize + SlotGap), -14f),
-                    font);
-
+                    UITowerUIFactory.Pos(SlotStartX + i * SlotPitch, SlotRowY), font);
                 dialog.slotViews.Add(slot);
             }
 
             // (3) 후보 그리드 5 × 6
-            float gridTop = top - 520f;
-            float gridWidth = GridColumns * CellSize + (GridColumns - 1) * CellGap;
-            float gridStartX = -gridWidth * 0.5f + CellSize * 0.5f + 60f;
-
             for (int row = 0; row < GridRows; row++)
             {
-                float y = gridTop - row * (CellSize + CellGap) - CellSize * 0.5f;
+                float y = GridStartY + row * GridPitchY;
 
-                TMP_Text capacity = UITowerUIFactory.CreateText("Row" + row + "Capacity", p, "0 / 0", 22f,
-                    TextAlignmentOptions.Center, UITowerUIFactory.MutedText, font);
-                UITowerUIFactory.SetRect(capacity.rectTransform,
-                    new Vector2(120f, 70f), new Vector2(-PanelWidth * 0.5f + 74f, y));
+                // 두 줄(이름 + 개수) 25pt — 칸 높이 70 ≥ 25 x 1.3 x 2.
+                TMP_Text capacity = UITowerUIFactory.CreateText("Row" + row + "Capacity", p, "0/0", 25f,
+                    TextAlignmentOptions.Center, Color.white, font);
+                UITowerUIFactory.SetRect(capacity.rectTransform, new Vector2(130f, 70f), UITowerUIFactory.Pos(RowLabelX, y));
                 dialog.rowCapacityTexts.Add(capacity);
 
                 for (int column = 0; column < GridColumns; column++)
@@ -584,63 +648,61 @@ namespace OJ.Tower
                     DiceType diceType = GridDiceAt(row, column);
                     int star = GridStarAt(row);
 
-                    UITowerDiceCell cell = UITowerDiceCell.Create(
-                        p,
+                    UITowerDiceCell cell = UITowerDiceCell.Create(p,
                         new Vector2(CellSize, CellSize),
-                        new Vector2(gridStartX + column * (CellSize + CellGap), y),
-                        font);
+                        UITowerUIFactory.Pos(GridStartX + column * GridPitchX, y), font);
 
                     // 굽는 시점에 어떤 다이스인지 확정한다. 런타임에 배정하면
                     // 그리드 순서가 코드 두 곳(굽기·갱신)에 걸치게 된다.
                     cell.BakeAssign(diceType, star);
-
                     dialog.cells.Add(cell);
                 }
             }
 
-            // (4) 편의 기능 바
-            float utilityY = gridTop - GridRows * (CellSize + CellGap) - 46f;
+            // (4) 편의 기능 — Btn_PurpleGray x3, 360x109 (y 1412~1520)
+            Sprite utilitySprite = UITowerUIFactory.LoadSprite("InfinityMode/Btn_PurpleGray");
 
-            dialog.loadRecentButton = UITowerUIFactory.CreateButton("LoadRecent", p, "최근 편성 불러오기",
-                new Vector2(360f, 72f), new Vector2(-280f, utilityY),
-                UITowerUIFactory.CardColor, Color.white, 26f, font);
+            UITowerUIFactory.ButtonRect(362.5f, 1466f, 360f, 109f, 3f, out Vector2 recentSize, out Vector2 recentPos);
+            dialog.loadRecentButton = UITowerUIFactory.CreateSpriteButton("LoadRecent", p, utilitySprite, 3f,
+                recentSize, recentPos,
+                "최근 편성 불러오기", 35f, Color.white, font);
 
-            dialog.clearAllButton = UITowerUIFactory.CreateButton("ClearAll", p, "전체 해제",
-                new Vector2(240f, 72f), new Vector2(20f, utilityY),
-                UITowerUIFactory.CardColor, Color.white, 26f, font);
+            UITowerUIFactory.ButtonRect(749.5f, 1466f, 360f, 109f, 3f, out Vector2 clearSize, out Vector2 clearPos);
+            dialog.clearAllButton = UITowerUIFactory.CreateSpriteButton("ClearAll", p, utilitySprite, 3f,
+                clearSize, clearPos,
+                "전체 해제", 35f, Color.white, font);
 
-            dialog.newCountText = UITowerUIFactory.CreateText("NewCount", p, "NEW 2", 26f,
-                TextAlignmentOptions.Center, new Color(0.95f, 0.45f, 0.5f, 1f), font);
-            UITowerUIFactory.SetRect(dialog.newCountText.rectTransform,
-                new Vector2(200f, 72f), new Vector2(290f, utilityY));
+            // (5) 하단 — 360x150 (y 1527~1677)
+            UITowerUIFactory.ButtonRect(362.5f, 1602f, 360f, 150f, 3f, out Vector2 rewardSize, out Vector2 rewardPos);
+            dialog.rewardListButton = UITowerUIFactory.CreateSpriteButton("RewardList", p,
+                UITowerUIFactory.LoadSprite("Ingame/Btn_Gray"), 3f, rewardSize, rewardPos,
+                "보상 목록", 45f, Color.white, font);
 
-            // 하단 버튼
-            float bottomY = -PanelHeight * 0.5f + 70f;
+            UITowerUIFactory.ButtonRect(749.5f, 1602f, 360f, 150f, 3f, out Vector2 startSize, out Vector2 startPos);
+            dialog.startButton = UITowerUIFactory.CreateSpriteButton("Start", p,
+                UITowerUIFactory.LoadSprite("Ingame/Big_Btn_Yellow"), 3f, startSize, startPos,
+                "102층 도전", 45f, Color.white, font);
+            dialog.startLabel = dialog.startButton.GetComponentInChildren<TMP_Text>();
 
-            dialog.recommendButton = UITowerUIFactory.CreateButton("Recommend", p, "추천 편성",
-                new Vector2(420f, 96f), new Vector2(-250f, bottomY),
-                UITowerUIFactory.CardColor, Color.white, 32f, font);
-
-            dialog.startButton = UITowerUIFactory.CreateButton("Start", p, "전투 시작",
-                new Vector2(440f, 96f), new Vector2(250f, bottomY),
-                UITowerUIFactory.Accent, Color.white, 36f, font);
-
-            // 토스트
+            // 토스트 — 편의 기능 줄 바로 위
             GameObject toast = UITowerUIFactory.CreateRect("Toast", p);
             UITowerUIFactory.SetRect(toast.GetComponent<RectTransform>(),
-                new Vector2(860f, 84f), new Vector2(0f, bottomY + 120f));
+                new Vector2(720f, 90f), UITowerUIFactory.Pos(cx, 1360f));
             dialog.toastRoot = toast;
 
-            Image toastBg = UITowerUIFactory.CreateImage("Bg", toast.transform, new Color(0.05f, 0.06f, 0.12f, 0.95f));
+            Image toastBg = UITowerUIFactory.CreateImage("Bg", toast.transform, new Color(0.05f, 0.05f, 0.1f, 0.92f));
             UITowerUIFactory.Stretch(toastBg.rectTransform);
             toastBg.raycastTarget = false;
 
-            dialog.toastText = UITowerUIFactory.CreateText("Text", toast.transform, string.Empty, 26f,
+            dialog.toastText = UITowerUIFactory.CreateText("Text", toast.transform, string.Empty, 28f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UITowerUIFactory.SetRect(dialog.toastText.rectTransform, new Vector2(840f, 84f), Vector2.zero);
+            UITowerUIFactory.SetRect(dialog.toastText.rectTransform, new Vector2(700f, 90f), Vector2.zero);
             dialog.toastText.textWrappingMode = TextWrappingModes.Normal;
 
             toast.SetActive(false);
+
+            dialog.rewardOverlay = UITowerUIFactory.CreateRewardOverlay(view.transform, font,
+                out dialog.rewardOverlayText, out dialog.rewardOverlayCloseButton);
 
             return dialog;
         }
