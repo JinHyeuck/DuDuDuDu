@@ -41,24 +41,23 @@ namespace OJ.EditorTools
         [MenuItem("OJ/개발/현상금/UI 프리팹 굽기")]
         private static void Bake()
         {
-            // 폰트는 PSD(Art/0PSD/인게임관련.psd)의 글자 레이어를 따른다 — 현상금 띠·창은
-            // NotoSansKR-Black, 경고 띠 문구는 BM HANNA 다. 없으면 멈춘다: 폰트 없이 구우면
-            // 한글이 전부 네모로 저장되고, 다른 폰트로 대신 구우면 조용히 시안과 달라진다.
-            TMP_FontAsset noto = LoadFont(NotoFontPath);
+            // 폰트는 BM HANNA 하나다. PSD 글자 레이어는 NotoSansKR-Black 이지만 이 게임의 폰트가
+            // 아니다(사용자 결정, 2026-10-01) — PSD 에서는 크기·색·외곽선만 가져온다.
+            // 없으면 멈춘다: 폰트 없이 구우면 한글이 전부 네모로 저장된다.
             TMP_FontAsset hanna = LoadFont(HannaFontPath);
-            if (noto == null || hanna == null)
+            if (hanna == null)
                 return;
 
             // 색 글자(갈색 등)는 외곽선이 없다. 없으면 기본(외곽선) 머티리얼로 굽고 알린다 —
             // 멈출 만한 일은 아니지만 모르고 지나가면 시안과 다르게 나온다.
-            Material plain = FindPlainMaterial(noto);
+            Material plain = FindPlainMaterial(hanna);
             if (plain == null)
-                Debug.LogWarning("[굽기] '" + noto.name + " Material_NoneOutLine' 을 못 찾았다. 색 글자에도 외곽선이 붙는다.");
+                Debug.LogWarning("[굽기] '" + hanna.name + " Material_NoneOutLine' 을 못 찾았다. 색 글자에도 외곽선이 붙는다.");
 
-            BakeOne("__BountyBannerBakeRoot", BannerPath, noto,
+            BakeOne("__BountyBannerBakeRoot", BannerPath, hanna,
                 (parent, f) => UIBountyBanner.Create(parent, f, plain).gameObject);
 
-            BakeOne("__BountySelectBakeRoot", SelectPath, noto,
+            BakeOne("__BountySelectBakeRoot", SelectPath, hanna,
                 (parent, f) => UIBountySelectDialog.Create(parent, f, plain).gameObject);
 
             BakeOne("__BattleWarningBakeRoot", WarningPath, hanna,
@@ -121,7 +120,6 @@ namespace OJ.EditorTools
             return AssetDatabase.LoadAssetAtPath<Material>(path.Replace('\\', '/'));
         }
 
-        private const string NotoFontPath = "Assets/NotoSansKR-Black/NotoSansKR-Black SDF.asset";
         private const string HannaFontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
 
         private static TMP_FontAsset LoadFont(string path)
