@@ -305,10 +305,8 @@ namespace OJ.Tower
                 UITowerUIFactory.LoadSprite("Upgrade/Icon_lock"), 2f,
                 new Vector2(64f, 64f), Vector2.zero, false);
 
-            // 선택 배지 — 오른쪽 위 모서리에 걸친다.
-            cell.checkMark = UITowerUIFactory.CreateSprite("Check", background.transform,
-                UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Skill_Selcet_Check_Bg"), 2f,
-                new Vector2(64f, 64f), new Vector2(size.x * 0.5f - 15f, size.y * 0.5f - 15f), false);
+            // 선택 표시는 칸 그림(Bg_Prs)만 바꾼다. 체크 배지는 만들지 않는다 — 노란 사각형이
+            // 칸 테두리와 겹쳐 같은 색 사각형이 두 겹으로 보여 어지럽다(사용자 피드백 2026-10-01).
 
             // NEW 배지 — 획득 직후 한 번(기획서 5.4). 시안에 없지만 기존 기능이라 남긴다.
             Image badge = UITowerUIFactory.CreateImage("NewBadge", background.transform,

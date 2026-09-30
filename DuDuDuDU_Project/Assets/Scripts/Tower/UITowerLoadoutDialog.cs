@@ -57,6 +57,13 @@ namespace OJ.Tower
         [SerializeField] private TMP_Text startLabel;
         [SerializeField] private Button rewardListButton;
 
+        /// <summary>
+        /// 화면 왼쪽 아래 뒤로 버튼. <b>닫기 버튼으로 물리지 않는다</b> — 닫으면 로비로 떨어진다.
+        /// 층 선택 화면은 편성으로 넘어올 때 닫혔으므로(<c>UITowerFloorSelectDialog.OpenLoadout</c>)
+        /// 돌아갈 때 다시 열어 줘야 한다.
+        /// </summary>
+        [SerializeField] private Button backButton;
+
         [Header("보상 목록 오버레이")]
         [SerializeField] private GameObject rewardOverlay;
         [SerializeField] private TMP_Text rewardOverlayText;
@@ -97,6 +104,9 @@ namespace OJ.Tower
             if (rewardOverlayCloseButton != null)
                 rewardOverlayCloseButton.onClick.AddListener(CloseRewardOverlay);
 
+            if (backButton != null)
+                backButton.onClick.AddListener(ReturnToFloorSelect);
+
             HideToast();
         }
 
@@ -119,6 +129,9 @@ namespace OJ.Tower
 
             if (rewardOverlayCloseButton != null)
                 rewardOverlayCloseButton.onClick.RemoveListener(CloseRewardOverlay);
+
+            if (backButton != null)
+                backButton.onClick.RemoveListener(ReturnToFloorSelect);
 
             base.OnDestroy();
         }
@@ -333,6 +346,44 @@ namespace OJ.Tower
             TMP_Text text = rowCapacityTexts[row];
             if (text != null)
                 text.SetText("<color=#FFDE00>" + name + "</color>\n" + used + "/" + capacity);
+        }
+
+        // ── 뒤로 ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// 백키(Esc). 보상 목록이 열려 있으면 그것만 닫고, 아니면 층 선택으로 돌아간다.
+        /// 층 선택에서 한 번 더 누르면 그 창이 닫혀 로비로 간다.
+        /// </summary>
+        public override void BackKeyCall()
+        {
+            if (rewardOverlay != null && rewardOverlay.activeSelf)
+            {
+                CloseRewardOverlay();
+
+                // 백키 관리자는 부르기 전에 이 창을 스택에서 꺼냈다. 안쪽만 닫았으니 되돌려 둔다.
+                KeepOnBackStack();
+                return;
+            }
+
+            ReturnToFloorSelect();
+        }
+
+        /// <summary>
+        /// 이 창을 닫고 층 선택을 연다. <b>전투 시작은 이 길을 타지 않는다</b> —
+        /// <see cref="OnClickStart"/> 는 <c>Exit</c> 만 하고 씬을 넘긴다.
+        /// </summary>
+        private void ReturnToFloorSelect()
+        {
+            Exit();
+
+            UITowerFloorSelectDialog floorSelect = GameContainer.UI?.Get<UITowerFloorSelectDialog>();
+            if (floorSelect == null)
+            {
+                Debug.LogError("[탑] 층 선택 창을 열지 못했다. 카탈로그에 UITowerFloorSelectDialog 가 있는지 볼 것.");
+                return;
+            }
+
+            floorSelect.Enter();
         }
 
         // ── 보상 목록 ───────────────────────────────────────────────────
@@ -563,8 +614,8 @@ namespace OJ.Tower
             dialog.dialogView = view;
             dialog.UseBackBtn = true;
 
-            UITowerUIFactory.CreateCastleScreen(view.transform, font, out dialog.titleText, out Button back);
-            dialog.AddExitButton(back);
+            // 뒤로 버튼은 닫기로 물리지 않는다(층 선택으로 돌아간다). backButton 주석 참조.
+            UITowerUIFactory.CreateCastleScreen(view.transform, font, out dialog.titleText, out dialog.backButton);
 
             Transform p = view.transform;
             float cx = UITowerUIFactory.PanelCenterX;

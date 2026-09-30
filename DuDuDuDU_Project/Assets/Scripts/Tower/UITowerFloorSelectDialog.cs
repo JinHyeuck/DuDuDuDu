@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,25 +11,16 @@ namespace OJ.Tower
     /// <summary>
     /// 층 선택 화면. 기획서 5.2.
     ///
-    /// <b>목록의 방향이 탑의 방향과 같다.</b> 위로 갈수록 미해금(? ? ?), 아래로 갈수록
-    /// 이미 깬 층이다. 그래서 스크롤을 올리는 동작이 곧 "위층을 올려다보는" 동작이 되고,
-    /// 현재 도전 층은 언제나 목록 위쪽에 고정되어 시선이 거기서 시작한다.
+    /// <b>목록의 방향이 탑의 방향과 같다.</b> 맨 위가 최고층(300), 맨 아래가 1층이다.
+    /// 스크롤을 올리는 동작이 곧 "위층을 올려다보는" 동작이 된다.
     ///
-    /// <b>카드를 다시 쓰지 않고 매번 만든다.</b> 목록이 <see cref="VisibleFloorCount"/>
-    /// 장뿐이고 화면이 열릴 때 한 번만 그려지므로, 풀링으로 얻을 것이 없고
-    /// 대신 "지난 층의 값이 남아 있는" 종류의 사고를 원천적으로 없앤다.
+    /// <b>300층을 다 보여 주되 카드는 보이는 만큼만 만든다</b>(<see cref="UIRecycleVerticalList"/>).
+    /// 창이 열릴 때마다 <b>도전 가능한 층이 위에서 두 번째 칸</b>에 오도록 스크롤한다 —
+    /// 시안처럼 바로 위의 잠긴 한 층이 "위가 더 있다" 를 말없이 알려 주고, 시선이 도전할
+    /// 층에서 시작한다(사용자 지시 2026-10-01: 최고층까지 보이되 첫 진입엔 도전 층이 보일 것).
     /// </summary>
     public class UITowerFloorSelectDialog : DialogBase
     {
-        /// <summary>
-        /// 한 번에 보여 주는 층 수. 현재 도전 층 위로 한 칸(? ? ?), 아래로 나머지다.
-        ///
-        /// 300개를 다 그리지 않는 이유는 성능이 아니라 <b>읽기</b>다 —
-        /// 기획서 5.2 가 "다음 한 층에 시선이 고정되도록" 이라고 적고 있는데,
-        /// 300줄짜리 목록에서는 그 한 층이 묻힌다.
-        /// </summary>
-        private const int VisibleFloorCount = 24;
-
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text bestFloorText;
 
@@ -40,6 +30,12 @@ namespace OJ.Tower
         [SerializeField] private Image bandGaugeFill;
         [SerializeField] private TMP_Text bandGaugeText;
 
+        /// <summary>
+        /// 게이지 기준을 숫자로 — "이번 구간에서 몇 번째 층 / 구간 층 수"(예: 5/5).
+        /// 게이지만 있으면 무엇을 재는지 알 수 없다(사용자 피드백 2026-10-01).
+        /// </summary>
+        [SerializeField] private TMP_Text bandProgressText;
+
         [Header("목표 배너")]
         [SerializeField] private TMP_Text unlockGoalText;
         [SerializeField] private TMP_Text bandRewardText;
@@ -47,6 +43,7 @@ namespace OJ.Tower
         [Header("목록")]
         [SerializeField] private RectTransform listContent;
         [SerializeField] private UITowerFloorCard cardTemplate;
+        [SerializeField] private UIRecycleVerticalList floorList;
 
         [Header("하단")]
         [SerializeField] private Button rewardListButton;
@@ -57,8 +54,6 @@ namespace OJ.Tower
         [SerializeField] private GameObject rewardOverlay;
         [SerializeField] private TMP_Text rewardOverlayText;
         [SerializeField] private Button rewardOverlayCloseButton;
-
-        private readonly List<UITowerFloorCard> cards = new List<UITowerFloorCard>();
 
         /// <summary>
         /// <b><c>Awake</c> 를 쓰지 않는다.</b> <c>DialogBase.Awake</c> 가 private 이라
@@ -103,6 +98,28 @@ namespace OJ.Tower
             transform.SetAsLastSibling();
             CloseRewardOverlay();
             Refresh();
+            ScrollToChallengeFloor();
+        }
+
+        /// <summary>도전 가능한 층을 위에서 두 번째 칸에 둔다. 클래스 주석 참조.</summary>
+        private void ScrollToChallengeFloor()
+        {
+            TowerProgressManager progress = TowerProgressManager.Instance;
+            if (progress == null || floorList == null)
+                return;
+
+            floorList.ScrollTo(IndexOfFloor(progress.HighestUnlockedFloor), 1);
+        }
+
+        /// <summary>목록 번호 0 이 최고층이다.</summary>
+        private static int IndexOfFloor(int floor)
+        {
+            return TowerFormula.TotalFloors - TowerFormula.ClampFloor(floor);
+        }
+
+        private static int FloorOfIndex(int index)
+        {
+            return TowerFormula.TotalFloors - index;
         }
 
         /// <summary>
@@ -155,6 +172,9 @@ namespace OJ.Tower
             UITowerUIFactory.SetGauge(bandGaugeFill, GaugeWidth,
                 (float)done / TowerFormula.FloorsPerBand);
 
+            if (bandProgressText != null)
+                bandProgressText.SetText("{0}/{1}", done, TowerFormula.FloorsPerBand);
+
             if (bandGaugeText == null)
                 return;
 
@@ -186,49 +206,33 @@ namespace OJ.Tower
 
         private void RefreshList(TowerProgressManager progress, int highestUnlocked)
         {
-            EnsureCards();
-
-            // 맨 위 한 칸은 <b>아직 못 여는 층</b>이다. 기획서 5.2 목업이 그렇고,
-            // 그 한 칸이 "위가 더 있다" 를 말없이 알려 준다.
-            int topFloor = TowerFormula.ClampFloor(highestUnlocked + 1);
-
-            for (int i = 0; i < cards.Count; i++)
-            {
-                UITowerFloorCard card = cards[i];
-                int floor = topFloor - i;
-
-                if (floor < 1)
-                {
-                    card.gameObject.SetActive(false);
-                    continue;
-                }
-
-                bool revealed = progress.IsFloorRevealed(floor);
-
-                card.gameObject.SetActive(true);
-                card.Bind(
-                    floor: floor,
-                    plan: revealed ? TowerDatabaseProvider.GetPlan(floor) : null,
-                    revealed: revealed,
-                    challengeable: progress.IsFloorChallengeable(floor),
-                    cleared: progress.IsFloorCleared(floor),
-                    bestClearMilliseconds: progress.GetBestClearMilliseconds(floor),
-                    bestRemainingPercent: progress.GetBestRemainingHpPercent(floor),
-                    onClick: OnFloorClicked);
-            }
+            if (floorList != null)
+                floorList.SetCount(TowerFormula.TotalFloors, BindCard);
         }
 
-        private void EnsureCards()
+        /// <summary>
+        /// 목록이 보이는 칸을 채울 때마다 부른다. 카드는 돌려 쓰므로 <b>모든 칸을 매번
+        /// 전부 덮어써야 한다</b> — 한 칸이라도 조건부로 건너뛰면 지난 층의 값이 남는다.
+        /// </summary>
+        private void BindCard(int index, RectTransform item)
         {
-            if (cardTemplate == null || listContent == null)
+            TowerProgressManager progress = TowerProgressManager.Instance;
+            UITowerFloorCard card = item.GetComponent<UITowerFloorCard>();
+            if (progress == null || card == null)
                 return;
 
-            while (cards.Count < VisibleFloorCount)
-            {
-                UITowerFloorCard card = Instantiate(cardTemplate, listContent);
-                card.gameObject.SetActive(false);
-                cards.Add(card);
-            }
+            int floor = FloorOfIndex(index);
+            bool revealed = progress.IsFloorRevealed(floor);
+
+            card.Bind(
+                floor: floor,
+                plan: revealed ? TowerDatabaseProvider.GetPlan(floor) : null,
+                revealed: revealed,
+                challengeable: progress.IsFloorChallengeable(floor),
+                cleared: progress.IsFloorCleared(floor),
+                bestClearMilliseconds: progress.GetBestClearMilliseconds(floor),
+                bestRemainingPercent: progress.GetBestRemainingHpPercent(floor),
+                onClick: OnFloorClicked);
         }
 
         private void OnFloorClicked(int floor)
@@ -287,6 +291,23 @@ namespace OJ.Tower
                 rewardOverlay.SetActive(false);
         }
 
+        /// <summary>
+        /// 백키(Esc). 보상 목록이 열려 있으면 그것만 닫고, 아니면 이 창을 닫아 로비로 간다.
+        /// </summary>
+        public override void BackKeyCall()
+        {
+            if (rewardOverlay != null && rewardOverlay.activeSelf)
+            {
+                CloseRewardOverlay();
+
+                // 백키 관리자는 부르기 전에 이 창을 스택에서 꺼냈다. 안쪽만 닫았으니 되돌려 둔다.
+                KeepOnBackStack();
+                return;
+            }
+
+            base.BackKeyCall();
+        }
+
         // ──────────────────────────────────────────────────────────────
         // 아래는 에디터 굽기 전용. 런타임에 부르지 않는다.
         // 값을 아는 것은 코드이므로 인스펙터에 좌표를 옮겨 적지 않는다.
@@ -299,11 +320,24 @@ namespace OJ.Tower
         private const float GaugeWidth = 688f;
         private const float GaugeHeight = 19f;
 
+        // 채움 그림(Upgrade_Gauge_Full)은 32px 중 가로 5~27, 세로 6~25 에만 색이 있다.
+        // Image 를 그 여백만큼 트랙 밖으로 키워 보이는 초록이 트랙에 딱 겹치게 한다.
+        // <b>fillAmount 는 진행률 그대로다</b> — uGUI 가 Filled 를 그릴 때 스프라이트의 투명
+        // 여백을 빼고 보이는 영역 안에서 비율을 먹인다(실측: 0.5 → 트랙 정확히 절반).
+        private const float GaugeArtSize = 32f;
+        private const float GaugeArtLeft = 5f;
+        private const float GaugeArtRight = 27f;
+        private const float GaugeArtTop = 6f;
+        private const float GaugeArtBottom = 25f;
+
+
+
         /// <summary>
-        /// 목록 영역. 시안의 첫 카드가 진행 패널 바로 밑(y 480)에서 시작하고 하단 버튼 위(y 1490)에서 잘린다.
+        /// 목록 영역. 시안의 첫 카드가 진행 패널 바로 밑(y 480)에서 시작한다.
+        /// 높이 1000 · PosY -20 (사용자 조정, 2026-10-01).
         /// </summary>
         private const float ListTop = 480f;
-        private const float ListBottom = 1490f;
+        private const float ListBottom = 1480f;
 
         /// <summary>
         /// 카드 사이 간격. 시안의 카드 간격이 172~184 로 조금씩 흔들려서 평균(≈179)을 쓴다.
@@ -349,21 +383,36 @@ namespace OJ.Tower
             UITowerUIFactory.SetRect(dialog.currentConceptText.rectTransform,
                 new Vector2(500f, 52f), UITowerUIFactory.Pos(545f, 357f));
 
-            // 게이지 — 트랙과 채움. 채움은 트랙의 자식으로 왼쪽에 붙어 폭만 바뀐다.
+            // 게이지 — 트랙과 채움. 채움은 트랙을 꽉 채우는 Filled(가로, 왼쪽 기준) 이미지이고
+            // 진행은 fillAmount 로 먹인다. 폭을 줄이는 방식은 앵커·피벗이 하나만 어긋나도
+            // 가운데서 자라는 게이지가 된다.
             Image track = UITowerUIFactory.CreateSprite("BandGauge", p,
                 UITowerUIFactory.LoadSprite("Upgrade/Upgrade_Gauge_Bg"), 1f,
                 new Vector2(GaugeWidth, GaugeHeight), UITowerUIFactory.Pos(193f + GaugeWidth * 0.5f, 400f), true);
 
             Image fill = UITowerUIFactory.CreateSprite("Fill", track.transform,
                 UITowerUIFactory.LoadSprite("Upgrade/Upgrade_Gauge_Full"), 1f,
-                new Vector2(GaugeWidth, GaugeHeight), Vector2.zero, true);
-            RectTransform fillRect = fill.rectTransform;
-            fillRect.anchorMin = new Vector2(0f, 0f);
-            fillRect.anchorMax = new Vector2(0f, 1f);
-            fillRect.pivot = new Vector2(0f, 0.5f);
-            fillRect.offsetMin = Vector2.zero;
-            fillRect.offsetMax = new Vector2(GaugeWidth * 0.5f, 0f);
+                new Vector2(GaugeWidth, GaugeHeight), Vector2.zero, false);
+            UITowerUIFactory.Stretch(fill.rectTransform);
+
+            // 투명 여백만큼 트랙 밖으로 넓힌다(위 GaugeArt* 주석).
+            float padX = GaugeWidth * GaugeArtLeft / (GaugeArtRight - GaugeArtLeft);
+            float unitY = GaugeHeight / (GaugeArtBottom - GaugeArtTop);
+            fill.rectTransform.offsetMin = new Vector2(-padX, -(GaugeArtSize - GaugeArtBottom) * unitY);
+            fill.rectTransform.offsetMax = new Vector2(padX, GaugeArtTop * unitY);
+
+            fill.type = Image.Type.Filled;
+            fill.fillMethod = Image.FillMethod.Horizontal;
+            fill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            fill.fillAmount = 0.5f;
             dialog.bandGaugeFill = fill;
+
+            // 구간 진행 숫자 — 게이지 오른쪽 끝 바로 위(이름 줄 오른쪽). 이름과 게이지 사이가
+            // 좁아 줄을 따로 내지 않는다.
+            dialog.bandProgressText = UITowerUIFactory.CreateText("BandProgress", p, "5/5", 30f,
+                TextAlignmentOptions.Right, Color.white, font);
+            UITowerUIFactory.SetRect(dialog.bandProgressText.rectTransform,
+                new Vector2(120f, 40f), UITowerUIFactory.Pos(828f, 366f));
 
             dialog.bandGaugeText = UITowerUIFactory.CreateText("BandGaugeText", p, "구간 보상까지 3층", 30f,
                 TextAlignmentOptions.Left, UITowerUIFactory.TextMuted, font);
@@ -376,15 +425,19 @@ namespace OJ.Tower
                 new Vector2(UITowerUIFactory.PanelWidth + 24f, listHeight),
                 UITowerUIFactory.Pos(cx, ListTop + listHeight * 0.5f), CardSpacing);
 
-            // 카드 그림(여백 포함)이 카드 칸보다 사방 12px 크다. 좌우 여유는 그것을 받는다.
-            // 위쪽은 시안처럼 패널에 바짝 붙인다.
-            var layout = dialog.listContent.GetComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(12, 12, 0, 8);
-            layout.childAlignment = TextAnchor.UpperCenter;
-            layout.childControlWidth = false;
-            layout.childForceExpandWidth = false;
+            // 300층을 보이는 만큼만 만든다. 위치는 UIRecycleVerticalList 가 정하므로 Content 의
+            // 레이아웃·크기 맞춤은 걷어 낸다(둘이 같은 값을 번갈아 덮는다).
+            Object.DestroyImmediate(dialog.listContent.GetComponent<ContentSizeFitter>());
+            Object.DestroyImmediate(dialog.listContent.GetComponent<VerticalLayoutGroup>());
 
             dialog.cardTemplate = UITowerFloorCard.Create(dialog.listContent, font);
+
+            // 위쪽은 시안처럼 패널에 바짝 붙이고, 아래는 마지막 카드 그림 여백(12)만큼 남긴다.
+            RectTransform viewport = (RectTransform)dialog.listContent.parent;
+            dialog.floorList = viewport.gameObject.AddComponent<UIRecycleVerticalList>();
+            dialog.floorList.BakeSetup(viewport.GetComponent<ScrollRect>(), dialog.listContent,
+                (RectTransform)dialog.cardTemplate.transform,
+                UITowerFloorCard.CardHeight, CardSpacing, 0f, 12f);
 
             // (3) 하단 버튼 — 보이는 360x150, 시안 y 1499~1649
             UITowerUIFactory.ButtonRect(362.5f, 1574f, 360f, 150f, 3f, out Vector2 rewardSize, out Vector2 rewardPos);

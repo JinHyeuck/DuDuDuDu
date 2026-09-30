@@ -114,11 +114,20 @@ namespace OJ.Tower
             return fill;
         }
 
-        /// <summary>게이지 채움 비율을 먹인다. 트랙 너비를 알아야 해서 같이 받는다.</summary>
+        /// <summary>
+        /// 게이지 채움 비율을 먹인다. <b>Filled</b> 이미지면 fillAmount 로, 옛 방식(폭을 줄이는
+        /// 채움)이면 오른쪽 가장자리로 먹인다 — 결과 화면은 아직 옛 방식이다.
+        /// </summary>
         internal static void SetGauge(Image fill, float trackWidth, float ratio01)
         {
             if (fill == null)
                 return;
+
+            if (fill.type == Image.Type.Filled)
+            {
+                fill.fillAmount = Mathf.Clamp01(ratio01);
+                return;
+            }
 
             RectTransform rect = fill.rectTransform;
             Vector2 offset = rect.offsetMax;
