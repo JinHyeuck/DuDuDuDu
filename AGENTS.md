@@ -190,10 +190,10 @@ ProjectP `Game.Scenes` 는 씬 YAML 에 `LifetimeScope` 를 배치하고 **로�
 - ~~**인코딩 파손 4파일**~~ **1.2에서 해소.** 138파일 전부 UTF-8이며 `Tools/verify_encoding.py`가 지킨다.
   `Define.cs`는 규약이 예상한 재작성이 아니라 `bfa569d`에서 **원문 복구**됐다.
   → **U+FFFD를 만나면 재작성하기 전에 `git log --follow`로 성한 리비전을 먼저 찾을 것.**
-- **평문 자격증명**: `Unity3dBuilder.cs`의 상수는 **1.3a에서 제거**(환경 변수 `OJ_KEYSTORE_PASS` /
-  `OJ_KEYSTORE_ALIAS_PASS`로 주입, 미설정 시 빌드 중단). 다만 **노출은 아직 안 닫혔다** —
-  히스토리에 남아 있고 `Keystore/osw.keystore`까지 추적 중이며 GitHub에 푸시된 상태다.
-  **비밀번호 로테이션이 선행 조치다.** 상세는 `MIGRATION_BASELINE.md` 하단 전용 절.
+- ~~**평문 자격증명**~~ **종결 (2026-09-30).** `Unity3dBuilder.cs`의 상수는 1.3a에서 제거했다
+  (환경 변수 `OJ_KEYSTORE_PASS` / `OJ_KEYSTORE_ALIAS_PASS`로 주입, 미설정 시 빌드 중단).
+  히스토리의 옛 비밀번호와 추적 중인 `Keystore/osw.keystore`는 **그대로 두기로 결정했다** —
+  로테이션하지 않고 이 키스토어를 계속 쓴다. 다시 제기하지 말 것.
 
 ---
 
