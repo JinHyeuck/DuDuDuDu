@@ -6,51 +6,43 @@ using OJ.Dice;
 namespace OJ.Tower
 {
     /// <summary>
-    /// 편성 화면 위쪽 슬롯 바의 칸 하나. 기획서 5.3 의 (2) 다.
+    /// 편성 화면 "선택한 조합" 줄의 칸 하나. 기획서 5.3 의 (2), 아트 시안 Infinity_Layout_Skill.
     ///
-    /// <b>빈 칸을 점선으로 남긴다.</b> "아직 채울 자리가 있다" 를 시각화하는 것이
-    /// 이 바의 존재 이유이고(기획서 5.3), 그것이 곧 4.2 의 "미보유 = 빈 슬롯" 이
-    /// 화면에서 읽히는 방식이다. 빈 칸을 접어 버리면 7칸짜리 편성이 4칸짜리로 보여
-    /// <b>무엇이 부족한지가 사라진다.</b>
+    /// <b>빈 칸을 남긴다.</b> "아직 채울 자리가 있다" 를 시각화하는 것이 이 줄의 존재
+    /// 이유이고(기획서 5.3), 그것이 곧 4.2 의 "미보유 = 빈 슬롯" 이 화면에서 읽히는
+    /// 방식이다. 빈 칸을 접어 버리면 7칸짜리 편성이 4칸짜리로 보여 <b>무엇이 부족한지가 사라진다.</b>
     /// </summary>
     public class UITowerSlotView : MonoBehaviour
     {
-        [SerializeField] private Image background;
-        [SerializeField] private Image emptyOutline;
+        [SerializeField] private Image emptyFrame;
+        [SerializeField] private Image plusIcon;
         [SerializeField] private Image icon;
+
+        /// <summary>아이콘 밑의 성급("x4"). 칸이 작아 이름은 넣지 않는다.</summary>
         [SerializeField] private TMP_Text label;
 
-        /// <summary>
-        /// 칸을 채운다. <b>아이콘 + 성급</b>이 전부다 — 칸이 108px 이라 이름까지 넣으면
-        /// 일곱 칸이 전부 잘린 글자가 된다. 이름이 필요한 곳은 후보 그리드이고,
-        /// 여기는 "지금 무엇을 골랐나" 를 한눈에 보는 자리다.
-        /// </summary>
         public void BindFilled(TowerLoadoutEntry entry)
         {
-            if (background != null)
-                background.enabled = true;
+            if (emptyFrame != null)
+                emptyFrame.enabled = false;
 
-            if (emptyOutline != null)
-                emptyOutline.enabled = false;
+            if (plusIcon != null)
+                plusIcon.enabled = false;
 
             // 정체는 아이콘이 나른다(인게임 UIDice 와 같다). 스프라이트가 없으면
             // 아이콘을 끄고 이름을 대신 띄운다 — 빈 칸처럼 보이면 안 된다.
-            Sprite iconSprite = DiceMetaDataProvider.GetIcon(entry.DiceType);
+            Sprite iconSprite = DiceMetaDataProvider.GetIcon(entry.DiceType, entry.Star);
             bool hasIcon = iconSprite != null;
 
             if (icon != null)
             {
                 icon.enabled = hasIcon;
                 icon.sprite = iconSprite;
-                icon.color = Color.white;
             }
 
             if (label != null)
             {
                 label.gameObject.SetActive(true);
-                label.color = Color.white;
-
-                // 아이콘이 있으면 성급만("x4"), 없으면 이름으로 대신한다.
                 string starText = TowerDiceText.StarOf(entry.DiceType, entry.Star);
                 label.SetText(hasIcon ? starText : TowerDiceText.NameWithStar(entry.DiceType, entry.Star));
             }
@@ -58,58 +50,59 @@ namespace OJ.Tower
 
         public void BindEmpty()
         {
-            if (background != null)
-                background.enabled = false;
+            if (emptyFrame != null)
+                emptyFrame.enabled = true;
 
-            if (emptyOutline != null)
-                emptyOutline.enabled = true;
+            if (plusIcon != null)
+                plusIcon.enabled = true;
 
             if (icon != null)
                 icon.enabled = false;
 
             if (label != null)
-            {
-                label.gameObject.SetActive(true);
-                label.SetText("＋");
-                label.color = UITowerUIFactory.MutedText;
-            }
+                label.gameObject.SetActive(false);
         }
 
         // ──────────────────────────────────────────────────────────────
         // 에디터 굽기 전용.
         // ──────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// 칸 하나. <paramref name="size"/> 는 아이콘 칸(시안 88), 성급 글자는 그 아래에 붙는다.
+        /// </summary>
         internal static UITowerSlotView Create(
             Transform parent, Vector2 size, Vector2 position, TMP_FontAsset font)
         {
-            // 빈 칸 표시를 배경의 <b>형제로, 배경보다 먼저</b> 만든다. 배경이 켜지면
-            // 그 위를 덮어 자연스럽게 가려지고, 꺼지면 드러난다 — enabled 두 개를
-            // 반대로 켜는 것만으로 두 모습이 나온다.
             GameObject root = UITowerUIFactory.CreateRect("Slot", parent);
             UITowerUIFactory.SetRect(root.GetComponent<RectTransform>(), size, position);
 
             var view = root.AddComponent<UITowerSlotView>();
 
-            view.emptyOutline = UITowerUIFactory.CreateImage("Empty", root.transform, UITowerUIFactory.TrackColor);
-            UITowerUIFactory.SetRect(view.emptyOutline.rectTransform, size, Vector2.zero);
-            view.emptyOutline.raycastTarget = false;
+            // 빈 칸: 테두리(x2) + 더하기 아이콘(x1). 아이콘은 글자로 쓰지 않는다 —
+            // "＋" 같은 기호는 폰트 아틀라스에 없으면 두부가 된다.
+            view.emptyFrame = UITowerUIFactory.CreateSprite("EmptyFrame", root.transform,
+                UITowerUIFactory.LoadSprite("InfinityMode/Infinity_Skill_Selcet_Nonel"), 2f,
+                size + new Vector2(36f, 36f), Vector2.zero, true);   // 보이는 88 + 여백 9px x2
+            view.emptyFrame.color = new Color(0.55f, 0.53f, 0.72f, 1f);
 
-            view.background = UITowerUIFactory.CreateImage("Fill", root.transform, UITowerUIFactory.CardColor);
-            UITowerUIFactory.SetRect(view.background.rectTransform, size, Vector2.zero);
-            view.background.raycastTarget = false;
+            view.plusIcon = UITowerUIFactory.CreateSprite("Plus", root.transform,
+                UITowerUIFactory.LoadSprite("Ingame/Icon_Plus"), 1f,
+                new Vector2(32f, 32f), Vector2.zero, false);
+            view.plusIcon.color = new Color(0.55f, 0.53f, 0.72f, 1f);
 
+            // 채운 칸: 다이스 아이콘(시안 "스킬 아이콘 x2"). 스프라이트가 64px 안에 45px 그림이라
+            // 128 로 잡아야 보이는 그림이 칸(88)을 채운다.
             view.icon = UITowerUIFactory.CreateImage("Icon", root.transform, Color.white);
-            UITowerUIFactory.SetRect(view.icon.rectTransform,
-                new Vector2(size.x - 26f, size.y - 26f), new Vector2(0f, 6f));
+            UITowerUIFactory.SetRect(view.icon.rectTransform, new Vector2(128f, 128f), Vector2.zero);
             view.icon.preserveAspect = true;
             view.icon.raycastTarget = false;
 
-            // 성급은 아이콘 아래 모서리에 얹는다. 아이콘 위에 겹치면 작은 칸에서
-            // 둘 다 안 읽힌다.
-            view.label = UITowerUIFactory.CreateText("Label", root.transform, "＋", 22f,
-                TextAlignmentOptions.Bottom, Color.white, font);
+            // 성급 — 칸 아래(시안 "x1" 25pt 흰색). 칸 높이는 폰트 x1.3 이상이어야
+            // 글자가 잘리지 않고 통째로 사라지지도 않는다.
+            view.label = UITowerUIFactory.CreateText("Star", root.transform, "x1", 25f,
+                TextAlignmentOptions.Center, Color.white, font);
             UITowerUIFactory.SetRect(view.label.rectTransform,
-                new Vector2(size.x - 8f, 28f), new Vector2(0f, -size.y * 0.5f + 15f));
+                new Vector2(size.x + 12f, 34f), new Vector2(0f, -size.y * 0.5f - 19f));
 
             // 굽는 시점의 기본 모습은 빈 칸이다. 채워진 모습으로 저장하면 프리팹을
             // 열었을 때 실제와 다른 화면이 보인다.

@@ -222,6 +222,9 @@ Toolserify-all.cmd --quick    # 테스트는 빼고 (몇 초)
 | `verify_prefab_refs.py` | 프리팹이 **다른 프리팹의 컴포넌트**를 직접 참조 (복제 시 원본에 남은 참조) |
 | `layout_rect.py` | RectTransform 실제 사각형 계산 — "화면 밖/겹침"을 눈대중 대신 숫자로 |
 
+**시안 → UI 이식 (`Tools/ui/art/`, `Tools/ui/unity/`)** — 스프라이트 목록·배율 실측·외곽선 스캔·캡처 비교,
+열린 에디터에서 프리팹 렌더·사라진 글자/가려진 버튼 검사·클릭·뒤로가기. 사용법과 측정 원칙은 **`Tools/ui/PORTING.md`**.
+
 **프로젝트 무결성 (`Tools/`)**
 
 | 도구 | 잡는 것 |

@@ -169,7 +169,7 @@ namespace OJ.Dice
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(currentDiceType) : 1;
 
             if (iconImage != null)
-                iconImage.sprite = DiceMetaDataProvider.GetIcon(currentDiceType);
+                iconImage.sprite = DiceMetaDataProvider.GetIcon(currentDiceType, currentDiceStar);
 
             RefreshElementIcon(meta);
 
