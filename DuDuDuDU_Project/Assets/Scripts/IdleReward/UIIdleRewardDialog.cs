@@ -29,6 +29,10 @@ namespace OJ.IdleReward
     {
         private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.8f);
         private static readonly Color InnerBoxColor = Hex(0x636481);
+
+        // 소탕 문구를 뺀 만큼 안쪽 판·팝업 판 아래를 줄이고 받기 버튼을 올린다(PSD 보다 87px 위).
+        // 보상 상자 아래(y 1192)와 안쪽 판 아래 사이를 30px 로 남긴다.
+        private const float LiftUp = 87f;
         private static readonly Color RateBoxColor = Hex(0x45465F);
         private static readonly Color LineColor = Hex(0x7B7C96);
         private static readonly Color DarkText = Hex(0x2B2C3F);
@@ -268,7 +272,7 @@ namespace OJ.IdleReward
             Picture(p, "Skeleton", "OffLineReward/FromPsd/FromPsd_Skeleton", new Vector2(173f, 248f), Pos(653.5f, 217f));
 
             // 팝업 판 — Ui_Popup_Bg x4, 보이는 924x1173 (75,359) + 여백 3px x4
-            Sliced(p, "Panel", "Upgrade/Ui_Popup_Bg", 4f, new Vector2(948f, 1197f), Pos(537f, 945.5f), Color.white);
+            Sliced(p, "Panel", "Upgrade/Ui_Popup_Bg", 4f, new Vector2(948f, 1197f - LiftUp), Pos(537f, 945.5f - LiftUp / 2f), Color.white);
 
             // 닫기 — PSD 에서 잘라 온 버튼 한 장(FromPsd, 정식 파일 대기)
             Image close = Picture(p, "CloseButton", "OffLineReward/FromPsd/FromPsd_CloseButton", new Vector2(112f, 111f), Pos(911f, 381.5f));
@@ -280,7 +284,7 @@ namespace OJ.IdleReward
             SetRect(title.rectTransform, new Vector2(600f, 60f), Pos(536.5f, 429f));
 
             // 안쪽 판 — SmallBox x4 #636481, 보이는 857x829 (109,480). SmallBox 여백 6/6/7/7 px x4
-            Sliced(p, "InnerBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(909f, 881f), Pos(539.5f, 896.5f), InnerBoxColor);
+            Sliced(p, "InnerBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(909f, 881f - LiftUp), Pos(539.5f, 896.5f - LiftUp / 2f), InnerBoxColor);
             Picture(p, "TopDecor", "OffLineReward/FromPsd/FromPsd_TopDecor", new Vector2(830f, 55f), Pos(541f, 521.5f));
 
             stageText = CreateText("StageText", p, "1. 어둠의 숲속", 35f, TextAlignmentOptions.Center, Color.white);
@@ -318,7 +322,7 @@ namespace OJ.IdleReward
 
             // 받기 버튼 하나만 둔다 — 이 창에 소탕 UX 는 두지 않는다(사용자 지시 2026-10-01).
             // PSD 의 두 버튼 자리(보이는 178~911)를 한 버튼이 차지한다. 여백 4px x3 씩 → 757x169
-            autoClaimButton = SpriteButton(p, "ClaimButton", "Ingame/Big_Btn_Green", new Vector2(757f, 169f), Pos(544.5f, 1407.5f));
+            autoClaimButton = SpriteButton(p, "ClaimButton", "Ingame/Big_Btn_Green", new Vector2(757f, 169f), Pos(544.5f, 1407.5f - LiftUp));
             TMP_Text claimLabel = CreateText("Label", autoClaimButton.transform, "받기", 35f, TextAlignmentOptions.Center, Color.white);
             SetRect(claimLabel.rectTransform, new Vector2(300f, 46f), new Vector2(0f, 4.5f));
         }

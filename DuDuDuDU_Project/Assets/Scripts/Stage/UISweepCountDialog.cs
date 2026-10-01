@@ -14,12 +14,17 @@ namespace OJ.Stage
     /// 소탕 횟수를 고르는 창.
     ///
     /// <code>
-    ///            소탕
-    ///        N 스테이지
+    ///            소탕                 [X]
+    ///      N. 스테이지 이름
+    ///   소탕 횟수
     ///   [MIN] [-]  12  [+] [MAX]
-    ///      고기 60 / 보유 340
-    ///     [취소]        [소탕]
+    ///   필요 재화
+    ///        (고기) 60 / 340
+    ///           [ 소탕 ]
     /// </code>
+    ///
+    /// 생김새는 강화 팝업(<c>Art/Layout/Ugrade_Popup.png</c>)·방치 보상 창과 같은 계열이다 —
+    /// Ui_Popup_Bg 판, #636481 안쪽 판, #45465F 칸, 초록 큰 버튼, 오른쪽 위 X.
     ///
     /// <b>왜 버튼에서 바로 안 주고 창을 한 번 끼우나.</b> 소탕은 고기를 먹는다
     /// (<see cref="SweepRules.StaminaCostPerSweep"/>). 되돌릴 수 없는 소모를 한 번의
@@ -31,14 +36,14 @@ namespace OJ.Stage
     /// </summary>
     public class UISweepCountDialog : DialogBase
     {
-        private static readonly Color OverlayColor = new Color(0.015f, 0.025f, 0.08f, 0.86f);
-        private static readonly Color PanelColor = new Color(0.075f, 0.10f, 0.22f, 1f);
-        private static readonly Color PanelInnerColor = new Color(0.10f, 0.15f, 0.29f, 1f);
-        private static readonly Color CountBoxColor = new Color(0.05f, 0.08f, 0.18f, 1f);
-        private static readonly Color CyanColor = new Color(0.15f, 0.80f, 0.95f, 1f);
-        private static readonly Color OrangeColor = new Color(0.95f, 0.38f, 0.16f, 1f);
-        private static readonly Color MutedTextColor = new Color(0.70f, 0.78f, 0.90f, 1f);
-        private static readonly Color ShortageColor = new Color(1f, 0.42f, 0.42f, 1f);
+        private const string ArtRoot = "Art/";
+
+        private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.8f);
+        private static readonly Color InnerBoxColor = Hex(0x636481);
+        private static readonly Color CellColor = Hex(0x45465F);
+        private static readonly Color CaptionColor = Hex(0xD2D3E3);
+        private static readonly Color ShortageColor = Hex(0xFF5A5A);
+        private static readonly Color DisabledTint = new Color(0.55f, 0.55f, 0.60f, 1f);
 
         /// <summary>
         /// 이 창과 <see cref="UISweepLobbyButton"/> 이 화면에 낼 수 있는 <b>모든</b> 글자.
@@ -54,8 +59,8 @@ namespace OJ.Stage
         /// 안 보이므로 여기에 손으로 모은다. <b>새 문구를 넣으면 여기도 같이 늘릴 것.</b>
         /// </summary>
         public const string RequiredGlyphs =
-            "소탕취스테이지클리어한가없다고기보유필요회" +
-            "MINAX0123456789,/ －＋";
+            "소탕스테이지클리어한가없다횟수필요재화" +
+            "MINAX0123456789,./ +-";
 
         [SerializeField] private TMP_FontAsset font;
         [SerializeField] private GameObject panel;
@@ -66,7 +71,8 @@ namespace OJ.Stage
         [SerializeField] private Button decreaseButton;
         [SerializeField] private Button increaseButton;
         [SerializeField] private Button maxButton;
-        [SerializeField] private Button cancelButton;
+        [SerializeField] private Image costIcon;
+        [SerializeField] private Button closeButton;
         [SerializeField] private Button confirmButton;
         [SerializeField] private TMP_Text confirmText;
 
@@ -81,61 +87,85 @@ namespace OJ.Stage
 
             GameObject view = CreateRect("DialogView", root.transform);
             Stretch(view.GetComponent<RectTransform>());
-            Image overlay = view.AddComponent<Image>();
-            overlay.color = OverlayColor;
-            overlay.raycastTarget = true;
-            Button overlayButton = view.AddComponent<Button>();
-            overlayButton.transition = Selectable.Transition.None;
+
+            // 딤 — 누르면 닫힌다.
+            Image dim = CreateImage("Dim", view.transform, DimColor);
+            Stretch(dim.rectTransform);
+            dim.raycastTarget = true;
+            Button dimButton = dim.gameObject.AddComponent<Button>();
+            dimButton.transition = Selectable.Transition.None;
 
             UISweepCountDialog dialog = root.AddComponent<UISweepCountDialog>();
             dialog.font = fontAsset;
             dialog.dialogView = view;
             dialog.UseBackBtn = true;
             dialog.Build(view.transform);
-            dialog.AddExitButton(overlayButton);
+            dialog.AddExitButton(dimButton);
             return dialog;
         }
 
+        /// <summary>
+        /// 좌표는 1080x1920 화면 기준(<see cref="Pos"/>) — 판이 화면 가운데라 판 안 좌표와 같다.
+        /// 판 크기 = 보이는 크기 + 투명 여백 x 배율(<c>Tools/ui/PORTING.md</c>). 판은 x4, 버튼은 x3 픽셀 아트다.
+        /// </summary>
         private void Build(Transform viewRoot)
         {
-            panel = CreateImage("Panel", viewRoot, PanelColor).gameObject;
-            SetRect(panel.GetComponent<RectTransform>(), new Vector2(900f, 640f), Vector2.zero);
+            // 팝업 판 — 보이는 924x776 (572~1348) + 여백 3px x4
+            panel = Sliced(viewRoot, "Panel", "Upgrade/Ui_Popup_Bg", 4f, new Vector2(948f, 788f), Pos(540f, 960f), Color.white).gameObject;
+            Transform p = panel.transform;
 
-            TMP_Text title = CreateText("Title", panel.transform, "소탕", 48f, TextAlignmentOptions.Center, Color.white);
-            SetAnchored(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -80f), new Vector2(800f, 80f));
+            TMP_Text title = CreateText("Title", p, "소탕", 45f, TextAlignmentOptions.Center, Color.white);
+            SetRect(title.rectTransform, new Vector2(600f, 60f), Pos(540f, 642f));
 
-            stageText = CreateText("StageText", panel.transform, string.Empty, 32f, TextAlignmentOptions.Center, MutedTextColor);
-            SetAnchored(stageText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -150f), new Vector2(800f, 56f));
+            // 안쪽 판 — 보이는 857x432 (693~1125) + 여백 6px x4
+            Sliced(p, "InnerBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(909f, 456f), Pos(540f, 909f), InnerBoxColor);
+            Picture(p, "TopDecor", "OffLineReward/FromPsd/FromPsd_TopDecor", new Vector2(830f, 55f), Pos(541f, 734.5f));
 
-            // 횟수 줄. 스샷의 [MIN] [-] 수량 [+] [MAX] 배치다.
-            minButton = CreateButton("MinButton", panel.transform, "MIN", PanelInnerColor, out _);
-            SetAnchored(minButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(-330f, 20f), new Vector2(150f, 100f));
+            stageText = CreateText("StageText", p, "1. 스테이지", 35f, TextAlignmentOptions.Center, Color.white);
+            SetRect(stageText.rectTransform, new Vector2(760f, 48f), Pos(540f, 745f));
 
-            decreaseButton = CreateButton("DecreaseButton", panel.transform, "－", PanelInnerColor, out TMP_Text decreaseLabel);
-            decreaseLabel.fontSize = 46f;
-            SetAnchored(decreaseButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(-185f, 20f), new Vector2(110f, 100f));
-
-            Image countBox = CreateImage("CountBox", panel.transform, CountBoxColor);
-            SetAnchored(countBox.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(230f, 110f));
-
-            countText = CreateText("CountText", countBox.transform, "1", 52f, TextAlignmentOptions.Center, Color.white);
+            // 횟수 줄 — [MIN] [-] 수량 [+] [MAX]. 버튼은 Btn_Gray x3 (보이는 24px, 여백 4/6/4/2 → 중심 6px 위)
+            Caption(p, "CountCaption", "소탕 횟수", 815f);
+            minButton = GrayButton(p, "MinButton", "MIN", new Vector2(154f, 114f), Pos(215f, 879f));
+            decreaseButton = GrayButton(p, "DecreaseButton", "-", new Vector2(124f, 114f), Pos(350f, 879f));
+            Image countBox = Sliced(p, "CountBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(284f, 124f), Pos(540f, 885f), CellColor);
+            countText = CreateText("CountText", countBox.transform, "1", 45f, TextAlignmentOptions.Center, Color.white);
             Stretch(countText.rectTransform);
+            increaseButton = GrayButton(p, "IncreaseButton", "+", new Vector2(124f, 114f), Pos(730f, 879f));
+            maxButton = GrayButton(p, "MaxButton", "MAX", new Vector2(154f, 114f), Pos(865f, 879f));
 
-            increaseButton = CreateButton("IncreaseButton", panel.transform, "＋", PanelInnerColor, out TMP_Text increaseLabel);
-            increaseLabel.fontSize = 46f;
-            SetAnchored(increaseButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(185f, 20f), new Vector2(110f, 100f));
+            // 필요 재화 — (고기) 필요 / 보유
+            Caption(p, "CostCaption", "필요 재화", 965f);
+            Sliced(p, "CostBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(804f, 114f), Pos(540f, 1035f), CellColor);
+            costIcon = CreateImage("CostIcon", p, Color.white);
+            costIcon.preserveAspect = true;
+            costIcon.raycastTarget = false;
+            SetRect(costIcon.rectTransform, new Vector2(76f, 76f), Pos(405f, 1035f));
+            costText = CreateText("CostText", p, "5 / 0", 35f, TextAlignmentOptions.Center, Color.white);
+            SetRect(costText.rectTransform, new Vector2(320f, 48f), Pos(570f, 1035f));
 
-            maxButton = CreateButton("MaxButton", panel.transform, "MAX", PanelInnerColor, out _);
-            SetAnchored(maxButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(330f, 20f), new Vector2(150f, 100f));
+            // 소탕 — Big_Btn_Green x3, 보이는 331x145 + 여백 4/6/4/2 x3 → 355x169, 중심이 6px 위
+            confirmButton = SpriteButton(p, "ConfirmButton", "Ingame/Big_Btn_Green", 3f, new Vector2(355f, 169f), Pos(540f, 1223.5f));
+            confirmText = CreateText("Label", confirmButton.transform, "소탕", 35f, TextAlignmentOptions.Center, Color.white);
+            SetRect(confirmText.rectTransform, new Vector2(300f, 46f), new Vector2(0f, 4.5f));
 
-            costText = CreateText("CostText", panel.transform, string.Empty, 30f, TextAlignmentOptions.Center, MutedTextColor);
-            SetAnchored(costText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -80f), new Vector2(800f, 56f));
+            // 닫기 — 방치 보상 창과 같은 그림(FromPsd 임시). 판 오른쪽 위 모서리에 걸친다.
+            closeButton = SpriteButton(p, "CloseButton", "OffLineReward/FromPsd/FromPsd_CloseButton", 1f, new Vector2(112f, 111f), Pos(914f, 595f));
+            closeButton.GetComponent<Image>().type = Image.Type.Simple;
+        }
 
-            cancelButton = CreateButton("CancelButton", panel.transform, "취소", CyanColor, out _);
-            SetAnchored(cancelButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(-220f, 95f), new Vector2(380f, 115f));
+        private void Caption(Transform parent, string name, string value, float designY)
+        {
+            TMP_Text caption = CreateText(name, parent, value, 30f, TextAlignmentOptions.MidlineLeft, CaptionColor);
+            SetRect(caption.rectTransform, new Vector2(780f, 42f), Pos(540f, designY));
+        }
 
-            confirmButton = CreateButton("ConfirmButton", panel.transform, "소탕", OrangeColor, out confirmText);
-            SetAnchored(confirmButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(220f, 95f), new Vector2(380f, 115f));
+        private Button GrayButton(Transform parent, string name, string label, Vector2 size, Vector2 position)
+        {
+            Button button = SpriteButton(parent, name, "Ingame/Btn_Gray", 3f, size, position);
+            TMP_Text text = CreateText("Label", button.transform, label, label.Length == 1 ? 50f : 32f, TextAlignmentOptions.Center, Color.white);
+            SetRect(text.rectTransform, size - new Vector2(24f, 24f), new Vector2(0f, 6f));
+            return button;
         }
 
         /// <summary>
@@ -150,7 +180,7 @@ namespace OJ.Stage
             if (decreaseButton != null) decreaseButton.onClick.AddListener(() => SetCount(selectedCount - 1));
             if (increaseButton != null) increaseButton.onClick.AddListener(() => SetCount(selectedCount + 1));
             if (maxButton != null) maxButton.onClick.AddListener(() => SetCount(maxCount));
-            if (cancelButton != null) cancelButton.onClick.AddListener(Exit);
+            if (closeButton != null) closeButton.onClick.AddListener(Exit);
             if (confirmButton != null) confirmButton.onClick.AddListener(Confirm);
         }
 
@@ -186,7 +216,7 @@ namespace OJ.Stage
             if (stageText != null)
             {
                 stageText.SetText(targetStageIndex >= 1
-                    ? $"{targetStageIndex} 스테이지"
+                    ? targetStageIndex + ". " + StageData.GetStageDisplayName(targetStageIndex)
                     : "클리어한 스테이지가 없다");
             }
 
@@ -195,13 +225,18 @@ namespace OJ.Stage
 
             if (costText != null)
             {
-                // 0 회일 때도 1회분 비용을 적는다. "고기 5 / 보유 3" 이라고 보여야
-                // 왜 못 누르는지가 한 줄로 읽힌다.
+                // 0 회일 때도 1회분 비용을 적는다. "5 / 3" 이 빨갛게 보여야
+                // 왜 못 누르는지가 한 줄로 읽힌다. (필요 / 보유)
                 int shownCount = canSweep ? selectedCount : 1;
                 int cost = SweepRules.TotalStaminaCost(shownCount);
-                costText.color = canSweep ? MutedTextColor : ShortageColor;
-                costText.SetText($"고기 {cost:#,##0} / 보유 {ownedStamina:#,##0}");
+                costText.color = canSweep ? Color.white : ShortageColor;
+                costText.SetText($"{cost:#,##0} / {ownedStamina:#,##0}");
             }
+
+            if (costIcon != null && costIcon.sprite == null)
+                costIcon.sprite = PointRewardUtility.GetPointIcon(PointType.Stamina);
+            if (costIcon != null)
+                costIcon.enabled = costIcon.sprite != null;
 
             if (confirmButton != null)
                 confirmButton.interactable = canSweep;
@@ -288,19 +323,53 @@ namespace OJ.Stage
             return text;
         }
 
-        private Button CreateButton(string name, Transform parent, string label, Color color, out TMP_Text text)
+        private static Vector2 Pos(float x, float y)
         {
-            Image image = CreateImage(name, parent, color);
+            return new Vector2(x - 540f, 960f - y);
+        }
+
+        private static Color Hex(int rgb)
+        {
+            return new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
+        }
+
+        /// <summary>스프라이트를 읽는다. <b>없으면 멈춘다</b> — null 로 구우면 흰 사각형이 조용히 저장된다.</summary>
+        private static Sprite LoadSprite(string pathUnderArt)
+        {
+            Sprite sprite = Resources.Load<Sprite>(ArtRoot + pathUnderArt);
+            if (sprite == null)
+                throw new System.InvalidOperationException("[소탕 창 굽기] 스프라이트가 없다: Resources/" + ArtRoot + pathUnderArt);
+            return sprite;
+        }
+
+        private static Image Picture(Transform parent, string name, string path, Vector2 size, Vector2 position)
+        {
+            Image image = CreateImage(name, parent, Color.white);
+            image.sprite = LoadSprite(path);
+            image.raycastTarget = false;
+            SetRect(image.rectTransform, size, position);
+            return image;
+        }
+
+        /// <summary>9슬라이스 판. 테두리는 사람이 정한다 — 여기서는 Sliced 와 배율만 지정한다.</summary>
+        private static Image Sliced(Transform parent, string name, string path, float pixelScale, Vector2 size, Vector2 position, Color color)
+        {
+            Image image = Picture(parent, name, path, size, position);
+            image.type = Image.Type.Sliced;
+            image.pixelsPerUnitMultiplier = 1f / pixelScale;
+            image.color = color;
+            return image;
+        }
+
+        private static Button SpriteButton(Transform parent, string name, string path, float pixelScale, Vector2 size, Vector2 position)
+        {
+            Image image = Sliced(parent, name, path, pixelScale, size, position, Color.white);
+            image.raycastTarget = true;
             Button button = image.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
             ColorBlock colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1f, 1f, 1f, 0.90f);
-            colors.pressedColor = new Color(0.78f, 0.78f, 0.78f, 1f);
-            colors.disabledColor = new Color(0.42f, 0.45f, 0.52f, 0.75f);
+            colors.disabledColor = DisabledTint;
             button.colors = colors;
-            text = CreateText("Label", button.transform, label, 34f, TextAlignmentOptions.Center, Color.white);
-            Stretch(text.rectTransform);
             return button;
         }
 
