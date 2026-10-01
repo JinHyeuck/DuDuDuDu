@@ -26,7 +26,7 @@ namespace OJ.Mission
         /// <b>정본은 강화 재화다.</b> <c>PointManager.ToScrollType</c> 이 킹→신화석,
         /// 특수→레어석, 기본→속성 스크롤로 이미 완전히 매핑하고 있고, 여기는 그 가름을
         /// 번호 구간으로 다시 적은 것이다. 둘이 어긋나면
-        /// <c>MissionSubKeyTests.DiceGradeMatchesUpgradeCurrency</c> 가 떨어진다 —
+        /// <c>MissionDataTests.DiceGradeMatchesUpgradeCurrency</c> 가 떨어진다 —
         /// 표를 둘로 둔 값을 그 테스트가 치른다.
         ///
         /// <b>번호 구간으로 적은 이유.</b> <c>ToScrollType</c> 은 모르는 다이스에 예외를
