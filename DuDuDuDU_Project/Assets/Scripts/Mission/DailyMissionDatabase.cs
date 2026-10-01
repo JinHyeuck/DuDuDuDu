@@ -256,7 +256,18 @@ namespace OJ.Mission
             };
         }
 
-        /// <summary>기본 추가 보상 4칸. 문턱은 기획대로 3·5·7·10 이다.</summary>
+        /// <summary>
+        /// 기본 추가 보상 4칸. 기획의 문턱은 3·5·7·<b>10</b> 인데 마지막만 <b>9</b> 로 둔다.
+        ///
+        /// <b>광고 SDK 가 0 줄이라 광고 시청 미션을 아무도 못 깨기 때문이다</b>
+        /// (<c>NullRewardedAdService.IsAvailable</c> 이 언제나 false 다). 11개 중 10개가
+        /// 상한인데 문턱이 10이면 <b>하루를 완벽히 털어야 겨우 닿아</b> 그 보상이 사실상
+        /// 테스트되지 않는다.
+        ///
+        /// <b>SDK 가 붙는 날 10 으로 되돌릴 것.</b> 그때는 11개 전부 달성 가능해져
+        /// 이 양보가 필요 없어진다. 에셋이 이미 있으면 인스펙터에서 고치면 된다 —
+        /// 이 표는 "에셋이 비었을 때" 만 쓰인다.
+        /// </summary>
         public static List<DailyMissionTier> BuildDefaultTiers()
         {
             return new List<DailyMissionTier>
@@ -264,7 +275,7 @@ namespace OJ.Mission
                 MakeTier(3, new MissionReward(PointType.FreeGem, 100)),
                 MakeTier(5, new MissionReward(PointType.RelicTicket, 1)),
                 MakeTier(7, new MissionReward(PointType.PinballTicket, 3)),
-                MakeTier(10, new MissionReward(PointType.FreeGem, 300)),
+                MakeTier(9, new MissionReward(PointType.FreeGem, 300)),
             };
         }
 

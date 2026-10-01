@@ -132,19 +132,22 @@ namespace OJ.Game.Tests
         public void ValidationCatchesUnreachableTier()
         {
             List<DailyMissionDefinition> missions = DailyMissionDatabase.BuildDefaultMissions();
+            List<DailyMissionTier> tiers = DailyMissionDatabase.BuildDefaultTiers();
 
-            // 광고·결제를 끄면 달성 가능한 미션이 9개가 되어 10개 문턱이 닫힌다.
-            for (int i = 0; i < missions.Count; i++)
-            {
-                if (missions[i].action == MissionAction.AdWatch ||
-                    missions[i].action == MissionAction.IapPurchase)
-                {
-                    missions[i].enabled = false;
-                }
-            }
+            // 가장 높은 문턱보다 하나 적게만 켜 둔다. 그 보상은 영원히 안 열린다.
+            //
+            // <b>끌 미션을 이름으로 고르지 않는다.</b> 예전에는 광고·결제를 껐는데,
+            // 마지막 문턱을 10 에서 9 로 내리자 그 둘을 끈 상태가 <i>딱 달성 가능</i>이 되어
+            // 이 테스트가 아무것도 검사하지 않게 됐다. 문턱에서 역산하면 수치를 또 바꿔도
+            // 검사하려던 것을 계속 검사한다.
+            int top = tiers[tiers.Count - 1].requiredClearCount;
+            for (int i = top - 1; i < missions.Count; i++)
+                missions[i].enabled = false;
 
-            List<string> problems = DailyMissionDatabase.Validate(
-                missions, DailyMissionDatabase.BuildDefaultTiers());
+            Assert.AreEqual(top - 1, DailyMissionDatabase.GetActiveMissions(missions).Count,
+                "전제가 깨졌다 — 끄고 나면 문턱보다 하나 적어야 한다.");
+
+            List<string> problems = DailyMissionDatabase.Validate(missions, tiers);
 
             Assert.IsNotEmpty(problems, "닫힌 문턱을 잡아내지 못했다.");
         }
@@ -173,11 +176,15 @@ namespace OJ.Game.Tests
             Assert.IsNotEmpty(problems);
         }
 
+        /// <summary>
+        /// 기획의 문턱은 3·5·7·10 인데 마지막만 9 다 — 광고 SDK 가 붙기 전에는 광고 시청
+        /// 미션을 못 깨서 11개 중 10개가 상한이기 때문이다. SDK 가 붙으면 10 으로 되돌린다.
+        /// </summary>
         [Test]
         public void DefaultTierThresholdsFollowThePlan()
         {
             CollectionAssert.AreEqual(
-                new[] { 3, 5, 7, 10 },
+                new[] { 3, 5, 7, 9 },
                 DailyMissionDatabase.GetTierThresholds(DailyMissionDatabase.BuildDefaultTiers()));
         }
 
