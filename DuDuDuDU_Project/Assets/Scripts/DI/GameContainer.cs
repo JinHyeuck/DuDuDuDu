@@ -5,6 +5,7 @@ using OJ.Analytics;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.IdleReward;
+using OJ.Mission;
 using OJ.Pinball;
 using OJ.Point;
 using OJ.Relic;
@@ -235,6 +236,12 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 일일 미션·업적. 의존은 PointManager 하나뿐이라 순서 제약은 없고, 상점·핀볼
+            // 뒤에 둔 것은 세이브 파일에서 "날짜가 바뀌면 달라지는 것"끼리 붙여 두려는 것뿐이다.
+            builder.Register<MissionManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 계정 단위 권리(지금은 광고제거권 하나). 소유자를 하나로 못 박아 둔 필드다.
             builder.Register<EntitlementManager>(Lifetime.Singleton)
                 .AsSelf()
@@ -252,9 +259,16 @@ namespace OJ.DI
             builder.RegisterEntryPoint<SaveOnApplicationLifecycle>();
 
             // 리워드 광고 포트. 구현이 스텁이라 지금은 아무 일도 하지 않지만, 등록을
-            // 여기 두면 SDK 를 붙일 때 <b>고칠 곳이 이 한 줄</b>이다.
-            builder.Register<NullRewardedAdService>(Lifetime.Singleton)
-                .As<IRewardedAdService>();
+            // 여기 두면 SDK 를 붙일 때 <b>고칠 곳이 이 한 줄</b>이다 —
+            // 아래 NullRewardedAdService 자리에 진짜 구현을 넣으면 된다.
+            //
+            // <b>미션 카운터로 감싸 둔다.</b> 광고를 띄우는 곳이 셋이라 호출부마다 세면
+            // 새 광고 지점이 생길 때 빠뜨리게 된다(CountingRewardedAdService 주석 참조).
+            // 감싸는 쪽이 포트 하나뿐이라 SDK 를 붙여도 이 줄의 모양은 그대로다.
+            builder.Register<IRewardedAdService>(
+                container => new CountingRewardedAdService(
+                    new NullRewardedAdService(), container.Resolve<MissionManager>()),
+                Lifetime.Singleton);
         }
 
         /// <summary>
@@ -286,6 +300,7 @@ namespace OJ.DI
             PinballManager.Instance = container.Resolve<PinballManager>();
             BonusDiceManager.Instance = container.Resolve<BonusDiceManager>();
             EntitlementManager.Instance = container.Resolve<EntitlementManager>();
+            MissionManager.Instance = container.Resolve<MissionManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();
@@ -310,6 +325,11 @@ namespace OJ.DI
             // 기존 유저의 PlayerPrefs 는 읽지 않는다. AGENTS.md 「확정된 결정」 2번
             // (기존 유저 세이브 버림)에 따른 것이다.
             SaveService.TryLoadAll();
+
+            // <b>로드 뒤여야 한다.</b> 일일 미션의 날짜 리셋과 로그인 카운트가 여기서 돈다 —
+            // 먼저 부르면 바로 위 TryLoadAll 이 그 결과를 덮어, 날이 바뀌어도 어제의
+            // 진행도가 남고 로그인 미션이 영영 0 이 된다.
+            MissionManager.Instance.NotifyAppStart();
         }
     }
 }

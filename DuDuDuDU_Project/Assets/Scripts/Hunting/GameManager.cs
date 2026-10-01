@@ -12,6 +12,7 @@ using OJ.Battle;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Element;
+using OJ.Mission;
 using OJ.Point;
 using OJ.Relic;
 using OJ.Rewind;
@@ -789,6 +790,12 @@ namespace OJ.Hunting
         private void InitializeStage()
         {
             RelicManager.Instance?.BeginStageRun();
+
+            // "게임 플레이" 는 <b>입장</b>으로 센다. 클리어로 세면 못 깨는 스테이지에
+            // 막힌 유저의 일일 미션이 통째로 멈추고, 그건 미션이 할 일이 아니다.
+            // <b>본편과 탑이 둘 다 여기를 지난다</b>(아래 탑 갈래도 이 메서드 안이다).
+            // 소탕은 이 경로를 타지 않으므로 저절로 빠진다 — 전투를 돌리지 않기 때문이다.
+            MissionManager.Instance?.Notify(MissionAction.GamePlay);
 
             // 탑 예약이 있으면 그것이 이 판이다. <b>예약은 한 번만 나온다</b> —
             // 남겨 두면 다음에 본편 스테이지로 들어갈 때 탑 층이 열린다.

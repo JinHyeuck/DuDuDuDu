@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using VContainer;
 using OJ.Analytics;
 using OJ.Battle;
+using OJ.Core;
 using OJ.DI;
 using OJ.Hunting;
+using OJ.Mission;
 using OJ.Point;
 using OJ.Relic;
 
@@ -81,6 +83,10 @@ namespace OJ.Dice
 
             Destroy(from.gameObject);
             RelicManager.Instance?.ApplyMergeInsurance();
+
+            // 머지만 센다. 진화(TryEvolve)·교환(TryExchange)은 같은 파일에 있지만
+            // 기획의 "다이스 머지 n회" 가 가리키는 행동이 아니다.
+            MissionManager.Instance?.Notify(MissionAction.DiceMerge);
 
             return true;
         }
