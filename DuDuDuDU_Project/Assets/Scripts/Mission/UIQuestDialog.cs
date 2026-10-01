@@ -30,7 +30,15 @@ namespace OJ.Mission
     public sealed class UIQuestDialog : DialogBase
     {
         [SerializeField] private TMP_Text titleText;
+
+        /// <summary>남은 시간 글자. <see cref="resetTimerRoot"/> 의 자식이다.</summary>
         [SerializeField] private TMP_Text resetTimerText;
+
+        /// <summary>
+        /// 남은 시간 상자(배경). <b>글자가 아니라 이것을 끈다.</b> 글자만 끄면 업적 탭에
+        /// 빈 검은 상자가 남는데, 그건 "값을 못 불러왔다" 로 읽힌다.
+        /// </summary>
+        [SerializeField] private GameObject resetTimerRoot;
 
         [SerializeField] private GameObject tierRoot;
         [SerializeField] private Image tierGaugeFill;
@@ -40,6 +48,13 @@ namespace OJ.Mission
         [SerializeField] private RectTransform listContent;
         [SerializeField] private UIMissionRow rowTemplate;
 
+        /// <summary>
+        /// 목록이 차지하는 사각형. <b>탭마다 크기가 다르다</b> — 업적 탭은 추가 보상 줄이
+        /// 없으므로 그 자리까지 목록이 올라온다. 고정해 두면 업적 탭 위쪽에 창 높이의
+        /// 1/4 짜리 빈칸이 남는다.
+        /// </summary>
+        [SerializeField] private RectTransform listViewport;
+
         [SerializeField] private Button dailyTabButton;
         [SerializeField] private Button achievementTabButton;
         [SerializeField] private Image dailyTabImage;
@@ -48,8 +63,30 @@ namespace OJ.Mission
 
         [SerializeField] private TMP_Text emptyText;
 
-        /// <summary>추가 보상 게이지 트랙의 너비. 굽기와 같은 값이어야 한다.</summary>
-        private const float TierGaugeWidth = 700f;
+        /// <summary>
+        /// 추가 보상 게이지 트랙의 너비. <b>칸 배치에서 역산한 값이라 임의로 못 바꾼다.</b>
+        ///
+        /// 칸 4개가 120 폭 + 24 간격으로 놓이므로 중심이 -216·-72·+72·+216 이고,
+        /// 게이지는 눈금 4개(1/4·2/4·3/4·4/4)가 그 중심에 정확히 떨어져야 한다.
+        /// 눈금 간격 = 너비/4 = 144 → 너비 576, 왼쪽 끝 -360, 오른쪽 끝 +216
+        /// (그래서 트랙 중심이 0 이 아니라 -72 다 — <see cref="TierGaugeCenterX"/>).
+        ///
+        /// 이 둘이 어긋나면 "3개 깼는데 게이지가 첫 상자에 안 닿는다" 가 된다.
+        /// </summary>
+        private const float TierGaugeWidth = 576f;
+
+        /// <summary>게이지 트랙의 가로 중심. 위 주석의 역산 결과다.</summary>
+        private const float TierGaugeCenterX = -72f;
+
+        /// <summary>
+        /// 목록 사각형. 탭마다 다르다 — 일일 탭은 추가 보상 줄(아래끝 315) 밑에서 시작하고,
+        /// 업적 탭은 그 줄이 없으므로 제목 바로 아래(570)까지 올라온다.
+        /// 둘 다 아래끝은 탭 버튼 위(-545)다.
+        /// </summary>
+        private static readonly Vector2 DailyListSize = new Vector2(880f, 840f);
+        private static readonly Vector2 DailyListPosition = new Vector2(0f, -122f);
+        private static readonly Vector2 AchievementListSize = new Vector2(880f, 1110f);
+        private static readonly Vector2 AchievementListPosition = new Vector2(0f, 10f);
 
         private readonly List<UIMissionRow> rows = new List<UIMissionRow>();
         private readonly List<UIMissionTierItem> tierItems = new List<UIMissionTierItem>();
@@ -152,6 +189,7 @@ namespace OJ.Mission
 
             RefreshTabs();
             RefreshTimer();
+            RefreshListRect();
 
             if (tab == QuestTab.Daily)
                 RefreshDaily(missions);
@@ -197,17 +235,30 @@ namespace OJ.Mission
 
         private void RefreshTimer()
         {
-            if (resetTimerText == null)
-                return;
-
             MissionManager missions = MissionManager.Instance;
 
             // 업적은 리셋되지 않는다. 그 탭에서 남은 시간을 띄우면 업적이 사라지는 것처럼 읽힌다.
             bool show = tab == QuestTab.Daily && missions != null;
-            resetTimerText.gameObject.SetActive(show);
 
-            if (show)
+            // 글자가 아니라 상자를 끈다. 글자만 끄면 빈 상자가 남아 "값을 못 불러왔다" 로 보인다.
+            if (resetTimerRoot != null)
+                resetTimerRoot.SetActive(show);
+
+            if (show && resetTimerText != null)
                 resetTimerText.SetText(MissionText.ResetCountdown(missions.TimeUntilReset));
+        }
+
+        /// <summary>
+        /// 탭에 맞춰 목록 사각형을 맞춘다. 일일 탭은 추가 보상 줄 아래, 업적 탭은 그 자리까지.
+        /// </summary>
+        private void RefreshListRect()
+        {
+            if (listViewport == null)
+                return;
+
+            bool daily = tab == QuestTab.Daily;
+            listViewport.sizeDelta = daily ? DailyListSize : AchievementListSize;
+            listViewport.anchoredPosition = daily ? DailyListPosition : AchievementListPosition;
         }
 
         private void RefreshDaily(MissionManager missions)
@@ -408,11 +459,16 @@ namespace OJ.Mission
             dialog.resetTimerText.transform.SetParent(timerBg.transform, false);
             UIMissionUIFactory.SetRect(
                 dialog.resetTimerText.rectTransform, new Vector2(460f, 72f), Vector2.zero);
+            dialog.resetTimerRoot = timerBg.gameObject;
 
             BakeTierRow(dialog, panel.transform, font);
 
+            // 일일 탭 크기로 굽는다. 업적 탭으로 넘어가면 RefreshListRect 가 늘린다 —
+            // 추가 보상 줄과 겹치면 첫 줄이 선물 상자 밑으로 들어가는데, 스크롤은 되기 때문에
+            // 고장으로 안 보인다.
             dialog.listContent = UIMissionUIFactory.CreateScrollList(
-                "List", panel.transform, new Vector2(880f, 800f), new Vector2(0f, -70f), 14f);
+                "List", panel.transform, DailyListSize, DailyListPosition, 14f);
+            dialog.listViewport = dialog.listContent.parent as RectTransform;
             dialog.rowTemplate = UIMissionRow.Create(dialog.listContent, font);
 
             BakeTabs(dialog, panel.transform, font);
@@ -421,7 +477,7 @@ namespace OJ.Mission
                 "Empty", panel.transform, string.Empty, 40f,
                 TextAlignmentOptions.Center, UIMissionUIFactory.MutedText, font);
             UIMissionUIFactory.SetRect(
-                dialog.emptyText.rectTransform, new Vector2(700f, 80f), new Vector2(0f, -70f));
+                dialog.emptyText.rectTransform, new Vector2(700f, 80f), new Vector2(0f, -105f));
             dialog.emptyText.gameObject.SetActive(false);
 
             return dialog;
@@ -431,19 +487,23 @@ namespace OJ.Mission
         {
             GameObject tierRoot = UIMissionUIFactory.CreateRect("TierRoot", parent);
             UIMissionUIFactory.SetRect(
-                tierRoot.GetComponent<RectTransform>(), new Vector2(880f, 190f), new Vector2(0f, 410f));
+                tierRoot.GetComponent<RectTransform>(), new Vector2(880f, 210f), new Vector2(0f, 420f));
             dialog.tierRoot = tierRoot;
 
+            // 게이지는 상자(위)와 숫자(아래) <b>사이</b>를 가로지른다. 셋의 세로 범위가
+            // 겹치면 숫자가 바 위에 찍혀 둘 다 안 읽힌다 — 첫 굽기에서 그랬다.
+            // 상자 아래끝 -14 · 게이지 -41..-19 · 숫자 위끝 -46 으로 5px 씩 띄워 뒀다.
             dialog.tierGaugeFill = UIMissionUIFactory.CreateGauge(
-                "TierGauge", tierRoot.transform, new Vector2(TierGaugeWidth, 24f), new Vector2(0f, -56f),
-                UIMissionUIFactory.FillColor);
+                "TierGauge", tierRoot.transform, new Vector2(TierGaugeWidth, 22f),
+                new Vector2(TierGaugeCenterX, -30f), UIMissionUIFactory.FillColor);
 
             GameObject itemRoot = UIMissionUIFactory.CreateRect("TierItems", tierRoot.transform);
             RectTransform itemRect = itemRoot.GetComponent<RectTransform>();
-            UIMissionUIFactory.SetRect(itemRect, new Vector2(880f, 190f), Vector2.zero);
+            UIMissionUIFactory.SetRect(itemRect, new Vector2(880f, 210f), Vector2.zero);
 
-            // 가로로 고르게 편다. 문턱 간격이 3·5·7·10 처럼 고르지 않아도 칸은 등간격이고,
-            // 게이지도 같은 기준으로 찬다(MissionRules.TierGaugeProgress).
+            // 가로로 고르게 편다. 문턱 간격이 3·5·7·9 처럼 고르지 않아도 칸은 등간격이고,
+            // 게이지의 눈금도 그 칸 중심에 떨어진다(TierGaugeWidth 주석의 역산).
+            // <b>칸 폭·간격을 바꾸면 TierGaugeWidth 도 같이 바꿔야 한다.</b>
             var layout = itemRoot.AddComponent<HorizontalLayoutGroup>();
             layout.spacing = 24f;
             layout.childAlignment = TextAnchor.MiddleCenter;

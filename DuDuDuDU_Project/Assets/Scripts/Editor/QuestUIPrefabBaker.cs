@@ -37,10 +37,15 @@ namespace OJ.EditorTools
         private const string FontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
 
         /// <summary>
-        /// 로비 우측 상단. 1080x1920 기준이고, 마음에 안 들면 씬에서 옮기면 된다 —
-        /// 이 도구는 이미 있는 것을 옮기지 않는다.
+        /// 로비 우측 상단. 앵커가 우상단이라 둘 다 음수다. 1080x1920 기준.
+        ///
+        /// <b>y 를 -300 으로 내린 이유.</b> -150 은 재화 표시줄(고기·골드·젬) 높이와 겹쳐
+        /// 젬 보유량을 가렸다. -300 은 그 줄 아래이자 스테이지 배너(x 는 905 에서 끝난다)
+        /// 오른쪽의 빈 칸이라 무엇도 가리지 않는다.
+        ///
+        /// 마음에 안 들면 씬에서 옮기면 된다 — 이 도구는 이미 있는 것을 옮기지 않는다.
         /// </summary>
-        private static readonly Vector2 LobbyAnchoredPosition = new Vector2(-110f, -150f);
+        private static readonly Vector2 LobbyAnchoredPosition = new Vector2(-105f, -300f);
 
         [MenuItem("OJ/개발/미션/퀘스트 창 굽기")]
         private static void BakeDialog()

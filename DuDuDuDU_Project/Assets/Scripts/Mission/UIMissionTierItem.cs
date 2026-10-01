@@ -15,7 +15,11 @@ namespace OJ.Mission
     /// </summary>
     public sealed class UIMissionTierItem : MonoBehaviour
     {
-        internal static readonly Vector2 ItemSize = new Vector2(120f, 150f);
+        /// <summary>
+        /// 칸 하나의 크기. <b>세로가 넉넉해야 한다</b> — 상자·게이지·숫자를 위에서 아래로
+        /// 겹치지 않게 놓아야 하는데, 가운데를 게이지가 가로지른다.
+        /// </summary>
+        internal static readonly Vector2 ItemSize = new Vector2(120f, 180f);
 
         [SerializeField] private Image box;
         [SerializeField] private Image rewardIcon;
@@ -83,8 +87,10 @@ namespace OJ.Mission
 
             var item = root.AddComponent<UIMissionTierItem>();
 
+            // 상자는 위, 게이지는 가운데(TierRoot 가 그린다), 숫자는 아래다.
+            // 셋의 세로 범위가 겹치지 않도록 5px 씩 띄워 뒀다.
             Image box = UIMissionUIFactory.CreateImage("Box", root.transform, UIMissionUIFactory.RowColor);
-            UIMissionUIFactory.SetRect(box.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 20f));
+            UIMissionUIFactory.SetRect(box.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 38f));
             box.raycastTarget = false;
             item.box = box;
 
@@ -98,12 +104,12 @@ namespace OJ.Mission
                 "Count", root.transform, "0", 34f,
                 TextAlignmentOptions.Center, UIMissionUIFactory.DarkText, font);
             UIMissionUIFactory.SetRect(
-                item.countText.rectTransform, new Vector2(120f, 40f), new Vector2(0f, -52f));
+                item.countText.rectTransform, new Vector2(120f, 40f), new Vector2(0f, -66f));
 
             // 버튼은 상자 전체를 덮는다. 작은 칸이라 따로 그린 버튼을 얹으면
             // 상자가 가려지고, 누를 곳도 더 작아진다.
             Image hit = UIMissionUIFactory.CreateImage("ClaimButton", root.transform, new Color(1f, 1f, 1f, 0f));
-            UIMissionUIFactory.SetRect(hit.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 20f));
+            UIMissionUIFactory.SetRect(hit.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 38f));
             var button = hit.gameObject.AddComponent<Button>();
             button.targetGraphic = hit;
             item.claimButton = button;
@@ -111,7 +117,7 @@ namespace OJ.Mission
             TMP_Text done = UIMissionUIFactory.CreateText(
                 "DoneMark", root.transform, "✓", 56f,
                 TextAlignmentOptions.Center, UIMissionUIFactory.LightText, font);
-            UIMissionUIFactory.SetRect(done.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 20f));
+            UIMissionUIFactory.SetRect(done.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 38f));
             item.doneMark = done.gameObject;
 
             return item;

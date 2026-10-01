@@ -66,6 +66,31 @@ namespace OJ.Mission
             return label;
         }
 
+        /// <summary>
+        /// 칸 밖으로 넘치지 않는 글자. 보상 수량처럼 <b>자릿수가 데이터에 달린</b> 값에 쓴다.
+        ///
+        /// <b>칸을 넓히는 것으로는 못 막는다.</b> 30000 은 들어가도 2000000 은 안 들어가고,
+        /// 그때 TMP 는 글자를 칸 밖으로 흘려보낸다 — 옆 줄 위에 숫자가 겹쳐 찍힌다.
+        /// 자동 축소는 자릿수가 늘어나는 만큼 글자가 작아져서 그 경로가 아예 없다.
+        /// </summary>
+        internal static TMP_Text CreateFittedText(
+            string name, Transform parent, string text, float maxSize, float minSize,
+            TextAlignmentOptions align, Color color, TMP_FontAsset font)
+        {
+            TMP_Text label = CreateText(name, parent, text, maxSize, align, color, font);
+
+            // <b>줄바꿈을 꺼야 가로로 줄어든다.</b> TMP 의 자동 축소는 글자가 칸의 <i>세로</i>를
+            // 넘칠 때 작아진다. 줄바꿈이 켜져 있으면 "30000" 처럼 한 덩이인 글자는 줄을 못 바꿔
+            // 가로로만 넘치고, 세로는 멀쩡하니 축소가 아예 돌지 않는다 — 그대로 잘려 나간다.
+            // (첫 굽기에서 30000 이 "3000" 으로 잘린 것이 이것이다.)
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.enableAutoSizing = true;
+            label.fontSizeMax = maxSize;
+            label.fontSizeMin = minSize;
+            label.overflowMode = TextOverflowModes.Truncate;
+            return label;
+        }
+
         internal static Button CreateButton(
             string name, Transform parent, string label, Vector2 size, Vector2 position,
             Color background, Color textColor, float fontSize, TMP_FontAsset font)

@@ -157,22 +157,24 @@ namespace OJ.Mission
             row.background = root;
 
             Image icon = UIMissionUIFactory.CreateImage("RewardIcon", root.transform, Color.white);
-            UIMissionUIFactory.SetRect(icon.rectTransform, new Vector2(110f, 110f), new Vector2(-345f, 10f));
+            UIMissionUIFactory.SetRect(icon.rectTransform, new Vector2(100f, 100f), new Vector2(-340f, 18f));
             icon.raycastTarget = false;
             icon.preserveAspect = true;
             row.rewardIcon = icon;
 
-            row.rewardAmountText = UIMissionUIFactory.CreateText(
-                "RewardAmount", root.transform, "0", 34f,
+            // 수량은 자릿수가 데이터에 달렸다(50 부터 2000000 까지). 고정 크기로 두면
+            // 큰 값이 칸 밖으로 흘러 옆 줄 위에 겹쳐 찍힌다 — 실제로 30000 에서 그랬다.
+            row.rewardAmountText = UIMissionUIFactory.CreateFittedText(
+                "RewardAmount", root.transform, "0", 28f, 16f,
                 TextAlignmentOptions.Center, UIMissionUIFactory.DarkText, font);
             UIMissionUIFactory.SetRect(
-                row.rewardAmountText.rectTransform, new Vector2(130f, 40f), new Vector2(-345f, -54f));
+                row.rewardAmountText.rectTransform, new Vector2(140f, 38f), new Vector2(-338f, -50f));
 
             row.titleText = UIMissionUIFactory.CreateText(
                 "Title", root.transform, "미션", 40f,
                 TextAlignmentOptions.Left, UIMissionUIFactory.DarkText, font);
             UIMissionUIFactory.SetRect(
-                row.titleText.rectTransform, new Vector2(540f, 48f), new Vector2(-15f, 34f));
+                row.titleText.rectTransform, new Vector2(520f, 48f), new Vector2(-25f, 34f));
 
             row.gaugeFill = UIMissionUIFactory.CreateGauge(
                 "Gauge", root.transform, new Vector2(GaugeWidth, 30f), new Vector2(-105f, -28f),
