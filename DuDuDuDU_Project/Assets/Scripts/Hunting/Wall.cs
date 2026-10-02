@@ -56,8 +56,12 @@ namespace OJ.Hunting
 
         public void TakeDamage(int dmg)
         {
-            if (PointCheatController.IsWallInvincible)
+            // 치트 무적. <b>릴리스에서는 이 분기 자체가 사라진다</b> — 꺼진 채로 남아
+            // 매 피격마다 읽히는 것과 다르다.
+#if UNITY_EDITOR || DEV_DEFINE
+            if (OJ.Dev.DevCheatFlags.WallInvincible)
                 return;
+#endif
 
             // 벽은 몬스터와 식이 다르다 — 방어력도, 상태 피해증가도, CeilToInt 도 없다.
             CurrentHp = IncomingDamageFormula.WallHpAfterDamage(CurrentHp, dmg);
