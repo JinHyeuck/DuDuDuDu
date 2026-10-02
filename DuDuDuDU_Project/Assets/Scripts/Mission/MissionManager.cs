@@ -521,5 +521,63 @@ namespace OJ.Mission
             state.ClaimedAchievementIds.Clear();
             state.ClaimedAchievementIds.AddRange(source.ClaimedAchievementIds);
         }
+
+#if UNITY_EDITOR || DEV_DEFINE
+        // ── 개발용 초기화 ──────────────────────────────────────────────
+        //
+        // <b>파일만 지우면 안 된다.</b> 이 매니저가 기록을 메모리에 들고 있어서,
+        // 파일을 지워도 다음 저장에서 그 값이 도로 쓰인다(SaveResetCheat 가 "지운 뒤
+        // 재시작하라" 고 적어 둔 이유가 그것이다). 여기서는 메모리를 먼저 비우고
+        // 그 상태를 저장하므로 <b>재시작 없이 그 자리에서</b> 반영된다.
+
+        /// <summary>
+        /// 미션·업적 기록을 전부 지운다. 일일분·누적분·수령 기록이 모두 사라진다.
+        ///
+        /// <b>지운 직후 로그인이 1 이 된다.</b> 날짜를 비워 두면 다음 조회가 "새 날의 첫
+        /// 접속" 으로 보기 때문이고, 그것이 맞다 — 오늘 앱을 처음 켠 신규 유저와 같은 상태다.
+        /// </summary>
+        public void DevResetAll()
+        {
+            state.DailyResetDate = string.Empty;
+            state.DailyCounts.Clear();
+            state.ClaimedDailyIds.Clear();
+            state.ClaimedDailyTiers.Clear();
+            state.TotalCounts.Clear();
+            state.ClaimedAchievementIds.Clear();
+
+            FinishDevReset("미션·업적 기록을 전부 지웠다");
+        }
+
+        /// <summary>
+        /// 오늘치만 지운다. <b>자정이 지난 것을 흉내 내는 것</b>이라 누적 카운트와 업적
+        /// 수령 기록은 그대로 남는다.
+        ///
+        /// 날짜 리셋은 하루에 한 번만 밟히는 경로라, 이것이 없으면 그 동작을 확인하려고
+        /// 자정을 기다리거나 기기 시계를 돌려야 한다. 시계를 돌리면 상점 일일 리셋까지
+        /// 같이 움직여서 무엇이 왜 바뀌었는지 알 수 없게 된다.
+        /// </summary>
+        public void DevResetToday()
+        {
+            // 날짜만 비운다. 나머지는 EnsureToday 가 똑같은 규칙으로 치운다 —
+            // 여기서 손으로 또 지우면 진짜 자정과 다르게 동작할 여지가 생긴다.
+            state.DailyResetDate = string.Empty;
+
+            FinishDevReset("오늘치 미션을 지웠다(자정 흉내). 누적·업적은 그대로다");
+        }
+
+        private void FinishDevReset(string what)
+        {
+            // 날짜가 비었으므로 "새 날의 첫 접속" 으로 다시 선다(로그인 1).
+            EnsureToday();
+
+            lastHadClaimable = false;
+
+            OJ.DI.GameContainer.SaveService?.SaveAll();
+            OnChanged?.Invoke();
+            RaiseClaimableIfChanged();
+
+            UnityEngine.Debug.LogWarning("[Dev] " + what + ".");
+        }
+#endif
     }
 }

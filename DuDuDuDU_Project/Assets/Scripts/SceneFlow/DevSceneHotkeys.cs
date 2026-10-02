@@ -34,6 +34,7 @@ namespace OJ.SceneFlow
     ///   F8             클릭 대상 추적 토글 (버튼이 안 눌릴 때)
     ///   F9             자가 진단 — 컨테이너·서비스·DB·저장 왕복을 한 번에 찍는다
     ///   F10            세이브 대조 — 매니저 실제 값과 통합 세이브에 담길 값을 비교 (8.7)
+    ///   F11            미션 기록 전부 지우기. Shift 면 오늘치만(자정 흉내)
     ///
     /// 9단계에서 SceneRouter 가 생기면 전환은 그쪽을 타도록 바꾼다.
     /// </summary>
@@ -45,7 +46,8 @@ namespace OJ.SceneFlow
             var go = new GameObject(nameof(DevSceneHotkeys));
             go.AddComponent<DevSceneHotkeys>();
             DontDestroyOnLoad(go);
-            Debug.Log("[Dev] 씬 핫키: F1 Title / F2 Lobby / F3 Battle / F4 시간당기기 / F5 재로드 / F6 배선 진단");
+            Debug.Log("[Dev] 씬 핫키: F1 Title / F2 Lobby / F3 Battle / F4 시간당기기 / F5 재로드 / " +
+                      "F6 배선 진단 / F11 미션 초기화(Shift=오늘치만)");
         }
 
         private void Update()
@@ -70,9 +72,29 @@ namespace OJ.SceneFlow
                 SelfCheck.Run();
             else if (Input.GetKeyDown(KeyCode.F10))
                 SaveVerifier.Run();
+            else if (Input.GetKeyDown(KeyCode.F11))
+                ResetMissions();
 
             if (traceClicks && Input.GetMouseButtonDown(0))
                 TraceClick();
+        }
+
+        // --- 미션 초기화 (F11) ---------------------------------------------------------
+
+        /// <summary>
+        /// 미션·업적 기록을 지운다. Shift 를 누르면 오늘치만 지워 <b>자정이 지난 것</b>을 흉내 낸다.
+        ///
+        /// <b>세이브 전체를 지우지 않는다</b>(그건 F 키가 아니라 메뉴의 "세이브 전부 지우기" 다).
+        /// 재화와 스테이지 진행도는 그대로 두고 미션 조각만 비운다.
+        /// </summary>
+        private static void ResetMissions()
+        {
+            bool todayOnly = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+            if (todayOnly)
+                OJ.Mission.MissionCheat.ResetToday();
+            else
+                OJ.Mission.MissionCheat.ResetAll();
         }
 
         // --- 시간 당기기 (F4) ----------------------------------------------------------

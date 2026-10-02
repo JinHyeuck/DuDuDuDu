@@ -177,6 +177,9 @@ namespace OJ.Point
             DrawGemCheatSection();
 
             GUILayout.Space(lineGap);
+            DrawMissionCheatSection();
+
+            GUILayout.Space(lineGap);
             bool nextWallInvincible = GUILayout.Toggle(wallInvincible, "Wall Invincible", buttonStyle, GUILayout.Height(buttonHeight));
             if (nextWallInvincible != wallInvincible)
             {
@@ -191,6 +194,27 @@ namespace OJ.Point
             GUILayout.EndVertical();
             GUILayout.EndScrollView();
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        }
+
+        /// <summary>
+        /// 미션 기록 초기화. <b>이 패널에 둔 이유는 기기에서도 눌러야 하기 때문</b>이다 —
+        /// 핫키(F11)는 에디터에서만 쓸 수 있고, 좌상단 5번 탭으로 여는 이 창은 실기에서도 뜬다.
+        ///
+        /// 세이브 전체를 지우는 것(<c>SaveResetCheat</c>)과 다르다. 재화·스테이지 진행도는
+        /// 그대로 두고 미션 조각만 비운다 — 미션 하나 다시 보자고 진행도를 날릴 이유가 없다.
+        /// </summary>
+        private void DrawMissionCheatSection()
+        {
+#if UNITY_EDITOR || DEV_DEFINE
+            GUILayout.Label("Mission / Achievement", labelStyle, GUILayout.Height(titleHeight));
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Wipe All", buttonStyle, GUILayout.Height(buttonHeight)))
+                OJ.Mission.MissionCheat.ResetAll();
+            if (GUILayout.Button("New Day", buttonStyle, GUILayout.Height(buttonHeight)))
+                OJ.Mission.MissionCheat.ResetToday();
+            GUILayout.EndHorizontal();
+#endif
         }
 
         private void DrawDebugSummonSection()
