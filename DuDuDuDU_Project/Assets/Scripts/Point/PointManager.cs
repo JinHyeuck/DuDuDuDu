@@ -123,6 +123,19 @@ namespace OJ.Point
             Set(pointType, Get(pointType) + amount, saveNow);
         }
 
+        /// <summary>
+        /// 재화를 <b>실제로 썼을 때</b>. 쓴 종류와 양이 넘어온다.
+        ///
+        /// <b><see cref="OnPointChanged"/> 와 가른 이유.</b> 그쪽은 "값이 바뀌었다" 라
+        /// 지급·치트·세이브 로드까지 전부 포함한다. 시즌 패스는 <b>쓴 만큼</b>을 세는데
+        /// 거기에 지급이 섞이면 받은 고기로도 패스가 오른다.
+        ///
+        /// <b>여기서 쏘면 앞으로 생길 소모처도 저절로 잡힌다.</b> 지금 고기를 쓰는 곳은
+        /// 소탕과 전투 입장 둘뿐이지만, 세는 쪽이 호출부마다 손을 뻗으면 새 소모처가
+        /// 생길 때 빠뜨리는 쪽이 기본값이 된다.
+        /// </summary>
+        public event Action<PointType, int> OnPointSpent;
+
         public bool TrySpend(PointType pointType, int amount, bool saveNow = true)
         {
             if (amount < 0)
@@ -132,6 +145,11 @@ namespace OJ.Point
                 return false;
 
             Set(pointType, Get(pointType) - amount, saveNow);
+
+            // 0 은 알리지 않는다. 쓴 것이 없으므로 "썼다" 가 아니다.
+            if (amount > 0)
+                OnPointSpent?.Invoke(pointType, amount);
+
             return true;
         }
 
@@ -168,6 +186,15 @@ namespace OJ.Point
             }
 
             SaveAll();
+
+            // 저장이 끝난 뒤에 알린다. 구독자가 그 자리에서 또 저장할 수 있는데
+            // (시즌 패스가 그렇다) 그러면 같은 프레임에 파일을 두 번 쓴다.
+            foreach (var pair in costs)
+            {
+                if (pair.Value > 0)
+                    OnPointSpent?.Invoke(pair.Key, pair.Value);
+            }
+
             return true;
         }
 

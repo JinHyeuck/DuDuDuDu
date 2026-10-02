@@ -9,6 +9,7 @@ using OJ.Mission;
 using OJ.Pinball;
 using OJ.Point;
 using OJ.Relic;
+using OJ.SeasonPass;
 using OJ.Rewind;
 using OJ.Save;
 using OJ.SceneFlow;
@@ -242,6 +243,12 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 시즌 패스. <b>PointManager 뒤여야 한다</b> — 생성자에서 OnPointSpent 를
+            // 구독하므로 그쪽이 먼저 서 있어야 한다(컨테이너가 생성자 의존으로 보장한다).
+            builder.Register<SeasonPassManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 계정 단위 권리(지금은 광고제거권 하나). 소유자를 하나로 못 박아 둔 필드다.
             builder.Register<EntitlementManager>(Lifetime.Singleton)
                 .AsSelf()
@@ -301,6 +308,7 @@ namespace OJ.DI
             BonusDiceManager.Instance = container.Resolve<BonusDiceManager>();
             EntitlementManager.Instance = container.Resolve<EntitlementManager>();
             MissionManager.Instance = container.Resolve<MissionManager>();
+            SeasonPassManager.Instance = container.Resolve<SeasonPassManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();
@@ -330,6 +338,7 @@ namespace OJ.DI
             // 먼저 부르면 바로 위 TryLoadAll 이 그 결과를 덮어, 날이 바뀌어도 어제의
             // 진행도가 남고 로그인 미션이 영영 0 이 된다.
             MissionManager.Instance.NotifyAppStart();
+            SeasonPassManager.Instance.NotifyAppStart();
         }
     }
 }

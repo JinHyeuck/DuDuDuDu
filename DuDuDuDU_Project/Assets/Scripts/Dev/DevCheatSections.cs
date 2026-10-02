@@ -11,6 +11,7 @@ using OJ.Hunting;
 using OJ.IdleReward;
 using OJ.Mission;
 using OJ.Point;
+using OJ.SeasonPass;
 using OJ.Save;
 using OJ.SceneFlow;
 using OJ.Tower;
@@ -363,6 +364,40 @@ namespace OJ.Dev
                 panel.Rebuild();
             });
             DevCheatUI.CreateHelpText(root, "다이스 해금은 층 번호의 함수라 따로 켤 것이 없다 - 같이 열린다.");
+
+            DevCheatUI.CreateSectionTitle(root, "시즌 패스");
+            DevCheatUI.CreateHelpText(root,
+                "포인트는 쓴 고기다. 여기서는 고기를 쓰지 않고 바로 넣는다.");
+
+            RectTransform passRow = DevCheatUI.CreateRow(root);
+            DevCheatUI.CreateButton("Pass1", passRow, "+1레벨", DevCheatUI.ButtonColor, () =>
+            {
+                SeasonPassManager.Instance?.DevAddPoints(
+                    SeasonPassDatabaseProvider.Database.PointsPerLevel);
+                panel.Rebuild();
+            });
+            DevCheatUI.CreateButton("Pass10", passRow, "+10레벨", DevCheatUI.ButtonColor, () =>
+            {
+                SeasonPassManager.Instance?.DevAddPoints(
+                    SeasonPassDatabaseProvider.Database.PointsPerLevel * 10);
+                panel.Rebuild();
+            });
+
+            RectTransform passRow2 = DevCheatUI.CreateRow(root);
+            DevCheatUI.CreateButton("PassPremium", passRow2, "프리미엄 토글", DevCheatUI.ButtonColor, () =>
+            {
+                SeasonPassManager pass = SeasonPassManager.Instance;
+                if (pass != null)
+                {
+                    pass.DevSetPremium(!pass.PremiumUnlocked);
+                    panel.Rebuild();
+                }
+            });
+            DevCheatUI.CreateButton("PassReset", passRow2, "시즌 초기화", DevCheatUI.DangerColor, () =>
+            {
+                SeasonPassManager.Instance?.DevResetSeason();
+                panel.Rebuild();
+            });
 
             DevCheatUI.CreateSectionTitle(root, "미션/업적");
             DevCheatUI.CreateHelpText(root, "재화/스테이지 진행도는 건드리지 않는다. 미션 기록만 비운다.");
