@@ -184,7 +184,13 @@ namespace OJ.Mission
         /// <summary>다음 리셋까지 남은 시간. 상점 헤더와 같은 기준이다.</summary>
         public TimeSpan TimeUntilReset => ShopPurchaseManager.TimeUntilReset(DateTime.Now);
 
-        /// <summary>화면에 그릴 오늘의 목록.</summary>
+        /// <summary>
+        /// 화면에 그릴 오늘의 목록. <b>받기 가능 → 진행 중 → 완료</b> 순이다.
+        ///
+        /// <b>정렬을 화면이 아니라 여기서 한다.</b> 목록을 읽는 곳이 셋이고
+        /// (목록 그리기·달성 수 세기·빨간 점) 화면에서 정렬하면 셋이 다른 순서를 보게 된다.
+        /// 세는 쪽은 순서를 신경 쓰지 않으므로 여기서 한 번 정하는 편이 싸다.
+        /// </summary>
         public List<DailyMissionView> GetDailyMissions()
         {
             EnsureToday();
@@ -202,7 +208,7 @@ namespace OJ.Mission
                     state.ClaimedDailyIds.Contains(definition.id)));
             }
 
-            return views;
+            return MissionRules.OrderByClaimState(views, v => v.Claimable, v => v.Claimed);
         }
 
         /// <summary>오늘 달성한 미션 수. 수령 여부와 무관하다.</summary>
@@ -263,7 +269,9 @@ namespace OJ.Mission
                     complete));
             }
 
-            return views;
+            // 일일과 같은 순서 규칙이다. 업적의 "완료" 는 계열을 끝까지 받은 것이고,
+            // 그건 다시 볼 일이 없으므로 맨 아래가 맞다.
+            return MissionRules.OrderByClaimState(views, v => v.Claimable, v => v.SeriesComplete);
         }
 
         /// <summary>

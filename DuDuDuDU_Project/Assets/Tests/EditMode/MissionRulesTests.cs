@@ -103,6 +103,114 @@ namespace OJ.Core.Tests
             Assert.AreEqual(0f, MissionRules.Progress(5, 0), 0.0001f);
         }
 
+        // ── 목록 순서 ──────────────────────────────────────────────────
+
+        /// <summary>한 줄의 상태. 순서 규칙만 보면 되므로 카운트는 없다.</summary>
+        private readonly struct Row
+        {
+            public Row(string id, bool claimable, bool done)
+            {
+                Id = id;
+                Claimable = claimable;
+                Done = done;
+            }
+
+            public string Id { get; }
+            public bool Claimable { get; }
+            public bool Done { get; }
+        }
+
+        private static List<string> IdsOf(IReadOnlyList<Row> rows)
+        {
+            var ids = new List<string>();
+            for (int i = 0; i < rows.Count; i++)
+                ids.Add(rows[i].Id);
+
+            return ids;
+        }
+
+        private static List<Row> Order(List<Row> rows)
+        {
+            return MissionRules.OrderByClaimState(rows, r => r.Claimable, r => r.Done);
+        }
+
+        [Test]
+        public void ClaimableRowsComeFirstAndDoneRowsLast()
+        {
+            var rows = new List<Row>
+            {
+                new Row("진행1", false, false),
+                new Row("완료1", false, true),
+                new Row("받기1", true, false),
+                new Row("진행2", false, false),
+                new Row("받기2", true, false),
+                new Row("완료2", false, true),
+            };
+
+            CollectionAssert.AreEqual(
+                new[] { "받기1", "받기2", "진행1", "진행2", "완료1", "완료2" },
+                IdsOf(Order(rows)));
+        }
+
+        /// <summary>
+        /// 그룹 안에서는 들어온 순서를 지켜야 한다. 안 그러면 카운트가 1 오를 때마다
+        /// 같은 그룹의 줄끼리 자리를 바꿔 목록이 들썩인다.
+        /// </summary>
+        [Test]
+        public void OrderIsStableWithinEachGroup()
+        {
+            var rows = new List<Row>
+            {
+                new Row("a", false, false),
+                new Row("b", false, false),
+                new Row("c", false, false),
+                new Row("d", false, false),
+            };
+
+            CollectionAssert.AreEqual(new[] { "a", "b", "c", "d" }, IdsOf(Order(rows)));
+        }
+
+        /// <summary>
+        /// <b>받기 가능이 완료보다 먼저다.</b> 둘 다 달성한 상태라 판정 순서를 뒤집으면
+        /// 받을 수 있는 줄이 통째로 맨 아래로 내려간다.
+        /// </summary>
+        [Test]
+        public void ClaimableWinsOverDoneWhenBothWouldMatch()
+        {
+            var rows = new List<Row>
+            {
+                new Row("완료", false, true),
+
+                // 받을 수 있는데 "완료" 로도 읽힐 수 있는 줄(둘 다 true)이 들어와도
+                // 맨 위로 가야 한다.
+                new Row("받기", true, true),
+            };
+
+            CollectionAssert.AreEqual(new[] { "받기", "완료" }, IdsOf(Order(rows)));
+        }
+
+        [Test]
+        public void OrderingEmptyOrNullIsHarmless()
+        {
+            Assert.AreEqual(0, Order(new List<Row>()).Count);
+            Assert.AreEqual(0, MissionRules.OrderByClaimState<Row>(null, r => r.Claimable, r => r.Done).Count);
+        }
+
+        /// <summary>판정자가 없으면 전부 "진행 중" 으로 보고 순서를 그대로 둔다.</summary>
+        [Test]
+        public void OrderingWithoutPredicatesKeepsInputOrder()
+        {
+            var rows = new List<Row>
+            {
+                new Row("a", true, false),
+                new Row("b", false, true),
+            };
+
+            CollectionAssert.AreEqual(
+                new[] { "a", "b" },
+                IdsOf(MissionRules.OrderByClaimState<Row>(rows, null, null)));
+        }
+
         // ── 업적 계열 ──────────────────────────────────────────────────
 
         [Test]

@@ -135,6 +135,46 @@ namespace OJ.Core
             return string.IsNullOrEmpty(subKey) || subKey.IndexOf(SubKeySeparator) < 0;
         }
 
+        /// <summary>
+        /// 목록을 <b>받기 가능 → 진행 중 → 완료</b> 순으로 재배열한다.
+        ///
+        /// <b>그룹 안에서는 들어온 순서를 그대로 지킨다.</b> 그 순서가 에셋의 줄 순서이고,
+        /// 기획이 인스펙터에서 끌어 옮겨 정하는 값이다. 비교자로 정렬하면
+        /// <c>List.Sort</c> 가 불안정해서 같은 그룹 안의 줄이 <b>갱신할 때마다 자리를
+        /// 바꾼다</b> — 숫자가 1 오를 때마다 목록이 들썩인다. 그래서 통에 나눠 담고 잇는다.
+        ///
+        /// <b>받기 가능이 완료보다 먼저다.</b> 둘 다 "달성한" 상태지만 유저가 할 일이
+        /// 남은 쪽은 하나뿐이고, 그것이 목록의 맨 위에 있어야 한다.
+        /// </summary>
+        public static List<T> OrderByClaimState<T>(
+            IReadOnlyList<T> items, System.Func<T, bool> isClaimable, System.Func<T, bool> isDone)
+        {
+            var ordered = new List<T>(items == null ? 0 : items.Count);
+            if (items == null)
+                return ordered;
+
+            var inProgress = new List<T>();
+            var done = new List<T>();
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                T item = items[i];
+
+                // 받기 가능을 먼저 본다. 받을 수 있는 줄은 완료 조건을 이미 채운 상태라
+                // 순서를 뒤집으면 전부 맨 아래로 간다.
+                if (isClaimable != null && isClaimable(item))
+                    ordered.Add(item);
+                else if (isDone != null && isDone(item))
+                    done.Add(item);
+                else
+                    inProgress.Add(item);
+            }
+
+            ordered.AddRange(inProgress);
+            ordered.AddRange(done);
+            return ordered;
+        }
+
         /// <summary>달성했는가. <paramref name="required"/> 가 0 이하면 데이터 사고이므로 달성으로 치지 않는다.</summary>
         public static bool IsCleared(int count, int required)
         {
