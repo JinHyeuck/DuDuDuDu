@@ -5,6 +5,7 @@ using OJ.Core;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
+using OJ.Mission;
 using OJ.Relic;
 using OJ.Rewind;
 using OJ.Tower;
@@ -382,6 +383,12 @@ namespace OJ.Hunting
                     {
                         battle.Monsters.UnregisterMonster(this, true);
                     }
+
+                    // <b>분기 밖이어야 한다.</b> 위 UnregisterMonster 의 countAsKill 은
+                    // "웨이브 목표 수에 넣을 것인가" 이고 현상금은 거기서 빠진다 —
+                    // 미션의 "적 처치" 는 그 축이 아니라 <b>실제로 죽은 것</b>이므로
+                    // 현상금도 함께 센다(현상금 처치 업적은 BountyManager 가 따로 올린다).
+                    MissionManager.Instance?.Notify(MissionAction.MonsterKill);
 
                     battle.Spawner.PoolMonster(this);
                 }

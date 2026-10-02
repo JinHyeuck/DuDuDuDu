@@ -1,7 +1,9 @@
 using System;
 using UnityEngine;
 using UnityEngine.Scripting;
+using OJ.Core;
 using OJ.Equipment;
+using OJ.Mission;
 using OJ.Point;
 using OJ.Save;
 
@@ -193,6 +195,11 @@ namespace OJ.Shop
 
             OnGemsDrawn?.Invoke(drawn);
             OnPurchaseStateChanged?.Invoke();
+
+            // <b>뽑은 개수만큼 센다.</b> 10연차를 1 로 두면 10회 뽑기 미션이
+            // 단품 10번과 다른 비용을 요구하게 된다 — 10연차 쪽이 싼데 진행은 1/10 이다.
+            MissionManager.Instance?.Notify(MissionAction.GemDraw, drawn.Count);
+
             return ShopPurchaseResult.Success;
         }
 
@@ -304,6 +311,11 @@ namespace OJ.Shop
 
             OnRewardGranted?.Invoke(granted);
             OnPurchaseStateChanged?.Invoke();
+
+            // 결제 미션이 세는 곳. <b>지금은 테스트 결제도 센다</b> — 이 메서드가 결제의
+            // 유일한 관문이라, SDK 를 붙여 영수증 검증을 넣어도 세는 자리는 그대로다.
+            MissionManager.Instance?.Notify(MissionAction.IapPurchase);
+
             return ShopPurchaseResult.Success;
         }
 
@@ -364,6 +376,13 @@ namespace OJ.Shop
             });
 
             OnPurchaseStateChanged?.Invoke();
+
+            // "상품 구매" 미션이 세는 것이 여기다. <b>재화로 사는 세 섹션</b>
+            // (다이스석·골드·무료젬 교환)이 전부 이 메서드를 지난다.
+            // 현금 결제는 TryBuyCashProduct 가, 보석 뽑기는 TryDrawGemBox 가 각자 센다 —
+            // 셋이 같은 항목을 올리면 한 번의 뽑기가 "구매" 로도 잡혀 두 번 세어진다.
+            MissionManager.Instance?.Notify(MissionAction.ShopPurchase);
+
             return ShopPurchaseResult.Success;
         }
 

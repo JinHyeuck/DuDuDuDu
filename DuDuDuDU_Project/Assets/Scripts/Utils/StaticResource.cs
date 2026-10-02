@@ -6,6 +6,7 @@ using OJ.Bounty;
 using OJ.Dice;
 using OJ.Equipment;
 using OJ.Hunting;
+using OJ.Mission;
 using OJ.Pinball;
 using OJ.Battle;
 using OJ.Point;
@@ -109,6 +110,12 @@ namespace OJ.Utils
         /// 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.
         /// </summary>
         public BonusDiceDatabase BonusDiceDatabase;
+
+        /// <summary>일일 미션 11줄과 추가 보상 4칸의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
+        public DailyMissionDatabase DailyMissionDatabase;
+
+        /// <summary>업적 17계열의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
+        public AchievementDatabase AchievementDatabase;
 
         /// <summary>
         /// 웨이브 되돌리기의 밸런스 손잡이. <b>비어 있어도 정상이다</b> —

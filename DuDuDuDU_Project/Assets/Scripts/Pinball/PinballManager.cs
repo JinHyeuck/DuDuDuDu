@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
+using OJ.Core;
+using OJ.Mission;
 using OJ.Point;
 using OJ.Save;
 
@@ -187,6 +189,11 @@ namespace OJ.Pinball
             IReadOnlyList<PointRewardEntry> rewards = GetLandingRewards(drawn, multiplier);
             GrantWithoutSave(rewards);
             Save();     // 차감과 지급이 같은 파일 쓰기 한 번에 굳는다
+
+            // <b>배율만큼 센다.</b> 티켓도 경품도 배율만큼 움직였으므로 발사 횟수만
+            // 1 로 두면 x100 한 발이 x1 한 발과 같아진다 — 정책 5.2 의 압축 불변식
+            // ("1배 N번과 N배 1번이 같다")을 미션 쪽에서도 지키는 것이다.
+            MissionManager.Instance?.Notify(MissionAction.PinballShot, multiplier);
 
             slot = drawn;
             return rewards;

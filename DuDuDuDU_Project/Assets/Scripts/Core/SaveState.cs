@@ -130,6 +130,16 @@ namespace OJ.Core
         /// </summary>
         public BonusDiceSave BonusDice { get; } = new BonusDiceSave();
 
+        /// <summary>
+        /// 일일 미션·업적. (<c>OJ.Mission.MissionManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> <see cref="CurrentVersion"/> 주석의 규칙대로 필드를
+        /// <i>더하는</i> 것이라, 예전 세이브에는 이 키가 없고 그 상태는 "오늘 아무것도 안 한
+        /// 신규 유저"와 정확히 같다. <b>업적의 누적 카운트는 소급되지 않는다</b> — 카운터가
+        /// 없던 시절의 플레이는 셀 방법이 없고, 그 사실이 이 한 줄에 적혀 있어야 한다.
+        /// </summary>
+        public MissionSave Missions { get; } = new MissionSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -369,5 +379,48 @@ namespace OJ.Core
         /// </summary>
         public SortedDictionary<string, int> PinCounts { get; }
             = new SortedDictionary<string, int>(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// 일일 미션·업적 저장분.
+    ///
+    /// <b>카운터 표가 둘인 이유.</b> 같은 행동 하나가 일일과 업적 양쪽을 올리는데
+    /// (보석 뽑기가 그렇다) 수명이 정반대다 — <see cref="DailyCounts"/> 는 자정에 통째로
+    /// 비워지고 <see cref="TotalCounts"/> 는 영영 늘기만 한다. 한 표로 두면 리셋이
+    /// 업적 진행도를 지우고, 그 사고는 <b>날짜가 바뀌는 순간에만</b> 드러난다.
+    ///
+    /// 키는 <c>OJ.Core.MissionRules.CounterKey</c> 가 만든다(<c>GemMerge:Rare</c> 꼴).
+    /// 정수가 아니라 이름인 이유는 이 클래스의 다른 표들과 같다.
+    /// </summary>
+    public sealed class MissionSave
+    {
+        /// <summary>
+        /// 아래 일일분이 어느 날짜의 것인가. <c>yyyy-MM-dd</c> 이며 빈 문자열이면 "기록 없음"이다.
+        /// 형식과 기준(로컬 자정)을 <c>OJ.Shop.ShopPurchaseManager</c> 와 <b>같은 함수로</b>
+        /// 맞춘다 — 둘이 다른 시각에 리셋되면 화면의 남은시간 표시가 둘 중 하나와 어긋난다.
+        /// </summary>
+        public string DailyResetDate { get; set; } = string.Empty;
+
+        /// <summary>오늘치 카운터. 날짜가 바뀌면 통째로 버린다.</summary>
+        public SortedDictionary<string, int> DailyCounts { get; } = SaveState.NewIntMap();
+
+        /// <summary>
+        /// 오늘 보상을 받은 일일 미션 id.
+        ///
+        /// <b>달성과 수령을 따로 적는다.</b> 달성은 카운터로 계산되지만 수령은 그렇지 않다 —
+        /// 두 번 받는 것을 막을 근거가 이 목록뿐이다.
+        /// </summary>
+        public List<string> ClaimedDailyIds { get; } = new List<string>();
+
+        /// <summary>오늘 보상을 받은 추가 보상 문턱(3·5·7·10 같은 값 그대로).</summary>
+        public List<int> ClaimedDailyTiers { get; } = new List<int>();
+
+        /// <summary>
+        /// 누적 카운터. <b>절대 비우지 않는다</b> — 업적이 (10/100) 처럼 이어서 세는 근거다.
+        /// </summary>
+        public SortedDictionary<string, int> TotalCounts { get; } = SaveState.NewIntMap();
+
+        /// <summary>보상을 받은 업적 id. 한 번 들어가면 빠지지 않는다.</summary>
+        public List<string> ClaimedAchievementIds { get; } = new List<string>();
     }
 }
