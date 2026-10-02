@@ -140,6 +140,15 @@ namespace OJ.Core
         /// </summary>
         public MissionSave Missions { get; } = new MissionSave();
 
+        /// <summary>
+        /// 시즌 패스. (<c>OJ.SeasonPass.SeasonPassManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> <see cref="CurrentVersion"/> 주석의 규칙대로 필드를
+        /// <i>더하는</i> 것이라, 예전 세이브에는 이 키가 없고 그 상태는 "이번 시즌을 아직
+        /// 시작하지 않은 사람"과 정확히 같다.
+        /// </summary>
+        public SeasonPassSave SeasonPass { get; } = new SeasonPassSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -422,5 +431,37 @@ namespace OJ.Core
 
         /// <summary>보상을 받은 업적 id. 한 번 들어가면 빠지지 않는다.</summary>
         public List<string> ClaimedAchievementIds { get; } = new List<string>();
+    }
+
+    /// <summary>
+    /// 시즌 패스 저장분.
+    ///
+    /// <b>전부 이번 시즌 몫이다.</b> <see cref="SeasonId"/> 가 달라지면 아래가 통째로
+    /// 비워진다 — 포인트도, 수령 기록도, <b>유료 트랙 활성화도</b>. 패스는 시즌마다 다시
+    /// 사는 상품이라 활성화가 넘어오면 한 번 사고 영원히 쓰는 것이 된다.
+    ///
+    /// <b>수령 기록이 트랙별로 둘인 이유.</b> 한 레벨에 무료·유료 보상이 따로 있고 따로
+    /// 받는다. 한 목록에 섞으면 "3레벨을 받았다" 가 어느 쪽인지 알 수 없어, 유료를 산
+    /// 사람이 무료를 다시 받거나 그 반대가 된다.
+    /// </summary>
+    public sealed class SeasonPassSave
+    {
+        /// <summary>
+        /// 이 기록이 어느 시즌의 것인가. <c>yyyy-MM</c> 이며 빈 문자열이면 "기록 없음"이다.
+        /// <c>OJ.Core.SeasonPassRules.SeasonId</c> 가 만든다.
+        /// </summary>
+        public string SeasonId { get; set; } = string.Empty;
+
+        /// <summary>이번 시즌에 쓴 고기의 누적. 레벨은 이 값에서 계산한다(따로 저장하지 않는다).</summary>
+        public int Points { get; set; }
+
+        /// <summary>유료 트랙을 열었는가. 시즌이 바뀌면 false 로 돌아간다.</summary>
+        public bool PremiumUnlocked { get; set; }
+
+        /// <summary>보상을 받은 무료 트랙 레벨.</summary>
+        public List<int> ClaimedFreeLevels { get; } = new List<int>();
+
+        /// <summary>보상을 받은 유료 트랙 레벨.</summary>
+        public List<int> ClaimedPremiumLevels { get; } = new List<int>();
     }
 }

@@ -11,6 +11,7 @@ using OJ.Pinball;
 using OJ.Battle;
 using OJ.Point;
 using OJ.Relic;
+using OJ.SeasonPass;
 using OJ.Rewind;
 using OJ.Shop;
 using OJ.Stage;
@@ -116,6 +117,9 @@ namespace OJ.Utils
 
         /// <summary>업적 17계열의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public AchievementDatabase AchievementDatabase;
+
+        /// <summary>시즌 패스 보상표의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
+        public SeasonPassDatabase SeasonPassDatabase;
 
         /// <summary>
         /// 웨이브 되돌리기의 밸런스 손잡이. <b>비어 있어도 정상이다</b> —

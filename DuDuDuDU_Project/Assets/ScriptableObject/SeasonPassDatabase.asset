@@ -1,0 +1,656 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac559d5ed27342947a81d105bb01ea2f, type: 3}
+  m_Name: SeasonPassDatabase
+  m_EditorClassIdentifier: OJ.Game::OJ.SeasonPass.SeasonPassDatabase
+  pointsPerLevel: 200
+  seasons:
+  - id: 2026-10
+    displayName: "\uC2DC\uC98C 1"
+    levels:
+    - freeRewards:
+      - pointType: 0
+        amount: 10000
+      premiumRewards:
+      - pointType: 1
+        amount: 50
+    - freeRewards:
+      - pointType: 0
+        amount: 20000
+      premiumRewards:
+      - pointType: 1
+        amount: 100
+    - freeRewards:
+      - pointType: 0
+        amount: 30000
+      premiumRewards:
+      - pointType: 1
+        amount: 150
+    - freeRewards:
+      - pointType: 0
+        amount: 40000
+      premiumRewards:
+      - pointType: 1
+        amount: 200
+    - freeRewards:
+      - pointType: 0
+        amount: 50000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 250
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 60000
+      premiumRewards:
+      - pointType: 1
+        amount: 300
+    - freeRewards:
+      - pointType: 0
+        amount: 70000
+      premiumRewards:
+      - pointType: 1
+        amount: 350
+    - freeRewards:
+      - pointType: 0
+        amount: 80000
+      premiumRewards:
+      - pointType: 1
+        amount: 400
+    - freeRewards:
+      - pointType: 0
+        amount: 90000
+      premiumRewards:
+      - pointType: 1
+        amount: 450
+    - freeRewards:
+      - pointType: 0
+        amount: 100000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 500
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+    - freeRewards:
+      - pointType: 0
+        amount: 110000
+      premiumRewards:
+      - pointType: 1
+        amount: 550
+    - freeRewards:
+      - pointType: 0
+        amount: 120000
+      premiumRewards:
+      - pointType: 1
+        amount: 600
+    - freeRewards:
+      - pointType: 0
+        amount: 130000
+      premiumRewards:
+      - pointType: 1
+        amount: 650
+    - freeRewards:
+      - pointType: 0
+        amount: 140000
+      premiumRewards:
+      - pointType: 1
+        amount: 700
+    - freeRewards:
+      - pointType: 0
+        amount: 150000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 750
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 160000
+      premiumRewards:
+      - pointType: 1
+        amount: 800
+    - freeRewards:
+      - pointType: 0
+        amount: 170000
+      premiumRewards:
+      - pointType: 1
+        amount: 850
+    - freeRewards:
+      - pointType: 0
+        amount: 180000
+      premiumRewards:
+      - pointType: 1
+        amount: 900
+    - freeRewards:
+      - pointType: 0
+        amount: 190000
+      premiumRewards:
+      - pointType: 1
+        amount: 950
+    - freeRewards:
+      - pointType: 0
+        amount: 200000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1000
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+    - freeRewards:
+      - pointType: 0
+        amount: 210000
+      premiumRewards:
+      - pointType: 1
+        amount: 1050
+    - freeRewards:
+      - pointType: 0
+        amount: 220000
+      premiumRewards:
+      - pointType: 1
+        amount: 1100
+    - freeRewards:
+      - pointType: 0
+        amount: 230000
+      premiumRewards:
+      - pointType: 1
+        amount: 1150
+    - freeRewards:
+      - pointType: 0
+        amount: 240000
+      premiumRewards:
+      - pointType: 1
+        amount: 1200
+    - freeRewards:
+      - pointType: 0
+        amount: 250000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1250
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 260000
+      premiumRewards:
+      - pointType: 1
+        amount: 1300
+    - freeRewards:
+      - pointType: 0
+        amount: 270000
+      premiumRewards:
+      - pointType: 1
+        amount: 1350
+    - freeRewards:
+      - pointType: 0
+        amount: 280000
+      premiumRewards:
+      - pointType: 1
+        amount: 1400
+    - freeRewards:
+      - pointType: 0
+        amount: 290000
+      premiumRewards:
+      - pointType: 1
+        amount: 1450
+    - freeRewards:
+      - pointType: 0
+        amount: 300000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1500
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+  - id: 2026-11
+    displayName: "\uC2DC\uC98C 2"
+    levels:
+    - freeRewards:
+      - pointType: 0
+        amount: 10000
+      premiumRewards:
+      - pointType: 1
+        amount: 50
+    - freeRewards:
+      - pointType: 0
+        amount: 20000
+      premiumRewards:
+      - pointType: 1
+        amount: 100
+    - freeRewards:
+      - pointType: 0
+        amount: 30000
+      premiumRewards:
+      - pointType: 1
+        amount: 150
+    - freeRewards:
+      - pointType: 0
+        amount: 40000
+      premiumRewards:
+      - pointType: 1
+        amount: 200
+    - freeRewards:
+      - pointType: 0
+        amount: 50000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 250
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 60000
+      premiumRewards:
+      - pointType: 1
+        amount: 300
+    - freeRewards:
+      - pointType: 0
+        amount: 70000
+      premiumRewards:
+      - pointType: 1
+        amount: 350
+    - freeRewards:
+      - pointType: 0
+        amount: 80000
+      premiumRewards:
+      - pointType: 1
+        amount: 400
+    - freeRewards:
+      - pointType: 0
+        amount: 90000
+      premiumRewards:
+      - pointType: 1
+        amount: 450
+    - freeRewards:
+      - pointType: 0
+        amount: 100000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 500
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+    - freeRewards:
+      - pointType: 0
+        amount: 110000
+      premiumRewards:
+      - pointType: 1
+        amount: 550
+    - freeRewards:
+      - pointType: 0
+        amount: 120000
+      premiumRewards:
+      - pointType: 1
+        amount: 600
+    - freeRewards:
+      - pointType: 0
+        amount: 130000
+      premiumRewards:
+      - pointType: 1
+        amount: 650
+    - freeRewards:
+      - pointType: 0
+        amount: 140000
+      premiumRewards:
+      - pointType: 1
+        amount: 700
+    - freeRewards:
+      - pointType: 0
+        amount: 150000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 750
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 160000
+      premiumRewards:
+      - pointType: 1
+        amount: 800
+    - freeRewards:
+      - pointType: 0
+        amount: 170000
+      premiumRewards:
+      - pointType: 1
+        amount: 850
+    - freeRewards:
+      - pointType: 0
+        amount: 180000
+      premiumRewards:
+      - pointType: 1
+        amount: 900
+    - freeRewards:
+      - pointType: 0
+        amount: 190000
+      premiumRewards:
+      - pointType: 1
+        amount: 950
+    - freeRewards:
+      - pointType: 0
+        amount: 200000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1000
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+    - freeRewards:
+      - pointType: 0
+        amount: 210000
+      premiumRewards:
+      - pointType: 1
+        amount: 1050
+    - freeRewards:
+      - pointType: 0
+        amount: 220000
+      premiumRewards:
+      - pointType: 1
+        amount: 1100
+    - freeRewards:
+      - pointType: 0
+        amount: 230000
+      premiumRewards:
+      - pointType: 1
+        amount: 1150
+    - freeRewards:
+      - pointType: 0
+        amount: 240000
+      premiumRewards:
+      - pointType: 1
+        amount: 1200
+    - freeRewards:
+      - pointType: 0
+        amount: 250000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1250
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 260000
+      premiumRewards:
+      - pointType: 1
+        amount: 1300
+    - freeRewards:
+      - pointType: 0
+        amount: 270000
+      premiumRewards:
+      - pointType: 1
+        amount: 1350
+    - freeRewards:
+      - pointType: 0
+        amount: 280000
+      premiumRewards:
+      - pointType: 1
+        amount: 1400
+    - freeRewards:
+      - pointType: 0
+        amount: 290000
+      premiumRewards:
+      - pointType: 1
+        amount: 1450
+    - freeRewards:
+      - pointType: 0
+        amount: 300000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1500
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+  fallbackSeason:
+    id: "\uAE30\uBCF8"
+    displayName: "\uC2DC\uC98C (\uAE30\uBCF8 \uBCF4\uC0C1)"
+    levels:
+    - freeRewards:
+      - pointType: 0
+        amount: 10000
+      premiumRewards:
+      - pointType: 1
+        amount: 50
+    - freeRewards:
+      - pointType: 0
+        amount: 20000
+      premiumRewards:
+      - pointType: 1
+        amount: 100
+    - freeRewards:
+      - pointType: 0
+        amount: 30000
+      premiumRewards:
+      - pointType: 1
+        amount: 150
+    - freeRewards:
+      - pointType: 0
+        amount: 40000
+      premiumRewards:
+      - pointType: 1
+        amount: 200
+    - freeRewards:
+      - pointType: 0
+        amount: 50000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 250
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 60000
+      premiumRewards:
+      - pointType: 1
+        amount: 300
+    - freeRewards:
+      - pointType: 0
+        amount: 70000
+      premiumRewards:
+      - pointType: 1
+        amount: 350
+    - freeRewards:
+      - pointType: 0
+        amount: 80000
+      premiumRewards:
+      - pointType: 1
+        amount: 400
+    - freeRewards:
+      - pointType: 0
+        amount: 90000
+      premiumRewards:
+      - pointType: 1
+        amount: 450
+    - freeRewards:
+      - pointType: 0
+        amount: 100000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 500
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+    - freeRewards:
+      - pointType: 0
+        amount: 110000
+      premiumRewards:
+      - pointType: 1
+        amount: 550
+    - freeRewards:
+      - pointType: 0
+        amount: 120000
+      premiumRewards:
+      - pointType: 1
+        amount: 600
+    - freeRewards:
+      - pointType: 0
+        amount: 130000
+      premiumRewards:
+      - pointType: 1
+        amount: 650
+    - freeRewards:
+      - pointType: 0
+        amount: 140000
+      premiumRewards:
+      - pointType: 1
+        amount: 700
+    - freeRewards:
+      - pointType: 0
+        amount: 150000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 750
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 160000
+      premiumRewards:
+      - pointType: 1
+        amount: 800
+    - freeRewards:
+      - pointType: 0
+        amount: 170000
+      premiumRewards:
+      - pointType: 1
+        amount: 850
+    - freeRewards:
+      - pointType: 0
+        amount: 180000
+      premiumRewards:
+      - pointType: 1
+        amount: 900
+    - freeRewards:
+      - pointType: 0
+        amount: 190000
+      premiumRewards:
+      - pointType: 1
+        amount: 950
+    - freeRewards:
+      - pointType: 0
+        amount: 200000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1000
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5
+    - freeRewards:
+      - pointType: 0
+        amount: 210000
+      premiumRewards:
+      - pointType: 1
+        amount: 1050
+    - freeRewards:
+      - pointType: 0
+        amount: 220000
+      premiumRewards:
+      - pointType: 1
+        amount: 1100
+    - freeRewards:
+      - pointType: 0
+        amount: 230000
+      premiumRewards:
+      - pointType: 1
+        amount: 1150
+    - freeRewards:
+      - pointType: 0
+        amount: 240000
+      premiumRewards:
+      - pointType: 1
+        amount: 1200
+    - freeRewards:
+      - pointType: 0
+        amount: 250000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1250
+      - pointType: 106
+        amount: 10
+    - freeRewards:
+      - pointType: 0
+        amount: 260000
+      premiumRewards:
+      - pointType: 1
+        amount: 1300
+    - freeRewards:
+      - pointType: 0
+        amount: 270000
+      premiumRewards:
+      - pointType: 1
+        amount: 1350
+    - freeRewards:
+      - pointType: 0
+        amount: 280000
+      premiumRewards:
+      - pointType: 1
+        amount: 1400
+    - freeRewards:
+      - pointType: 0
+        amount: 290000
+      premiumRewards:
+      - pointType: 1
+        amount: 1450
+    - freeRewards:
+      - pointType: 0
+        amount: 300000
+      - pointType: 100
+        amount: 2
+      premiumRewards:
+      - pointType: 1
+        amount: 1500
+      - pointType: 106
+        amount: 10
+      - pointType: 105
+        amount: 5

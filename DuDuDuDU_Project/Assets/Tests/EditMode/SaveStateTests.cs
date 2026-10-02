@@ -123,6 +123,15 @@ namespace OJ.Core.Tests
             state.Missions.ClaimedAchievementIds.Add("ach_play_10");
             state.Missions.ClaimedAchievementIds.Add("ach_play_50");
 
+            // 시즌 패스. 무료·유료 수령 기록에 <b>다른 레벨</b>을 넣어 둔다 —
+            // 둘을 한 목록으로 합치는 변경이 생기면 그 자리에서 터진다.
+            state.SeasonPass.SeasonId = "2026-10";
+            state.SeasonPass.Points = 4321;
+            state.SeasonPass.PremiumUnlocked = true;
+            state.SeasonPass.ClaimedFreeLevels.Add(1);
+            state.SeasonPass.ClaimedFreeLevels.Add(2);
+            state.SeasonPass.ClaimedPremiumLevels.Add(3);
+
             return state;
         }
 
@@ -191,6 +200,19 @@ namespace OJ.Core.Tests
             CollectionAssert.AreEqual(
                 expected.Missions.ClaimedAchievementIds, actual.Missions.ClaimedAchievementIds,
                 "missions.claimedAchievementIds");
+
+            Assert.That(actual.SeasonPass.SeasonId,
+                Is.EqualTo(expected.SeasonPass.SeasonId), "seasonPass.seasonId");
+            Assert.That(actual.SeasonPass.Points,
+                Is.EqualTo(expected.SeasonPass.Points), "seasonPass.points");
+            Assert.That(actual.SeasonPass.PremiumUnlocked,
+                Is.EqualTo(expected.SeasonPass.PremiumUnlocked), "seasonPass.premiumUnlocked");
+            CollectionAssert.AreEqual(
+                expected.SeasonPass.ClaimedFreeLevels, actual.SeasonPass.ClaimedFreeLevels,
+                "seasonPass.claimedFreeLevels");
+            CollectionAssert.AreEqual(
+                expected.SeasonPass.ClaimedPremiumLevels, actual.SeasonPass.ClaimedPremiumLevels,
+                "seasonPass.claimedPremiumLevels");
         }
 
         // --- 직렬화 왕복 ------------------------------------------------------------------
@@ -451,6 +473,13 @@ namespace OJ.Core.Tests
                 "    \"claimedDailyTiers\": [],",
                 "    \"totalCounts\": {},",
                 "    \"claimedAchievementIds\": []",
+                "  },",
+                "  \"seasonPass\": {",
+                "    \"seasonId\": \"\",",
+                "    \"points\": 0,",
+                "    \"premiumUnlocked\": false,",
+                "    \"claimedFreeLevels\": [],",
+                "    \"claimedPremiumLevels\": []",
                 "  }",
                 "}",
             })));
