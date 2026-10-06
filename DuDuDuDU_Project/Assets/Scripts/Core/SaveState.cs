@@ -156,6 +156,14 @@ namespace OJ.Core
         /// </summary>
         public SeasonPassSave SeasonPass { get; } = new SeasonPassSave();
 
+        /// <summary>
+        /// 특별한 7일 출석. (<c>OJ.Shop.SpecialSevenDaysManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> 필드를 <i>더하는</i> 것이라 예전 세이브에는 이 키가 없고,
+        /// 그 상태는 "오늘 처음 들어온 사람"과 같다 — 시작일이 비어 있으면 앱을 켠 날이 1일차가 된다.
+        /// </summary>
+        public SpecialSevenDaysSave SpecialSevenDays { get; } = new SpecialSevenDaysSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -486,5 +494,24 @@ namespace OJ.Core
 
         /// <summary>보상을 받은 유료 트랙 레벨.</summary>
         public List<int> ClaimedPremiumLevels { get; } = new List<int>();
+    }
+
+    /// <summary>특별한 7일 출석. (<c>OJ.Shop.SpecialSevenDaysManager</c>)</summary>
+    public sealed class SpecialSevenDaysSave
+    {
+        /// <summary>
+        /// 1일차인 날. <c>yyyy-MM-dd</c>, 로컬 날짜. 빈 문자열이면 아직 안 정해졌다 —
+        /// 앱을 켜는 순간 오늘로 적힌다(<c>OJ.Core.SpecialSevenDaysRules</c>).
+        /// </summary>
+        public string StartDate { get; set; } = string.Empty;
+
+        /// <summary>샀는가. 사기 전에도 출석은 쌓이고, 사는 순간 쌓인 날을 전부 받을 수 있게 된다.</summary>
+        public bool Purchased { get; set; }
+
+        /// <summary>받은 일차(1~7).</summary>
+        public List<int> ClaimedDays { get; } = new List<int>();
+
+        /// <summary>로비에서 창을 저절로 띄운 마지막 날. 하루 1회 규칙(기획서 ShopPackageDesign 2.3)이 본다.</summary>
+        public string LastAutoOpenDate { get; set; } = string.Empty;
     }
 }

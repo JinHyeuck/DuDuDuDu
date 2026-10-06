@@ -135,6 +135,12 @@ namespace OJ.Core.Tests
             state.SeasonPass.ClaimedFreeLevels.Add(2);
             state.SeasonPass.ClaimedPremiumLevels.Add(3);
 
+            state.SpecialSevenDays.StartDate = "2026-10-04";
+            state.SpecialSevenDays.Purchased = true;
+            state.SpecialSevenDays.ClaimedDays.Add(1);
+            state.SpecialSevenDays.ClaimedDays.Add(3);
+            state.SpecialSevenDays.LastAutoOpenDate = "2026-10-06";
+
             return state;
         }
 
@@ -222,6 +228,16 @@ namespace OJ.Core.Tests
             CollectionAssert.AreEqual(
                 expected.SeasonPass.ClaimedPremiumLevels, actual.SeasonPass.ClaimedPremiumLevels,
                 "seasonPass.claimedPremiumLevels");
+
+            Assert.That(actual.SpecialSevenDays.StartDate,
+                Is.EqualTo(expected.SpecialSevenDays.StartDate), "specialSevenDays.startDate");
+            Assert.That(actual.SpecialSevenDays.Purchased,
+                Is.EqualTo(expected.SpecialSevenDays.Purchased), "specialSevenDays.purchased");
+            CollectionAssert.AreEqual(
+                expected.SpecialSevenDays.ClaimedDays, actual.SpecialSevenDays.ClaimedDays,
+                "specialSevenDays.claimedDays");
+            Assert.That(actual.SpecialSevenDays.LastAutoOpenDate,
+                Is.EqualTo(expected.SpecialSevenDays.LastAutoOpenDate), "specialSevenDays.lastAutoOpenDate");
         }
 
         // --- 직렬화 왕복 ------------------------------------------------------------------
@@ -494,6 +510,12 @@ namespace OJ.Core.Tests
                 "    \"premiumUnlocked\": false,",
                 "    \"claimedFreeLevels\": [],",
                 "    \"claimedPremiumLevels\": []",
+                "  },",
+                "  \"specialSevenDays\": {",
+                "    \"startDate\": \"\",",
+                "    \"purchased\": false,",
+                "    \"claimedDays\": [],",
+                "    \"lastAutoOpenDate\": \"\"",
                 "  }",
                 "}",
             })));

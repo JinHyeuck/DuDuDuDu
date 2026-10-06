@@ -400,6 +400,7 @@ namespace OJ.Dev
             });
 
             BuildMembership(panel, root);
+            BuildSpecialSevenDays(panel, root);
 
             DevCheatUI.CreateSectionTitle(root, "미션/업적");
             DevCheatUI.CreateHelpText(root, "재화/스테이지 진행도는 건드리지 않는다. 미션 기록만 비운다.");
@@ -460,6 +461,41 @@ namespace OJ.Dev
             DevCheatUI.CreateButton("ResetSweep", stateRow, "오늘 소탕 수 초기화", DevCheatUI.ButtonColor, () =>
             {
                 entitlements.DevResetSweepUsage();
+                panel.Rebuild();
+            });
+        }
+
+        /// <summary>특별한 7일. 사는 것은 창에서 하고, 여기서는 날짜를 넘기고 되돌린다(기기 시계는 안 건드린다).</summary>
+        private static void BuildSpecialSevenDays(DevCheatPanel panel, Transform root)
+        {
+            DevCheatUI.CreateSectionTitle(root, "특별한 7일");
+
+            OJ.Shop.SpecialSevenDaysManager seven = OJ.Shop.SpecialSevenDaysManager.Instance;
+            if (seven == null)
+            {
+                DevCheatUI.CreateHelpText(root, "SpecialSevenDaysManager 가 없다.");
+                return;
+            }
+
+            DevCheatUI.CreateHelpText(root,
+                "오늘 " + seven.CurrentDay + "일차 / " + (seven.Purchased ? "구매함" : "안 삼") +
+                " / 받을 것 " + seven.ClaimableCount + "일치 / 입구 " + (seven.IsEntryVisible ? "보임" : "숨김"));
+
+            RectTransform row = DevCheatUI.CreateRow(root);
+            DevCheatUI.CreateButton("SevenNextDay", row, "하루 넘기기", DevCheatUI.ButtonColor, () =>
+            {
+                seven.DevAdvanceDay();
+                panel.Rebuild();
+            });
+            DevCheatUI.CreateButton("SevenClearBuy", row, "구매 해지", DevCheatUI.DangerColor, () =>
+            {
+                seven.DevClearPurchase();
+                panel.Rebuild();
+            });
+
+            DevCheatUI.CreateButton("SevenReset", root, "처음부터 (오늘 1일차)", DevCheatUI.DangerColor, () =>
+            {
+                seven.DevReset();
                 panel.Rebuild();
             });
         }
