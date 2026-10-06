@@ -31,6 +31,13 @@ namespace OJ.SeasonPass
         [Tooltip("한 레벨에 필요한 포인트(쓴 고기). 소탕 1회 = 고기 5.")]
         [SerializeField, Min(1)] private int pointsPerLevel = 200;
 
+        /// <summary>
+        /// 유료 트랙 가격(원). 구매 창의 버튼에 그대로 적힌다.
+        /// <b>가격은 아직 미정이다</b>(BMDesign 10장) — 지금 값은 화면을 채우기 위한 자리값이다.
+        /// </summary>
+        [Tooltip("유료 트랙 가격(원). 미정 — 자리값.")]
+        [SerializeField, Min(0)] private int premiumPriceWon = 9900;
+
         [Tooltip("시즌 목록. id 는 yyyy-MM 이고 그 달에 그 시즌이 돈다.")]
         [SerializeField] private List<SeasonPassSeason> seasons = new List<SeasonPassSeason>();
 
@@ -38,6 +45,8 @@ namespace OJ.SeasonPass
         [SerializeField] private SeasonPassSeason fallbackSeason = new SeasonPassSeason();
 
         public int PointsPerLevel => Mathf.Max(1, pointsPerLevel);
+
+        public int PremiumPriceWon => Mathf.Max(0, premiumPriceWon);
 
         public IReadOnlyList<SeasonPassSeason> Seasons => seasons;
 
