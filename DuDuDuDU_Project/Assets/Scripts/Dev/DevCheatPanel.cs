@@ -85,7 +85,10 @@ namespace OJ.Dev
             // 팝업(UIPopupRoot)은 "씬 최고 정렬 + 1" 로 올라오는데, UIService 가 이 띠를
             // 건너뛰도록 해 두었다(FadeView.SortingOrder 이상은 제외). 안 그러면 팝업이
             // 매번 치트 위로 한 칸 올라타 전투에서 치트가 가려진다.
-            canvas = DevCheatUI.CreateCanvas("DevCheatCanvas", short.MaxValue - 1);
+            //
+            // 맨 위(short.MaxValue)가 아니라 그 세 칸 아래다 — 고르는 칸의 펼친 목록과 그 클릭 막이가
+            // 치트 창보다 위에 와야 한다(DevCheatDropdown). 페이드(-100)보다는 여전히 위다.
+            canvas = DevCheatUI.CreateCanvas("DevCheatCanvas", DevCheatDropdown.ListSortingOrder - 3);
             canvas.transform.SetParent(transform, false);
 
             BuildWindow(canvas.transform);
@@ -93,11 +96,25 @@ namespace OJ.Dev
 
             window.SetActive(false);
             SceneManager.sceneLoaded += OnSceneLoaded;
+
+            // Escape — 치트가 열려 있으면 게임의 뒤로가기보다 먼저 가져간다(한 번에 둘이 닫히지 않게).
+            OJ.Utils.AOSBackBtnManager.EscapeInterceptor = HandleEscape;
+        }
+
+        private void Update()
+        {
+            // 뒤로가기 관리자가 없는 자리(컨테이너가 서기 전 · 테스트 씬)에서도 Escape 로 닫히게 한다.
+            // 관리자가 있으면 그쪽이 EscapeInterceptor 로 먼저 부르므로 여기서 또 처리하지 않는다.
+            if (OJ.Utils.AOSBackBtnManager.Instance == null && Input.GetKeyUp(KeyCode.Escape))
+                HandleEscape();
         }
 
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+
+            if (OJ.Utils.AOSBackBtnManager.EscapeInterceptor == HandleEscape)
+                OJ.Utils.AOSBackBtnManager.EscapeInterceptor = null;
 
             if (instance == this)
                 instance = null;
@@ -113,12 +130,51 @@ namespace OJ.Dev
                 Rebuild();
         }
 
+        /// <summary>
+        /// Escape 한 번. 펼친 고르는 칸이 있으면 그것만 접고, 아니면 창을 닫는다.
+        /// 창이 닫혀 있으면 false — 게임의 뒤로가기가 그대로 처리한다.
+        /// </summary>
+        private static bool HandleEscape()
+        {
+            if (instance == null || instance.window == null || !instance.window.activeSelf)
+                return false;
+
+            if (instance.CollapseDropdowns())
+                return true;
+
+            instance.window.SetActive(false);
+            return true;
+        }
+
+        /// <summary>
+        /// 펼친 고르는 칸을 접는다. 접은 것이 있으면 true.
+        /// <b>창을 끄기 전에 반드시 부른다</b> — 펼친 목록의 클릭 막이는 창이 아니라 캔버스에 붙어서,
+        /// 접지 않고 창만 끄면 보이지 않는 막이가 남아 화면 전체가 안 눌린다.
+        /// </summary>
+        private bool CollapseDropdowns()
+        {
+            bool any = false;
+            foreach (TMPro.TMP_Dropdown dropdown in window.GetComponentsInChildren<TMPro.TMP_Dropdown>(true))
+            {
+                if (dropdown.IsExpanded)
+                {
+                    dropdown.Hide();
+                    any = true;
+                }
+            }
+
+            return any;
+        }
+
         internal static void Toggle()
         {
             if (instance == null || instance.window == null)
                 return;
 
             bool next = !instance.window.activeSelf;
+            if (!next)
+                instance.CollapseDropdowns();
+
             instance.window.SetActive(next);
 
             if (next)

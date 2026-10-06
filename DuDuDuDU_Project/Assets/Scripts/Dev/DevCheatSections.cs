@@ -399,6 +399,8 @@ namespace OJ.Dev
                 panel.Rebuild();
             });
 
+            BuildMembership(panel, root);
+
             DevCheatUI.CreateSectionTitle(root, "미션/업적");
             DevCheatUI.CreateHelpText(root, "재화/스테이지 진행도는 건드리지 않는다. 미션 기록만 비운다.");
 
@@ -407,6 +409,59 @@ namespace OJ.Dev
                 () => { MissionCheat.ResetAll(); panel.Rebuild(); });
             DevCheatUI.CreateButton("NewDay", missionRow, "오늘치만 (자정 흉내)", DevCheatUI.ButtonColor,
                 () => { MissionCheat.ResetToday(); panel.Rebuild(); });
+        }
+
+        /// <summary>
+        /// 멤버십(광고제거권 · 고기 멤버십). 사는 것은 멤버십 창에서 하고, 여기서는 <b>해지</b>와
+        /// 확인하기 번거로운 상태(만료 직전 · 소탕 한도 소진)를 만든다.
+        /// </summary>
+        private static void BuildMembership(DevCheatPanel panel, Transform root)
+        {
+            DevCheatUI.CreateSectionTitle(root, "멤버십");
+
+            EntitlementManager entitlements = EntitlementManager.Instance;
+            if (entitlements == null)
+            {
+                DevCheatUI.CreateHelpText(root, "EntitlementManager 가 없다.");
+                return;
+            }
+
+            int limit = OJ.Shop.ShopDatabaseProvider.Database.Membership.freeDailySweepLimit;
+            DevCheatUI.CreateHelpText(root,
+                "고기 멤버십 " + (entitlements.MeatMembershipActive ? "잔여 " + entitlements.MeatMembershipRemainingDays + "일" : "없음") +
+                " / 광고제거권 " + (entitlements.AdFree ? "보유" : "없음") +
+                " / 오늘 소탕 " + entitlements.SweepsUsedToday + " / " + limit);
+
+            RectTransform cancelRow = DevCheatUI.CreateRow(root);
+            DevCheatUI.CreateButton("CancelMeat", cancelRow, "고기 멤버십 해지", DevCheatUI.DangerColor, () =>
+            {
+                entitlements.DevClearMembership();
+                panel.Rebuild();
+            });
+            DevCheatUI.CreateButton("CancelAd", cancelRow, "광고제거권 해지", DevCheatUI.DangerColor, () =>
+            {
+                entitlements.AdFree = false;
+                panel.Rebuild();
+            });
+
+            DevCheatUI.CreateButton("CancelAll", root, "멤버십 전부 해지", DevCheatUI.DangerColor, () =>
+            {
+                entitlements.DevClearMembership();
+                entitlements.AdFree = false;
+                panel.Rebuild();
+            });
+
+            RectTransform stateRow = DevCheatUI.CreateRow(root);
+            DevCheatUI.CreateButton("MeatExpiring", stateRow, "만료 2일 전으로", DevCheatUI.ButtonColor, () =>
+            {
+                entitlements.DevSetMembershipRemaining(2.0);
+                panel.Rebuild();
+            });
+            DevCheatUI.CreateButton("ResetSweep", stateRow, "오늘 소탕 수 초기화", DevCheatUI.ButtonColor, () =>
+            {
+                entitlements.DevResetSweepUsage();
+                panel.Rebuild();
+            });
         }
 
         // ── 시간 ───────────────────────────────────────────────────────
