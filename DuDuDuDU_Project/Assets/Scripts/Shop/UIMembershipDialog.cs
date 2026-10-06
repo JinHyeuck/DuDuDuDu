@@ -14,8 +14,10 @@ namespace OJ.Shop
     /// <b>혜택 줄 수를 일부러 줄였다.</b> 광고제거권 1줄, 고기 멤버십 2줄(5.2-1·2). 광고제거권에
     /// 혜택을 붙이는 순간 "싸고 정직한 첫 결제" 라는 역할이 사라진다(BMDesign 4장).
     ///
-    /// <b>산 뒤의 모습</b>(5.2-3·4): 광고제거권 카드는 내린다. 고기 멤버십 카드는 "잔여 n일" 을
-    /// 띄우고, 만료 3일 전부터 다시 가격 버튼을 연다 — 그때 사면 만료일 뒤로 붙는다.
+    /// <b>산 뒤의 모습</b>: 카드는 <b>내리지 않는다</b>(사용자 피드백 2026-10-06 — 기획서 5.2-3 의
+    /// "카드를 내린다" 를 뒤집음. 산 것이 화면에서 사라지면 산 기록이 없어진 것처럼 읽힌다).
+    /// 광고제거권은 가격 버튼 자리에 "보유 중", 고기 멤버십은 "잔여 n일" 을 띄우고
+    /// 만료 3일 전부터 다시 가격 버튼을 연다 — 그때 사면 만료일 뒤로 붙는다.
     ///
     /// <b>결제는 아직 없다.</b> 두 버튼 모두 <see cref="ShopPurchaseManager.TryBuyCashProduct"/> 를 지난다 —
     /// 현금의 유일한 관문이고, SDK 를 붙이면 그 한 곳만 고친다.
@@ -36,8 +38,8 @@ namespace OJ.Shop
         [SerializeField] private TMP_Text meatRemainingText;
         [SerializeField] private TMP_Text meatDaysText;
 
-        [SerializeField] private GameObject adCard;
         [SerializeField] private Button adBuyButton;
+        [SerializeField] private GameObject adOwnedMark;
         [SerializeField] private TMP_Text adPriceText;
 
         protected override void OnLoad()
@@ -109,9 +111,12 @@ namespace OJ.Shop
             if (meatPriceText != null)
                 meatPriceText.SetText(Won(offers.meatMembershipPriceWon));
 
-            // ── 광고제거권 ── 산 뒤에는 카드를 내린다(기획서 5.2-3).
-            if (adCard != null)
-                adCard.SetActive(!entitlements.AdFree);
+            // ── 광고제거권 ── 산 뒤에도 카드는 남기고 가격 버튼만 "보유 중" 으로 바꾼다.
+            if (adBuyButton != null)
+                adBuyButton.gameObject.SetActive(!entitlements.AdFree);
+
+            if (adOwnedMark != null)
+                adOwnedMark.SetActive(entitlements.AdFree);
 
             if (adPriceText != null)
                 adPriceText.SetText(Won(offers.adRemovalPriceWon));
@@ -256,7 +261,6 @@ namespace OJ.Shop
         {
             // 카드 — 보이는 x 40~1040, y 980~1460. 짙은 남색 + 밝은 하늘색 테두리(레퍼런스의 영구 상품 카드)
             Image card = Panel(p, "AdCard", 40f, 980f, 1040f, 1460f, AdCardColor, AdCardOutline);
-            dialog.adCard = card.transform.parent.gameObject;
             Transform c = card.transform;
             const float cy = 1220f;
 
@@ -284,6 +288,13 @@ namespace OJ.Shop
             dialog.adPriceText = UISeasonPassUIFactory.CreateFittedText("Price", buy.transform, "3,000원", 50f, 32f,
                 TextAlignmentOptions.Center, Color.white, font);
             UISeasonPassUIFactory.SetRect(dialog.adPriceText.rectTransform, new Vector2(400f, 70f), new Vector2(0f, 8f));
+
+            // 산 뒤 — 가격 버튼 자리에 "보유 중". 고기 멤버십의 "잔여 n일" 과 같은 크기·색이다.
+            TMP_Text owned = UISeasonPassUIFactory.CreateText("Owned", c, "보유 중", 44f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UISeasonPassUIFactory.SetRect(owned.rectTransform, new Vector2(420f, 60f), Local(790f, 1372f, 540f, cy));
+            dialog.adOwnedMark = owned.gameObject;
+            dialog.adOwnedMark.SetActive(false);
         }
 
         // ── 조립 도우미 ───────────────────────────────────────────────
