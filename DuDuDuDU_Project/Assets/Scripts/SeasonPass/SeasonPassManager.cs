@@ -190,6 +190,13 @@ namespace OJ.SeasonPass
 
         public bool TryClaim(int level, bool premium)
         {
+            return TryClaim(level, premium, out _);
+        }
+
+        /// <summary>한 칸을 받는다. <paramref name="granted"/> 는 실제로 지급한 것 — 획득 팝업이 그린다.</summary>
+        public bool TryClaim(int level, bool premium, out List<PointRewardEntry> granted)
+        {
+            granted = null;
             EnsureSeason();
 
             SeasonPassLevel data = Season.GetLevel(level);
@@ -209,7 +216,8 @@ namespace OJ.SeasonPass
             }
 
             claimed.Add(level);
-            Grant(SeasonPassReward.ToPointRewards(rewards));
+            granted = SeasonPassReward.ToPointRewards(rewards);
+            Grant(granted);
             Save();
             return true;
         }
@@ -222,6 +230,13 @@ namespace OJ.SeasonPass
         /// </summary>
         public int ClaimAll()
         {
+            return ClaimAll(out _);
+        }
+
+        /// <summary>전부 받는다. <paramref name="merged"/> 는 재화별로 합친 지급 내역 — 획득 팝업 하나로 보여 준다.</summary>
+        public int ClaimAll(out List<PointRewardEntry> merged)
+        {
+            merged = null;
             EnsureSeason();
 
             var granted = new List<PointRewardEntry>();
@@ -243,7 +258,8 @@ namespace OJ.SeasonPass
             if (count == 0)
                 return 0;
 
-            Grant(PointRewardUtility.MergeRewards(granted));
+            merged = PointRewardUtility.MergeRewards(granted);
+            Grant(merged);
             Save();
             return count;
         }

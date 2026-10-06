@@ -2,6 +2,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using OJ.Point;
+using OJ.Hunting;
+using OJ.DI;
 
 namespace OJ.IdleReward
 {
@@ -159,6 +161,29 @@ namespace OJ.IdleReward
             Debug.Log($"[고기축제] {setCount}세트 수령 | 고기 +{meatAmount} (소탕 {sweeps}회분)");
 
             Refresh();
+            ShowRewardPopup(meatAmount);
+        }
+
+        /// <summary>
+        /// 획득 팝업. 다른 보상과 같은 <c>UIRewardResultDialog</c> 를 쓴다 — 위젯에서 바로 받는 구조라
+        /// 팝업이 없으면 숫자가 0 으로 돌아가는 것 말고는 받았다는 표시가 없었다.
+        /// 지급은 이미 끝났으므로 못 열어도 로그만 남긴다.
+        /// </summary>
+        private static void ShowRewardPopup(int meatAmount)
+        {
+            if (meatAmount <= 0)
+                return;
+
+            var rewards = new[] { new PointRewardEntry(PointType.Stamina, meatAmount) };
+
+            UIRewardResultDialog dialog = GameContainer.UI?.Get<UIRewardResultDialog>();
+            if (dialog == null)
+            {
+                Debug.LogError("[고기축제] UIRewardResultDialog 를 못 열었다. 지급은 이미 끝났다 — 고기 +" + meatAmount);
+                return;
+            }
+
+            dialog.Open(rewards, "고기 축제에서 고기를 받았습니다.");
         }
 
         private void Refresh()
