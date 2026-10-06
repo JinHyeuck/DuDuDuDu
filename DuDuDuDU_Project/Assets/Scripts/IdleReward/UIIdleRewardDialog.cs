@@ -29,10 +29,16 @@ namespace OJ.IdleReward
     {
         private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.8f);
         private static readonly Color InnerBoxColor = Hex(0x636481);
+
+        // 소탕 문구를 뺀 만큼 안쪽 판·팝업 판 아래를 줄이고 받기 버튼을 올린다(PSD 보다 87px 위).
+        // 보상 상자 아래(y 1192)와 안쪽 판 아래 사이를 30px 로 남긴다.
+        private const float LiftUp = 87f;
         private static readonly Color RateBoxColor = Hex(0x45465F);
         private static readonly Color LineColor = Hex(0x7B7C96);
-        private static readonly Color BandColor = Hex(0x8485A1);
         private static readonly Color DarkText = Hex(0x2B2C3F);
+
+        /// <summary>빈 칸은 같은 그림을 어둡게 쓴다(PSD 실측 밝기 비 ≈0.82).</summary>
+        private static readonly Color EmptySlotTint = new Color(0.82f, 0.82f, 0.82f, 1f);
 
         /// <summary>격자에 늘 보이는 칸 수. 보상이 적어도 3줄(PSD)이 채워져 있어야 상자가 비어 보이지 않는다.</summary>
         private const int MinSlotCount = 15;
@@ -51,10 +57,6 @@ namespace OJ.IdleReward
         [SerializeField] private Sprite filledSlotSprite;
         [SerializeField] private Sprite emptySlotSprite;
 
-        [SerializeField] private TMP_Text sweepCountText;
-        [SerializeField] private Button sweepButton;
-        [SerializeField] private Image sweepCostIcon;
-        [SerializeField] private TMP_Text sweepCostText;
 
         [SerializeField] private Button autoClaimButton;
 
@@ -67,7 +69,6 @@ namespace OJ.IdleReward
 
             if (closeButton != null) closeButton.onClick.AddListener(Exit);
             if (autoClaimButton != null) autoClaimButton.onClick.AddListener(ClaimAutoBattle);
-            if (sweepButton != null) sweepButton.onClick.AddListener(OpenSweep);
         }
 
         protected override void OnEnter()
@@ -126,8 +127,11 @@ namespace OJ.IdleReward
             int ticketPerHour = stageIndex > 0 ? StageRewardCalculator.PinballTicketPerClear : 0;
             goldRateText.SetText("+{0}/시간", goldPerHour);
             ticketRateText.SetText("+{0}/시간", ticketPerHour);
+            // 핀볼 티켓은 PointMetadataDatabase 에 아이콘이 아직 없다 — 흰 사각형 대신 숨긴다.
             if (ticketRateIcon != null && ticketRateIcon.sprite == null)
                 ticketRateIcon.sprite = PointRewardUtility.GetPointIcon(PointType.PinballTicket);
+            if (ticketRateIcon != null)
+                ticketRateIcon.enabled = ticketRateIcon.sprite != null;
 
             bool full = manager.GetAutoBattleProgress01() >= 1f;
             autoTimerText.SetText(full
@@ -135,29 +139,7 @@ namespace OJ.IdleReward
                 : "누적 " + FormatTime(elapsed) + " / " + FormatTime(TimeSpan.FromSeconds(IdleRewardManager.AutoBattleMaxSeconds)));
 
             autoClaimButton.interactable = rewards.Count > 0;
-            RefreshSweep();
             RefreshRewardCards(rewards, forceCards);
-        }
-
-        /// <summary>
-        /// 소탕 버튼은 로비의 스테이지 소탕 창을 연다(결정표). 그 창이 회당 고기
-        /// <see cref="SweepRules.StaminaCostPerSweep"/> 를 받으므로 비용도 그것을 적는다.
-        /// </summary>
-        private void RefreshSweep()
-        {
-            StageProgressManager progress = StageProgressManager.Instance;
-            bool unlocked = progress != null && SweepRules.IsUnlocked(progress.GetLastClearedStageIndex());
-            sweepButton.interactable = unlocked;
-
-            PointManager points = PointManager.Instance;
-            int owned = points != null ? points.Get(PointType.Stamina) : 0;
-            sweepCountText.SetText(unlocked
-                ? "소탕 가능 : " + SweepRules.ResolveMaxCount(owned) + "회"
-                : "스테이지를 클리어하면 소탕할 수 있습니다");
-
-            sweepCostText.SetText("{0}", SweepRules.StaminaCostPerSweep);
-            if (sweepCostIcon != null && sweepCostIcon.sprite == null)
-                sweepCostIcon.sprite = PointRewardUtility.GetPointIcon(PointType.Stamina);
         }
 
         private void RefreshRewardCards(IReadOnlyList<PointRewardEntry> rewards, bool force)
@@ -179,6 +161,7 @@ namespace OJ.IdleReward
                 // 칸 그림(x3, 192)은 격자 칸(148x150)보다 크다 — 시안의 칸 사이 간격이 그림 여백이다.
                 Image slot = CreateImage("Bg", cell.transform, Color.white);
                 slot.sprite = filled ? filledSlotSprite : emptySlotSprite;
+                slot.color = filled ? Color.white : EmptySlotTint;
                 slot.raycastTarget = false;
                 SetRect(slot.rectTransform, new Vector2(192f, 192f), Vector2.zero);
 
@@ -188,6 +171,7 @@ namespace OJ.IdleReward
                 PointRewardEntry reward = rewards[i];
                 Image icon = CreateImage("Icon", cell.transform, Color.white);
                 icon.sprite = PointRewardUtility.GetPointIcon(reward.PointType);
+                icon.enabled = icon.sprite != null;
                 icon.preserveAspect = true;
                 icon.raycastTarget = false;
                 SetRect(icon.rectTransform, new Vector2(84f, 84f), new Vector2(0f, 10f));
@@ -208,19 +192,6 @@ namespace OJ.IdleReward
 
             ShowRewardResult(rewards, "스테이지 " + stageIndex + " 자동전투 보상을 획득했습니다.");
             Refresh(true);
-        }
-
-        /// <summary>로비 소탕 버튼(<c>UISweepLobbyButton</c>)과 같은 길로 소탕 창을 연다.</summary>
-        private void OpenSweep()
-        {
-            StageProgressManager progress = StageProgressManager.Instance;
-            if (progress == null || !SweepRules.IsUnlocked(progress.GetLastClearedStageIndex()))
-            {
-                Refresh(false);
-                return;
-            }
-
-            GameContainer.UI?.Show<UISweepCountDialog>();
         }
 
         /// <summary>
@@ -301,7 +272,7 @@ namespace OJ.IdleReward
             Picture(p, "Skeleton", "OffLineReward/FromPsd/FromPsd_Skeleton", new Vector2(173f, 248f), Pos(653.5f, 217f));
 
             // 팝업 판 — Ui_Popup_Bg x4, 보이는 924x1173 (75,359) + 여백 3px x4
-            Sliced(p, "Panel", "Upgrade/Ui_Popup_Bg", 4f, new Vector2(948f, 1197f), Pos(537f, 945.5f), Color.white);
+            Sliced(p, "Panel", "Upgrade/Ui_Popup_Bg", 4f, new Vector2(948f, 1197f - LiftUp), Pos(537f, 945.5f - LiftUp / 2f), Color.white);
 
             // 닫기 — PSD 에서 잘라 온 버튼 한 장(FromPsd, 정식 파일 대기)
             Image close = Picture(p, "CloseButton", "OffLineReward/FromPsd/FromPsd_CloseButton", new Vector2(112f, 111f), Pos(911f, 381.5f));
@@ -313,7 +284,7 @@ namespace OJ.IdleReward
             SetRect(title.rectTransform, new Vector2(600f, 60f), Pos(536.5f, 429f));
 
             // 안쪽 판 — SmallBox x4 #636481, 보이는 857x829 (109,480). SmallBox 여백 6/6/7/7 px x4
-            Sliced(p, "InnerBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(909f, 881f), Pos(539.5f, 896.5f), InnerBoxColor);
+            Sliced(p, "InnerBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(909f, 881f - LiftUp), Pos(539.5f, 896.5f - LiftUp / 2f), InnerBoxColor);
             Picture(p, "TopDecor", "OffLineReward/FromPsd/FromPsd_TopDecor", new Vector2(830f, 55f), Pos(541f, 521.5f));
 
             stageText = CreateText("StageText", p, "1. 어둠의 숲속", 35f, TextAlignmentOptions.Center, Color.white);
@@ -341,34 +312,17 @@ namespace OJ.IdleReward
             // 보상 상자 — Ui_offlineRewardBox x4, 보이는 817x512 (132,680), 가로 여백 15px x4
             Sliced(p, "RewardBox", "OffLineReward/Ui_offlineRewardBox", 4f, new Vector2(937f, 512f), Pos(540.5f, 936f), Color.white);
 
-            // 윗 띠 — PSD 의 도형(사각형 1624)이 상자 모양으로 잘려 보이는 자리
-            Image band = CreateImage("Band", p, BandColor);
-            band.raycastTarget = false;
-            SetRect(band.rectTransform, new Vector2(817f, 80f), Pos(540.5f, 720f));
+            // 윗 밝은 띠는 상자 그림 자체의 위 20px 이다(#8485A1, 아래는 #45465F) — 9슬라이스 위 테두리 20 x4 = 80.
+            // PSD 의 도형(사각형 1624)이 같은 자리를 덮지만 따로 그리지 않는다.
 
             autoTimerText = CreateText("TimerText", p, "이미 한도 시간이 되었습니다. 00:00:00", 30f, TextAlignmentOptions.Center, Color.white);
             SetRect(autoTimerText.rectTransform, new Vector2(800f, 42f), Pos(531f, 719f));
 
             BuildRewardGrid(p);
 
-            sweepCountText = CreateText("SweepCount", p, "소탕 가능 : 3회", 35f, TextAlignmentOptions.Center, DarkText);
-            SetRect(sweepCountText.rectTransform, new Vector2(800f, 48f), Pos(521.5f, 1248.5f));
-
-            // 버튼 — x3, 보이는 331x145. 버튼 여백 4/6/4/2 px x3 → 355x169, 중심이 6px 위
-            sweepButton = SpriteButton(p, "SweepButton", "Ingame/Big_Btn_Yellow", new Vector2(355f, 169f), Pos(343.5f, 1407.5f));
-            TMP_Text sweepLabel = CreateText("Label", sweepButton.transform, "소탕", 35f, TextAlignmentOptions.Center, Color.white);
-            SetRect(sweepLabel.rectTransform, new Vector2(300f, 46f), new Vector2(0.5f, 24.5f));
-            Image costBar = CreateImage("CostBar", sweepButton.transform, new Color(0f, 0f, 0f, 0.3f));
-            costBar.raycastTarget = false;
-            SetRect(costBar.rectTransform, new Vector2(297f, 39f), new Vector2(1f, -22f));
-            sweepCostIcon = CreateImage("CostIcon", sweepButton.transform, Color.white);
-            sweepCostIcon.preserveAspect = true;
-            sweepCostIcon.raycastTarget = false;
-            SetRect(sweepCostIcon.rectTransform, new Vector2(42f, 42f), new Vector2(-49f, -22.5f));
-            sweepCostText = CreateText("CostText", sweepButton.transform, "5", 35f, TextAlignmentOptions.Center, Color.white);
-            SetRect(sweepCostText.rectTransform, new Vector2(80f, 40f), new Vector2(0f, -22.5f));
-
-            autoClaimButton = SpriteButton(p, "ClaimButton", "Ingame/Big_Btn_Green", new Vector2(355f, 169f), Pos(745.5f, 1407.5f));
+            // 받기 버튼 하나만 둔다 — 이 창에 소탕 UX 는 두지 않는다(사용자 지시 2026-10-01).
+            // PSD 의 두 버튼 자리(보이는 178~911)를 한 버튼이 차지한다. 여백 4px x3 씩 → 757x169
+            autoClaimButton = SpriteButton(p, "ClaimButton", "Ingame/Big_Btn_Green", new Vector2(757f, 169f), Pos(544.5f, 1407.5f - LiftUp));
             TMP_Text claimLabel = CreateText("Label", autoClaimButton.transform, "받기", 35f, TextAlignmentOptions.Center, Color.white);
             SetRect(claimLabel.rectTransform, new Vector2(300f, 46f), new Vector2(0f, 4.5f));
         }
@@ -419,6 +373,7 @@ namespace OJ.IdleReward
                 GameObject cell = CreateRect("Slot", autoRewardRoot);
                 Image slot = CreateImage("Bg", cell.transform, Color.white);
                 slot.sprite = emptySlotSprite;
+                slot.color = EmptySlotTint;
                 slot.raycastTarget = false;
                 SetRect(slot.rectTransform, new Vector2(192f, 192f), Vector2.zero);
             }
