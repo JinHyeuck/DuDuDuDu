@@ -58,6 +58,13 @@ namespace OJ.Core
         /// </summary>
         public bool AdFree { get; set; }
 
+        /// <summary>
+        /// 고기 멤버십 만료 시각과 무료 소탕 사용량. <c>AdFree</c> 와 같은 계정 권리라 소유자도 같다
+        /// (<c>OJ.Save.EntitlementManager</c>). 소탕 사용량을 여기 두는 이유는 그 한도를 멤버십이
+        /// 풀기 때문이다 — 한도와 그것을 푸는 권리를 다른 매니저가 들면 둘이 어긋난다.
+        /// </summary>
+        public MembershipSave Membership { get; } = new MembershipSave();
+
         /// <summary><c>PointType</c> 이름 → 보유량. (<c>OJ.Point.*</c>)</summary>
         public SortedDictionary<string, int> Points { get; } = NewIntMap();
 
@@ -312,6 +319,22 @@ namespace OJ.Core
     /// 같다. 표를 셋으로 나누면 리셋 코드가 셋이 되고, 그중 하나를 빠뜨리는 사고가
     /// <b>날짜가 바뀌는 순간에만</b> 드러난다 — 개발 중에 가장 안 밟히는 경로다.
     /// </summary>
+    /// <summary>고기 멤버십과 무료 소탕 사용량. (<c>OJ.Save.EntitlementManager</c>)</summary>
+    public sealed class MembershipSave
+    {
+        /// <summary>멤버십 만료 시각(UTC tick). 0 이면 산 적이 없다(<c>MembershipRules.NoExpiry</c>).</summary>
+        public long ExpiryUtcTicks { get; set; }
+
+        /// <summary>
+        /// <see cref="SweepUsedCount"/> 가 어느 날짜의 것인가. <c>yyyy-MM-dd</c>, 로컬 날짜.
+        /// 오늘과 다르면 사용량은 0 으로 읽힌다(<c>MembershipRules.UsedToday</c>).
+        /// </summary>
+        public string SweepUsageDate { get; set; } = string.Empty;
+
+        /// <summary>그날 돈 소탕 횟수. 멤버십 중에 돈 것도 센다(만료 당일에 한도가 바로 맞물리도록).</summary>
+        public int SweepUsedCount { get; set; }
+    }
+
     public sealed class ShopSave
     {
         /// <summary>
