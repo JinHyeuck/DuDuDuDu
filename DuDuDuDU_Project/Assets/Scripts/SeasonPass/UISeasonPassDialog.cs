@@ -24,7 +24,6 @@ namespace OJ.SeasonPass
         [SerializeField] private TMP_Text remainingText;
         [SerializeField] private TMP_Text levelText;
         [SerializeField] private TMP_Text pointText;
-        [SerializeField] private Image pointGaugeFill;
 
         [SerializeField] private Button premiumButton;
         [SerializeField] private TMP_Text premiumButtonLabel;
@@ -32,9 +31,6 @@ namespace OJ.SeasonPass
 
         [SerializeField] private RectTransform listContent;
         [SerializeField] private UISeasonPassLevelRow rowTemplate;
-
-        /// <summary>포인트 게이지 트랙의 너비. 굽기와 같은 값이어야 한다.</summary>
-        private const float PointGaugeWidth = 520f;
 
         /// <summary>남은 시간 글자를 다시 쓰는 간격(초). 분 단위로만 적어 1초마다 고칠 이유가 없다.</summary>
         private const float TimerRefreshSeconds = 20f;
@@ -124,8 +120,6 @@ namespace OJ.SeasonPass
                     pass.PointsIntoLevel, pass.PointsPerLevel, pass.Level, pass.MaxLevel));
             }
 
-            UISeasonPassUIFactory.SetGauge(pointGaugeFill, PointGaugeWidth, pass.LevelProgress);
-
             RefreshRemaining();
             RefreshPremiumButton(pass);
             RefreshClaimAll(pass);
@@ -149,26 +143,17 @@ namespace OJ.SeasonPass
             {
                 premiumButtonLabel.SetText(unlocked ? "프리미엄 적용 중" : "프리미엄 활성화");
 
-                // <b>색을 직접 준다.</b> interactable 을 끄면 uGUI 가 바탕을 어둡게 덮는데,
-                // 바탕이 금색이고 글자가 어두운 색이라 둘 다 어두워져 글자가 안 읽힌다.
+                // 산 뒤에는 글자만 노랗게 바꾼다(PSD 주석). 버튼 그림은 그대로 두고
+                // 꺼진 틴트도 쓰지 않는다 — 금색 바탕이 어두워지면 글자까지 같이 묻힌다.
                 premiumButtonLabel.color = unlocked
-                    ? UISeasonPassUIFactory.LightText
-                    : UISeasonPassUIFactory.DarkText;
+                    ? UISeasonPassUIFactory.PremiumActiveText
+                    : Color.white;
             }
 
             // 이미 샀으면 누를 것이 없다. 버튼을 남겨 두면 눌러 보고 아무 일도 안 일어나는
             // 자리가 되는데, 그건 고장으로 읽힌다.
             if (premiumButton != null)
-            {
                 premiumButton.interactable = !unlocked;
-
-                if (premiumButton.targetGraphic is Image image)
-                {
-                    image.color = unlocked
-                        ? UISeasonPassUIFactory.SlotDoneColor
-                        : UISeasonPassUIFactory.PremiumButtonColor;
-                }
-            }
         }
 
         private void RefreshClaimAll(SeasonPassManager pass)
@@ -258,6 +243,15 @@ namespace OJ.SeasonPass
         }
 
         // ── 굽기 ───────────────────────────────────────────────────────
+        //
+        // 좌표는 PSD(Art/0PSD/패스.psd) 레이어 bbox 그대로다. 측정표: Docs/SeasonPassArtPort.md
+
+        /// <summary>목록 영역(PSD y). 트랙 머리 아래 검은 선부터 하단 띠 위 검은 선까지.</summary>
+        private const float ListTop = 676f;
+        private const float ListBottom = 1714f;
+
+        /// <summary>첫 줄 칸 중심(PSD y 828)과 목록 위끝 사이의 여백.</summary>
+        private const int ListPadding = 828 - 676 - (int)(UISeasonPassLevelRow.RowHeight / 2f);
 
         /// <summary>창 하나를 조립한다. 에디터 굽기 경로에서만 부른다.</summary>
         public static UISeasonPassDialog Create(Transform parent, TMP_FontAsset font)
@@ -266,7 +260,9 @@ namespace OJ.SeasonPass
             UISeasonPassUIFactory.Stretch(root.GetComponent<RectTransform>());
 
             var dialog = root.AddComponent<UISeasonPassDialog>();
-            dialog.BakeOpenStyle(DialogOpenStyle.Popup);
+
+            // 화면 전체를 덮는 창이다. 가운데서 커지는 팝업 연출은 맞지 않는다.
+            dialog.BakeOpenStyle(DialogOpenStyle.Page);
 
             // dialogView 는 루트가 아니라 자식이어야 한다. DialogBase 가 이것을 끄고 켜는데,
             // 루트를 끄면 컴포넌트까지 같이 잠들어 다시 열 수 없다.
@@ -274,99 +270,161 @@ namespace OJ.SeasonPass
             UISeasonPassUIFactory.Stretch(view.GetComponent<RectTransform>());
             dialog.dialogView = view;
 
-            Image backdrop = UISeasonPassUIFactory.CreateImage(
-                "Backdrop", view.transform, UISeasonPassUIFactory.Backdrop);
-            UISeasonPassUIFactory.Stretch(backdrop.rectTransform);
+            Transform p = view.transform;
 
-            var backdropButton = backdrop.gameObject.AddComponent<Button>();
-            backdropButton.targetGraphic = backdrop;
-            dialog.AddExitButton(backdropButton);
+            // 바탕 — 화면 전체가 무료 트랙 색이고 오른쪽 열만 유료 색이다.
+            // 바탕이 클릭을 먹어야 뒤의 로비가 눌리지 않는다.
+            Image background = UISeasonPassUIFactory.CreateImage("Background", p, UISeasonPassUIFactory.FreeTrackColor);
+            UISeasonPassUIFactory.Stretch(background.rectTransform);
 
-            Image panel = UISeasonPassUIFactory.CreateImage(
-                "Panel", view.transform, UISeasonPassUIFactory.PanelColor);
-            UISeasonPassUIFactory.SetRect(panel.rectTransform, new Vector2(1000f, 1700f), Vector2.zero);
+            UISeasonPassUIFactory.Solid(p, "PremiumTrack", UISeasonPassUIFactory.PremiumTrackColor, 536f, 657f, 1086f, 2100f);
+            BakePatterns(p);
 
-            BakeHeader(dialog, panel.transform, font);
-
-            dialog.listContent = UISeasonPassUIFactory.CreateScrollList(
-                "List", panel.transform, new Vector2(900f, 980f), new Vector2(0f, -170f), 8f);
-            dialog.rowTemplate = UISeasonPassLevelRow.Create(dialog.listContent, font);
-
-            BakeFooter(dialog, panel.transform, font);
+            BakeHeader(dialog, p, font);
+            BakeList(dialog, p, font);
+            BakeFooter(dialog, p, font);
 
             return dialog;
         }
 
-        private static void BakeHeader(UISeasonPassDialog dialog, Transform parent, TMP_FontAsset font)
+        /// <summary>Pass_Pattern x2 넉 장. 목록과 같이 움직이지 않는 바탕 무늬다.</summary>
+        private static void BakePatterns(Transform p)
         {
-            Image header = UISeasonPassUIFactory.CreateImage(
-                "Header", parent, UISeasonPassUIFactory.HeaderColor);
-            UISeasonPassUIFactory.SetRect(header.rectTransform, new Vector2(1000f, 300f), new Vector2(0f, 700f));
-            header.raycastTarget = false;
-
-            TMP_Text title = UISeasonPassUIFactory.CreateText(
-                "Title", header.transform, "시즌 패스", 64f,
-                TextAlignmentOptions.Left, UISeasonPassUIFactory.LightText, font);
-            UISeasonPassUIFactory.SetRect(title.rectTransform, new Vector2(600f, 80f), new Vector2(-180f, 90f));
-
-            dialog.seasonNameText = UISeasonPassUIFactory.CreateText(
-                "SeasonName", header.transform, "시즌", 36f,
-                TextAlignmentOptions.Left, UISeasonPassUIFactory.MutedText, font);
-            UISeasonPassUIFactory.SetRect(
-                dialog.seasonNameText.rectTransform, new Vector2(600f, 48f), new Vector2(-180f, 28f));
-
-            Image remainingBg = UISeasonPassUIFactory.CreateImage(
-                "RemainingBg", header.transform, UISeasonPassUIFactory.GaugeTrackColor);
-            UISeasonPassUIFactory.SetRect(remainingBg.rectTransform, new Vector2(320f, 62f), new Vector2(-320f, -42f));
-            remainingBg.raycastTarget = false;
-
-            dialog.remainingText = UISeasonPassUIFactory.CreateText(
-                "Remaining", remainingBg.transform, "0일", 34f,
-                TextAlignmentOptions.Center, UISeasonPassUIFactory.LightText, font);
-            UISeasonPassUIFactory.SetRect(
-                dialog.remainingText.rectTransform, new Vector2(320f, 62f), Vector2.zero);
-
-            Button close = UISeasonPassUIFactory.CreateButton(
-                "CloseButton", header.transform, "X", new Vector2(88f, 88f), new Vector2(440f, 96f),
-                UISeasonPassUIFactory.PremiumButtonColor, UISeasonPassUIFactory.DarkText, 44f, font);
-            dialog.AddExitButton(close);
-
-            // 레벨 뱃지 + 포인트 게이지. 헤더 아래 띠다.
-            Image levelBadge = UISeasonPassUIFactory.CreateImage(
-                "LevelBadge", parent, UISeasonPassUIFactory.LevelBadgeColor);
-            UISeasonPassUIFactory.SetRect(levelBadge.rectTransform, new Vector2(88f, 88f), new Vector2(-420f, 500f));
-            levelBadge.raycastTarget = false;
-
-            dialog.levelText = UISeasonPassUIFactory.CreateText(
-                "Level", levelBadge.transform, "1", 40f,
-                TextAlignmentOptions.Center, UISeasonPassUIFactory.DarkText, font);
-            UISeasonPassUIFactory.SetRect(dialog.levelText.rectTransform, new Vector2(88f, 88f), Vector2.zero);
-
-            dialog.pointGaugeFill = UISeasonPassUIFactory.CreateGauge(
-                "PointGauge", parent, new Vector2(PointGaugeWidth, 56f), new Vector2(-90f, 500f));
-
-            dialog.pointText = UISeasonPassUIFactory.CreateText(
-                "Point", parent, "0 / 0", 32f,
-                TextAlignmentOptions.Center, UISeasonPassUIFactory.LightText, font);
-            UISeasonPassUIFactory.SetRect(
-                dialog.pointText.rectTransform, new Vector2(PointGaugeWidth, 56f), new Vector2(-90f, 500f));
-
-            dialog.premiumButton = UISeasonPassUIFactory.CreateButton(
-                "PremiumButton", parent, "프리미엄 활성화", new Vector2(300f, 88f), new Vector2(330f, 500f),
-                UISeasonPassUIFactory.PremiumButtonColor, UISeasonPassUIFactory.DarkText, 32f, font);
-            dialog.premiumButtonLabel = dialog.premiumButton.GetComponentInChildren<TMP_Text>();
+            PatternAt(p, "FreePattern1", UISeasonPassUIFactory.FreePatternTint, 253f, 942f);
+            PatternAt(p, "FreePattern2", UISeasonPassUIFactory.FreePatternTint, 261.5f, 1470f);
+            PatternAt(p, "PremiumPattern1", UISeasonPassUIFactory.PremiumPatternTint, 845.5f, 942f);
+            PatternAt(p, "PremiumPattern2", UISeasonPassUIFactory.PremiumPatternTint, 853.5f, 1470f);
         }
 
-        private static void BakeFooter(UISeasonPassDialog dialog, Transform parent, TMP_FontAsset font)
+        private static void PatternAt(Transform p, string name, Color tint, float x, float y)
         {
-            dialog.claimAllButton = UISeasonPassUIFactory.CreateButton(
-                "ClaimAllButton", parent, "일괄 수령", new Vector2(420f, 110f), new Vector2(140f, -770f),
-                UISeasonPassUIFactory.ClaimAllColor, UISeasonPassUIFactory.LightText, 42f, font);
+            Image image = UISeasonPassUIFactory.Picture(
+                p, name, "Pass/Pass_Pattern", new Vector2(1024f, 1024f), UISeasonPassUIFactory.Pos(x, y));
+            image.color = tint;
+        }
 
-            Button back = UISeasonPassUIFactory.CreateButton(
-                "BackButton", parent, "뒤로", new Vector2(200f, 110f), new Vector2(-330f, -770f),
-                UISeasonPassUIFactory.SlotDimColor, UISeasonPassUIFactory.LightText, 38f, font);
-            dialog.AddExitButton(back);
+        private static void BakeHeader(UISeasonPassDialog dialog, Transform p, TMP_FontAsset font)
+        {
+            // 윗 그림 — PSD 에서 잘라 온 한 장(FromPsd, 정식 파일 대기). 가장자리가 바탕색으로 번진다.
+            UISeasonPassUIFactory.Picture(p, "Hero", "Pass/FromPsd/FromPsd_PassHero",
+                new Vector2(1080f, 481f), UISeasonPassUIFactory.Pos(534f, 222.5f));
+
+            TMP_Text title = UISeasonPassUIFactory.CreateText(
+                "Title", p, "시즌 패스", 95f, TextAlignmentOptions.Left, UISeasonPassUIFactory.TitleColor, font);
+            UISeasonPassUIFactory.SetRect(title.rectTransform, new Vector2(700f, 110f), UISeasonPassUIFactory.Pos(388f, 87f));
+
+            dialog.seasonNameText = UISeasonPassUIFactory.CreateText(
+                "SeasonName", p, "시즌", 45f, TextAlignmentOptions.Left, Color.white, font);
+            UISeasonPassUIFactory.SetRect(
+                dialog.seasonNameText.rectTransform, new Vector2(700f, 60f), UISeasonPassUIFactory.Pos(389f, 164.5f));
+
+            // 남은 기간 칸 — SmallBox x4 검정 80%, 보이는 361x62 (30,327). 여백 6/7px x4
+            UISeasonPassUIFactory.Sliced(p, "RemainingBox", "Upgrade/Ui_Popup_SmallBox", 4f,
+                new Vector2(413f, 114f), UISeasonPassUIFactory.Pos(212.5f, 360f), UISeasonPassUIFactory.SmallBoxColor);
+            UISeasonPassUIFactory.Picture(p, "Clock", "Pass/Pass_Clork",
+                new Vector2(96f, 96f), UISeasonPassUIFactory.Pos(64f, 356f));
+
+            dialog.remainingText = UISeasonPassUIFactory.CreateFittedText(
+                "Remaining", p, "7일 3시간", 40f, 28f, TextAlignmentOptions.Center, Color.white, font);
+            UISeasonPassUIFactory.SetRect(
+                dialog.remainingText.rectTransform, new Vector2(260f, 56f), UISeasonPassUIFactory.Pos(228f, 356.5f));
+
+            // 레벨 띠 — 검은 선 5 + 밝은 선 5 + 바탕, 트랙 머리의 검은 선(559)까지.
+            UISeasonPassUIFactory.Solid(p, "BandEdge", Color.black, -12f, 421f, 1094f, 426f);
+            UISeasonPassUIFactory.Solid(p, "BandLine", UISeasonPassUIFactory.BandLineColor, -12f, 426f, 1094f, 431f);
+            UISeasonPassUIFactory.Solid(p, "Band", UISeasonPassUIFactory.BandColor, -12f, 431f, 1094f, 559f);
+
+            UISeasonPassUIFactory.Sliced(p, "PointBox", "Upgrade/Ui_Popup_SmallBox", 4f,
+                new Vector2(413f, 114f), UISeasonPassUIFactory.Pos(212.5f, 491f), UISeasonPassUIFactory.SmallBoxColor);
+
+            // 레벨 뱃지 — Pass_LevelNumber x3, 보이는 90x93 (14,441)
+            UISeasonPassUIFactory.Picture(p, "LevelBadge", "Pass/Pass_LevelNumber",
+                new Vector2(96f, 96f), UISeasonPassUIFactory.Pos(59f, 489f));
+
+            dialog.levelText = UISeasonPassUIFactory.CreateFittedText(
+                "Level", p, "1", 40f, 24f, TextAlignmentOptions.Center, Color.white, font);
+            UISeasonPassUIFactory.SetRect(
+                dialog.levelText.rectTransform, new Vector2(70f, 56f), UISeasonPassUIFactory.Pos(58.5f, 486.5f));
+
+            // 번개 — Gem_Thunder, 보이는 39x45 → x1.6
+            UISeasonPassUIFactory.Picture(p, "PointIcon", "Gem/Gem_Thunder",
+                new Vector2(102.4f, 102.4f), UISeasonPassUIFactory.Pos(132.5f, 490.5f));
+
+            dialog.pointText = UISeasonPassUIFactory.CreateFittedText(
+                "Point", p, "0 / 1000", 40f, 28f, TextAlignmentOptions.Center, Color.white, font);
+            UISeasonPassUIFactory.SetRect(
+                dialog.pointText.rectTransform, new Vector2(220f, 56f), UISeasonPassUIFactory.Pos(260.5f, 490.5f));
+
+            // 프리미엄 버튼 — Pass_premium_Btn x3, 가로만 9슬라이스. 보이는 386x102 (642,440).
+            // 그림이 128 안에 위아래 47px 씩 비어 있어 Image 가 384 높이다 — 누르는 자리는 보이는 만큼으로 줄인다.
+            Image premiumImage = UISeasonPassUIFactory.Sliced(p, "PremiumButton", "Pass/Pass_premium_Btn", 3f,
+                new Vector2(458f, 384f), UISeasonPassUIFactory.Pos(835f, 491f), Color.white);
+            premiumImage.raycastPadding = new Vector4(36f, 141f, 36f, 141f);
+            dialog.premiumButton = UISeasonPassUIFactory.SpriteButton(premiumImage);
+
+            // 왕관 x2, 보이는 48x36 (681,472)
+            UISeasonPassUIFactory.Picture(premiumImage.transform, "Crown", "Pass/Pass_Crown",
+                new Vector2(64f, 64f), new Vector2(705f - 835f, 1f));
+
+            dialog.premiumButtonLabel = UISeasonPassUIFactory.CreateFittedText(
+                "Label", premiumImage.transform, "프리미엄 활성화", 40f, 26f, TextAlignmentOptions.Center, Color.white, font);
+            UISeasonPassUIFactory.SetRect(
+                dialog.premiumButtonLabel.rectTransform, new Vector2(270f, 56f), new Vector2(864f - 835f, 1.5f));
+
+            // 트랙 머리 — Pass_Free / Pass_premium 9슬라이스 x1(테두리 6px), y 559~676.
+            // 바깥쪽 테두리는 화면 밖으로 민다. 두 머리 사이의 검은 선은 x 532~538 이다.
+            UISeasonPassUIFactory.Sliced(p, "FreeHeader", "Pass/Pass_Free", 1f,
+                new Vector2(544f, 117f), UISeasonPassUIFactory.Pos(266f, 617.5f), Color.white);
+            UISeasonPassUIFactory.Sliced(p, "PremiumHeader", "Pass/Pass_premium", 1f,
+                new Vector2(554f, 117f), UISeasonPassUIFactory.Pos(809f, 617.5f), Color.white);
+
+            TMP_Text freeLabel = UISeasonPassUIFactory.CreateText(
+                "FreeLabel", p, "무료", 45f, TextAlignmentOptions.Center, UISeasonPassUIFactory.FreeLabelColor, font);
+            UISeasonPassUIFactory.SetRect(freeLabel.rectTransform, new Vector2(200f, 60f), UISeasonPassUIFactory.Pos(255f, 620f));
+
+            // 유료 머리는 왕관만 둔다(PSD 의 '프리미엄' 글자 레이어는 꺼져 있다). Pass_Crown x3, 보이는 72x54
+            UISeasonPassUIFactory.Picture(p, "PremiumCrown", "Pass/Pass_Crown",
+                new Vector2(96f, 96f), UISeasonPassUIFactory.Pos(699f, 614f));
+        }
+
+        private static void BakeList(UISeasonPassDialog dialog, Transform p, TMP_FontAsset font)
+        {
+            dialog.listContent = UISeasonPassUIFactory.CreateScrollList(
+                "List", p, new Vector2(1080f, ListBottom - ListTop),
+                UISeasonPassUIFactory.Pos(540f, (ListTop + ListBottom) * 0.5f), 0f);
+
+            var layout = dialog.listContent.GetComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(0, 0, ListPadding, ListPadding);
+
+            dialog.rowTemplate = UISeasonPassLevelRow.Create(dialog.listContent, font);
+        }
+
+        private static void BakeFooter(UISeasonPassDialog dialog, Transform p, TMP_FontAsset font)
+        {
+            UISeasonPassUIFactory.Solid(p, "FooterEdge", Color.black, -12f, 1714f, 1094f, 1719f);
+            UISeasonPassUIFactory.Solid(p, "FooterLine", UISeasonPassUIFactory.BandLineColor, -12f, 1719f, 1094f, 1724f);
+            UISeasonPassUIFactory.Solid(p, "Footer", UISeasonPassUIFactory.BandColor, -12f, 1724f, 1094f, 2100f);
+
+            // 뒤로 — 무한의 탑과 같은 Btn_Gray x5 + Icon_Back x4. 보이는 164x169 (5,1739).
+            // Btn_Gray 여백 좌우 4 · 위 6 · 아래 2 px x5
+            Image backImage = UISeasonPassUIFactory.Sliced(p, "BackButton", "Ingame/Btn_Gray", 5f,
+                new Vector2(204f, 209f), UISeasonPassUIFactory.Pos(87f, 1813.5f), Color.white);
+            dialog.AddExitButton(UISeasonPassUIFactory.SpriteButton(backImage));
+
+            // 화살표 — 보이는 92x92 (41,1767), 여백 4/5px x4
+            UISeasonPassUIFactory.Picture(backImage.transform, "Icon", "Main/Icon_Back",
+                new Vector2(128f, 128f), new Vector2(89f - 87f, 1813.5f - 1815f));
+
+            // 일괄 수령 — Big_Btn_Green x4, 보이는 331x145 (716,1751). 여백 좌우 4 · 위 6 · 아래 2 px x4
+            Image claimImage = UISeasonPassUIFactory.Sliced(p, "ClaimAllButton", "Ingame/Big_Btn_Green", 4f,
+                new Vector2(363f, 177f), UISeasonPassUIFactory.Pos(881.5f, 1815.5f), Color.white);
+            dialog.claimAllButton = UISeasonPassUIFactory.SpriteButton(claimImage);
+
+            // 글자 크기는 PSD 글자 레이어(45pt)를 따른다. 시안 주석에는 37pt 라고 적혀 있다.
+            TMP_Text claimLabel = UISeasonPassUIFactory.CreateFittedText(
+                "Label", claimImage.transform, "일괄 수령", 45f, 30f, TextAlignmentOptions.Center, Color.white, font);
+            UISeasonPassUIFactory.SetRect(
+                claimLabel.rectTransform, new Vector2(300f, 60f), new Vector2(887f - 881.5f, 1815.5f - 1812f));
         }
     }
 }

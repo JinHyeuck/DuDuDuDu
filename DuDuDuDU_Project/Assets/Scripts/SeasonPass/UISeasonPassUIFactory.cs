@@ -15,32 +15,40 @@ namespace OJ.SeasonPass
     {
         internal const int UILayer = 5;
 
-        internal static readonly Color Backdrop = new Color(0f, 0f, 0f, 0.74f);
-
-        /// <summary>창 바탕. 스샷의 보라빛 밤하늘 계열이다.</summary>
-        internal static readonly Color PanelColor = new Color(0.20f, 0.15f, 0.29f, 1f);
-
+        // 로비 입구(UISeasonPassLobbyButton)가 쓰는 색. 창은 아래 PSD 색을 쓴다.
         internal static readonly Color HeaderColor = new Color(0.34f, 0.22f, 0.52f, 1f);
-
-        /// <summary>무료 트랙 배경. 유료보다 어둡다 — 두 트랙이 색으로 먼저 갈려야 한다.</summary>
-        internal static readonly Color FreeTrackColor = new Color(0.27f, 0.22f, 0.29f, 1f);
-
-        /// <summary>유료 트랙 배경. 스샷의 금색 띠.</summary>
-        internal static readonly Color PremiumTrackColor = new Color(0.78f, 0.59f, 0.17f, 1f);
-
-        internal static readonly Color SlotColor = new Color(0.42f, 0.36f, 0.28f, 1f);
-        internal static readonly Color SlotDimColor = new Color(0.30f, 0.30f, 0.32f, 1f);
-        internal static readonly Color SlotDoneColor = new Color(0.33f, 0.52f, 0.36f, 1f);
-        internal static readonly Color LevelBadgeColor = new Color(0.96f, 0.76f, 0.22f, 1f);
-        internal static readonly Color LevelBadgeDimColor = new Color(0.45f, 0.40f, 0.35f, 1f);
-        internal static readonly Color TrackLineColor = new Color(0.98f, 0.84f, 0.32f, 1f);
-        internal static readonly Color GaugeTrackColor = new Color(0.16f, 0.12f, 0.22f, 1f);
-        internal static readonly Color GaugeFillColor = new Color(0.98f, 0.84f, 0.32f, 1f);
-        internal static readonly Color PremiumButtonColor = new Color(0.95f, 0.66f, 0.16f, 1f);
-        internal static readonly Color ClaimAllColor = new Color(0.27f, 0.62f, 0.35f, 1f);
-        internal static readonly Color DarkText = new Color(0.16f, 0.12f, 0.10f, 1f);
         internal static readonly Color LightText = new Color(0.98f, 0.96f, 0.93f, 1f);
         internal static readonly Color MutedText = new Color(0.74f, 0.70f, 0.78f, 1f);
+
+        // ── 창 색. 전부 PSD(Art/0PSD/패스.psd) 실측이다 ─────────────────
+
+        /// <summary>무료 트랙 바탕(창 전체 바탕이기도 하다).</summary>
+        internal static readonly Color FreeTrackColor = Hex(0x4e323e);
+
+        /// <summary>유료 트랙 바탕.</summary>
+        internal static readonly Color PremiumTrackColor = Hex(0xffc600);
+
+        /// <summary>Pass_Pattern 틴트. 그림 자체가 알파 15/255 라 색만 준다.</summary>
+        internal static readonly Color FreePatternTint = Hex(0xd98faf);
+        internal static readonly Color PremiumPatternTint = Hex(0x3d1300);
+
+        /// <summary>레벨 줄·하단 띠: 검은 선 5 + 밝은 선 5 + 바탕.</summary>
+        internal static readonly Color BandColor = Hex(0x1d1c30);
+        internal static readonly Color BandLineColor = Hex(0x3d3f67);
+
+        /// <summary>남은 기간·포인트 칸. SmallBox 를 검정 80% 로 깐다.</summary>
+        internal static readonly Color SmallBoxColor = new Color(0f, 0f, 0f, 0.8f);
+
+        internal static readonly Color TitleColor = Hex(0xffc600);
+        internal static readonly Color FreeLabelColor = Hex(0xefbed3);
+
+        /// <summary>프리미엄 버튼 글자 — 사기 전 흰색, 산 뒤 노란색(PSD 주석 "구매시 노란글씨로 ffe400").</summary>
+        internal static readonly Color PremiumActiveText = Hex(0xffe400);
+
+        /// <summary>받은 칸과 못 닿은 레벨 번호를 누르는 색.</summary>
+        internal static readonly Color DimTint = new Color(0.55f, 0.55f, 0.55f, 1f);
+
+        private const string ArtRoot = "Art/";
 
         internal static GameObject CreateRect(string name, Transform parent)
         {
@@ -92,61 +100,6 @@ namespace OJ.SeasonPass
             return label;
         }
 
-        internal static Button CreateButton(
-            string name, Transform parent, string label, Vector2 size, Vector2 position,
-            Color background, Color textColor, float fontSize, TMP_FontAsset font)
-        {
-            Image image = CreateImage(name, parent, background);
-            SetRect(image.rectTransform, size, position);
-
-            var button = image.gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
-
-            // 라벨을 자동 축소로 둔다. 버튼 글자가 상태에 따라 길어지는데
-            // ("프리미엄 활성화" → "프리미엄 활성화됨") 고정 크기면 긴 쪽이 버튼 밖으로
-            // 흘러 양끝이 잘린다 — 실제로 첫 굽기에서 그랬다.
-            TMP_Text text = CreateFittedText("Label", image.transform, label, fontSize, fontSize * 0.6f,
-                TextAlignmentOptions.Center, textColor, font);
-            SetRect(text.rectTransform, new Vector2(size.x - 16f, size.y), Vector2.zero);
-
-            return button;
-        }
-
-        /// <summary>
-        /// 게이지 한 벌. 바탕과 채움을 <b>부모-자식</b>으로 둔다 — 채움이 트랙 안에서
-        /// 왼쪽 정렬로 늘어나야 한다. 반환값은 채움이고 비율은 <see cref="SetGauge"/> 가 먹인다.
-        /// </summary>
-        internal static Image CreateGauge(
-            string name, Transform parent, Vector2 size, Vector2 position)
-        {
-            Image track = CreateImage(name, parent, GaugeTrackColor);
-            SetRect(track.rectTransform, size, position);
-            track.raycastTarget = false;
-
-            Image fill = CreateImage("Fill", track.transform, GaugeFillColor);
-            fill.raycastTarget = false;
-
-            RectTransform rect = fill.rectTransform;
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 0.5f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = new Vector2(size.x, 0f);
-
-            return fill;
-        }
-
-        internal static void SetGauge(Image fill, float trackWidth, float ratio01)
-        {
-            if (fill == null)
-                return;
-
-            RectTransform rect = fill.rectTransform;
-            Vector2 offset = rect.offsetMax;
-            offset.x = trackWidth * Mathf.Clamp01(ratio01);
-            rect.offsetMax = offset;
-        }
-
         /// <summary>
         /// 세로 스크롤 목록. 반환값은 항목을 붙일 Content 다.
         /// 마스크가 없으면 목록이 창 밖까지 그려지는데 스크롤은 되기 때문에 고장으로 안 보인다.
@@ -188,6 +141,75 @@ namespace OJ.SeasonPass
             scroll.content = contentRect;
 
             return contentRect;
+        }
+
+        // ── 그림 ───────────────────────────────────────────────────────
+        //
+        // 좌표는 PSD 레이어 bbox(보이는 픽셀) 그대로 적고, Image 크기에는 스프라이트
+        // 투명 여백 x 배율을 더한다(Tools/ui/PORTING.md).
+
+        internal static Color Hex(int rgb)
+        {
+            return new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
+        }
+
+        /// <summary>PSD 좌표(좌상단 원점, 1080x1920) → 화면 중앙 기준 anchoredPosition.</summary>
+        internal static Vector2 Pos(float x, float y)
+        {
+            return new Vector2(x - 540f, 960f - y);
+        }
+
+        /// <summary>스프라이트를 읽는다. <b>없으면 멈춘다</b> — null 로 구우면 흰 사각형이 조용히 저장된다.</summary>
+        internal static Sprite LoadSprite(string pathUnderArt)
+        {
+            Sprite sprite = Resources.Load<Sprite>(ArtRoot + pathUnderArt);
+            if (sprite == null)
+                throw new System.InvalidOperationException("[시즌패스 굽기] 스프라이트가 없다: Resources/" + ArtRoot + pathUnderArt);
+            return sprite;
+        }
+
+        internal static Image Picture(Transform parent, string name, string path, Vector2 size, Vector2 position)
+        {
+            Image image = CreateImage(name, parent, Color.white);
+            image.sprite = LoadSprite(path);
+            image.raycastTarget = false;
+            SetRect(image.rectTransform, size, position);
+            return image;
+        }
+
+        /// <summary>9슬라이스 판. 테두리는 스프라이트 .meta 의 것을 쓰고 여기서는 배율만 준다.</summary>
+        internal static Image Sliced(Transform parent, string name, string path, float pixelScale,
+            Vector2 size, Vector2 position, Color color)
+        {
+            Image image = Picture(parent, name, path, size, position);
+            image.type = Image.Type.Sliced;
+            image.pixelsPerUnitMultiplier = 1f / pixelScale;
+            image.color = color;
+            return image;
+        }
+
+        /// <summary>
+        /// 그림 버튼. 꺼졌을 때 어둡게 덮지 않는다 — 바탕이 밝은 그림이라 덮으면 글자까지
+        /// 같이 어두워져 안 읽힌다. 상태는 그림·글자 색으로 직접 말한다.
+        /// </summary>
+        internal static Button SpriteButton(Image image)
+        {
+            image.raycastTarget = true;
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            ColorBlock colors = button.colors;
+            colors.disabledColor = Color.white;
+            button.colors = colors;
+            return button;
+        }
+
+        internal static Image Solid(Transform parent, string name, Color color, float x0, float y0, float x1, float y1)
+        {
+            Image image = CreateImage(name, parent, color);
+            image.raycastTarget = false;
+            SetRect(image.rectTransform, new Vector2(x1 - x0, y1 - y0), Pos((x0 + x1) * 0.5f, (y0 + y1) * 0.5f));
+            return image;
         }
 
         internal static void SetRect(RectTransform rect, Vector2 size, Vector2 position)
