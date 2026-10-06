@@ -27,6 +27,7 @@ namespace OJ.EditorTools
 
         private const string DialogFolder = "Assets/Prefab/UI";
         private const string DialogPath = DialogFolder + "/UISeasonPassDialog.prefab";
+        private const string PremiumDialogPath = DialogFolder + "/UISeasonPassPremiumDialog.prefab";
 
         private const string LobbyFolder = "Assets/Prefab/Lobby";
         private const string LobbyButtonPath = LobbyFolder + "/UISeasonPassLobbyButton.prefab";
@@ -107,6 +108,7 @@ namespace OJ.EditorTools
 
         // ── 프리팹 ─────────────────────────────────────────────────────
 
+        /// <summary>패스 창과 프리미엄 구매 창을 함께 굽는다. 둘은 그림·색을 같이 쓴다.</summary>
         [MenuItem("OJ/개발/시즌패스/창 굽기")]
         private static void BakeDialog()
         {
@@ -116,28 +118,37 @@ namespace OJ.EditorTools
 
             System.IO.Directory.CreateDirectory(DialogFolder);
 
+            bool ok = BakePrefab("UISeasonPassDialog", DialogPath,
+                    parent => UISeasonPassDialog.Create(parent, font).gameObject)
+                & BakePrefab("UISeasonPassPremiumDialog", PremiumDialogPath,
+                    parent => UISeasonPassPremiumDialog.Create(parent, font).gameObject);
+
+            if (!ok)
+                return;
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log("[시즌패스] 창 프리팹을 구웠다: " + DialogPath + ", " + PremiumDialogPath + Environment.NewLine +
+                      "  새 창이 생겼으면 'OJ/개발/다이얼로그 카탈로그/훑어서 갱신' 을 돌려야 열린다.");
+        }
+
+        private static bool BakePrefab(string name, string path, Func<Transform, GameObject> create)
+        {
             var temp = new GameObject("__SeasonPassBakeRoot");
             try
             {
-                UISeasonPassDialog dialog = UISeasonPassDialog.Create(temp.transform, font);
-                GameObject root = dialog.gameObject;
-                root.name = "UISeasonPassDialog";
+                GameObject root = create(temp.transform);
+                root.name = name;
                 root.transform.SetParent(null, false);
 
-                PrefabUtility.SaveAsPrefabAsset(root, DialogPath, out bool ok);
+                PrefabUtility.SaveAsPrefabAsset(root, path, out bool ok);
                 UnityEngine.Object.DestroyImmediate(root);
 
                 if (!ok)
-                {
-                    Debug.LogError("[시즌패스] 창 프리팹 저장에 실패했다: " + DialogPath);
-                    return;
-                }
+                    Debug.LogError("[시즌패스] 프리팹 저장에 실패했다: " + path);
 
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-
-                Debug.Log("[시즌패스] 창 프리팹을 구웠다: " + DialogPath + Environment.NewLine +
-                          "  다음으로 'OJ/개발/다이얼로그 카탈로그/훑어서 갱신' 을 돌려야 창이 열린다.");
+                return ok;
             }
             finally
             {

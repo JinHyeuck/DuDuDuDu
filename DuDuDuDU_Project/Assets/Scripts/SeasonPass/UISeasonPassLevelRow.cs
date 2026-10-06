@@ -26,20 +26,26 @@ namespace OJ.SeasonPass
 
         [SerializeField] private UISeasonPassSlot freeSlot;
         [SerializeField] private UISeasonPassSlot premiumSlot;
-        [SerializeField] private Image levelBadge;
         [SerializeField] private TMP_Text levelText;
+        [SerializeField] private GameObject dim;
+        [SerializeField] private GameObject progressLine;
 
+        /// <param name="firstLocked">못 닿은 첫 줄인가. 이 줄 위끝에 진행 선을 긋는다.</param>
         public void Bind(
-            int level, bool reached,
+            int level, bool reached, bool firstLocked,
             SeasonPassSlotView free, SeasonPassSlotView premium,
             Action onClaimFree, Action onClaimPremium)
         {
             if (levelText != null)
                 levelText.SetText(level.ToString());
 
-            // 닿은 레벨만 뱃지가 밝다. 어디까지 왔는지를 줄 하나로 읽히게 한다.
-            if (levelBadge != null)
-                levelBadge.color = reached ? Color.white : UISeasonPassUIFactory.DimTint;
+            // 못 닿은 줄은 통째로 어둡게 덮는다. 칸 색만으로는 "받을 수 있는 곳" 과
+            // "아직 먼 곳" 의 경계가 안 읽혔다(사용자 피드백 2026-10-06).
+            if (dim != null)
+                dim.SetActive(!reached);
+
+            if (progressLine != null)
+                progressLine.SetActive(firstLocked);
 
             freeSlot?.Bind(free, onClaimFree);
             premiumSlot?.Bind(premium, onClaimPremium);
@@ -68,14 +74,48 @@ namespace OJ.SeasonPass
             // 두 트랙의 경계에 걸쳐 놓아야 어느 쪽에도 속하지 않아 보인다.
             Image badge = UISeasonPassUIFactory.Picture(
                 root.transform, "LevelBadge", "Pass/Pass_LevelNumber", new Vector2(160f, 160f), new Vector2(-4f, -15f));
-            row.levelBadge = badge;
 
             // 번호 60pt, 글자 중심 (535.5, 838)
             row.levelText = UISeasonPassUIFactory.CreateFittedText(
                 "Level", badge.transform, "1", 60f, 36f, TextAlignmentOptions.Center, Color.white, font);
             UISeasonPassUIFactory.SetRect(row.levelText.rectTransform, new Vector2(110f, 80f), new Vector2(-0.5f, 5f));
 
+            // 딤 — 칸까지 덮어야 "아직 못 받는 줄" 로 읽힌다. 클릭은 막지 않는다(스크롤이 지나가야 한다).
+            Image dim = UISeasonPassUIFactory.CreateImage("Dim", root.transform, UISeasonPassUIFactory.LockedDim);
+            dim.raycastTarget = false;
+            UISeasonPassUIFactory.Stretch(dim.rectTransform);
+            row.dim = dim.gameObject;
+            row.dim.SetActive(false);
+
+            row.progressLine = CreateProgressLine(root.transform);
+            row.progressLine.SetActive(false);
+
             return row;
+        }
+
+        /// <summary>
+        /// 진행 선 — 줄 위끝(이전 줄과의 경계)에 걸친 가로 선과 가운데 번개.
+        /// <b>못 닿은 첫 줄의 마지막 자식</b>으로 둔다. 앞 줄의 자식이면 뒤에 그려지는
+        /// 이 줄의 딤이 선의 아래 절반을 덮는다.
+        /// </summary>
+        private static GameObject CreateProgressLine(Transform parent)
+        {
+            GameObject line = UISeasonPassUIFactory.CreateRect("ProgressLine", parent);
+            UISeasonPassUIFactory.SetRect(line.GetComponent<RectTransform>(), new Vector2(1080f, 128f), new Vector2(0f, RowHeight / 2f));
+
+            Image edge = UISeasonPassUIFactory.CreateImage("Edge", line.transform, Color.black);
+            edge.raycastTarget = false;
+            UISeasonPassUIFactory.SetRect(edge.rectTransform, new Vector2(1080f, 16f), Vector2.zero);
+
+            Image bar = UISeasonPassUIFactory.CreateImage("Bar", line.transform, UISeasonPassUIFactory.PremiumTrackColor);
+            bar.raycastTarget = false;
+            UISeasonPassUIFactory.SetRect(bar.rectTransform, new Vector2(1080f, 8f), Vector2.zero);
+
+            // 번개 = 패스 포인트 아이콘(위 포인트 칸과 같은 그림). Pass_LevelNumber 를 받침으로 깐다.
+            UISeasonPassUIFactory.Picture(line.transform, "Badge", "Pass/Pass_LevelNumber", new Vector2(96f, 96f), Vector2.zero);
+            UISeasonPassUIFactory.Picture(line.transform, "Icon", "Gem/Gem_Thunder", new Vector2(96f, 96f), new Vector2(0f, 1f));
+
+            return line;
         }
     }
 }

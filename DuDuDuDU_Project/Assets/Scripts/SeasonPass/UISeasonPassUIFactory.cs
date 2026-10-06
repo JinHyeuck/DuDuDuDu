@@ -45,8 +45,20 @@ namespace OJ.SeasonPass
         /// <summary>프리미엄 버튼 글자 — 사기 전 흰색, 산 뒤 노란색(PSD 주석 "구매시 노란글씨로 ffe400").</summary>
         internal static readonly Color PremiumActiveText = Hex(0xffe400);
 
-        /// <summary>받은 칸과 못 닿은 레벨 번호를 누르는 색.</summary>
+        /// <summary>받은 칸을 누르는 색.</summary>
         internal static readonly Color DimTint = new Color(0.55f, 0.55f, 0.55f, 1f);
+
+        /// <summary>못 닿은 레벨 줄 전체를 덮는 딤.</summary>
+        internal static readonly Color LockedDim = new Color(0f, 0f, 0f, 0.5f);
+
+        /// <summary>구매 창 뒤를 덮는 딤.</summary>
+        internal static readonly Color Backdrop = new Color(0f, 0f, 0f, 0.85f);
+
+        /// <summary>구매 창 판 색(짙은 보라). 무료 트랙 색보다 한 단계 어둡다.</summary>
+        internal static readonly Color CardColor = Hex(0x2e2033);
+
+        /// <summary>구매 창의 혜택 줄 바탕(어두운 금색).</summary>
+        internal static readonly Color BenefitBarColor = Hex(0xa8780c);
 
         private const string ArtRoot = "Art/";
 

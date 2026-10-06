@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
+using OJ.DI;
 using OJ.UI;
 
 namespace OJ.SeasonPass
@@ -27,6 +28,7 @@ namespace OJ.SeasonPass
 
         [SerializeField] private Button premiumButton;
         [SerializeField] private TMP_Text premiumButtonLabel;
+        [SerializeField] private GameObject premiumButtonCrown;
         [SerializeField] private Button claimAllButton;
 
         [SerializeField] private RectTransform listContent;
@@ -150,10 +152,18 @@ namespace OJ.SeasonPass
                     : Color.white;
             }
 
-            // 이미 샀으면 누를 것이 없다. 버튼을 남겨 두면 눌러 보고 아무 일도 안 일어나는
-            // 자리가 되는데, 그건 고장으로 읽힌다.
+            // 이미 샀으면 누를 것이 없다. 버튼 그림(티켓)과 왕관을 끄고 글자만 남긴다 —
+            // 그림이 남아 있으면 눌러 볼 자리로 읽히는데 눌러도 아무 일이 없다.
             if (premiumButton != null)
+            {
                 premiumButton.interactable = !unlocked;
+
+                if (premiumButton.targetGraphic != null)
+                    premiumButton.targetGraphic.enabled = !unlocked;
+            }
+
+            if (premiumButtonCrown != null)
+                premiumButtonCrown.SetActive(!unlocked);
         }
 
         private void RefreshClaimAll(SeasonPassManager pass)
@@ -171,6 +181,7 @@ namespace OJ.SeasonPass
             EnsureRows(levelCount);
 
             int reached = pass.Level;
+            bool lineDrawn = false;
 
             for (int i = 0; i < rows.Count; i++)
             {
@@ -188,9 +199,13 @@ namespace OJ.SeasonPass
 
                 // 레벨을 지역 변수로 떼어 낸다. 대리자가 view 를 통째로 잡으면 다음 갱신의
                 // 값을 보게 되고, 그러면 엉뚱한 레벨의 보상을 받는다.
+                // 진행 선은 못 닿은 첫 줄 하나에만 긋는다.
+                bool firstLocked = !lineDrawn && level > reached;
+                lineDrawn |= firstLocked;
+
                 int captured = level;
                 rows[i].Bind(
-                    level, level <= reached, free, premium,
+                    level, level <= reached, firstLocked, free, premium,
                     () => Claim(captured, false),
                     () => Claim(captured, true));
             }
@@ -224,22 +239,15 @@ namespace OJ.SeasonPass
             SeasonPassManager.Instance?.ClaimAll();
         }
 
-        /// <summary>
-        /// 유료 트랙을 연다.
-        ///
-        /// <b>지금은 결제 없이 열린다.</b> 이 프로젝트에 IAP 가 0 줄이라
-        /// <c>ShopPurchaseManager.TryBuyCashProduct</c> 도 "결제된 셈 치고" 지급하는 상태다.
-        /// 상품이 생기면 그 관문을 지난 뒤에 여기를 부르도록 바꾼다 —
-        /// <b>고칠 곳은 이 메서드 하나다.</b>
-        /// </summary>
+        /// <summary>구매 창을 띄운다. 실제 활성화는 그 창의 구매 버튼이 한다.</summary>
         private void OnClickPremium()
         {
             SeasonPassManager pass = SeasonPassManager.Instance;
             if (pass == null || pass.PremiumUnlocked)
                 return;
 
-            Debug.LogWarning("[시즌패스] 결제 없이 유료 트랙을 연다(IAP 미연동). 출시 전 실제 결제로 교체할 것.");
-            pass.TryUnlockPremium();
+            if (GameContainer.UI?.Show<UISeasonPassPremiumDialog>() == null)
+                Debug.LogError("[시즌패스] 구매 창을 열지 못했다. DialogCatalog 에 등재됐는지 확인할 것.");
         }
 
         // ── 굽기 ───────────────────────────────────────────────────────
@@ -363,8 +371,8 @@ namespace OJ.SeasonPass
             dialog.premiumButton = UISeasonPassUIFactory.SpriteButton(premiumImage);
 
             // 왕관 x2, 보이는 48x36 (681,472)
-            UISeasonPassUIFactory.Picture(premiumImage.transform, "Crown", "Pass/Pass_Crown",
-                new Vector2(64f, 64f), new Vector2(705f - 835f, 1f));
+            dialog.premiumButtonCrown = UISeasonPassUIFactory.Picture(premiumImage.transform, "Crown", "Pass/Pass_Crown",
+                new Vector2(64f, 64f), new Vector2(705f - 835f, 1f)).gameObject;
 
             dialog.premiumButtonLabel = UISeasonPassUIFactory.CreateFittedText(
                 "Label", premiumImage.transform, "프리미엄 활성화", 40f, 26f, TextAlignmentOptions.Center, Color.white, font);
@@ -393,8 +401,14 @@ namespace OJ.SeasonPass
                 "List", p, new Vector2(1080f, ListBottom - ListTop),
                 UISeasonPassUIFactory.Pos(540f, (ListTop + ListBottom) * 0.5f), 0f);
 
+            // 마지막 줄 아래에는 여백을 두지 않는다 — 못 닿은 줄의 딤이 하단 띠까지 이어져야 한다.
             var layout = dialog.listContent.GetComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(0, 0, ListPadding, ListPadding);
+            layout.padding = new RectOffset(0, 0, ListPadding, 0);
+
+            // 스크롤이 칸 사이 빈 곳에서도 잡히게 뷰포트에 투명 판을 깐다. 없으면 드래그가
+            // 칸(버튼) 위에서 시작할 때만 ScrollRect 에 닿는다.
+            Image hitArea = dialog.listContent.parent.gameObject.AddComponent<Image>();
+            hitArea.color = Color.clear;
 
             dialog.rowTemplate = UISeasonPassLevelRow.Create(dialog.listContent, font);
         }
