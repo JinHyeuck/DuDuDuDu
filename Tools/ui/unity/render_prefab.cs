@@ -1,5 +1,7 @@
 // 프리팹을 빈 씬의 1080x1920 캔버스(폭 맞춤)에 띄워 PNG 로 찍는다. 플레이 모드가 필요 없다.
-// ARGS: [0] 프리팹 경로(Assets/...)  [1] 저장할 PNG 절대경로
+// ARGS: [0] 프리팹 경로(Assets/...)  [1] 저장할 PNG 절대경로  [2..] 켤 오브젝트 이름(앞에 - 를 붙이면 끔)
+//        예) run.py render_prefab --project <경로> -- Assets/.../UIStageResultDialog.prefab out.png View WinIcon -LoseIcon
+//            (- 로 시작하는 인자가 있으면 run.py 옵션으로 읽히지 않게 -- 뒤에 둔다)
 //
 // 주의
 //  - 현재 열린 씬을 빈 씬으로 바꾼다. 저장 안 된 씬 변경이 있으면 먼저 저장할 것.
@@ -36,6 +38,15 @@ var go = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(ass
 // 다이얼로그는 DialogView 가 꺼진 채로 구워져 있다.
 foreach (var t in go.GetComponentsInChildren<UnityEngine.Transform>(true))
     if (t.name == "DialogView") t.gameObject.SetActive(true);
+
+// 이름이 DialogView 가 아닌 창(View 등)이나 상태별로 켜고 끄는 자식(승리/패배)을 고른다.
+for (int i = 2; i < ARGS.Length; i++)
+{
+    bool on = !ARGS[i].StartsWith("-");
+    string name = on ? ARGS[i] : ARGS[i].Substring(1);
+    foreach (var t in go.GetComponentsInChildren<UnityEngine.Transform>(true))
+        if (t.name == name) t.gameObject.SetActive(on);
+}
 
 UnityEngine.Canvas.ForceUpdateCanvases();
 UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate((UnityEngine.RectTransform)canvasGo.transform);

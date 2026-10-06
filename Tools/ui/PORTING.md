@@ -37,7 +37,8 @@ python Tools/ui/unity/run.py <스크립트> [인자...] [--project <Unity 프로
 
 | 스크립트 | 인자 | 하는 일 | 모드 |
 |---|---|---|---|
-| `render_prefab` | 프리팹 경로, 출력 PNG | 빈 씬 1080x1920 캔버스에 띄워 PNG. **열린 씬을 빈 씬으로 바꾼다** | 에디터 |
+| `render_prefab` | 프리팹 경로, 출력 PNG, [켤 이름 · `-`끌 이름 ...] | 빈 씬 1080x1920 캔버스에 띄워 PNG. **열린 씬을 빈 씬으로 바꾼다**. `-` 인자는 `run.py ... render_prefab -- <인자들>` 로 | 에디터 |
+| `render_scene` | 출력 PNG | BattleScene 을 열어 UI 캔버스를 1080x1920 으로 찍는다(저장 안 함). 플레이 없이 HUD 를 볼 때 | 에디터 |
 | `screen_check` | (출력 PNG) | 맨 위 창의 사라진 글자 · 가려진 버튼 + 스크린샷 | 플레이 |
 | `click` | 오브젝트 이름 (`press`) | 이름으로 찾아 클릭(레이캐스트 우회) | 플레이 |
 | `back_key` | — | `AOSBackBtnManager` 의 Esc 처리와 같은 동작 1회 | 플레이 |
@@ -45,4 +46,5 @@ python Tools/ui/unity/run.py <스크립트> [인자...] [--project <Unity 프로
 - 플레이 확인은 **TitleScene 부터** 재생한다(다른 씬 직접 재생은 `StaticResource` 폴백 상태다).
 - 스크립트는 Assets 밖(여기)에 둔다. Unity `Temp/` 는 에디터를 다시 켜면 비워진다.
 - 에디터 모드 스크립트에서 Provider·`StaticResource` 를 깨우지 말 것 — 에러 로그가 한 번만 나오고 잠긴다.
+- PSD 가 있으면 글자는 PSD 가 정본이다 — `psd-tools` 로 글자 레이어의 폰트·크기·색·외곽선(효과 켜짐 여부까지)을 읽는다. 시안 PNG 주석과 다른 곳이 실제로 있었다(`Docs/WantedUIArtPort.md`).
 - 스크린샷은 프레임 끝에 저장된다. 같은 호출 안에서 그 파일을 읽지 말 것. ScrollRect 위치 변경도 다음 프레임에 반영된다.

@@ -6,6 +6,7 @@ using UnityEngine.Scripting;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Hunting;
+using OJ.Mission;
 using OJ.Point;
 using OJ.Save;
 using OJ.Utils;
@@ -135,6 +136,10 @@ namespace OJ.Equipment
 
             OnEquipmentChanged?.Invoke(equipmentType);
             OnGemChanged?.Invoke();
+
+            // 부위를 가르지 않는다. 기획의 "장비 레벨업 n회" 는 6부위를 합친 수다.
+            MissionManager.Instance?.Notify(MissionAction.EquipmentLevelUp);
+
             return true;
         }
 
@@ -297,6 +302,11 @@ namespace OJ.Equipment
 
             List<string> consumedGemIds = new List<string>();
 
+            // 재료 등급별로 몇 개를 만들었는지. <b>미션은 성공이 확정된 뒤에 센다</b> —
+            // 아래 루프는 후보가 없으면 중간에 false 로 돌아가는데, 그 자리에서 세면
+            // 일어나지 않은 합성이 카운트된다.
+            List<KeyValuePair<Rarity, int>> mergedByMaterialRarity = new List<KeyValuePair<Rarity, int>>();
+
             foreach (var pair in groupedMaterials)
             {
                 int consumeCount = (pair.Value.Count / 4) * 4;
@@ -306,6 +316,8 @@ namespace OJ.Equipment
                     continue;
 
                 int resultCount = consumeCount / 4;
+                mergedByMaterialRarity.Add(new KeyValuePair<Rarity, int>(pair.Key, resultCount));
+
                 for (int i = 0; i < resultCount; i++)
                 {
                     if (!TryGetRandomGemDefinition(equipmentType, nextRarity, out GemDefinition resultDefinition))
@@ -335,6 +347,18 @@ namespace OJ.Equipment
 
             SaveAll();
             OnGemChanged?.Invoke();
+
+            // <b>결과 보석 1개가 1회다.</b> 버튼 1회로 세면 한 번에 레어 2개 + 에픽 1개를
+            // 만든 것이 "합성 1회" 가 되어, 등급별 업적 중 하나만 오르거나 둘 다 1 만 오른다.
+            // 하위 키는 <b>재료</b> 등급이다 — "레어 4개를 합쳤다" 가 유저가 보는 행동이다.
+            for (int i = 0; i < mergedByMaterialRarity.Count; i++)
+            {
+                MissionManager.Instance?.Notify(
+                    MissionAction.GemMerge,
+                    MissionSubKeys.ForRarity(mergedByMaterialRarity[i].Key),
+                    mergedByMaterialRarity[i].Value);
+            }
+
             return true;
         }
 

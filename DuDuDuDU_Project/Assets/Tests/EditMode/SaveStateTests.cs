@@ -110,6 +110,28 @@ namespace OJ.Core.Tests
             state.BonusDice.PinCounts["tag:1"] = 2;
             state.BonusDice.PinCounts["tag:2"] = 5;
 
+            // 미션. 일일분과 누적분에 <b>같은 키로 다른 수</b>를 넣어 둔다 —
+            // 둘을 한 표로 합치거나 서로 덮는 변경이 생기면 그 자리에서 터진다.
+            state.Missions.DailyResetDate = "2026-10-01";
+            state.Missions.DailyCounts["GamePlay"] = 2;
+            state.Missions.DailyCounts["GemMerge"] = 1;
+            state.Missions.TotalCounts["GamePlay"] = 417;
+            state.Missions.TotalCounts["GemMerge"] = 33;
+            state.Missions.TotalCounts["GemMerge:Rare"] = 12;
+            state.Missions.ClaimedDailyIds.Add("daily_play");
+            state.Missions.ClaimedDailyTiers.Add(3);
+            state.Missions.ClaimedAchievementIds.Add("ach_play_10");
+            state.Missions.ClaimedAchievementIds.Add("ach_play_50");
+
+            // 시즌 패스. 무료·유료 수령 기록에 <b>다른 레벨</b>을 넣어 둔다 —
+            // 둘을 한 목록으로 합치는 변경이 생기면 그 자리에서 터진다.
+            state.SeasonPass.SeasonId = "2026-10";
+            state.SeasonPass.Points = 4321;
+            state.SeasonPass.PremiumUnlocked = true;
+            state.SeasonPass.ClaimedFreeLevels.Add(1);
+            state.SeasonPass.ClaimedFreeLevels.Add(2);
+            state.SeasonPass.ClaimedPremiumLevels.Add(3);
+
             return state;
         }
 
@@ -164,6 +186,33 @@ namespace OJ.Core.Tests
                 Is.EqualTo(expected.BonusDice.RewardMultiplier), "bonusDice.rewardMultiplier");
             CollectionAssert.AreEqual(
                 expected.BonusDice.PinCounts, actual.BonusDice.PinCounts, "bonusDice.pinCounts");
+
+            Assert.That(actual.Missions.DailyResetDate,
+                Is.EqualTo(expected.Missions.DailyResetDate), "missions.dailyResetDate");
+            CollectionAssert.AreEqual(
+                expected.Missions.DailyCounts, actual.Missions.DailyCounts, "missions.dailyCounts");
+            CollectionAssert.AreEqual(
+                expected.Missions.TotalCounts, actual.Missions.TotalCounts, "missions.totalCounts");
+            CollectionAssert.AreEqual(
+                expected.Missions.ClaimedDailyIds, actual.Missions.ClaimedDailyIds, "missions.claimedDailyIds");
+            CollectionAssert.AreEqual(
+                expected.Missions.ClaimedDailyTiers, actual.Missions.ClaimedDailyTiers, "missions.claimedDailyTiers");
+            CollectionAssert.AreEqual(
+                expected.Missions.ClaimedAchievementIds, actual.Missions.ClaimedAchievementIds,
+                "missions.claimedAchievementIds");
+
+            Assert.That(actual.SeasonPass.SeasonId,
+                Is.EqualTo(expected.SeasonPass.SeasonId), "seasonPass.seasonId");
+            Assert.That(actual.SeasonPass.Points,
+                Is.EqualTo(expected.SeasonPass.Points), "seasonPass.points");
+            Assert.That(actual.SeasonPass.PremiumUnlocked,
+                Is.EqualTo(expected.SeasonPass.PremiumUnlocked), "seasonPass.premiumUnlocked");
+            CollectionAssert.AreEqual(
+                expected.SeasonPass.ClaimedFreeLevels, actual.SeasonPass.ClaimedFreeLevels,
+                "seasonPass.claimedFreeLevels");
+            CollectionAssert.AreEqual(
+                expected.SeasonPass.ClaimedPremiumLevels, actual.SeasonPass.ClaimedPremiumLevels,
+                "seasonPass.claimedPremiumLevels");
         }
 
         // --- 직렬화 왕복 ------------------------------------------------------------------
@@ -416,6 +465,21 @@ namespace OJ.Core.Tests
                 "    \"remainingCycles\": 0,",
                 "    \"rewardMultiplier\": 1,",
                 "    \"pinCounts\": {}",
+                "  },",
+                "  \"missions\": {",
+                "    \"dailyResetDate\": \"\",",
+                "    \"dailyCounts\": {},",
+                "    \"claimedDailyIds\": [],",
+                "    \"claimedDailyTiers\": [],",
+                "    \"totalCounts\": {},",
+                "    \"claimedAchievementIds\": []",
+                "  },",
+                "  \"seasonPass\": {",
+                "    \"seasonId\": \"\",",
+                "    \"points\": 0,",
+                "    \"premiumUnlocked\": false,",
+                "    \"claimedFreeLevels\": [],",
+                "    \"claimedPremiumLevels\": []",
                 "  }",
                 "}",
             })));

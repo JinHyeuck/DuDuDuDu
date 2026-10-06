@@ -195,9 +195,16 @@ namespace OJ.UI
 
             for (int i = 0; i < canvases.Length; i++)
             {
-                // 페이드는 일부러 아주 높게 잡혀 있다. 그것까지 넘어서면 전환 중에
-                // 팝업이 페이드 위로 뜬다.
-                if (canvases[i] is null || canvases[i].GetComponent<FadeView>() != null)
+                if (canvases[i] is null)
+                    continue;
+
+                // 페이드 이상은 "덮으면 안 되는 띠" 다(FadeView.SortingOrder 주석).
+                // 페이드와 개발용 치트가 거기 있고, 둘 다 팝업보다 위여야 한다.
+                //
+                // <b>타입이 아니라 값으로 거른다.</b> 예전에는 FadeView 컴포넌트가 붙었는지만
+                // 봤는데, 그러면 같은 띠에 있는 다른 캔버스(치트)를 못 걸러서 <b>팝업이 그
+                // 위로 한 칸 올라타 치트를 가린다</b> — 실제로 전투에서 그렇게 됐다.
+                if (canvases[i].sortingOrder >= FadeView.SortingOrder)
                     continue;
 
                 highest = Mathf.Max(highest, canvases[i].sortingOrder);

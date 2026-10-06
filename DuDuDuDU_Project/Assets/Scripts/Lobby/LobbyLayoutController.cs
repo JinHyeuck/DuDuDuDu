@@ -84,9 +84,24 @@ namespace OJ.Lobby
             {
                 if (!StageProgressManager.Instance.IsStageUnlocked(selectedStageIndex))
                     return;
-
-                StageProgressManager.Instance.SelectStage(selectedStageIndex);
             }
+
+            // 입장료를 <b>씬을 띄우기 전에</b> 뺀다. 전환이 시작된 뒤에 빼면 모자랄 때
+            // 되돌릴 방법이 없다 — 이미 전투에 들어가 있다.
+            //
+            // <b>SelectStage 보다도 앞이다.</b> 고기가 모자라 못 들어가는데 선택만
+            // 바뀌면, 다음에 로비를 열었을 때 고르지도 않은 스테이지가 선택돼 있다.
+            OJ.Point.PointManager points = OJ.Point.PointManager.Instance;
+            if (points == null || !points.TrySpend(PointType.Stamina, StageEntryRules.StaminaCost))
+            {
+                Debug.Log("[스테이지] 고기가 모자라 입장하지 못했다. 필요 " +
+                          StageEntryRules.StaminaCost +
+                          " / 보유 " + (points != null ? points.Get(PointType.Stamina) : 0));
+                RefreshStageUI();
+                return;
+            }
+
+            StageProgressManager.Instance?.SelectStage(selectedStageIndex);
 
             SceneFlowManager.LoadBattle();
         }
@@ -174,8 +189,14 @@ namespace OJ.Lobby
                 }
             }
 
+            // 해금됐어도 고기가 모자라면 못 들어간다. 버튼을 살려 두면 눌렀을 때
+            // 아무 일도 안 일어나는 자리가 되고, 그건 고장으로 읽힌다.
+            int ownedStamina = OJ.Point.PointManager.Instance != null
+                ? OJ.Point.PointManager.Instance.Get(PointType.Stamina)
+                : 0;
+
             if (enterStageButton != null)
-                enterStageButton.interactable = isUnlocked;
+                enterStageButton.interactable = isUnlocked && StageEntryRules.CanEnter(ownedStamina);
         }
 
         /// <summary>

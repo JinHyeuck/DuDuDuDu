@@ -15,12 +15,18 @@ namespace OJ.SceneFlow
     /// 씬 편집 없이 코드로 만드는 것은 <see cref="GameContainer"/> 와 같은 이유이기도 하다.
     ///
     /// <b>정렬 순서를 최대에 가깝게 둔다.</b> 페이드가 UI 아래로 깔리면 전환 중에
-    /// 다이얼로그가 비쳐 보인다. 다만 개발용 치트 오버레이(<c>PointCheatController</c>)가
+    /// 다이얼로그가 비쳐 보인다. 다만 개발용 치트 오버레이(<c>OJ.Dev.DevCheatPanel</c>)가
     /// <c>short.MaxValue - 1</c> 을 쓰므로 그보다 낮게 잡아 치트를 가리지 않는다.
     /// </summary>
     public sealed class FadeView : MonoBehaviour
     {
-        private const int SortingOrder = short.MaxValue - 100;
+        /// <summary>
+        /// 페이드의 정렬 순서. <b>이 값 위는 "덮으면 안 되는 띠"다</b> —
+        /// 페이드 자신과 개발용 치트가 거기 산다. <c>UIService</c> 가 팝업을 올릴 때
+        /// 이 값 이상인 캔버스를 건너뛰는 기준으로 쓴다(안 그러면 팝업이 매번
+        /// 그 위로 한 칸씩 올라타 페이드와 치트를 가린다).
+        /// </summary>
+        internal const int SortingOrder = short.MaxValue - 100;
 
         private CanvasGroup group;
 

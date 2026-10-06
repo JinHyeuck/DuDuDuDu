@@ -1,0 +1,439 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac0f90ac3a47bcd4780c07482bae1994, type: 3}
+  m_Name: AchievementDatabase
+  m_EditorClassIdentifier: OJ.Game::OJ.Mission.AchievementDatabase
+  achievements:
+  - id: ach_play_10
+    action: 1
+    subKey: 
+    requiredCount: 10
+    titleFormat: "\uAC8C\uC784 \uD50C\uB808\uC774 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 10000
+  - id: ach_play_50
+    action: 1
+    subKey: 
+    requiredCount: 50
+    titleFormat: "\uAC8C\uC784 \uD50C\uB808\uC774 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 50000
+  - id: ach_play_200
+    action: 1
+    subKey: 
+    requiredCount: 200
+    titleFormat: "\uAC8C\uC784 \uD50C\uB808\uC774 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 200000
+  - id: ach_play_1000
+    action: 1
+    subKey: 
+    requiredCount: 1000
+    titleFormat: "\uAC8C\uC784 \uD50C\uB808\uC774 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 1000000
+  - id: ach_pinball_10
+    action: 2
+    subKey: 
+    requiredCount: 10
+    titleFormat: "\uD540\uBCFC \uBC1C\uC0AC {0}\uD68C"
+    rewards:
+    - pointType: 6
+      amount: 1
+  - id: ach_pinball_100
+    action: 2
+    subKey: 
+    requiredCount: 100
+    titleFormat: "\uD540\uBCFC \uBC1C\uC0AC {0}\uD68C"
+    rewards:
+    - pointType: 6
+      amount: 5
+  - id: ach_pinball_1000
+    action: 2
+    subKey: 
+    requiredCount: 1000
+    titleFormat: "\uD540\uBCFC \uBC1C\uC0AC {0}\uD68C"
+    rewards:
+    - pointType: 6
+      amount: 20
+  - id: ach_pinball_10000
+    action: 2
+    subKey: 
+    requiredCount: 10000
+    titleFormat: "\uD540\uBCFC \uBC1C\uC0AC {0}\uD68C"
+    rewards:
+    - pointType: 6
+      amount: 50
+  - id: ach_iap_1
+    action: 3
+    subKey: 
+    requiredCount: 1
+    titleFormat: "\uC778\uC571 \uACB0\uC81C {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 100
+  - id: ach_iap_5
+    action: 3
+    subKey: 
+    requiredCount: 5
+    titleFormat: "\uC778\uC571 \uACB0\uC81C {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 500
+  - id: ach_iap_20
+    action: 3
+    subKey: 
+    requiredCount: 20
+    titleFormat: "\uC778\uC571 \uACB0\uC81C {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 2000
+  - id: ach_dice_normal_10
+    action: 4
+    subKey: Normal
+    requiredCount: 10
+    titleFormat: "\uC77C\uBC18 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 100
+      amount: 10
+  - id: ach_dice_normal_50
+    action: 4
+    subKey: Normal
+    requiredCount: 50
+    titleFormat: "\uC77C\uBC18 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 100
+      amount: 50
+  - id: ach_dice_normal_200
+    action: 4
+    subKey: Normal
+    requiredCount: 200
+    titleFormat: "\uC77C\uBC18 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 100
+      amount: 200
+  - id: ach_dice_rare_10
+    action: 4
+    subKey: Rare
+    requiredCount: 10
+    titleFormat: "\uB808\uC5B4 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 106
+      amount: 10
+  - id: ach_dice_rare_50
+    action: 4
+    subKey: Rare
+    requiredCount: 50
+    titleFormat: "\uB808\uC5B4 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 106
+      amount: 50
+  - id: ach_dice_rare_200
+    action: 4
+    subKey: Rare
+    requiredCount: 200
+    titleFormat: "\uB808\uC5B4 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 106
+      amount: 200
+  - id: ach_dice_mythic_5
+    action: 4
+    subKey: Mythic
+    requiredCount: 5
+    titleFormat: "\uC2E0\uD654 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 105
+      amount: 10
+  - id: ach_dice_mythic_25
+    action: 4
+    subKey: Mythic
+    requiredCount: 25
+    titleFormat: "\uC2E0\uD654 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 105
+      amount: 50
+  - id: ach_dice_mythic_100
+    action: 4
+    subKey: Mythic
+    requiredCount: 100
+    titleFormat: "\uC2E0\uD654 \uB2E4\uC774\uC2A4 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 105
+      amount: 200
+  - id: ach_equipment_10
+    action: 5
+    subKey: 
+    requiredCount: 10
+    titleFormat: "\uC7A5\uBE44 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 200
+      amount: 10
+  - id: ach_equipment_50
+    action: 5
+    subKey: 
+    requiredCount: 50
+    titleFormat: "\uC7A5\uBE44 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 200
+      amount: 50
+  - id: ach_equipment_200
+    action: 5
+    subKey: 
+    requiredCount: 200
+    titleFormat: "\uC7A5\uBE44 \uB808\uBCA8\uC5C5 {0}\uD68C"
+    rewards:
+    - pointType: 200
+      amount: 200
+  - id: ach_gem_draw_10
+    action: 6
+    subKey: 
+    requiredCount: 10
+    titleFormat: "\uBCF4\uC11D \uBF51\uAE30 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 50
+  - id: ach_gem_draw_100
+    action: 6
+    subKey: 
+    requiredCount: 100
+    titleFormat: "\uBCF4\uC11D \uBF51\uAE30 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 300
+  - id: ach_gem_draw_1000
+    action: 6
+    subKey: 
+    requiredCount: 1000
+    titleFormat: "\uBCF4\uC11D \uBF51\uAE30 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 1500
+  - id: ach_merge_common_5
+    action: 7
+    subKey: Common
+    requiredCount: 5
+    titleFormat: "\uCEE4\uBA3C \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 30
+  - id: ach_merge_common_25
+    action: 7
+    subKey: Common
+    requiredCount: 25
+    titleFormat: "\uCEE4\uBA3C \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 150
+  - id: ach_merge_common_100
+    action: 7
+    subKey: Common
+    requiredCount: 100
+    titleFormat: "\uCEE4\uBA3C \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 600
+  - id: ach_merge_normal_5
+    action: 7
+    subKey: Normal
+    requiredCount: 5
+    titleFormat: "\uB178\uBA40 \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 30
+  - id: ach_merge_normal_25
+    action: 7
+    subKey: Normal
+    requiredCount: 25
+    titleFormat: "\uB178\uBA40 \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 150
+  - id: ach_merge_normal_100
+    action: 7
+    subKey: Normal
+    requiredCount: 100
+    titleFormat: "\uB178\uBA40 \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 600
+  - id: ach_merge_rare_5
+    action: 7
+    subKey: Rare
+    requiredCount: 5
+    titleFormat: "\uB808\uC5B4 \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 50
+  - id: ach_merge_rare_25
+    action: 7
+    subKey: Rare
+    requiredCount: 25
+    titleFormat: "\uB808\uC5B4 \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 250
+  - id: ach_merge_rare_100
+    action: 7
+    subKey: Rare
+    requiredCount: 100
+    titleFormat: "\uB808\uC5B4 \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 1000
+  - id: ach_merge_epic_5
+    action: 7
+    subKey: Epic
+    requiredCount: 5
+    titleFormat: "\uC5D0\uD53D \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 80
+  - id: ach_merge_epic_25
+    action: 7
+    subKey: Epic
+    requiredCount: 25
+    titleFormat: "\uC5D0\uD53D \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 400
+  - id: ach_merge_epic_100
+    action: 7
+    subKey: Epic
+    requiredCount: 100
+    titleFormat: "\uC5D0\uD53D \uBCF4\uC11D \uD569\uC131 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 1600
+  - id: ach_ad_10
+    action: 8
+    subKey: 
+    requiredCount: 10
+    titleFormat: "\uAD11\uACE0 \uC2DC\uCCAD {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 50
+  - id: ach_ad_50
+    action: 8
+    subKey: 
+    requiredCount: 50
+    titleFormat: "\uAD11\uACE0 \uC2DC\uCCAD {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 250
+  - id: ach_ad_200
+    action: 8
+    subKey: 
+    requiredCount: 200
+    titleFormat: "\uAD11\uACE0 \uC2DC\uCCAD {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 1000
+  - id: ach_shop_5
+    action: 10
+    subKey: 
+    requiredCount: 5
+    titleFormat: "\uC0C1\uD488 \uAD6C\uB9E4 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 50
+  - id: ach_shop_25
+    action: 10
+    subKey: 
+    requiredCount: 25
+    titleFormat: "\uC0C1\uD488 \uAD6C\uB9E4 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 250
+  - id: ach_shop_100
+    action: 10
+    subKey: 
+    requiredCount: 100
+    titleFormat: "\uC0C1\uD488 \uAD6C\uB9E4 {0}\uD68C"
+    rewards:
+    - pointType: 1
+      amount: 1000
+  - id: ach_kill_1000
+    action: 9
+    subKey: 
+    requiredCount: 1000
+    titleFormat: "\uC801 \uCC98\uCE58 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 20000
+  - id: ach_kill_10000
+    action: 9
+    subKey: 
+    requiredCount: 10000
+    titleFormat: "\uC801 \uCC98\uCE58 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 200000
+  - id: ach_kill_100000
+    action: 9
+    subKey: 
+    requiredCount: 100000
+    titleFormat: "\uC801 \uCC98\uCE58 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 2000000
+  - id: ach_bounty_10
+    action: 11
+    subKey: 
+    requiredCount: 10
+    titleFormat: "\uD604\uC0C1\uAE08 \uCC98\uCE58 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 30000
+  - id: ach_bounty_50
+    action: 11
+    subKey: 
+    requiredCount: 50
+    titleFormat: "\uD604\uC0C1\uAE08 \uCC98\uCE58 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 150000
+  - id: ach_bounty_200
+    action: 11
+    subKey: 
+    requiredCount: 200
+    titleFormat: "\uD604\uC0C1\uAE08 \uCC98\uCE58 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 600000
+  - id: ach_dice_merge_100
+    action: 12
+    subKey: 
+    requiredCount: 100
+    titleFormat: "\uB2E4\uC774\uC2A4 \uBA38\uC9C0 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 20000
+  - id: ach_dice_merge_1000
+    action: 12
+    subKey: 
+    requiredCount: 1000
+    titleFormat: "\uB2E4\uC774\uC2A4 \uBA38\uC9C0 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 200000
+  - id: ach_dice_merge_10000
+    action: 12
+    subKey: 
+    requiredCount: 10000
+    titleFormat: "\uB2E4\uC774\uC2A4 \uBA38\uC9C0 {0}\uD68C"
+    rewards:
+    - pointType: 0
+      amount: 2000000

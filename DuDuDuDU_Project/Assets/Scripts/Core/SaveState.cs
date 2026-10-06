@@ -130,6 +130,25 @@ namespace OJ.Core
         /// </summary>
         public BonusDiceSave BonusDice { get; } = new BonusDiceSave();
 
+        /// <summary>
+        /// 일일 미션·업적. (<c>OJ.Mission.MissionManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> <see cref="CurrentVersion"/> 주석의 규칙대로 필드를
+        /// <i>더하는</i> 것이라, 예전 세이브에는 이 키가 없고 그 상태는 "오늘 아무것도 안 한
+        /// 신규 유저"와 정확히 같다. <b>업적의 누적 카운트는 소급되지 않는다</b> — 카운터가
+        /// 없던 시절의 플레이는 셀 방법이 없고, 그 사실이 이 한 줄에 적혀 있어야 한다.
+        /// </summary>
+        public MissionSave Missions { get; } = new MissionSave();
+
+        /// <summary>
+        /// 시즌 패스. (<c>OJ.SeasonPass.SeasonPassManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> <see cref="CurrentVersion"/> 주석의 규칙대로 필드를
+        /// <i>더하는</i> 것이라, 예전 세이브에는 이 키가 없고 그 상태는 "이번 시즌을 아직
+        /// 시작하지 않은 사람"과 정확히 같다.
+        /// </summary>
+        public SeasonPassSave SeasonPass { get; } = new SeasonPassSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -369,5 +388,80 @@ namespace OJ.Core
         /// </summary>
         public SortedDictionary<string, int> PinCounts { get; }
             = new SortedDictionary<string, int>(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// 일일 미션·업적 저장분.
+    ///
+    /// <b>카운터 표가 둘인 이유.</b> 같은 행동 하나가 일일과 업적 양쪽을 올리는데
+    /// (보석 뽑기가 그렇다) 수명이 정반대다 — <see cref="DailyCounts"/> 는 자정에 통째로
+    /// 비워지고 <see cref="TotalCounts"/> 는 영영 늘기만 한다. 한 표로 두면 리셋이
+    /// 업적 진행도를 지우고, 그 사고는 <b>날짜가 바뀌는 순간에만</b> 드러난다.
+    ///
+    /// 키는 <c>OJ.Core.MissionRules.CounterKey</c> 가 만든다(<c>GemMerge:Rare</c> 꼴).
+    /// 정수가 아니라 이름인 이유는 이 클래스의 다른 표들과 같다.
+    /// </summary>
+    public sealed class MissionSave
+    {
+        /// <summary>
+        /// 아래 일일분이 어느 날짜의 것인가. <c>yyyy-MM-dd</c> 이며 빈 문자열이면 "기록 없음"이다.
+        /// 형식과 기준(로컬 자정)을 <c>OJ.Shop.ShopPurchaseManager</c> 와 <b>같은 함수로</b>
+        /// 맞춘다 — 둘이 다른 시각에 리셋되면 화면의 남은시간 표시가 둘 중 하나와 어긋난다.
+        /// </summary>
+        public string DailyResetDate { get; set; } = string.Empty;
+
+        /// <summary>오늘치 카운터. 날짜가 바뀌면 통째로 버린다.</summary>
+        public SortedDictionary<string, int> DailyCounts { get; } = SaveState.NewIntMap();
+
+        /// <summary>
+        /// 오늘 보상을 받은 일일 미션 id.
+        ///
+        /// <b>달성과 수령을 따로 적는다.</b> 달성은 카운터로 계산되지만 수령은 그렇지 않다 —
+        /// 두 번 받는 것을 막을 근거가 이 목록뿐이다.
+        /// </summary>
+        public List<string> ClaimedDailyIds { get; } = new List<string>();
+
+        /// <summary>오늘 보상을 받은 추가 보상 문턱(3·5·7·10 같은 값 그대로).</summary>
+        public List<int> ClaimedDailyTiers { get; } = new List<int>();
+
+        /// <summary>
+        /// 누적 카운터. <b>절대 비우지 않는다</b> — 업적이 (10/100) 처럼 이어서 세는 근거다.
+        /// </summary>
+        public SortedDictionary<string, int> TotalCounts { get; } = SaveState.NewIntMap();
+
+        /// <summary>보상을 받은 업적 id. 한 번 들어가면 빠지지 않는다.</summary>
+        public List<string> ClaimedAchievementIds { get; } = new List<string>();
+    }
+
+    /// <summary>
+    /// 시즌 패스 저장분.
+    ///
+    /// <b>전부 이번 시즌 몫이다.</b> <see cref="SeasonId"/> 가 달라지면 아래가 통째로
+    /// 비워진다 — 포인트도, 수령 기록도, <b>유료 트랙 활성화도</b>. 패스는 시즌마다 다시
+    /// 사는 상품이라 활성화가 넘어오면 한 번 사고 영원히 쓰는 것이 된다.
+    ///
+    /// <b>수령 기록이 트랙별로 둘인 이유.</b> 한 레벨에 무료·유료 보상이 따로 있고 따로
+    /// 받는다. 한 목록에 섞으면 "3레벨을 받았다" 가 어느 쪽인지 알 수 없어, 유료를 산
+    /// 사람이 무료를 다시 받거나 그 반대가 된다.
+    /// </summary>
+    public sealed class SeasonPassSave
+    {
+        /// <summary>
+        /// 이 기록이 어느 시즌의 것인가. <c>yyyy-MM</c> 이며 빈 문자열이면 "기록 없음"이다.
+        /// <c>OJ.Core.SeasonPassRules.SeasonId</c> 가 만든다.
+        /// </summary>
+        public string SeasonId { get; set; } = string.Empty;
+
+        /// <summary>이번 시즌에 쓴 고기의 누적. 레벨은 이 값에서 계산한다(따로 저장하지 않는다).</summary>
+        public int Points { get; set; }
+
+        /// <summary>유료 트랙을 열었는가. 시즌이 바뀌면 false 로 돌아간다.</summary>
+        public bool PremiumUnlocked { get; set; }
+
+        /// <summary>보상을 받은 무료 트랙 레벨.</summary>
+        public List<int> ClaimedFreeLevels { get; } = new List<int>();
+
+        /// <summary>보상을 받은 유료 트랙 레벨.</summary>
+        public List<int> ClaimedPremiumLevels { get; } = new List<int>();
     }
 }

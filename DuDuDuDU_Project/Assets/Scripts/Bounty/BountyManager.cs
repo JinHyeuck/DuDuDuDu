@@ -5,6 +5,7 @@ using OJ.Core;
 using OJ.Battle;
 using OJ.DI;
 using OJ.Hunting;
+using OJ.Mission;
 using OJ.Point;
 using OJ.Stage;
 
@@ -195,6 +196,10 @@ namespace OJ.Bounty
             BountyDefinition definition = GetDefinition(grade);
             activeMonster = null;
             resolvedThisWave = true;
+
+            // <b>정의가 없어도 센다.</b> 아래에서 보상 없이 돌아가는 갈래가 있는데,
+            // 그건 데이터 사고이지 "안 잡은 것" 이 아니다 — 유저는 분명히 잡았다.
+            MissionManager.Instance?.Notify(MissionAction.BountyKill);
 
             // 정의가 없어도 <b>정리됐다는 사실은 반드시 알린다.</b> 여기서 그냥 돌아가면
             // 웨이브 종료 판정을 다시 부를 계기가 사라져 판이 멈춘다 —

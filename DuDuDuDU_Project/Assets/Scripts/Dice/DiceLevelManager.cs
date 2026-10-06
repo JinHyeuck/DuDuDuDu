@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
+using OJ.Core;
 using OJ.DI;
 using OJ.Hunting;
+using OJ.Mission;
 using OJ.Point;
 using OJ.Save;
 using OJ.SceneFlow;
@@ -137,6 +139,13 @@ namespace OJ.Dice
                 return false;
 
             SetLevel(diceType, currentLevel + 1);
+
+            // 미션은 <b>재화가 실제로 나간 뒤</b>에 센다. 위 TrySpend 가 실패한 경로는
+            // 이미 돌아갔으므로, 여기 닿았다는 것은 레벨이 올랐다는 뜻이다.
+            // 하위 키(일반·레어·신화)는 매니저가 함께 올려 준다 — 업적이 그것을 본다.
+            MissionManager.Instance?.Notify(
+                MissionAction.DiceLevelUp, MissionSubKeys.ForDice(diceType));
+
             return true;
         }
 
