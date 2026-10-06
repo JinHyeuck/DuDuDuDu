@@ -60,6 +60,7 @@ namespace OJ.Stage
         /// </summary>
         public const string RequiredGlyphs =
             "소탕스테이지클리어한가없다횟수필요재화" +
+            "오늘남은멤버십무제한" +
             "MINAX0123456789,./ +-";
 
         [SerializeField] private TMP_FontAsset font;
@@ -67,6 +68,7 @@ namespace OJ.Stage
         [SerializeField] private TMP_Text stageText;
         [SerializeField] private TMP_Text countText;
         [SerializeField] private TMP_Text costText;
+        [SerializeField] private TMP_Text limitText;
         [SerializeField] private Button minButton;
         [SerializeField] private Button decreaseButton;
         [SerializeField] private Button increaseButton;
@@ -78,6 +80,9 @@ namespace OJ.Stage
 
         private int targetStageIndex;
         private int maxCount;
+
+        /// <summary>오늘 남은 무료 소탕 횟수. 멤버십이면 <see cref="OJ.Core.MembershipRules.Unlimited"/>.</summary>
+        private int sweepsLeftToday;
         private int selectedCount;
 
         public static UISweepCountDialog Create(Transform parent, TMP_FontAsset fontAsset)
@@ -126,6 +131,10 @@ namespace OJ.Stage
 
             // 횟수 줄 — [MIN] [-] 수량 [+] [MAX]. 버튼은 Btn_Gray x3 (보이는 24px, 여백 4/6/4/2 → 중심 6px 위)
             Caption(p, "CountCaption", "소탕 횟수", 815f);
+
+            // 같은 줄 오른쪽 — 오늘 남은 무료 횟수(멤버십이면 "멤버십 무제한").
+            limitText = CreateText("LimitText", p, "오늘 남은 72 / 72", 30f, TextAlignmentOptions.MidlineRight, CaptionColor);
+            SetRect(limitText.rectTransform, new Vector2(780f, 42f), Pos(540f, 815f));
             minButton = GrayButton(p, "MinButton", "MIN", new Vector2(154f, 114f), Pos(215f, 879f));
             decreaseButton = GrayButton(p, "DecreaseButton", "-", new Vector2(124f, 114f), Pos(350f, 879f));
             Image countBox = Sliced(p, "CountBox", "Upgrade/Ui_Popup_SmallBox", 4f, new Vector2(284f, 124f), Pos(540f, 885f), CellColor);
@@ -194,11 +203,21 @@ namespace OJ.Stage
 
             PointManager points = PointManager.Instance;
             int ownedStamina = points != null ? points.Get(PointType.Stamina) : 0;
-            maxCount = SweepRules.ResolveMaxCount(ownedStamina);
+            // 고기로 돌 수 있는 횟수와 오늘 남은 무료 한도 중 작은 쪽. 한도는 고기 멤버십이 푼다.
+            sweepsLeftToday = ResolveSweepsLeftToday();
+            maxCount = OJ.Core.MembershipRules.MaxSweepCount(SweepRules.ResolveMaxCount(ownedStamina), sweepsLeftToday);
 
             // 열 때는 최대치로 시작한다. 소탕은 "쌓인 것을 한 번에 턴다"가 기본 동작이라
             // 매번 MAX 를 한 번 더 누르게 하면 그 탭이 순수한 군더더기가 된다.
             SetCount(maxCount);
+        }
+
+        private static int DailyLimit => OJ.Shop.ShopDatabaseProvider.Database.Membership.freeDailySweepLimit;
+
+        private static int ResolveSweepsLeftToday()
+        {
+            OJ.Save.EntitlementManager entitlements = OJ.Save.EntitlementManager.Instance;
+            return entitlements != null ? entitlements.SweepsLeftToday(DailyLimit) : DailyLimit;
         }
 
         private void SetCount(int value)
@@ -229,8 +248,19 @@ namespace OJ.Stage
                 // 왜 못 누르는지가 한 줄로 읽힌다. (필요 / 보유)
                 int shownCount = canSweep ? selectedCount : 1;
                 int cost = SweepRules.TotalStaminaCost(shownCount);
-                costText.color = canSweep ? Color.white : ShortageColor;
+                // 빨강은 고기가 모자랄 때만이다. 오늘 한도가 막은 경우는 위 한도 줄이 빨갛게 말한다 —
+                // 둘 다 빨가면 무엇 때문에 못 누르는지가 안 읽힌다.
+                costText.color = ownedStamina >= cost ? Color.white : ShortageColor;
                 costText.SetText($"{cost:#,##0} / {ownedStamina:#,##0}");
+            }
+
+            if (limitText != null)
+            {
+                bool unlimited = sweepsLeftToday == OJ.Core.MembershipRules.Unlimited;
+                limitText.color = !unlimited && sweepsLeftToday <= 0 ? ShortageColor : CaptionColor;
+                limitText.SetText(unlimited
+                    ? "멤버십 무제한"
+                    : $"오늘 남은 {sweepsLeftToday:#,##0} / {DailyLimit:#,##0}");
             }
 
             if (costIcon != null && costIcon.sprite == null)
@@ -259,6 +289,16 @@ namespace OJ.Stage
                 return;
             }
 
+            // 한도도 화면을 믿지 않고 다시 본다 — 창을 열어 둔 채 날이 바뀌거나 멤버십이 끝날 수 있다.
+            int left = ResolveSweepsLeftToday();
+            if (selectedCount > left)
+            {
+                Debug.Log($"[소탕] 오늘 남은 무료 소탕이 모자라 취소했다. 요청 {selectedCount} / 남은 {left}");
+                sweepsLeftToday = left;
+                Refresh();
+                return;
+            }
+
             int cost = SweepRules.TotalStaminaCost(selectedCount);
 
             // 화면을 믿지 않고 여기서 한 번 더 뺀다. 창을 열어 둔 사이에 다른 경로가
@@ -279,6 +319,7 @@ namespace OJ.Stage
                 rewards = RelicManager.Instance.ApplyStageClearRewardBonus(rewards);
 
             PointRewardUtility.GrantRewards(rewards);
+            OJ.Save.EntitlementManager.Instance?.RecordSweeps(count);
 
             Debug.Log($"Sweep Stage {targetStageIndex} x{count} | 고기 -{cost} | " +
                       $"{PointRewardUtility.BuildRewardSummary(rewards)}");

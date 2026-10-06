@@ -101,6 +101,9 @@ namespace OJ.Core.Tests
 
             // 광고제거권. 상품은 아직 없고 플래그만 있다.
             state.AdFree = true;
+            state.Membership.ExpiryUtcTicks = 638_900_000_000_000_000L;
+            state.Membership.SweepUsageDate = "2026-10-06";
+            state.Membership.SweepUsedCount = 41;
 
             // 보상 라운드. PinCounts 는 핀볼 게이지와 <b>다른</b> 값이다 —
             // 같은 키에 다른 수를 넣어 둘이 섞이면 바로 터지게 해 둔다.
@@ -177,6 +180,12 @@ namespace OJ.Core.Tests
                 expected.Pinball.SpecialHitCounts, actual.Pinball.SpecialHitCounts, "pinball.specialHitCounts");
 
             Assert.That(actual.AdFree, Is.EqualTo(expected.AdFree), "adFree");
+            Assert.That(actual.Membership.ExpiryUtcTicks,
+                Is.EqualTo(expected.Membership.ExpiryUtcTicks), "membership.expiry");
+            Assert.That(actual.Membership.SweepUsageDate,
+                Is.EqualTo(expected.Membership.SweepUsageDate), "membership.sweepUsageDate");
+            Assert.That(actual.Membership.SweepUsedCount,
+                Is.EqualTo(expected.Membership.SweepUsedCount), "membership.sweepUsedCount");
 
             Assert.That(actual.BonusDice.InProgress,
                 Is.EqualTo(expected.BonusDice.InProgress), "bonusDice.inProgress");
@@ -405,6 +414,11 @@ namespace OJ.Core.Tests
                 "{",
                 "  \"version\": 1,",
                 "  \"adFree\": false,",
+                "  \"membership\": {",
+                "    \"expiryUtcTicks\": 0,",
+                "    \"sweepUsageDate\": \"\",",
+                "    \"sweepUsedCount\": 0",
+                "  },",
                 "  \"points\": {",
                 "    \"Gold\": 10",
                 "  },",

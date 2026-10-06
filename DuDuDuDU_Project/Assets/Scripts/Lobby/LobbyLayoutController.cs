@@ -34,6 +34,9 @@ namespace OJ.Lobby
         [SerializeField] private TMP_Text stageClearWaveText;
         [SerializeField] private TMP_Text stageSummaryText;
 
+        [Tooltip("입장 버튼의 \"x5\" 글자. 멤버십이면 \"무료\" 로 바뀐다. MembershipAssetBuilder 가 잇는다.")]
+        [SerializeField] private TMP_Text enterCostText;
+
         [Header("Bottom Buttons")]
         [SerializeField] private List<LobbyBottomBtn> bottomButtons;
 
@@ -68,9 +71,31 @@ namespace OJ.Lobby
 
         private void OnEnable()
         {
+            // 멤버십을 사거나 만료되면 입장료와 버튼 상태가 바뀐다.
+            if (OJ.Save.EntitlementManager.Instance != null)
+                OJ.Save.EntitlementManager.Instance.OnChanged += RefreshStageUI;
+
             selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetHighestUnlockedStageIndex() : 1;
             ShowTab(defaultTab);
             RefreshStageUI();
+        }
+
+        private void OnDisable()
+        {
+            if (OJ.Save.EntitlementManager.Instance != null)
+                OJ.Save.EntitlementManager.Instance.OnChanged -= RefreshStageUI;
+        }
+
+        /// <summary>
+        /// 지금 입장료. 고기 멤버십이면 0 이다(기획서 BMDesign 5.2-2).
+        /// <b>표시와 지불이 이 한 함수를 본다</b> — 둘이 따로 계산하면 "무료" 라고 적고 5 를 뺀다.
+        /// </summary>
+        private static int CurrentEntryCost()
+        {
+            OJ.Save.EntitlementManager entitlements = OJ.Save.EntitlementManager.Instance;
+            return entitlements != null
+                ? entitlements.StageEntryCost(StageEntryRules.StaminaCost)
+                : StageEntryRules.StaminaCost;
         }
 
         private void OnDestroy()
@@ -92,10 +117,11 @@ namespace OJ.Lobby
             // <b>SelectStage 보다도 앞이다.</b> 고기가 모자라 못 들어가는데 선택만
             // 바뀌면, 다음에 로비를 열었을 때 고르지도 않은 스테이지가 선택돼 있다.
             OJ.Point.PointManager points = OJ.Point.PointManager.Instance;
-            if (points == null || !points.TrySpend(PointType.Stamina, StageEntryRules.StaminaCost))
+            int cost = CurrentEntryCost();
+            if (points == null || (cost > 0 && !points.TrySpend(PointType.Stamina, cost)))
             {
                 Debug.Log("[스테이지] 고기가 모자라 입장하지 못했다. 필요 " +
-                          StageEntryRules.StaminaCost +
+                          cost +
                           " / 보유 " + (points != null ? points.Get(PointType.Stamina) : 0));
                 RefreshStageUI();
                 return;
@@ -195,8 +221,13 @@ namespace OJ.Lobby
                 ? OJ.Point.PointManager.Instance.Get(PointType.Stamina)
                 : 0;
 
+            int cost = CurrentEntryCost();
+
             if (enterStageButton != null)
-                enterStageButton.interactable = isUnlocked && StageEntryRules.CanEnter(ownedStamina);
+                enterStageButton.interactable = isUnlocked && ownedStamina >= cost;
+
+            if (enterCostText != null)
+                enterCostText.SetText(cost > 0 ? "x" + cost : "무료");
         }
 
         /// <summary>

@@ -132,6 +132,39 @@ namespace OJ.Shop
             public int costIncreasePerPurchase = 20;
         }
 
+        // ── 5 멤버십 (광고제거권 · 고기 멤버십) ───────────────────────
+        /// <summary>
+        /// 멤버십 창의 두 상품과 그것이 푸는 제한. (기획서 ShopPackageDesign 5장 · BMDesign 4·5장)
+        ///
+        /// <b>무료 소탕 한도가 여기 있는 이유.</b> 이 한도는 고기 멤버십이 풀라고 있는 것이다 —
+        /// 상품과 그것이 푸는 제한이 다른 에셋에 있으면 한쪽만 고쳐져 멤버십이 아무것도 안 푸는
+        /// 날이 온다. 기본값 72 는 <c>SweepEconomy.DailySweepClears</c>(고기 유입으로 하루에 돌 수 있는
+        /// 소탕 수)와 같다 — 기획서 5.3 의 "Day 3 부터 체증" 곡선은 아직 미정이라 고정값이다.
+        /// </summary>
+        [Serializable]
+        public sealed class MembershipOffers
+        {
+            [Tooltip("광고제거권 가격(원). 기획서 4장: 3,000원, 무제한.")]
+            public int adRemovalPriceWon = 3000;
+
+            [Tooltip("고기 멤버십 가격(원). 기획서 5장: 5,000원.")]
+            public int meatMembershipPriceWon = 5000;
+
+            [Tooltip("고기 멤버십 기간(일). 산 시점부터 흐르고, 남은 중에 사면 만료일 뒤로 붙는다.")]
+            [Min(1)] public int meatMembershipDays = 30;
+
+            [Tooltip("만료 며칠 전부터 재구매를 연다. 기획서 5.2-4: 3일.")]
+            [Min(0)] public int rebuyWindowDays = 3;
+
+            [Tooltip("멤버십이 없을 때 하루 소탕 한도. 멤버십은 이것을 풀어 준다.")]
+            [Min(1)] public int freeDailySweepLimit = 72;
+        }
+
+        [Header("5 멤버십")]
+        [SerializeField] private MembershipOffers membership = new MembershipOffers();
+
+        public MembershipOffers Membership => membership ?? (membership = new MembershipOffers());
+
         [Header("8.1 성장 패키지")]
         [Tooltip("동시 노출 최대 2개 (기획서 8.1 설계규칙 2번).")]
         [SerializeField] private List<GrowthPackage> growthPackages = new List<GrowthPackage>();
