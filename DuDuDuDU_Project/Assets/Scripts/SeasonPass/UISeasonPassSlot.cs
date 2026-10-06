@@ -24,6 +24,7 @@ namespace OJ.SeasonPass
         [SerializeField] private Image rewardIcon;
         [SerializeField] private TMP_Text amountText;
         [SerializeField] private GameObject doneMark;
+        [SerializeField] private GameObject lockMark;
         [SerializeField] private Button button;
 
         [SerializeField] private Sprite normalSprite;
@@ -101,6 +102,10 @@ namespace OJ.SeasonPass
             if (doneMark != null)
                 doneMark.SetActive(view.Claimed);
 
+            // 자물쇠 — 아직 못 받는 칸. 레벨이 안 닿았거나 유료를 안 산 경우다(사용자 피드백 2026-10-06).
+            if (lockMark != null)
+                lockMark.SetActive(!view.Claimed && (!view.Reached || view.Locked));
+
             if (button != null)
                 button.interactable = view.Claimable;
         }
@@ -144,6 +149,11 @@ namespace OJ.SeasonPass
             UISeasonPassUIFactory.SetRect(doneText.rectTransform, new Vector2(166f, 56f), new Vector2(1f, -44.5f));
             slot.doneMark = doneText.gameObject;
             slot.doneMark.SetActive(false);
+
+            // 자물쇠 — Icon_lock x2(보이는 54x56), 칸 오른쪽 위 모서리에 걸친다(레퍼런스 배치).
+            slot.lockMark = UISeasonPassUIFactory.Picture(
+                root.transform, "Lock", "Upgrade/Icon_lock", new Vector2(64f, 64f), new Vector2(72f, 72f)).gameObject;
+            slot.lockMark.SetActive(false);
 
             return slot;
         }
