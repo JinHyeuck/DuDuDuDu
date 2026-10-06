@@ -3,6 +3,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
+using OJ.Hunting;
+using OJ.Point;
 using OJ.DI;
 using OJ.UI;
 
@@ -231,12 +233,36 @@ namespace OJ.SeasonPass
 
         private void Claim(int level, bool premium)
         {
-            SeasonPassManager.Instance?.TryClaim(level, premium);
+            SeasonPassManager pass = SeasonPassManager.Instance;
+            if (pass != null && pass.TryClaim(level, premium, out List<PointRewardEntry> granted))
+                ShowRewardPopup(granted);
         }
 
         private void OnClickClaimAll()
         {
-            SeasonPassManager.Instance?.ClaimAll();
+            SeasonPassManager pass = SeasonPassManager.Instance;
+            if (pass != null && pass.ClaimAll(out List<PointRewardEntry> merged) > 0)
+                ShowRewardPopup(merged);
+        }
+
+        /// <summary>
+        /// 획득 팝업. 상점·방치 보상·스테이지 보상이 쓰는 <c>UIRewardResultDialog</c> 를 그대로 쓴다.
+        /// 못 열어도 지급은 이미 끝났다 — 막지 않고 로그만 남긴다.
+        /// </summary>
+        private static void ShowRewardPopup(IReadOnlyList<PointRewardEntry> rewards)
+        {
+            if (rewards == null || rewards.Count == 0)
+                return;
+
+            UIRewardResultDialog dialog = GameContainer.UI?.Get<UIRewardResultDialog>();
+            if (dialog == null)
+            {
+                Debug.LogError("[시즌패스] UIRewardResultDialog 를 못 열었다. 지급은 이미 끝났다 — " +
+                               PointRewardUtility.BuildRewardSummary(rewards));
+                return;
+            }
+
+            dialog.Open(rewards, "시즌 패스 보상을 받았습니다.");
         }
 
         /// <summary>구매 창을 띄운다. 실제 활성화는 그 창의 구매 버튼이 한다.</summary>
