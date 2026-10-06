@@ -165,6 +165,71 @@ namespace OJ.Shop
 
         public MembershipOffers Membership => membership ?? (membership = new MembershipOffers());
 
+        // ── 4 특별한 7일 ─────────────────────────────────────────────
+        /// <summary>
+        /// 특별한 7일 출석. (기획서 BMDesign 6장 · ShopPackageDesign 4장)
+        ///
+        /// <b>1일차 300 · 3일차 500 유료젬은 확정이다</b> — 각각 광고제거권·고기 멤버십 값과 정확히
+        /// 같아야 "8,000원을 내고 둘을 공짜로 얻었다" 가 유저 머릿속에서 즉시 성립한다(6.3).
+        /// 나머지 다섯 날은 기획서가 "미정, 기분 좋은 수준" 으로 남겼다. 지금 값은 하루 공급량
+        /// (Docs/CurrencyPolicy.md 7.1)의 1~2.5일치로 잡은 <b>임시값</b>이다.
+        /// </summary>
+        /// <summary>하루치 보상. 줄 하나에 아이콘+이름으로 나란히 그린다(레퍼런스는 하루 2개).</summary>
+        [Serializable]
+        public sealed class DayRewards
+        {
+            public List<Reward> rewards = new List<Reward>();
+
+            public DayRewards() { }
+
+            public DayRewards(params Reward[] items)
+            {
+                rewards = new List<Reward>(items);
+            }
+        }
+
+        [Serializable]
+        public sealed class SpecialSevenDaysOffer
+        {
+            [Tooltip("가격(원). 기획서 6장: 8,000원(800유료젬).")]
+            public int priceWon = 8000;
+
+            [Tooltip("일차별 보상. 앞에서부터 1일차다. 줄 하나에 2개까지 그린다.")]
+            public List<DayRewards> days = new List<DayRewards>
+            {
+                new DayRewards(new Reward(PointType.PaidGem, 300), new Reward(PointType.Gold, 5000)),
+                new DayRewards(new Reward(PointType.Gold, 10000), new Reward(PointType.Stamina, 180)),
+                new DayRewards(new Reward(PointType.PaidGem, 500), new Reward(PointType.RareStone, 50)),
+                new DayRewards(new Reward(PointType.Stamina, 360), new Reward(PointType.RareStone, 50)),
+                new DayRewards(new Reward(PointType.RareStone, 100), new Reward(PointType.Gold, 10000)),
+                new DayRewards(new Reward(PointType.Gold, 15000), new Reward(PointType.MythicStone, 40)),
+                new DayRewards(new Reward(PointType.MythicStone, 100), new Reward(PointType.Gold, 20000)),
+            };
+
+            [Tooltip("테두리를 강조할 일차(4.2-2 — 회수 구조의 핵심인 젬 줄).")]
+            public List<int> highlightDays = new List<int> { 1, 3 };
+
+            private static readonly List<Reward> None = new List<Reward>();
+
+            /// <summary><paramref name="day"/> 일차 보상(1부터). 없으면 빈 목록.</summary>
+            public IReadOnlyList<Reward> RewardsFor(int day)
+            {
+                return days != null && day >= 1 && day <= days.Count && days[day - 1]?.rewards != null
+                    ? days[day - 1].rewards
+                    : None;
+            }
+
+            public bool IsHighlighted(int day)
+            {
+                return highlightDays != null && highlightDays.Contains(day);
+            }
+        }
+
+        [Header("4 특별한 7일")]
+        [SerializeField] private SpecialSevenDaysOffer specialSevenDays = new SpecialSevenDaysOffer();
+
+        public SpecialSevenDaysOffer SpecialSevenDays => specialSevenDays ?? (specialSevenDays = new SpecialSevenDaysOffer());
+
         [Header("8.1 성장 패키지")]
         [Tooltip("동시 노출 최대 2개 (기획서 8.1 설계규칙 2번).")]
         [SerializeField] private List<GrowthPackage> growthPackages = new List<GrowthPackage>();

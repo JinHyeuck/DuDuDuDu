@@ -254,6 +254,12 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 특별한 7일 출석. 결제는 ShopPurchaseManager 를 지나지만 생성자 의존은 없다 —
+            // 사는 순간에 Instance 로 찾는다. 세이브 파일에서 권리(멤버십) 바로 뒤에 둔다.
+            builder.Register<SpecialSevenDaysManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 통합 세이브. 7.5 이후 <b>이것이 유일한 진행도 저장소다.</b>
             // ISaveOnApplicationLifecycle 로 등록해 앱이 멈출 때 파일이 쓰이게 한다.
             //
@@ -307,6 +313,7 @@ namespace OJ.DI
             PinballManager.Instance = container.Resolve<PinballManager>();
             BonusDiceManager.Instance = container.Resolve<BonusDiceManager>();
             EntitlementManager.Instance = container.Resolve<EntitlementManager>();
+            SpecialSevenDaysManager.Instance = container.Resolve<SpecialSevenDaysManager>();
             MissionManager.Instance = container.Resolve<MissionManager>();
             SeasonPassManager.Instance = container.Resolve<SeasonPassManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
@@ -339,6 +346,7 @@ namespace OJ.DI
             // 진행도가 남고 로그인 미션이 영영 0 이 된다.
             MissionManager.Instance.NotifyAppStart();
             SeasonPassManager.Instance.NotifyAppStart();
+            SpecialSevenDaysManager.Instance.NotifyAppStart();
         }
     }
 }
