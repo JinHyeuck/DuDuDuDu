@@ -38,6 +38,12 @@ namespace OJ.Utils
 
         public bool QuickExitGame = false;
 
+        /// <summary>
+        /// 게임 창 스택 밖에 있는 것(개발 치트 창)이 Escape 를 먼저 가져가는 자리. true 를 돌려주면
+        /// 그 Escape 는 소비되어 아래 창이 닫히지 않는다. 각자 Escape 를 폴링하면 한 번 눌러 둘이 닫힌다.
+        /// </summary>
+        public static System.Func<bool> EscapeInterceptor;
+
         public AOSBackBtnManager(IBattleRefs battle)
         {
             this.battle = battle;
@@ -48,6 +54,9 @@ namespace OJ.Utils
         {
             if (Input.GetKeyUp(KeyCode.Escape))
             {
+                if (EscapeInterceptor != null && EscapeInterceptor())
+                    return;
+
                 if (QuickExitGame == true)
                 {
                     // 8.3b: GameManager.Instance → 창구. 참조를 얻는 경로만 바뀌었다.

@@ -178,7 +178,8 @@ namespace OJ.Dev
             layout.minHeight = height;
             layout.flexibleWidth = 1f;
 
-            var dropdown = root.gameObject.AddComponent<TMP_Dropdown>();
+            // 펼친 목록을 치트 캔버스 위로 올리는 하위 클래스(DevCheatDropdown 주석).
+            TMP_Dropdown dropdown = root.gameObject.AddComponent<DevCheatDropdown>();
             dropdown.targetGraphic = root;
 
             TMP_Text caption = CreateLabel("Label", root.transform, string.Empty, 32f, TextColor);
@@ -204,7 +205,10 @@ namespace OJ.Dev
             templateScroll.vertical = true;
             templateScroll.movementType = ScrollRect.MovementType.Clamped;
 
-            Image viewport = CreateImage("Viewport", template.transform, new Color(0f, 0f, 0f, 0f));
+            // <b>마스크 그림은 불투명이어야 한다.</b> Mask 는 그림의 알파로 자르는데(알파 클립),
+            // 알파 0 이면 스텐실에 아무것도 안 써져 목록이 열려도 항목이 하나도 안 보인다 —
+            // 실제로 그랬다(IsExpanded=true 인데 빈 화면). 보이지 않게 하는 것은 showMaskGraphic 이 한다.
+            Image viewport = CreateImage("Viewport", template.transform, Color.white);
             RectTransform viewportRect = viewport.rectTransform;
             viewportRect.anchorMin = Vector2.zero;
             viewportRect.anchorMax = Vector2.one;
