@@ -150,9 +150,10 @@ namespace OJ.SeasonPass
             slot.doneMark = doneText.gameObject;
             slot.doneMark.SetActive(false);
 
-            // 자물쇠 — Icon_lock x2(보이는 54x56), 칸 오른쪽 위 모서리에 걸친다(레퍼런스 배치).
+            // 자물쇠 — Icon_Unlock x2, 칸 오른쪽 위 모서리에 걸친다(레퍼런스 배치).
+            // <b>파일 이름이 뒤바뀌어 있다</b>: Icon_Unlock 이 잠긴 자물쇠, Icon_lock 이 열린 자물쇠다.
             slot.lockMark = UISeasonPassUIFactory.Picture(
-                root.transform, "Lock", "Upgrade/Icon_lock", new Vector2(64f, 64f), new Vector2(72f, 72f)).gameObject;
+                root.transform, "Lock", "Upgrade/Icon_Unlock", new Vector2(64f, 64f), new Vector2(72f, 72f)).gameObject;
             slot.lockMark.SetActive(false);
 
             return slot;
