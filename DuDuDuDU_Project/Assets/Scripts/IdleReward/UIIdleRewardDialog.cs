@@ -342,6 +342,11 @@ namespace OJ.IdleReward
                 Pos(left + width * 0.5f, (top + bottom) * 0.5f));
             viewport.AddComponent<RectMask2D>();
 
+            // 스크롤이 잡히게 뷰포트에 투명 판을 깐다. 칸들은 전부 raycastTarget=false 라
+            // 이것이 없으면 드래그가 ScrollRect 에 한 번도 닿지 않아 목록이 안 움직였다.
+            Image hitArea = viewport.AddComponent<Image>();
+            hitArea.color = Color.clear;
+
             GameObject content = CreateRect("RewardGrid", viewport.transform);
             autoRewardRoot = content.GetComponent<RectTransform>();
             autoRewardRoot.anchorMin = new Vector2(0f, 1f);
