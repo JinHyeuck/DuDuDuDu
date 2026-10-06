@@ -10,15 +10,12 @@ namespace OJ.Shop
     /// <summary>
     /// 로비 좌상단의 멤버십 입구. (기획서 ShopPackageDesign 2.2 — 버튼 3번)
     ///
-    /// <b>배지</b>: 고기 멤버십 만료 3일 전부터 <c>D-n</c>. <b>숨김</b>: 두 상품을 모두 갖고 있고
-    /// 아직 재구매 구간이 아닐 때 — 살 것이 없는 입구는 자리만 먹는다.
-    ///
-    /// 숨길 때 루트가 아니라 <see cref="view"/> 를 끈다. 루트를 끄면 <c>OnDisable</c> 로 구독이 풀려
-    /// 다시 살 수 있게 되는 날(만료 3일 전) 버튼이 돌아오지 못한다.
+    /// <b>배지</b>: 고기 멤버십 만료 3일 전부터 <c>D-n</c>.
+    /// <b>숨기지 않는다</b>(사용자 피드백 2026-10-06 — 기획서 2.2 의 "2종 모두 보유 시 숨김" 을 뒤집음).
+    /// 다 산 뒤에도 남은 기간과 보유 상태를 보러 들어올 자리가 있어야 한다.
     /// </summary>
     public sealed class UIMembershipLobbyButton : MonoBehaviour
     {
-        [SerializeField] private GameObject view;
         [SerializeField] private Button button;
         [SerializeField] private GameObject badge;
         [SerializeField] private TMP_Text badgeText;
@@ -67,10 +64,6 @@ namespace OJ.Shop
 
             int rebuyWindow = ShopDatabaseProvider.Database.Membership.rebuyWindowDays;
             bool canBuyMeat = entitlements.CanRebuyMeatMembership(rebuyWindow);
-            bool hasSomethingToSell = canBuyMeat || !entitlements.AdFree;
-
-            if (view != null)
-                view.SetActive(hasSomethingToSell);
 
             // D-n 은 "가진 멤버십이 곧 끝난다" 일 때만이다. 한 번도 안 산 사람에게 D-0 을 띄우지 않는다.
             bool expiring = entitlements.MeatMembershipActive && canBuyMeat;
@@ -99,9 +92,9 @@ namespace OJ.Shop
             UISeasonPassUIFactory.SetRect(root.GetComponent<RectTransform>(), new Vector2(160f, 190f), Vector2.zero);
             var entry = root.AddComponent<UIMembershipLobbyButton>();
 
-            entry.view = UISeasonPassUIFactory.CreateRect("View", root.transform);
-            UISeasonPassUIFactory.Stretch(entry.view.GetComponent<RectTransform>());
-            Transform v = entry.view.transform;
+            GameObject view = UISeasonPassUIFactory.CreateRect("View", root.transform);
+            UISeasonPassUIFactory.Stretch(view.GetComponent<RectTransform>());
+            Transform v = view.transform;
 
             // 바탕 — Itme_Slot_5 x3.2(보이는 45 → 144). 오른쪽·아래 여백이 1px 넓어 중심이 (1.6,-1.6) 밀린다.
             // 누르는 자리는 보이는 칸만큼.
@@ -111,7 +104,6 @@ namespace OJ.Shop
             slot.raycastPadding = new Vector4(28.8f, 32f, 32f, 28.8f);
 
             // 버튼은 루트에 단다 — 이름 줄까지 한 덩이로 눌리고, 바탕 그림이 눌림 틴트를 받는다.
-            // 숨길 때 view 가 꺼지면 그림이 사라져 레이캐스트도 같이 사라진다.
             entry.button = root.AddComponent<Button>();
             entry.button.targetGraphic = slot;
 
