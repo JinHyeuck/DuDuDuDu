@@ -311,8 +311,9 @@ namespace OJ.Tower
             lockDim.raycastTarget = false;
             cell.lockIcon = lockDim.gameObject;
 
+            // 파일 이름이 뒤바뀌어 있다 — Icon_Unlock 이 잠긴 자물쇠다(다이스 해금 화면과 같다).
             UITowerUIFactory.CreateSprite("LockIcon", lockDim.transform,
-                UITowerUIFactory.LoadSprite("Upgrade/Icon_lock"), 2f,
+                UITowerUIFactory.LoadSprite("Upgrade/Icon_Unlock"), 2f,
                 new Vector2(64f, 64f), Vector2.zero, false);
 
             // 선택 표시는 칸 그림(Bg_Prs)만 바꾼다. 체크 배지는 만들지 않는다 — 노란 사각형이
