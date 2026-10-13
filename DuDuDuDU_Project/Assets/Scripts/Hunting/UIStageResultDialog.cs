@@ -85,7 +85,9 @@ namespace OJ.Hunting
             }
 
             if (mainValueText != null)
-                mainValueText.SetText("Wave {0}", Mathf.Max(0, reachedWaveCount));
+                // 큰 숫자 칸은 숫자 한두 자리 크기다. "Wave" 를 같은 크기로 넣으면 줄이 깨지므로
+                // 작게 붙인다 — 숫자가 무엇인지(이번 판 웨이브)만 알리면 된다.
+                mainValueText.SetText("<size=38%>Wave </size>{0}", Mathf.Max(0, reachedWaveCount));
 
             if (bestStageLabelText != null)
                 bestStageLabelText.SetText("최고 기록");
