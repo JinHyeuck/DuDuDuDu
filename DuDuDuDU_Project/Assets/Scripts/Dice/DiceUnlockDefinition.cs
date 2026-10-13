@@ -18,6 +18,9 @@ namespace OJ.Dice
     /// <b>컨텐츠 셋을 <c>enum + int</c> 한 쌍으로 접지 않은 이유.</b> 그러면 한 다이스가
     /// 두 컨텐츠에서 나오는 구성을 아예 못 쓰고, 인스펙터에서 "이 다이스는 어디서 나오나"를
     /// 한눈에 볼 수 없다. 0 은 "그 경로 없음" 이다.
+    ///
+    /// <b>튜토리얼 보상도 여기 있다.</b> 튜토리얼이 주는 다이스도 가격이 있어야 한다 —
+    /// 튜토리얼을 다시 거치는 경로(세이브 초기화 등)에서 이미 보유했으면 환급해야 하기 때문이다.
     /// </summary>
     [Serializable]
     public sealed class DiceUnlockDefinition
@@ -37,7 +40,17 @@ namespace OJ.Dice
         [Tooltip("이 층을 클리어하면 열린다. 0 이면 이 경로로는 열리지 않는다.")]
         [Min(0)] public int towerFloor;
 
+        [Tooltip("인게임 첫 튜토리얼을 마치면 열린다. 표 전체에서 하나만 켤 수 있다.")]
+        public bool tutorialReward;
+
         /// <summary>컨텐츠 보상으로 나오는 자리가 하나라도 있는가. 언락 팝업이 목록을 그릴 때 쓴다.</summary>
-        public bool HasContentSource => starRequirement > 0 || stageRequirement > 0 || towerFloor > 0;
+        public bool HasContentSource => tutorialReward || HasRevisitableSource;
+
+        /// <summary>
+        /// <b>다시 찾아갈 수 있는</b> 획득처가 있는가. 튜토리얼은 한 번 지나가면 끝이라 빠진다.
+        /// "획득 미션" 의 진행 버튼(<c>DiceUnlockShortcut</c>)이 이것을 본다 —
+        /// 갈 곳이 없는데 버튼을 띄우면 눌러도 아무 일이 없다.
+        /// </summary>
+        public bool HasRevisitableSource => starRequirement > 0 || stageRequirement > 0 || towerFloor > 0;
     }
 }

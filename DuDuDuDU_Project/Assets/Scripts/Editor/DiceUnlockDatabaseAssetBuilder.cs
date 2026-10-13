@@ -72,7 +72,7 @@ namespace OJ.EditorTools
                 Debug.LogWarning("[언락] 에셋이 없어 코드 기본값으로 표를 뽑는다.");
 
             var sb = new StringBuilder();
-            sb.AppendLine("다이스\t단계\t재화\t가격\t별\t스테이지\t층");
+            sb.AppendLine("다이스\t단계\t재화\t가격\t별\t스테이지\t층\t튜토리얼");
 
             int specialTotal = 0;
             int kingTotal = 0;
@@ -95,7 +95,8 @@ namespace OJ.EditorTools
                   .Append(d.price).Append('\t')
                   .Append(Cell(d.starRequirement)).Append('\t')
                   .Append(Cell(d.stageRequirement)).Append('\t')
-                  .Append(Cell(d.towerFloor)).AppendLine();
+                  .Append(Cell(d.towerFloor)).Append('\t')
+                  .Append(d.tutorialReward ? "O" : "-").AppendLine();
             }
 
             sb.AppendLine();

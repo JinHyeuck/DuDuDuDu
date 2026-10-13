@@ -171,6 +171,95 @@ namespace OJ.Game.Tests
                 Is.Not.Empty);
         }
 
+        // ── 튜토리얼 보상 ───────────────────────────────────────────────
+
+        /// <summary>
+        /// 첫 튜토리얼은 4성 번개를 Time 으로 진화시킨다(Docs/IngameTutorialSteps.md).
+        /// <c>TryEvolve</c> 가 대상 보유를 보므로, 이 표가 Time 을 주지 않으면
+        /// 튜토리얼의 진화 버튼이 <b>조용히</b> 실패한다.
+        /// </summary>
+        [Test]
+        public void 튜토리얼_보상은_번개의_진화_대상_Time_하나다()
+        {
+            var tutorial = new List<DiceType>();
+            foreach (DiceUnlockDefinition definition in DiceUnlockDatabase.BuildDefaults())
+            {
+                if (definition.tutorialReward)
+                    tutorial.Add(definition.diceType);
+            }
+
+            Assert.That(tutorial, Is.EqualTo(new[] { DiceType.Time }));
+            Assert.That(DiceEvolution.TryGetEvolveTarget(DiceType.Thunder, out DiceType target), Is.True);
+            Assert.That(target, Is.EqualTo(DiceType.Time));
+        }
+
+        /// <summary>
+        /// Time 이 비운 스테이지 14 는 KingThunder 가 받는다 — Time 의 진화 대상이라
+        /// 튜토리얼에서 받은 Time 을 킹으로 올리는 길이 이어진다.
+        /// </summary>
+        [Test]
+        public void 스테이지_14_는_Time_의_진화_대상_KingThunder_다()
+        {
+            Assert.That(DiceEvolution.TryGetEvolveTarget(DiceType.Time, out DiceType king), Is.True);
+
+            DiceUnlockDefinition atStage14 = null;
+            foreach (DiceUnlockDefinition definition in DiceUnlockDatabase.BuildDefaults())
+            {
+                if (definition.stageRequirement == 14)
+                    atStage14 = definition;
+            }
+
+            Assert.That(atStage14, Is.Not.Null);
+            Assert.That(atStage14.diceType, Is.EqualTo(king));
+        }
+
+        /// <summary>
+        /// 튜토리얼만으로 나오는 다이스에는 "획득 미션" 진행 버튼이 없어야 한다.
+        /// 튜토리얼은 다시 갈 수 없어서, 버튼을 띄우면 눌러도 아무 일이 없다.
+        /// </summary>
+        [Test]
+        public void 튜토리얼만_있는_다이스는_다시_갈_곳이_없다()
+        {
+            var definition = new DiceUnlockDefinition { diceType = DiceType.Time, price = 1, tutorialReward = true };
+
+            Assert.That(definition.HasContentSource, Is.True);
+            Assert.That(definition.HasRevisitableSource, Is.False);
+            Assert.That(DiceUnlockShortcut.CanGo(definition), Is.False);
+        }
+
+        [Test]
+        public void 튜토리얼_보상이_둘이면_문제로_잡는다()
+        {
+            List<DiceUnlockDefinition> definitions = DiceUnlockDatabase.BuildDefaults();
+            foreach (DiceUnlockDefinition definition in definitions)
+            {
+                if (definition.diceType == DiceType.Wind)
+                    definition.tutorialReward = true;
+            }
+
+            Assert.That(
+                DiceUnlockDatabase.Validate(definitions, StageCount, MaxStarCount, StarsPerReward),
+                Is.Not.Empty);
+        }
+
+        /// <summary>킹은 특수를 거쳐야 해서 튜토리얼 한 판 안에 진화로 보여 줄 수 없다.</summary>
+        [Test]
+        public void 튜토리얼_보상이_킹이면_문제로_잡는다()
+        {
+            List<DiceUnlockDefinition> definitions = DiceUnlockDatabase.BuildDefaults();
+            foreach (DiceUnlockDefinition definition in definitions)
+            {
+                if (definition.diceType == DiceType.Time)
+                    definition.tutorialReward = false;
+                if (definition.diceType == DiceType.KingThunder)
+                    definition.tutorialReward = true;
+            }
+
+            Assert.That(
+                DiceUnlockDatabase.Validate(definitions, StageCount, MaxStarCount, StarsPerReward),
+                Is.Not.Empty);
+        }
+
         /// <summary>바깥 수치를 0 으로 넘기면 그 검사만 건너뛴다 — 나머지는 그대로 돈다.</summary>
         [Test]
         public void 바깥_수치가_0_이면_그_검사만_건너뛴다()
