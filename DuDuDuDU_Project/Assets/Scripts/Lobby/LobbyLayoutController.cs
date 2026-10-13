@@ -75,6 +75,11 @@ namespace OJ.Lobby
             if (OJ.Save.EntitlementManager.Instance != null)
                 OJ.Save.EntitlementManager.Instance.OnChanged += RefreshStageUI;
 
+            // 고기(스태미나)가 들어오면 입장 버튼을 다시 살린다. 예전에는 로비를 다시 열기 전까지
+            // 꺼진 채로 남아, 고기를 받고도 들어갈 수 없는 것처럼 보였다(방치 보상·상점·우편 등).
+            if (OJ.Point.PointManager.Instance != null)
+                OJ.Point.PointManager.Instance.OnPointChanged += OnPointChanged;
+
             selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetHighestUnlockedStageIndex() : 1;
             ShowTab(defaultTab);
             RefreshStageUI();
@@ -84,6 +89,16 @@ namespace OJ.Lobby
         {
             if (OJ.Save.EntitlementManager.Instance != null)
                 OJ.Save.EntitlementManager.Instance.OnChanged -= RefreshStageUI;
+
+            if (OJ.Point.PointManager.Instance != null)
+                OJ.Point.PointManager.Instance.OnPointChanged -= OnPointChanged;
+        }
+
+        private void OnPointChanged(PointType pointType, int value)
+        {
+            // 다른 재화가 바뀔 때마다 스테이지 칸 전체를 다시 그릴 이유는 없다.
+            if (pointType == PointType.Stamina)
+                RefreshStageUI();
         }
 
         /// <summary>
