@@ -92,6 +92,8 @@ namespace OJ.Hunting
         private float _slowUntilTime;
         private float _poisonUntilTime;
         private float _poisonDamageMultiplier = 1f;
+        // 중독 틱을 딜미터기에 올릴 다이스. 마지막으로 중독을 건 쪽이다.
+        private DiceType _poisonSource = DiceType.Poison;
         private int _poisonDamageTakenBonusPercent;
         private int _stunDamageTakenBonusPercent;
         private float _stunDamageTakenBonusUntil;
@@ -431,10 +433,12 @@ namespace OJ.Hunting
             ApplyMoveSpeed = Mathf.Max(moveSpeed * 0.2f, ApplyMoveSpeed * Mathf.Clamp(multiplier, 0.1f, 1f));
         }
 
-        public void ApplyPoison(float duration = 4f, float damageMultiplier = 1f)
+        public void ApplyPoison(float duration = 4f, float damageMultiplier = 1f, DiceType source = DiceType.Poison)
         {
             if (!IsAlive)
                 return;
+
+            _poisonSource = source;
 
             _poisonUntilTime = Mathf.Max(_poisonUntilTime, Clock.GameTime + Mathf.Max(0.1f, duration));
             _poisonDamageMultiplier = Mathf.Max(_poisonDamageMultiplier, Mathf.Max(0.1f, damageMultiplier));
@@ -580,6 +584,9 @@ namespace OJ.Hunting
                 Color typeColor = DiceMetaDataProvider.GetColor(DiceType.Poison);
 
                 int appliedDamage = TakeDamage(intdamage);
+                // 중독 틱도 딜미터기에 올린다. 직접 타격(AttackContent.HitMonster)만 세면
+                // 독 다이스의 몫이 대부분 빠진다.
+                battle.Contribution?.Record(_poisonSource, appliedDamage);
                 if (appliedDamage > 0)
                     dtObj.GetComponent<DamageText>().SetText(appliedDamage, typeColor);
                 else
