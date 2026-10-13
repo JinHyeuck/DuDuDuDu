@@ -490,7 +490,9 @@ namespace OJ.Hunting
             // 위 현상금 띠 주석에 이미 적혀 있다. 버튼이 스스로 판단하게 두면 매 프레임
             // inGameState 를 들여다보게 되고, 그건 이벤트로 바꿔 놓은 것을 폴링으로
             // 되돌리는 일이다.
-            if (state == InGameState.Wave && battle.Rewind.CanRewindDuringWave)
+            //
+            // 튜토리얼 판에서는 되돌리기를 가르치는 단계 전까지 감춘다(TutorialRunManager.IsRewindButtonAllowed).
+            if (state == InGameState.Wave && battle.Rewind.CanRewindDuringWave && battle.Tutorial.IsRewindButtonAllowed)
                 GameContainer.UI?.Show<UIWaveRewindButton>();
             else
                 GameContainer.UI?.Hide<UIWaveRewindButton>();

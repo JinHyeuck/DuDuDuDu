@@ -106,7 +106,9 @@ namespace OJ.Tutorial
             RectTransform mergeA = battle.Board.GetSlotRect(TutorialStage.MergeSlotA);
             RectTransform mergeB = battle.Board.GetSlotRect(TutorialStage.MergeSlotB);
             overlay.SetDim(mergeA, mergeB);
-            overlay.SetFinger(mergeA);
+
+            // 누르기가 아니라 끌기다. 손가락이 한 칸에서 옆 칸으로 끌고 가는 모양을 되풀이한다.
+            overlay.SetDragFinger(mergeA, mergeB);
             overlay.SetTalk("같은 주사위 둘을 겹치면 합쳐져요.\n노멀 주사위를 옆 노멀 위로 끌어다 놓아요!");
             await Until(() => CountDice(TutorialStage.MergeResult, 2) > 0);
 
@@ -126,7 +128,9 @@ namespace OJ.Tutorial
             Enter(TutorialStep.BountyOpen);
             UIBountyBanner banner = GameContainer.UI?.Get<UIBountyBanner>();
             UIBountySelectDialog bountyDialog = GameContainer.UI?.Get<UIBountySelectDialog>();
-            Guide(RectOf(banner), "현상금 몬스터를 걸 수 있어요.\n잡으면 보상을 더 받아요!", dim: true);
+            // 띠 전체가 아니라 <b>선택하기 버튼</b>을 가리킨다. 띠 가운데(현상금 정보)를 가리키면
+            // 거기를 누르게 되는데, 그 자리는 아무 일도 하지 않는다.
+            Guide(banner != null ? banner.ChangeButtonRect : null, "현상금 몬스터를 걸 수 있어요.\n잡으면 보상을 더 받아요!", dim: true);
             await Until(() => bountyDialog != null && bountyDialog.isEnter);
 
             Enter(TutorialStep.BountySelect);
@@ -150,6 +154,11 @@ namespace OJ.Tutorial
             battle.Rewind.NotifyOfferClosed();
 
             Enter(TutorialStep.Rewind);
+
+            // 되돌리기 버튼은 여기서 처음 나타난다. 앞 웨이브에서 보이면 미리 눌러 판에 하나뿐인
+            // 무료 되돌리기를 써 버린다(GameManager.ChangeState 가 그때까지 감춘다).
+            battle.Tutorial.UnlockRewind();
+            GameContainer.UI?.Show<UIWaveRewindButton>();
             UIWaveRewindButton rewindButton = GameContainer.UI?.Get<UIWaveRewindButton>();
             UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
             Guide(RectOf(rewindButton), "되돌리기를 쓰면 이번 웨이브를\n시작하기 직전으로 돌아가요.", dim: true);
@@ -159,9 +168,9 @@ namespace OJ.Tutorial
             Guide(confirm.ConfirmButtonRect, "'되돌릴게요'를 눌러요.", dim: true);
             await Until(() => !confirm.isEnter);
 
-            // 되감기 연출이 끝나고 관리 단계로 돌아올 때까지는 화면을 막아 둔다.
+            // 되감기 연출 동안은 딤드를 걷는다. 시간이 거꾸로 흐르는 장면이 이 단계의 볼거리인데
+            // 어둠에 덮여 있으면 답답하기만 하다. 그 사이 상태는 None 이라 눌러도 될 것이 없다.
             overlay.ClearAll();
-            overlay.SetDim();
             await Until(() => game.inGameState == InGameState.Setting);
 
             Enter(TutorialStep.SpendSp);
@@ -172,19 +181,9 @@ namespace OJ.Tutorial
             Guide(playButton, "다시 도전!", dim: true);
             await Until(() => game.inGameState == InGameState.Wave);
 
-            // 2웨이브(재): 딜미터기 ──────────────────────────────────
-            Enter(TutorialStep.DamageMeterTip);
+            // 2웨이브(재) ─────────────────────────────────────────────
+            // 딜미터기 안내는 뺐다. 전투 중에 말풍선이 뜨는 것이 어색했다.
             overlay.ClearAll();
-            UIDamageContributionPanel meter = GameContainer.UI?.Get<UIDamageContributionPanel>();
-            if (meter != null && meter.isEnter)
-            {
-                // 전투를 멈추지 않는다. 비강제 안내라 잠깐 보였다가 저절로 사라진다.
-                overlay.SetFinger(RectOf(meter));
-                overlay.SetTalk("어느 주사위가 활약하는지\n여기서 볼 수 있어요.");
-                float until = Time.unscaledTime + 4f;
-                await Until(() => Time.unscaledTime >= until || game.inGameState != InGameState.Wave);
-                overlay.ClearAll();
-            }
 
             Enter(TutorialStep.Wave2Retry);
             await Until(() => game.inGameState == InGameState.Setting);
@@ -199,8 +198,16 @@ namespace OJ.Tutorial
             // 4웨이브 전: 진화(변신) ─────────────────────────────────
             Enter(TutorialStep.EvolveGift);
             overlay.SetDim();
-            UIDice gift = GrantEvolveGift();
             await TalkAsync("보스가 다가와요!\n특별히 번개 4성과 마석을 줄게요.");
+
+            // 말풍선을 닫는 순간에 준다. 미리 놓아 두면 "줄게요" 라는 말보다 선물이 먼저 와 있다.
+            UIDice gift = GrantEvolveGift();
+            if (gift != null)
+            {
+                overlay.SetDim(RectOf(gift));
+                await PopAsync(gift.transform);
+            }
+
             await TalkAsync("주사위가 4성이 되면\n마석으로 변신시킬 수 있어요.");
 
             UIBattleDiceDetailPanel detail = GameContainer.UI?.Get<UIBattleDiceDetailPanel>();
@@ -269,7 +276,7 @@ namespace OJ.Tutorial
             {
                 // 1단계를 잡으면 선택이 저절로 2단계로 올라간다(BountyManager.NotifyDefeated).
                 // 그래서 "골라라" 가 아니라 "올라갔다" 를 알린다.
-                Guide(RectOf(banner), "1단계를 잡아서 2단계 현상금이 열렸어요.\n더 센 만큼 보상도 커요!", dim: false);
+                Guide(banner != null ? banner.ChangeButtonRect : null, "1단계를 잡아서 2단계 현상금이 열렸어요.\n더 센 만큼 보상도 커요!", dim: false);
                 await Until(() => bountyDialog.isEnter || game.inGameState == InGameState.Wave);
 
                 if (bountyDialog.isEnter)
@@ -360,6 +367,35 @@ namespace OJ.Tutorial
             }
 
             return -1;
+        }
+
+        /// <summary>
+        /// 놓인 선물이 커졌다 작아지며 자리를 잡는다. 0 → 1.3 → 1.
+        /// 배속·일시정지를 타지 않는다 — 연출 길이를 시간 설정에 묶지 않는다.
+        /// </summary>
+        private async UniTask PopAsync(Transform target)
+        {
+            const float GrowSeconds = 0.22f;
+            const float SettleSeconds = 0.14f;
+            const float Peak = 1.3f;
+
+            float elapsed = 0f;
+            target.localScale = Vector3.zero;
+
+            while (elapsed < GrowSeconds + SettleSeconds)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+                if (target == null)
+                    return;
+
+                elapsed += Time.unscaledDeltaTime;
+                float scale = elapsed < GrowSeconds
+                    ? Mathf.LerpUnclamped(0f, Peak, UIEase.OutQuad(elapsed / GrowSeconds))
+                    : Mathf.Lerp(Peak, 1f, UIEase.OutQuad(Mathf.Clamp01((elapsed - GrowSeconds) / SettleSeconds)));
+                target.localScale = Vector3.one * scale;
+            }
+
+            target.localScale = Vector3.one;
         }
 
         // ── 도우미 ────────────────────────────────────────────────────

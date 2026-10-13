@@ -45,6 +45,21 @@ namespace OJ.Tutorial
         /// <summary>벽이 무너졌다. <c>GameManager.GameOver</c> 의 튜토리얼 갈래가 세운다.</summary>
         public bool IsFailed { get; private set; }
 
+        /// <summary>
+        /// 되돌리기 버튼을 보여도 되는가. 되돌리기를 가르치기 전에 버튼이 떠 있으면
+        /// 1웨이브에서 눌러 버려 판에 하나뿐인 무료 되돌리기를 미리 써 버린다.
+        /// 튜토리얼 판이 아니면 언제나 참이다.
+        /// </summary>
+        public bool IsRewindButtonAllowed => !IsActive || rewindUnlocked;
+
+        private bool rewindUnlocked;
+
+        /// <summary>되돌리기 단계에 들어왔다. 이 뒤로는 평소처럼 버튼이 뜬다.</summary>
+        public void UnlockRewind()
+        {
+            rewindUnlocked = true;
+        }
+
         /// <summary>아직 쓰지 않은 대본 소환 수.</summary>
         public int PendingScriptedSummons => scriptedSummons.Count;
 
@@ -59,6 +74,7 @@ namespace OJ.Tutorial
             IsActive = false;
             IsCleared = false;
             IsFailed = false;
+            rewindUnlocked = false;
             scriptedSummons.Clear();
             hasForcedMergeType = false;
         }

@@ -33,8 +33,7 @@ namespace OJ.Tutorial
         SpendSp,
         StartWave2Retry,
 
-        // ── 2웨이브(재): 딜미터기 ──────────────
-        DamageMeterTip,
+        // ── 2웨이브(재) ────────────────────────
         Wave2Retry,
 
         // ── 3웨이브: 손 놓기 ───────────────────
