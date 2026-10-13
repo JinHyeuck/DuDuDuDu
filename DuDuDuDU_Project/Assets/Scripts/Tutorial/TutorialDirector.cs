@@ -137,6 +137,12 @@ namespace OJ.Tutorial
             Guide(bountyDialog.GetSlotRect(1), "1단계 현상금을 골라 봐요.", dim: true);
             await Until(() => battle.Bounty.SelectedGrade == 1 && !bountyDialog.isEnter);
 
+            // 고른 것이 띠에 걸린 모습을 한 번 보여 준다. 선택 창이 닫히자마자 시작 버튼으로 넘어가면
+            // "무엇이 걸렸는지" 를 못 본 채 지나간다. 구멍을 띠에 연 채로 탭을 받는다.
+            Enter(TutorialStep.BountySet);
+            overlay.SetDim(RectOf(banner));
+            await TalkAsync("1단계 현상금이 걸렸어요!\n이번 웨이브에 현상금 몬스터가 나와요.");
+
             Enter(TutorialStep.StartWave2);
             Guide(playButton, "현상금을 걸었어요. 웨이브를 시작해요!", dim: true);
             await Until(() => game.inGameState == InGameState.Wave);
@@ -206,6 +212,10 @@ namespace OJ.Tutorial
             {
                 overlay.SetDim(RectOf(gift));
                 await PopAsync(gift.transform);
+
+                // 자리를 잡은 4성을 잠깐 보여 준다. 연출이 끝나자마자 다음 말풍선이 뜨면 어색하다.
+                float resume = Time.unscaledTime + 0.5f;
+                await Until(() => Time.unscaledTime >= resume);
             }
 
             await TalkAsync("주사위가 4성이 되면\n마석으로 변신시킬 수 있어요.");

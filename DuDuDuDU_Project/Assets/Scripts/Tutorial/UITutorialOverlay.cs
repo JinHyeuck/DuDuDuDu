@@ -282,22 +282,29 @@ namespace OJ.Tutorial
         }
 
         /// <summary>
-        /// 탭 대기 중에는 딤드를 통째로 내린다. 막는 네 장은 버튼이 아닌 그림이라 클릭을 <b>먹기만</b>
-        /// 하고 그 아래 탭 받이까지 닿지 않는다 — 그러면 말풍선이 영영 안 넘어간다.
-        /// 탭 받이가 같은 색으로 화면 전체를 덮으므로 보이는 것은 같다.
+        /// 탭 대기 중에는 <b>막는 네 장만</b> 내린다. 그것들은 버튼이 아닌 그림이라 클릭을 먹기만 하고
+        /// 그 아래 탭 받이까지 닿지 않는다 — 그러면 말풍선이 영영 안 넘어간다.
+        ///
+        /// <b>보이는 딤드는 남긴다.</b> "현상금이 걸렸어요" 처럼 구멍을 보여 준 채로 탭을 받아야 하는
+        /// 단계가 있다. 그때 탭 받이는 투명해지고(딤드는 보이는 네 장과 테두리가 그린다),
+        /// 딤드가 없을 때만 탭 받이가 스스로 화면을 어둡게 칠한다.
         /// </summary>
         private void RefreshDimActive()
         {
-            bool on = dimOn && !tapMode;
-            SetActive(blockTop, on);
-            SetActive(blockBottom, on);
-            SetActive(blockLeft, on);
-            SetActive(blockRight, on);
-            SetActive(shadeTop, on);
-            SetActive(shadeBottom, on);
-            SetActive(shadeLeft, on);
-            SetActive(shadeRight, on);
-            SetActive(holeFrame, on && holeTargets.Count > 0);
+            bool block = dimOn && !tapMode;
+            SetActive(blockTop, block);
+            SetActive(blockBottom, block);
+            SetActive(blockLeft, block);
+            SetActive(blockRight, block);
+
+            SetActive(shadeTop, dimOn);
+            SetActive(shadeBottom, dimOn);
+            SetActive(shadeLeft, dimOn);
+            SetActive(shadeRight, dimOn);
+            SetActive(holeFrame, dimOn && holeTargets.Count > 0);
+
+            if (tapCatcherImage != null)
+                tapCatcherImage.color = dimOn ? Clear : DimColor;
         }
 
         private static void SetActive(Graphic graphic, bool active)
@@ -330,7 +337,7 @@ namespace OJ.Tutorial
 
             if (holeFrame != null)
             {
-                SetActive(holeFrame, hasHole && dimOn && !tapMode);
+                SetActive(holeFrame, hasHole && dimOn);
                 if (hasHole)
                     SetAnchors(holeFrame, Normalize(outer.min, area), Normalize(outer.max, area));
             }

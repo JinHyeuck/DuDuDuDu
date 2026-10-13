@@ -23,6 +23,7 @@ namespace OJ.Tutorial
         // ── 2웨이브 전: 현상금 ─────────────────
         BountyOpen,
         BountySelect,
+        BountySet,
         StartWave2,
 
         // ── 2웨이브: 되돌리기 ──────────────────

@@ -567,7 +567,8 @@ namespace OJ.Dev
                 () => GameContainer.SaveService?.SaveAll());
 
             DevCheatUI.CreateHelpText(root,
-                "아래는 되돌릴 수 없다. 지운 뒤에는 매니저가 들고 있는 값이 다시 저장되지 않도록 바로 타이틀로 갈 것.");
+                "아래는 되돌릴 수 없다. 지우면 이 세션의 저장을 막고 처음부터 다시 시작한다 " +
+                "(에디터: 타이틀부터 다시 플레이, 기기: 앱 종료 후 다시 켤 것).");
             DevCheatUI.CreateButton("WipeSave", root, "세이브 전부 지우기", DevCheatUI.DangerColor,
                 () => SaveResetCheat.WipeAll());
         }
