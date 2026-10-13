@@ -271,8 +271,8 @@ namespace OJ.Tutorial
             // 본편 스테이지를 깼을 때와 같은 결과창을 띄운다. 닫으면 로비로 간다.
             // 오버레이를 먼저 닫아야 한다 — 그 창은 매 프레임 맨 위로 올라와 결과창을 덮는다.
             //
-            // <b>보상 칸은 비어 있다.</b> 튜토리얼은 재화를 주지 않고(이 판의 보상은 진화로 만든
-            // 다이스다), 지급하지 않은 것을 결과창에 그리면 거짓말이 된다.
+            // <b>재화 보상은 없다.</b> 튜토리얼은 재화를 주지 않고, 지급하지 않은 것을 결과창에 그리면
+            // 거짓말이 된다. 대신 실제로 준 Time 다이스 한 칸을 그린다(아래 AppendItemReward).
             UIStageResultDialog result = GameContainer.UI?.Get<UIStageResultDialog>();
             if (result == null)
             {
@@ -294,6 +294,9 @@ namespace OJ.Tutorial
                 bestStageIndex: bestStage,
                 rewards: new List<PointRewardEntry>(),
                 onClose: SceneFlowManager.LoadLobby);
+
+            // 이 판의 보상은 진화로 만든 다이스다. 재화 칸 자리에 그 다이스를 그린다.
+            result.AppendItemReward(DiceMetaDataProvider.GetIcon(TutorialStage.EvolveTarget), 1);
         }
 
         /// <summary>
