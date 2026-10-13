@@ -910,6 +910,17 @@ namespace OJ.Hunting
         }
 
         /// <summary>
+        /// 본편 스테이지의 속도 배수. <b><c>OnSpawn</c> 뒤에 불러야 한다.</b>
+        /// 탑의 속도 배수와 같은 칸을 쓴다 — 둘 다 "슬로우가 아니라 기본 속도" 라서,
+        /// 슬로우가 풀릴 때 되돌아갈 기준이 이 값이어야 한다(<c>UpdateTimedStates</c>).
+        /// </summary>
+        public void ConfigureStageSpeed(float speedMultiplier)
+        {
+            _towerSpeedMultiplier = Mathf.Max(0.05f, speedMultiplier);
+            ApplyMoveSpeed = moveSpeed * _towerSpeedMultiplier;
+        }
+
+        /// <summary>
         /// 분열 자식으로 만든다. <b>자식은 다시 갈라지지 않는다</b> —
         /// 갈라지면 마리 수가 기하급수로 늘어 목표 처치 수를 미리 셀 수 없게 되고,
         /// 그 순간 웨이브 종료 판정이 통째로 무너진다.
