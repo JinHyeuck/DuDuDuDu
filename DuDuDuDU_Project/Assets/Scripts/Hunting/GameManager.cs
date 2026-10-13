@@ -1386,6 +1386,7 @@ namespace OJ.Hunting
                 isWin,
                 stageIndex,
                 reachedWaveCount,
+                CurrentStageData != null ? CurrentStageData.totalWaves : reachedWaveCount,
                 bestWave,
                 rewards,
                 SceneFlowManager.LoadLobby);

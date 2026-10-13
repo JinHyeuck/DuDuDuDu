@@ -288,6 +288,7 @@ namespace OJ.Tutorial
                 isWin: true,
                 stageIndex: stageIndex,
                 reachedWaveCount: game.CurrentWaveIndex,
+                totalWaves: TutorialStage.TotalWaves,
                 // 튜토리얼은 스테이지 기록에 남지 않으므로 이번 판이 곧 최고 기록이다.
                 bestWave: game.CurrentWaveIndex,
                 rewards: new List<PointRewardEntry>(),

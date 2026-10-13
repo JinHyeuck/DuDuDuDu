@@ -29,6 +29,16 @@ namespace OJ.Hunting
 
         protected override void OnLoad()
         {
+            // 큰 숫자 칸은 원래 한두 자리 숫자 크기다. "15/20" 처럼 길어지면 줄이 깨지므로
+            // 칸을 넘을 때만 글자를 줄인다. 상한은 프리팹에 정해 둔 크기 그대로다.
+            if (mainValueText != null)
+            {
+                mainValueText.textWrappingMode = TextWrappingModes.NoWrap;
+                mainValueText.fontSizeMax = mainValueText.fontSize;
+                mainValueText.fontSizeMin = mainValueText.fontSize * 0.4f;
+                mainValueText.enableAutoSizing = true;
+            }
+
             if (rewardRoot == null && rewardElementTemplate != null)
                 rewardRoot = rewardElementTemplate.transform.parent as RectTransform;
 
@@ -65,8 +75,9 @@ namespace OJ.Hunting
         /// 이번 판의 웨이브(큰 숫자)와 나란히 놓여야 "이번에 얼마나 갔고, 이 스테이지 최고는 얼마인가" 로 읽힌다.
         /// </summary>
         /// <param name="reachedWaveCount">이번 판에 깬 웨이브 수.</param>
+        /// <param name="totalWaves">이 스테이지의 전체 웨이브 수. 큰 숫자 칸에 "깬 수/전체" 로 나온다.</param>
         /// <param name="bestWave">이 스테이지에서 가장 멀리 간 웨이브. 이번 판을 포함한다.</param>
-        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int bestWave, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
+        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int totalWaves, int bestWave, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
         {
             closeAction = onClose;
 
@@ -85,9 +96,7 @@ namespace OJ.Hunting
             }
 
             if (mainValueText != null)
-                // 큰 숫자 칸은 숫자 한두 자리 크기다. "Wave" 를 같은 크기로 넣으면 줄이 깨지므로
-                // 작게 붙인다 — 숫자가 무엇인지(이번 판 웨이브)만 알리면 된다.
-                mainValueText.SetText("<size=38%>Wave </size>{0}", Mathf.Max(0, reachedWaveCount));
+                mainValueText.SetText("{0}/{1}", Mathf.Max(0, reachedWaveCount), Mathf.Max(1, totalWaves));
 
             if (bestStageLabelText != null)
                 bestStageLabelText.SetText("최고 기록");
