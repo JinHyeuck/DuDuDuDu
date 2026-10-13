@@ -77,8 +77,8 @@ namespace OJ.EditorTools
             new Spec(ResultDialog, "View/LoseIcon/Text (TMP)", Face.Hanna, 100f, "b8a3d7", true, "패배/패배"),
             new Spec(ResultDialog, "View/LoseIcon/StageLabel", Face.Hanna, 48f, "b8a3d7", false, "패배/Stage 1"),
             new Spec(ResultDialog, "View/MainValueText", Face.Hanna, 130f, "ffffff", true, "승리/13 (주석 130pt)"),
-            new Spec(ResultDialog, "View/BestStageLabel", Face.Hanna, 48f, "ffc600", true, "Best Stage"),
-            new Spec(ResultDialog, "View/BestStageValue", Face.Hanna, 48f, "ffc600", true, "15"),
+            new Spec(ResultDialog, "View/BestStageLabel", Face.Hanna, 48f, "ffc600", true, "최고 기록"),
+            new Spec(ResultDialog, "View/BestStageValue", Face.Hanna, 48f, "ffc600", true, "Wave 15"),
             new Spec(ResultDialog, "View/BackButton/Text (TMP)", Face.Hanna, 40f, "ffffff", true, "(주석 40pt / 버튼)"),
 
             // ── 보상 칸 (그룹 보상) ────────────────────────────────────

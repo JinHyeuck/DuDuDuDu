@@ -1376,15 +1376,18 @@ namespace OJ.Hunting
 
             GameContainer.UI?.Hide<UIWaveRewardPreviewDialog>();
 
-            int bestStageIndex = StageProgressManager.Instance != null
-                ? StageProgressManager.Instance.GetHighestUnlockedStageIndex()
-                : stageIndex;
+            // 이 스테이지에서 가장 멀리 간 웨이브. 이번 판은 이미 기록됐다
+            // (웨이브마다 RecordClearedWave, 클리어 때 RecordStageClear).
+            int bestWave = StageProgressManager.Instance != null
+                ? StageProgressManager.Instance.GetBestClearedWave(stageIndex)
+                : reachedWaveCount;
 
             resultDialog.Open(
                 isWin,
                 stageIndex,
                 reachedWaveCount,
-                bestStageIndex,
+                CurrentStageData != null ? CurrentStageData.totalWaves : reachedWaveCount,
+                bestWave,
                 rewards,
                 SceneFlowManager.LoadLobby);
         }
