@@ -59,6 +59,9 @@ namespace OJ.Hunting
         private Camera spawnCamera;
 
         private int regularSpawnCount = 0;
+
+        /// <summary>이번 웨이브에 나온 일반 몬스터 수. 튜토리얼이 "세 마리 나온 뒤" 를 잰다.</summary>
+        public int RegularSpawnCount => regularSpawnCount;
         private bool bossSpawnedInWave = false;
 
         /// <summary>

@@ -164,6 +164,15 @@ namespace OJ.Core
         /// </summary>
         public SpecialSevenDaysSave SpecialSevenDays { get; } = new SpecialSevenDaysSave();
 
+        /// <summary>
+        /// 튜토리얼 진행. (<c>OJ.Tutorial.TutorialProgressManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> 필드를 <i>더하는</i> 것이라 예전 세이브에는 이 키가 없고,
+        /// 그 상태는 "튜토리얼을 아직 안 한 사람"과 같다. 이미 스테이지를 깬 세이브를
+        /// 튜토리얼로 끌고 가지 않는 판단은 읽는 쪽(매니저)이 한다.
+        /// </summary>
+        public TutorialSave Tutorial { get; } = new TutorialSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -513,5 +522,12 @@ namespace OJ.Core
 
         /// <summary>로비에서 창을 저절로 띄운 마지막 날. 하루 1회 규칙(기획서 ShopPackageDesign 2.3)이 본다.</summary>
         public string LastAutoOpenDate { get; set; } = string.Empty;
+    }
+
+    /// <summary>튜토리얼 진행. (<c>OJ.Tutorial.TutorialProgressManager</c>)</summary>
+    public sealed class TutorialSave
+    {
+        /// <summary>인게임 첫 튜토리얼(Docs/IngameTutorialSteps.md)을 끝까지 마쳤는가.</summary>
+        public bool InGameCompleted { get; set; }
     }
 }

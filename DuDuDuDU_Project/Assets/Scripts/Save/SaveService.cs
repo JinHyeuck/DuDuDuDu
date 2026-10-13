@@ -58,6 +58,21 @@ namespace OJ.Save
         /// </summary>
         public bool WriteBlocked => writeBlocked;
 
+#if UNITY_EDITOR || DEV_DEFINE
+        /// <summary>
+        /// 개발용 세이브 초기화 직후에 부른다. <b>이 세션은 더 쓰지 않는다.</b>
+        ///
+        /// 파일을 지워도 매니저들은 지우기 전 값을 메모리에 들고 있어서, 다음 저장(거래·씬 이동·
+        /// 앱 일시정지)이 그 값을 그대로 다시 쓴다 — "지웠는데 안 지워진다" 의 원인이다.
+        /// 읽기 실패 때와 같은 막기를 쓰되, 의도한 것이므로 경고 로그는 내지 않는다.
+        /// </summary>
+        public void BlockWritesUntilRestart()
+        {
+            writeBlocked = true;
+            blockReported = true;
+        }
+#endif
+
         /// <summary>지금 메모리 상태를 모아 만든 <see cref="SaveState"/>.</summary>
         public SaveState Capture()
         {

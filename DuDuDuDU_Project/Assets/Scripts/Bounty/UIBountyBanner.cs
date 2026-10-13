@@ -35,6 +35,9 @@ namespace OJ.Bounty
 
         private BountyManager subscribed;
 
+        /// <summary>선택 창을 여는 버튼. 튜토리얼이 그 자리만 열어 둔다.</summary>
+        public RectTransform ChangeButtonRect => changeButton != null ? changeButton.transform as RectTransform : null;
+
         protected override void OnEnter()
         {
             Subscribe();

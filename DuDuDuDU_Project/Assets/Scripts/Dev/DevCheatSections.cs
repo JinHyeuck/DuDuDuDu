@@ -549,12 +549,26 @@ namespace OJ.Dev
             DevCheatUI.CreateButton("Battle", sceneRow, "전투로", DevCheatUI.ButtonColor,
                 () => SceneFlowManager.LoadBattle());
 
+            // 타이틀이 하는 것과 같은 경로(예약 → 전투)를 탄다. 완료 플래그는 건드리지 않는다 —
+            // 마친 세이브에서도 다시 보기만 한다. 단축키 Shift+F3 과 같다.
+            DevCheatUI.CreateSectionTitle(root, "튜토리얼");
+            OJ.Tutorial.TutorialProgressManager tutorial = OJ.Tutorial.TutorialProgressManager.Instance;
+            DevCheatUI.CreateHelpText(root,
+                tutorial == null ? "TutorialProgressManager 가 없다."
+                    : "인게임 첫 튜토리얼 " + (tutorial.IsInGameCompleted ? "마침" : "안 함"));
+            DevCheatUI.CreateButton("Tutorial", root, "인게임 튜토리얼 시작", DevCheatUI.AccentColor, () =>
+            {
+                OJ.Tutorial.TutorialProgressManager.Instance?.RequestInGameRun();
+                SceneFlowManager.LoadBattle();
+            });
+
             DevCheatUI.CreateSectionTitle(root, "세이브");
             DevCheatUI.CreateButton("Save", root, "즉시 저장", DevCheatUI.ButtonColor,
                 () => GameContainer.SaveService?.SaveAll());
 
             DevCheatUI.CreateHelpText(root,
-                "아래는 되돌릴 수 없다. 지운 뒤에는 매니저가 들고 있는 값이 다시 저장되지 않도록 바로 타이틀로 갈 것.");
+                "아래는 되돌릴 수 없다. 지우면 이 세션의 저장을 막고 처음부터 다시 시작한다 " +
+                "(에디터: 타이틀부터 다시 플레이, 기기: 앱 종료 후 다시 켤 것).");
             DevCheatUI.CreateButton("WipeSave", root, "세이브 전부 지우기", DevCheatUI.DangerColor,
                 () => SaveResetCheat.WipeAll());
         }

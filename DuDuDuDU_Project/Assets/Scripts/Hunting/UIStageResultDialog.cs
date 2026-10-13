@@ -24,6 +24,9 @@ namespace OJ.Hunting
         [SerializeField] private Transform failSprite;
         private readonly List<UIRewardElement> rewardElements = new List<UIRewardElement>();
 
+        /// <summary>지금 보이는 보상 칸 수. <see cref="AppendItemReward"/> 가 그 다음 칸에 붙인다.</summary>
+        private int shownRewardCount;
+
         protected override void OnLoad()
         {
             if (rewardRoot == null && rewardElementTemplate != null)
@@ -89,6 +92,7 @@ namespace OJ.Hunting
         private void BindRewards(IReadOnlyList<PointRewardEntry> rewards)
         {
             List<PointRewardEntry> mergedRewards = PointRewardUtility.MergeRewards(rewards);
+            shownRewardCount = mergedRewards.Count;
 
             Debug.Log(BuildRewardLog(mergedRewards));
 
@@ -108,6 +112,27 @@ namespace OJ.Hunting
                 PointRewardEntry reward = mergedRewards[i];
                 rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.PointType), reward.Amount);
             }
+        }
+
+        /// <summary>
+        /// 재화가 아닌 보상(다이스 등)을 한 칸 더 그린다. <see cref="Open"/> 뒤에 부른다.
+        ///
+        /// <b>왜 따로인가.</b> 재화 보상은 <c>PointRewardEntry</c> 로 오고 아이콘도 재화 표에서 찾는다.
+        /// 다이스는 그 표에 없어서 같은 목록에 넣을 수 없다. 칸 모양은 같은 것을 쓴다.
+        /// </summary>
+        public void AppendItemReward(Sprite icon, int amount)
+        {
+            EnsureRewardElements(shownRewardCount + 1);
+            if (shownRewardCount >= rewardElements.Count)
+                return;
+
+            UIRewardElement element = rewardElements[shownRewardCount];
+            if (element == null)
+                return;
+
+            element.gameObject.SetActive(true);
+            element.Bind(icon, amount);
+            shownRewardCount++;
         }
 
         private string BuildRewardLog(IReadOnlyList<PointRewardEntry> rewards)

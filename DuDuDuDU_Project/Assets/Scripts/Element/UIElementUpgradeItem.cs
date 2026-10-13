@@ -42,6 +42,11 @@ namespace OJ.Element
                 upgradeButton.onClick.RemoveListener(OnClickUpgrade);
         }
 
+        public ElementType ElementType => elementType;
+
+        /// <summary>강화 버튼. 튜토리얼이 그 자리만 열어 둔다.</summary>
+        public RectTransform UpgradeButtonRect => upgradeButton != null ? upgradeButton.transform as RectTransform : null;
+
         public void Bind(ElementType type, System.Action<ElementType> onClick)
         {
             elementType = type;

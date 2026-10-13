@@ -116,6 +116,21 @@ namespace OJ.UI
         /// 굽는 시점에 채워 두면 그 참조는 프리팹에 저장되고, 실제 onClick 연결은
         /// 런타임에 <see cref="Load"/> 가 한다.
         /// </summary>
+        /// <summary>닫기 버튼 중 이름이 맞는 것. 없으면 null. 튜토리얼이 그 자리만 열어 둔다.</summary>
+        public RectTransform FindExitButtonRect(string buttonName)
+        {
+            if (_exitBtn == null)
+                return null;
+
+            for (int i = 0; i < _exitBtn.Count; i++)
+            {
+                if (_exitBtn[i] != null && _exitBtn[i].name == buttonName)
+                    return _exitBtn[i].transform as RectTransform;
+            }
+
+            return null;
+        }
+
         public void AddExitButton(Button button)
         {
             if (button == null)

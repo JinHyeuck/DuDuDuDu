@@ -142,6 +142,12 @@ namespace OJ.Dice
             PlaceCardNearDice();
         }
 
+        /// <summary>지금 보고 있는 다이스. 닫혀 있으면 의미가 없다.</summary>
+        public UIDice CurrentDice => currentDice;
+
+        /// <summary>진화 버튼. 튜토리얼이 그 자리만 열어 둔다.</summary>
+        public RectTransform EvolveButtonRect => evolveButton != null ? evolveButton.transform as RectTransform : null;
+
         public void Open(UIDice dice)
         {
             if (dice == null)
