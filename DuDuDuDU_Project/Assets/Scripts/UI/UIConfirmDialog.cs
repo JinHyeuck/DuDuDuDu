@@ -59,9 +59,31 @@ namespace OJ.UI
             SetText(messageText, message);
             SetText(confirmLabel, confirmText);
             SetText(cancelLabel, cancelText);
+            ApplyButtonCount(!string.IsNullOrEmpty(cancelText));
 
             Enter();
         }
+
+        /// <summary>
+        /// 취소 문구가 비면 <b>알림 창</b>이다 — 취소 버튼을 내리고 확인 버튼을 가운데로 옮긴다.
+        /// 글자만 지우면 빈 버튼이 남는다. 창 하나를 돌려쓰므로 두 버튼일 때도 매번 제자리로 돌린다.
+        /// </summary>
+        private void ApplyButtonCount(bool hasCancel)
+        {
+            if (cancelButton != null)
+                cancelButton.gameObject.SetActive(hasCancel);
+
+            if (confirmButton != null)
+            {
+                var rect = (RectTransform)confirmButton.transform;
+                Vector2 position = rect.anchoredPosition;
+                position.x = hasCancel ? ConfirmOffsetX : 0f;
+                rect.anchoredPosition = position;
+            }
+        }
+
+        /// <summary>두 버튼일 때 확인 버튼의 x. <see cref="Create"/> 도 이 값으로 놓는다.</summary>
+        private const float ConfirmOffsetX = 196f;
 
         protected override void OnLoad()
         {
@@ -176,7 +198,7 @@ namespace OJ.UI
             dialog.confirmButton = CreateButton("ConfirmButton", panel.transform, "확인",
                 ConfirmColor, font, out dialog.confirmLabel);
             SetRect(dialog.confirmButton.GetComponent<RectTransform>(),
-                new Vector2(360f, 108f), new Vector2(196f, -170f));
+                new Vector2(360f, 108f), new Vector2(ConfirmOffsetX, -170f));
 
             return dialog;
         }

@@ -38,6 +38,14 @@ namespace OJ.Shop
         private void Start()
         {
             // Start 에서 한다 — 같은 프레임의 다른 Awake/OnEnable 이 UI 를 다 세운 뒤다.
+            //
+            // 해금 연출·가이드가 남은 진입에서는 쉰다(Docs/ContentUnlock.md). 그 위로 결제 창이
+            // 튀어나오면 흐름이 끊긴다. <b>소비하지 않고</b> 쉬므로 다음 진입에 그대로 뜬다.
+            // 이 입구가 해금 연출로 막 꺼내진 경우도 여기 걸린다 — 연출을 끝까지 보기 전이다.
+            OJ.ContentUnlock.ContentUnlockManager unlocks = OJ.ContentUnlock.ContentUnlockManager.Instance;
+            if (unlocks != null && unlocks.HasPending())
+                return;
+
             SpecialSevenDaysManager manager = SpecialSevenDaysManager.Instance;
             if (manager != null && manager.IsEntryVisible && manager.ConsumeAutoOpen())
                 Open();

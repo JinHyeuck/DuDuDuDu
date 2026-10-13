@@ -143,6 +143,10 @@ namespace OJ.Core.Tests
 
             state.Tutorial.InGameCompleted = true;
 
+            state.ContentUnlock.Initialized = true;
+            state.ContentUnlock.Announced.Add("Dice");
+            state.ContentUnlock.Announced.Add("Equipment");
+
             return state;
         }
 
@@ -243,6 +247,11 @@ namespace OJ.Core.Tests
 
             Assert.That(actual.Tutorial.InGameCompleted,
                 Is.EqualTo(expected.Tutorial.InGameCompleted), "tutorial.inGameCompleted");
+
+            Assert.That(actual.ContentUnlock.Initialized,
+                Is.EqualTo(expected.ContentUnlock.Initialized), "contentUnlock.initialized");
+            CollectionAssert.AreEqual(
+                expected.ContentUnlock.Announced, actual.ContentUnlock.Announced, "contentUnlock.announced");
         }
 
         // --- 직렬화 왕복 ------------------------------------------------------------------
@@ -524,6 +533,10 @@ namespace OJ.Core.Tests
                 "  },",
                 "  \"tutorial\": {",
                 "    \"inGameCompleted\": false",
+                "  },",
+                "  \"contentUnlock\": {",
+                "    \"initialized\": false,",
+                "    \"announced\": []",
                 "  }",
                 "}",
             })));
