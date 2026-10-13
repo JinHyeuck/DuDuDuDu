@@ -21,20 +21,27 @@ namespace OJ.Core.Tests
     ///
     /// 옮겨 적은 값이 덤퍼와 갈리는 순간 이 테스트는 "다른 입력의 결과를 옛 기대값과 비교하는"
     /// 무의미한 테스트가 된다. 그래서 아래 Case(...) 는 시그니처(인자 순서·이름·기본값)를
-    /// DumpDamageCase 와 똑같이 맞춰 두었다. 호출 7줄은 덤퍼의 호출 7줄에서 맨 앞 sb 인자만
+    /// DumpDamageCase 와 똑같이 맞춰 두었다. 호출 9줄은 덤퍼의 호출 9줄에서 맨 앞 sb 인자만
     /// 뺀 <b>글자 그대로의 사본</b>이어야 한다. 덤퍼를 고치면 이 파일도 같이 고쳐야 한다.
     ///
     /// 허용 오차를 두지 않는 이유: 반환값이 int 이고 마지막 단계가 Mathf.RoundToInt 다.
     /// 중간 float 가 1 ULP 만 흔들려도 0.5 경계에서 정수가 1 바뀌고, 그 1 은 플레이어에게
     /// 그대로 보이는 회귀다.
     ///
+    /// <b>퍼센트 개편(다이스 공격력 = 장비 공격력 × 비율)으로 앞 두 인자의 뜻이 바뀌었다.</b>
+    /// 예전에는 다이스의 정수 공격력 둘(baseAttack / levelUpAttackIncrease)이었고 지금은
+    /// 비율 둘(레벨1 비율 / 레벨당 비율)이다. 장비 공격력이 그 비율을 받는 피승수이므로,
+    /// 개편 전 "장비 0 + 다이스 15" 케이스는 "장비 15 × 비율 1f" 로 옮겨 적었다 —
+    /// attackBase 가 같은 float 이라 neutral / halfBoundary / clampedInputs 의
+    /// 기대값이 개편 전과 같다. 그것이 우연이 아니라 의도다(덤퍼 주석에 근거가 있다).
+    ///
     /// 주의 — 이름과 달리 halfBoundary 케이스는 .5 경계가 아니다. 반올림 전 값이 8.25 라
-    /// 은행가 반올림·올림·내림이 전부 8 을 낸다. 골든 7개 중 .5 에 정확히 걸리는 것은
+    /// 은행가 반올림·올림·내림이 전부 8 을 낸다. 골든 9개 중 .5 에 정확히 걸리는 것은
     /// neutral 과 clampedInputs 둘뿐이고 둘 다 7.5 인데, 7.5 는 정수부가 홀수라
     /// 은행가 반올림도 8, (int)(x + 0.5f) 도 8 이다. 두 규칙이 같은 답을 내므로
-    /// <b>골든 7개만으로는 반올림 규칙이 바뀐 것을 못 잡는다</b> — Mathf.RoundToInt 를
+    /// <b>골든 9개만으로는 반올림 규칙이 바뀐 것을 못 잡는다</b> — Mathf.RoundToInt 를
     /// (int)(scaled + 0.5f) 나 Math.Round(..., MidpointRounding.AwayFromZero) 로 바꿔도
-    /// 7개가 전부 통과한다(변이 검사로 확인함). 그 구멍은 아래
+    /// 9개가 전부 통과한다(변이 검사로 확인함). 그 구멍은 아래
     /// RoundingIsHalfToEven_NotHalfUp 이 막는다. 케이스 이름 자체는 골든 키라 못 고친다.
     /// </summary>
     [TestFixture]
@@ -134,17 +141,21 @@ namespace OJ.Core.Tests
         /// 골든 키를 쓰지 않으므로 CoveredKeys() 에는 넣지 않는다 — 넣는 순간
         /// EveryGoldenKeyIsConsumed 가 "골든에 없는 키"라고 터진다.
         ///
-        /// 입력은 BaseAttack 만 남기고 전부 중립이라(pip=1, lv=1, 증가치 0)
-        /// 반올림 전 값이 정확히 BaseAttack * 0.5f 다. 0.5f 는 2의 거듭제곱이라
+        /// 입력은 장비 공격력만 남기고 전부 중립이라(비율 1f, 증가 0f, pip=1, lv=1)
+        /// 반올림 전 값이 정확히 장비 공격력 * 0.5f 다. 0.5f 는 2의 거듭제곱이라
         /// 이 곱셈에는 오차가 없고, 뒤따르는 *1f / +0 은 비트를 보존한다.
+        ///
+        /// 퍼센트 개편 전에는 이 축이 <c>BaseAttack</c>(다이스의 정수 공격력)이었다.
+        /// 비율을 1f 로 두고 같은 숫자를 장비 쪽에 넣으면 attackBase 가 같은 float 이라
+        /// 경계 다섯 개가 그대로 산다.
         /// </summary>
         [Test]
         public void RoundingIsHalfToEven_NotHalfUp()
         {
-            // { BaseAttack, 기대 반환값 } — 반올림 전 값은 BaseAttack / 2.0 다.
+            // { 장비 공격력, 기대 반환값 } — 반올림 전 값은 장비 공격력 / 2.0 다.
             int[][] midpoints =
             {
-                new[] { 15, 8 },   //  7.5 → 8 : 내림(7)만 잡는다. 올림도 8 이다.
+                new[] { 15, 8 },   //  7.5 → 8 : 내림(7)만 잡는다. 올림도 8 이다.  (= 개편 전 neutral)
                 new[] { 17, 8 },   //  8.5 → 8 : 올림이면 9. 규칙 교체를 잡는 핵심.
                 new[] { 19, 10 },  //  9.5 → 10: 내림이면 9.
                 new[] { 21, 10 },  // 10.5 → 10: 올림이면 11.
@@ -154,14 +165,15 @@ namespace OJ.Core.Tests
             var mismatches = new List<string>();
             foreach (int[] row in midpoints)
             {
-                int baseAttack = row[0];
+                int equipAttack = row[0];
                 int expected = row[1];
-                int actual = DamageFormula.Calculate(Case("midpoint", baseAttack, 0, 1, 1).Value);
+                int actual = DamageFormula.Calculate(
+                    Case("midpoint", 1f, 0f, 1, 1, equipmentAttack: equipAttack).Value);
 
                 if (actual != expected)
                 {
                     mismatches.Add(
-                        "반올림 전 " + ScaledText(baseAttack) +
+                        "반올림 전 " + ScaledText(equipAttack) +
                         " → 은행가 반올림이면 " + expected + " 인데 지금 " + actual);
                 }
             }
@@ -180,9 +192,9 @@ namespace OJ.Core.Tests
         /// 반올림 전 값을 문자열로 만든다. float 를 ToString 하면 로케일에 따라
         /// "8,5" 가 나올 수 있어 정수 연산만으로 찍는다.
         /// </summary>
-        private static string ScaledText(int baseAttack)
+        private static string ScaledText(int equipAttack)
         {
-            return (baseAttack / 2) + (((baseAttack % 2) == 0) ? ".0" : ".5");
+            return (equipAttack / 2) + (((equipAttack % 2) == 0) ? ".0" : ".5");
         }
 
         private static string GoldenKey(string caseName)
@@ -234,21 +246,24 @@ namespace OJ.Core.Tests
         }
 
         /// <summary>
-        /// ↓ 여기부터 7줄은 GoldenBaselineDumper.DumpCoreFormulas 의 DumpDamageCase 호출부
+        /// ↓ 여기부터 9줄은 GoldenBaselineDumper.DumpCoreFormulas 의 DumpDamageCase 호출부
         /// 사본이다. sb 인자만 빠졌고 나머지는 글자 그대로 같아야 한다. 숫자 하나라도
         /// 손대는 순간 이 파일은 골든과 다른 식을 검사하게 된다.
         /// </summary>
         private static IEnumerable<KeyValuePair<string, DamageInputs>> Cases()
         {
-            yield return Case("neutral", 12, 3, 1, 1);
-            yield return Case("pip6lv12", 12, 3, 6, 12);
-            yield return Case("king", 104, 20, 3, 9, isKing: true, levelMul: 1.3f, kingSynergy: 1.2f);
-            yield return Case("equipped", 10, 4, 4, 6,
+            yield return Case("neutral", 1f, 0f, 1, 1, equipmentAttack: 15);
+            yield return Case("pip6lv12", 1f, 0.1f, 6, 12, equipmentAttack: 15);
+            yield return Case("king", 5f, 0.5f, 3, 9, equipmentAttack: 104,
+                isKing: true, levelMul: 1.3f, kingSynergy: 1.2f);
+            yield return Case("equipped", 0.5f, 0.05f, 4, 6,
                 equipmentAttack: 37, attackPercent: 0.25f, attackFlat: 12,
                 earlyWaveFlat: 5, finalPercent: 0.1f, elementMul: 1.4f, relicMul: 1.15f);
-            yield return Case("halfBoundary", 15, 0, 1, 6, levelMul: 1.1f);
-            yield return Case("zeroAttack", 0, 0, 1, 1);
-            yield return Case("clampedInputs", 12, 3, -5, -5);
+            yield return Case("halfBoundary", 1f, 0f, 1, 6, equipmentAttack: 15, levelMul: 1.1f);
+            yield return Case("zeroAttack", 1f, 0.1f, 1, 1);
+            yield return Case("clampedInputs", 1f, 0.1f, -5, -5, equipmentAttack: 15);
+            yield return Case("negativePercent", -2f, 0.5f, 2, 1, equipmentAttack: 40);
+            yield return Case("percentPerLevel", 0f, 0.25f, 1, 5, equipmentAttack: 40);
         }
 
         /// <summary>
@@ -259,8 +274,8 @@ namespace OJ.Core.Tests
         /// </summary>
         private static KeyValuePair<string, DamageInputs> Case(
             string name,
-            int baseAttack,
-            int levelUpAttackIncrease,
+            float baseAttackPercent,
+            float attackPercentPerLevel,
             int dicePip,
             int bulletLevel,
             int equipmentAttack = 0,
@@ -276,8 +291,8 @@ namespace OJ.Core.Tests
         {
             var inputs = new DamageInputs
             {
-                BaseAttack = baseAttack,
-                LevelUpAttackIncrease = levelUpAttackIncrease,
+                DiceBaseAttackPercent = baseAttackPercent,
+                DiceAttackPercentPerLevel = attackPercentPerLevel,
                 DicePip = dicePip,
                 BulletLevel = bulletLevel,
                 EquipmentAttackTotal = equipmentAttack,
@@ -309,6 +324,13 @@ namespace OJ.Core.Tests
     /// 둘은 <c>core.d</c> 까지만 같고 그 다음 글자가 <c>a</c> / <c>m</c> 로 갈린다 —
     /// 어느 쪽도 상대의 접두사로 시작하지 않으므로 서로의 '전부 소비' 검사를 깨지 않는다.
     /// 눈대중이 아니라 <see cref="KeyPrefixDoesNotShadowOtherFixtures"/> 가 문자열로 못 박는다.
+    ///
+    /// <b>퍼센트 개편으로 첫 축의 뜻만 바뀌었고 골든 324줄은 한 줄도 안 바뀌었다.</b>
+    /// 예전에는 <c>BaseAttack = 축값, EquipmentAttackTotal = 0</c> 이었고 지금은
+    /// <c>EquipmentAttackTotal = 축값, DiceBaseAttackPercent = 1f</c> 다.
+    /// IEEE754 에서 <c>x * 1f</c> 는 비트를 보존하므로 반올림 전 float 가 전부 같다.
+    /// 키에는 축의 <i>값</i>만 박히므로 키 문자열도 그대로다 — 그래서 아래 실측표
+    /// (어느 변이를 몇 키가 잡는가)도 개편 뒤에 그대로 유효하다.
     ///
     /// 인자를 손으로 옮겨 적지 않는다 — <b>키에 다섯 인자가 전부 박혀 있다.</b>
     /// 키에서 파싱해 <c>Calculate</c> 를 부르고 같은 줄의 값과 비교한다. 옮겨 적은 것은
@@ -360,14 +382,17 @@ namespace OJ.Core.Tests
         //
         // 125 는 덤퍼가 접기 변이를 잡으라고 따로 넣은 값이다. 그 주장은 Mono 에서 성립하지
         // 않지만(클래스 주석 참고) 값 자체는 남길 이유가 있다 — 반올림 규칙 교체를 잡는
-        // 12키 중 <b>6키가 baseAttack=125</b> 다. 125 를 빼면 이 구획에 남은 유일한 미세
-        // 검출력이 절반으로 준다. BaseAttack125IsStillInTheGrid 가 그것을 막는다.
+        // 12키 중 <b>6키가 축값=125</b> 다. 125 를 빼면 이 구획에 남은 유일한 미세
+        // 검출력이 절반으로 준다. EquipAttack125IsStillInTheGrid 가 그것을 막는다.
         //
         // 홀수만 .5 경계에 걸린다는 것도 실측으로 확인됐다 — 반올림 전 값이
-        // baseAttack * 0.5f 에서 출발하기 때문이다. 12키의 baseAttack 은 전부
+        // 축값 * 0.5f 에서 출발하기 때문이다. 12키의 축값은 전부
         // {7, 15, 33, 125, 255} 이고 짝수인 104 는 <b>한 키도 기여하지 않는다.</b>
         // 격자를 줄일 일이 있으면 104 부터 뺄 것.
-        private static readonly int[] BaseAttacks = { 7, 15, 33, 104, 125, 255 };
+        //
+        // 개편 전 이름은 BaseAttacks 였다(다이스의 정수 공격력). 지금은 장비 공격력이고
+        // 다이스 비율을 1f 로 고정한다 — 같은 attackBase 를 만드는 두 표현이다.
+        private static readonly int[] EquipAttacks = { 7, 15, 33, 104, 125, 255 };
         private static readonly int[] Pips = { 1, 3 };
         private static readonly float[] LevelMuls = { 1f, 1.1f, 1.3f };
         private static readonly float[] ElementMuls = { 1f, 1.15f, 1.4f };
@@ -419,11 +444,11 @@ namespace OJ.Core.Tests
 
             var inputs = new DamageInputs
             {
-                BaseAttack = ParseInt(arguments[0], key),
-                LevelUpAttackIncrease = 0,
+                DiceBaseAttackPercent = 1f,
+                DiceAttackPercentPerLevel = 0f,
                 DicePip = ParseInt(arguments[1], key),
                 BulletLevel = 1,
-                EquipmentAttackTotal = 0,
+                EquipmentAttackTotal = ParseInt(arguments[0], key),
                 LevelDamageMultiplier = ParseFloat(arguments[2], key),
                 KingSynergyMultiplier = 1f,
                 IsKingDice = false,
@@ -525,7 +550,7 @@ namespace OJ.Core.Tests
         }
 
         /// <summary>
-        /// baseAttack = 125 축이 아직 살아 있는지 못 박는다.
+        /// 첫 축(장비 공격력) = 125 가 아직 살아 있는지 못 박는다.
         ///
         /// 위 개수·집합 검사는 <b>격자를 정본으로 삼는다.</b> 그래서 누가 격자 배열과 개수
         /// 상수를 <b>같이</b> 줄이면 둘 다 통과한다 — 검사가 조용히 약해지는 유일한 경로다.
@@ -537,17 +562,17 @@ namespace OJ.Core.Tests
         /// 그래서 접기 근거가 무너진 뒤에도 이 축은 남긴다.
         /// </summary>
         [Test]
-        public void BaseAttack125IsStillInTheGrid()
+        public void EquipAttack125IsStillInTheGrid()
         {
             var grid = new SortedSet<string>(ExpectedKeys(), StringComparer.Ordinal);
             Assert.That(grid.Contains(FoldClaimKey), Is.True,
-                "이 픽스처의 격자에서 " + FoldClaimKey + " 가 사라졌다. BaseAttacks 에 125 를 되돌릴 것 — " +
+                "이 픽스처의 격자에서 " + FoldClaimKey + " 가 사라졌다. EquipAttacks 에 125 를 되돌릴 것 — " +
                 "반올림 규칙 교체를 잡는 12키 중 6키가 그 축에서 나온다.");
 
             var golden = GoldenBaseline.Keys(GoldenBaseline.StableSection, KeyPrefix);
             Assert.That(golden.ContainsKey(FoldClaimKey), Is.True,
                 "골든에서 " + FoldClaimKey + " 가 사라졌다." + Environment.NewLine +
-                "덤퍼 DumpDamageMultiplierChain 의 baseAttacks 에서 125 를 뺀 것이다.");
+                "덤퍼 DumpDamageMultiplierChain 의 equipAttacks 에서 125 를 뺀 것이다.");
 
             int keysWith125 = 0;
             foreach (string key in grid)
@@ -558,7 +583,7 @@ namespace OJ.Core.Tests
 
             // 2(pip) * 3 * 3 * 3 = 54. 축 하나가 통째로 살아 있어야 6키가 나온다.
             Assert.That(keysWith125, Is.EqualTo(54),
-                "baseAttack=125 축의 키가 " + keysWith125 + "개다(기대 54개). 축 일부만 지워졌다.");
+                "125 축의 키가 " + keysWith125 + "개다(기대 54개). 축 일부만 지워졌다.");
         }
 
         /// <summary>
@@ -667,7 +692,7 @@ namespace OJ.Core.Tests
         /// <summary>덤퍼 격자로 만들어 낸, 골든에 있어야 할 키 전부.</summary>
         private static IEnumerable<string> ExpectedKeys()
         {
-            for (int b = 0; b < BaseAttacks.Length; b++)
+            for (int b = 0; b < EquipAttacks.Length; b++)
             {
                 for (int p = 0; p < Pips.Length; p++)
                 {
@@ -678,7 +703,7 @@ namespace OJ.Core.Tests
                             for (int r = 0; r < RelicMuls.Length; r++)
                             {
                                 yield return
-                                    KeyName + "[" + BaseAttacks[b] + "][" + Pips[p] + "][" + Format(LevelMuls[l]) +
+                                    KeyName + "[" + EquipAttacks[b] + "][" + Pips[p] + "][" + Format(LevelMuls[l]) +
                                     "][" + Format(ElementMuls[e]) + "][" + Format(RelicMuls[r]) + "]";
                             }
                         }

@@ -58,14 +58,14 @@ namespace OJ.Core.Tests
         private static readonly int[][] RuleTable =
         {
             //     index  baseGold  goldPerLevel  baseScroll  scrollPerLevel  baseAttack  attackPerLevel
-            new[] {   -1,      100,           50,          2,              1,          2,             3 },
-            new[] {    0,      120,           52,          3,              1,          2,             3 }, // Weapon
-            new[] {    1,       95,           48,          2,              1,          2,             3 }, // Helmet
-            new[] {    2,      100,           48,          2,              1,          2,             3 }, // Armor
-            new[] {    3,      110,           50,          3,              1,          2,             3 }, // Ring
-            new[] {    4,       90,           46,          2,              1,          2,             3 }, // Shoes
-            new[] {    5,      100,           50,          2,              1,          2,             3 }, // Necklace
-            new[] {    6,      100,           50,          2,              1,          2,             3 },
+            new[] {   -1,      100,           50,          2,              1,          3,             3 },
+            new[] {    0,      120,           52,          3,              1,          3,             3 }, // Weapon
+            new[] {    1,       95,           48,          2,              1,          3,             3 }, // Helmet
+            new[] {    2,      100,           48,          2,              1,          3,             3 }, // Armor
+            new[] {    3,      110,           50,          3,              1,          3,             3 }, // Ring
+            new[] {    4,       90,           46,          2,              1,          3,             3 }, // Shoes
+            new[] {    5,      100,           50,          2,              1,          3,             3 }, // Necklace
+            new[] {    6,      100,           50,          2,              1,          3,             3 },
         };
 
         private static readonly string[] RuleFieldNames =
@@ -78,7 +78,8 @@ namespace OJ.Core.Tests
         // -5 / 0 은 Mathf.Max(1, currentLevel) 하한을 밟는다. 1 은 그 하한과 <b>같은 값을
         // 내야 하는</b> 정상 최소 레벨이다 — 세 열이 같은 것이 이 격자의 요점이다.
         // 하한을 지우면 -5 열이 100 + (-6)*50 = -200 → Mathf.Max(0,·) 로 0 이 되어 갈린다.
-        // 1 / 2 는 Attack 의 'level <= 1 → 0' 조기 반환 경계 양옆이다.
+        // 공격력에도 같은 하한이 생겼다(다이스 퍼센트 개편에서 'level <= 1 → 0' 조기 반환을
+        // 걷어내고 Max(1, level) 로 바꿨다) — 그래서 AttackTable 도 세 열이 같아야 한다.
         private static readonly int[] Levels = { -5, 0, 1, 2, 10, 50 };
 
         // 행은 RuleTable 순서, 열은 Levels 순서.
@@ -106,19 +107,24 @@ namespace OJ.Core.Tests
             new[] { 2, 2, 2, 3, 11, 51 },
         };
 
-        // 8행이 전부 같다. 6종이 baseAttack=2 / attackPerLevel=3 로 동일하기 때문이고,
+        // 8행이 전부 같다. 6종이 baseAttack=3 / attackPerLevel=3 로 동일하기 때문이고,
         // 그 사실 자체는 AllTypesShareTheSameAttackColumns 가 따로 잠근다.
-        // 레벨 1 이 2 가 아니라 0 인 것이 조기 반환의 증거다.
+        //
+        // <b>레벨 1 이 0 이 아니라 3 인 것이 다이스 퍼센트 개편의 결과다.</b> 예전에는
+        // <c>if (level &lt;= 1) return 0;</c> 이 있어서 세 열이 0 이었다. 지금은 다이스
+        // 공격력이 <c>장비 공격력 × 비율</c> 이라 장비가 0 이면 모든 다이스가 하한 1 로
+        // 떨어진다 — 그 조기 반환을 되살리는 변이는 신규 설치를 깨므로, 여기 3 이
+        // 그것을 막는 자리다. 자세한 근거는 EquipmentUpgradeFormula.Attack 주석에 있다.
         private static readonly int[][] AttackTable =
         {
-            new[] { 0, 0, 0, 5, 29, 149 },
-            new[] { 0, 0, 0, 5, 29, 149 },
-            new[] { 0, 0, 0, 5, 29, 149 },
-            new[] { 0, 0, 0, 5, 29, 149 },
-            new[] { 0, 0, 0, 5, 29, 149 },
-            new[] { 0, 0, 0, 5, 29, 149 },
-            new[] { 0, 0, 0, 5, 29, 149 },
-            new[] { 0, 0, 0, 5, 29, 149 },
+            new[] { 3, 3, 3, 6, 30, 150 },
+            new[] { 3, 3, 3, 6, 30, 150 },
+            new[] { 3, 3, 3, 6, 30, 150 },
+            new[] { 3, 3, 3, 6, 30, 150 },
+            new[] { 3, 3, 3, 6, 30, 150 },
+            new[] { 3, 3, 3, 6, 30, 150 },
+            new[] { 3, 3, 3, 6, 30, 150 },
+            new[] { 3, 3, 3, 6, 30, 150 },
         };
 
         // ── 슬롯 해금 ────────────────────────────────────────────────────────────────
@@ -283,7 +289,7 @@ namespace OJ.Core.Tests
         // ── 구조적 사실 (값이 아니라 표의 모양을 잠근다) ──────────────────────────────
 
         /// <summary>
-        /// 6종이 <c>baseAttack=2</c> / <c>attackPerLevel=3</c> / <c>scrollPerLevel=1</c> 로
+        /// 6종이 <c>baseAttack=3</c> / <c>attackPerLevel=3</c> / <c>scrollPerLevel=1</c> 로
         /// 전부 같다는 조사 결과의 박제.
         ///
         /// <b>이 테스트가 빨개지는 것은 버그가 아니라 사양 변경 신호다.</b> 장비 하나만
@@ -303,7 +309,7 @@ namespace OJ.Core.Tests
             for (int i = 0; i < indexes.Length; i++)
             {
                 EquipmentUpgradeFormula.EquipmentUpgradeRule rule = EquipmentUpgradeFormula.Rule(indexes[i]);
-                Assert.That(rule.baseAttack, Is.EqualTo(2), "baseAttack index=" + indexes[i]);
+                Assert.That(rule.baseAttack, Is.EqualTo(3), "baseAttack index=" + indexes[i]);
                 Assert.That(rule.attackPerLevel, Is.EqualTo(3), "attackPerLevel index=" + indexes[i]);
                 Assert.That(rule.scrollPerLevel, Is.EqualTo(1), "scrollPerLevel index=" + indexes[i]);
             }

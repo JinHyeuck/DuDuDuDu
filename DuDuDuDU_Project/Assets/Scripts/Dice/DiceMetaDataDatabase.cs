@@ -45,9 +45,29 @@ namespace OJ.Dice
             // 그 배선은 데이터가 아니라 OJ.Dice.DiceEvolution 의 표에 있다.
             // 에셋 YAML 에 남은 recipeMaterials 키는 Unity 가 다음 저장 때 떨군다.
 
-            [Header("Damage")]
-            public int baseAttack;
-            public int levelUpAttackIncrease;
+            /// <summary>
+            /// <b>다이스 공격력은 정수가 아니라 장비 총 공격력에 곱하는 비율이다.</b>
+            ///
+            /// 예전 <c>baseAttack</c> / <c>levelUpAttackIncrease</c>(둘 다 int)를 대신한다.
+            /// 그때는 <c>다이스 정수 + 장비 정수</c> 였고, 장비가 자라면 다이스 항이 묻혀서
+            /// 레벨 12 와 레벨 1 의 차이가 후반에 4% 로 줄었다. 지금은
+            /// <c>장비 총 공격력 × (base + (레벨-1) × perLevel)</c> 이라 비율이 어느 시점에도 같다.
+            /// 산술은 <c>OJ.Core.DamageFormula</c> 에 있다.
+            ///
+            /// 기준점은 <b>노말 다이스 1레벨 = 1(100%)</b> 이고, 나머지는 그보다 넓게/길게
+            /// 때리는 만큼 깎는다(얼음 0.7 / 번개 0.4 처럼). 진화 단계는 하위 다이스의
+            /// ×2.5(레어) · ×5(신화)로 둔다 — <c>DiceMetaDataProvider</c> 의 코드 기본값 표에
+            /// 그 사다리가 적혀 있고, 이 에셋이 정본이다.
+            ///
+            /// <b>음수를 넣지 말 것.</b> DamageFormula 가 0 으로 자르지만, 자른다는 것은
+            /// 에셋의 실수가 "데미지 1" 로 조용히 흡수된다는 뜻이다.
+            /// </summary>
+            [Header("Damage (장비 공격력 대비 비율)")]
+            [Tooltip("레벨 1 에서 장비 총 공격력에 곱하는 비율. 1 = 100%")]
+            public float baseAttackPercent = 1f;
+
+            [Tooltip("레벨 한 칸당 더해지는 비율. 0.1 = 레벨마다 +10%p")]
+            public float attackPercentPerLevel = 0.1f;
 
             [Header("Combat")]
             public float baseCooldown = 3f;

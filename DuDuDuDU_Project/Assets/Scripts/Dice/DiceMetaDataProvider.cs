@@ -348,7 +348,7 @@ namespace OJ.Dice
             var meta = GetMeta(diceType);
 
             // meta 가 없으면 CalculateDamage 는 0 을 돌려준다. 그 사실은 스냅샷으로 옮겨
-            // 담을 수 없다 — BaseAttack 0 으로 넣어도 하한 1 때문에 1 이 나온다.
+            // 담을 수 없다 — 퍼센트 0 으로 넣어도 하한 1 때문에 1 이 나온다.
             // 그래서 "meta 없음"은 호출부가 먼저 걸러야 하고, 여기서는 default 를 준다.
             return meta != null
                 ? CaptureDamageInputs(meta, diceType, dicePip, bulletLevel)
@@ -405,8 +405,8 @@ namespace OJ.Dice
 
             return new DamageInputs
             {
-                BaseAttack = meta.baseAttack,
-                LevelUpAttackIncrease = meta.levelUpAttackIncrease,
+                DiceBaseAttackPercent = meta.baseAttackPercent,
+                DiceAttackPercentPerLevel = meta.attackPercentPerLevel,
                 DicePip = dicePip,
                 BulletLevel = bulletLevel,
                 EquipmentAttackTotal = equipmentAttackTotal,
@@ -507,6 +507,26 @@ namespace OJ.Dice
             }
 
             return cooldown;
+        }
+
+        /// <summary>
+        /// 이 다이스가 지금 장비 공격력의 몇 배를 때리는가. <b>UI 표기용</b>이다.
+        ///
+        /// 데미지 자체는 <see cref="CalculateDamage"/> 가 내놓고 그 안에 이 비율이 이미
+        /// 들어 있다. 이것을 따로 여는 것은 화면에 "장비 공격력의 150%" 처럼 비율을
+        /// 같이 적기 위해서다 — 개편 뒤에는 그 비율이 다이스의 정체성이라, 숫자만 보여 주면
+        /// 왜 커졌는지(장비를 올렸는가 다이스를 올렸는가)가 안 보인다.
+        ///
+        /// meta 가 없으면 0 이다. 1f 를 돌려주면 "100%" 가 화면에 떠서 에셋 사고가
+        /// 정상값으로 보인다.
+        /// </summary>
+        public static float GetAttackPercent(DiceType diceType, int level)
+        {
+            var meta = GetMeta(diceType);
+            if (meta == null)
+                return 0f;
+
+            return DamageFormula.AttackPercent(meta.baseAttackPercent, meta.attackPercentPerLevel, level);
         }
 
         public static float GetLevelDamageMultiplier(DiceType diceType, int level)
@@ -743,6 +763,70 @@ namespace OJ.Dice
             return battle.IsActive && battle.DiceStars.GetTypeCount(diceType) > 0;
         }
 
+        /// <summary>
+        /// 코드 기본값 표. 에셋이 정본이고 여기는 방어선이다(<see cref="GetMeta"/> 참조).
+        ///
+        /// <b>공격력 퍼센트 사다리.</b> 두 숫자가 <c>baseAttackPercent</c> ·
+        /// <c>attackPercentPerLevel</c> 이고, 레벨 1 이 그대로 base 다
+        /// (<c>DamageFormula.AttackPercent</c> 가 <c>(레벨-1)</c> 칸을 센다).
+        /// perLevel 은 전부 base 의 10% 라, 레벨 12 에서 base 의 2.1 배가 된다.
+        /// 비율로 두면 다이스끼리의 상대 강함이 레벨과 무관하게 유지된다.
+        ///
+        /// ── 먼저 알아야 할 것: <b>base 끼리 비교하면 안 된다.</b> ─────────────────
+        ///
+        /// 데미지 식에는 base 말고도 등급마다 다른 배수가 둘 더 있다.
+        /// <code>
+        ///   기본 5종 : pip = 성급 1~4   (머지로 올린다. MergeSystem.MaxStar = 4)
+        ///   레어 5종 : pip = 항상 1     (canMerge = false, 진화 결과는 evolvedStar = 1)
+        ///   킹   5종 : pip = 항상 1  +  DamageFormula.KingDiceDamageMultiplier ×2
+        /// </code>
+        /// 그래서 <b>한 칸이 내는 한 발</b>은 기본이 <c>base × 4</c>, 레어가 <c>base × 1</c>,
+        /// 킹이 <c>base × 2</c> 다. 이 표는 그 실효 배수로 짜여 있다.
+        ///
+        /// 처음 개편할 때 base 끼리 ×2.5 / ×5 로 묶었는데, 그러면 노말 4성(실효 4.00)이
+        /// 토네이도(2.50)와 킹썬더(2.00×2 = 4.00)를 잡아먹었다 — <b>머지만 해도 최종 등급과
+        /// 맞먹는</b> 사다리였다. pip 4칸을 사다리에 넣지 않은 것이 원인이다.
+        ///
+        /// ── 축 하나: 등급 (한 칸이 내는 실효 배수, 노말 계열 기준) ────────────────
+        /// <code>
+        ///   기본 1성   1.00      기본 4성   4.00
+        ///   레어       8.00      = 기본 4성의 2배   (base 8.00,  pip 1)
+        ///   킹        24.00      = 레어의 3배       (base 12.00, pip 1 × 킹 2배)
+        /// </code>
+        /// 레어·킹이 한 칸을 차지하고 머지가 안 되므로, <b>기본 4성보다 세지 않으면 그 칸에
+        /// 놓을 이유가 없다.</b> 보드가 24칸이고 그것이 실제 상한이라 비교 대상은
+        /// "기본 1성"이 아니라 "기본 4성"이다.
+        ///
+        /// ── 축 둘: 속성 할인 (한 발이 몇 마리에 닿는가) ──────────────────────────
+        /// <code>
+        ///            기본    레어·킹
+        ///   노말     1.00     1.00    단일 · 효과 없음 · 가장 짧은 쿨
+        ///   얼음     0.70     0.85    단일 + 둔화
+        ///   독       0.60     0.80    단일 + 중독(남은 체력 비례)
+        ///   불       0.50     0.75    단일 + 폭발(광역)
+        ///   번개     0.40     0.70    단일 + 전이 2~3
+        /// </code>
+        /// <b>상위 등급에서 할인이 1 쪽으로 눌린 것은 의도다.</b> 할인의 근거는 "여러 마리를
+        /// 때리니 한 발이 약해도 된다"인데, 레어·킹은 보드에 한두 개뿐이라 그 논리가 약해진다.
+        /// 그리고 할인을 그대로 곱하면 <b>등급 사다리가 속성 할인에 먹힌다</b> — 눌러 두지
+        /// 않으면 타임(번개 계열 레어)이 기본 4성 노말보다 약해진다. 공식은
+        /// <c>상위할인 = (1 + 기본할인) / 2</c> 다.
+        ///
+        /// ── 결과 (등급 × 속성) ─────────────────────────────────────────────────
+        /// <code>
+        ///   토네이도 8.00   킹노말   12.00      (실효 8.00  / 24.00)
+        ///   바람     6.80   킹아이스 10.20      (실효 6.80  / 20.40)
+        ///   스턴     6.40   킹포이즌  9.60      (실효 6.40  / 19.20)
+        ///   방깎     6.00   킹파이어  9.00      (실효 6.00  / 18.00)
+        ///   타임     5.60   킹썬더    8.40      (실효 5.60  / 16.80)
+        /// </code>
+        /// 가장 약한 킹(킹썬더 실효 16.80)이 가장 센 기본 4성(노말 4.00)의 <b>4.2배</b>이고,
+        /// 가장 약한 레어(타임 5.60)도 그 1.4배다. 사다리가 어디서도 뒤집히지 않는다.
+        ///
+        /// <b>속성끼리의 비교에 등급을 섞지 말 것.</b> 타임(5.60)이 노말 4성(4.00)에 겨우
+        /// 1.4배인 것은 번개 계열의 할인(0.70)이 들어간 결과이고, 같은 계열로 보면
+        /// 번개 4성(1.60)의 3.5배다. 타임의 본체는 보드 전체 쿨 감소지 한 발의 크기가 아니다.
+        /// </summary>
         private static void EnsureDefaults()
         {
             if (defaults != null)
@@ -750,96 +834,96 @@ namespace OJ.Dice
 
             defaults = new Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta>
             {
-                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "가장 가까운 적 하나를 공격합니다. 부가 효과는 없지만 쿨타임이 짧아 꾸준히 피해를 쌓습니다.", 12, 3, 120, 50, 8, 2, 2.4f, new []{
+                { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "가장 가까운 적 하나를 공격합니다. 부가 효과는 없지만 쿨타임이 짧아 꾸준히 피해를 쌓습니다.", 1f, 0.1f, 120, 50, 8, 2, 2.4f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "쿨타임 10% 감소"),
                     (9, "공격 시 20% 확률로 SP +5"),
                     (12, "공격 시 20% 확률로 대미지 2배")
                 }) },
-                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "적 하나를 공격하고 명중 지점 주변으로 폭발을 일으킵니다. 적이 몰려 있을수록 강해집니다.", 10, 4, 140, 60, 10, 2, 3.1f, new []{
+                { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "적 하나를 공격하고 명중 지점 주변으로 폭발을 일으킵니다. 적이 몰려 있을수록 강해집니다.", 0.5f, 0.05f, 140, 60, 10, 2, 3.1f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "공격 시 20% 확률로 한 번 더 폭발"),
                     (9, "폭발 범위 10% 증가"),
                     (12, "쿨타임 20% 감소")
                 }) },
-                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "적 하나를 공격하고 둔화를 겁니다. 벽까지 오는 시간을 벌어 주는 방어형 다이스입니다.", 9, 3, 130, 55, 9, 2, 3.8f, new []{
+                { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "적 하나를 공격하고 둔화를 겁니다. 벽까지 오는 시간을 벌어 주는 방어형 다이스입니다.", 0.7f, 0.07f, 130, 55, 9, 2, 3.8f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "공격 시 30% 확률로 범위 피해"),
                     (9, "둔화 지속시간 50% 증가"),
                     (12, "쿨타임 20% 감소")
                 }) },
-                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "적 하나를 공격하고 중독을 겁니다. 중독은 남은 체력에 비례해 피해를 주므로 체력이 두꺼운 적일수록 아픕니다.", 8, 2, 125, 50, 9, 2, 3.4f, new []{
+                { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "적 하나를 공격하고 중독을 겁니다. 중독은 남은 체력에 비례해 피해를 주므로 체력이 두꺼운 적일수록 아픕니다.", 0.6f, 0.06f, 125, 50, 9, 2, 3.4f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "중독 피해량 50% 증가"),
                     (9, "공격 시 40% 확률로 범위 피해"),
                     (12, "중독된 적이 받는 피해 10% 증가")
                 }) },
-                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "적 하나를 공격하면 번개가 주변으로 전이됩니다. 넓게 퍼진 적을 훑는 데 좋습니다.", 11, 3, 150, 65, 11, 2, 2.7f, new []{
+                { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "적 하나를 공격하면 번개가 주변으로 전이됩니다. 넓게 퍼진 적을 훑는 데 좋습니다.", 0.4f, 0.04f, 150, 65, 11, 2, 2.7f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "전이 대상 +1"),
                     (9, "쿨타임 10% 감소"),
                     (12, "공격한 적 주변 1명에게 50% 추가 번개 피해")
                 }) },
-                { DiceType.Tornado, CreateDefault(DiceType.Tornado, "Tornado Dice", "노말 다이스가 진화한 모습입니다. 적을 공격하면서 주변의 적들을 명중 지점으로 끌어당겨, 뒤이어 오는 광역 공격이 한 번에 쓸어 담게 만듭니다.", 80, 10, 145, 62, 10, 2, 3.0f, new []{
+                { DiceType.Tornado, CreateDefault(DiceType.Tornado, "Tornado Dice", "노말 다이스가 진화한 모습입니다. 적을 공격하면서 주변의 적들을 명중 지점으로 끌어당겨, 뒤이어 오는 광역 공격이 한 번에 쓸어 담게 만듭니다.", 8f, 0.8f, 145, 62, 10, 2, 3.0f, new []{
                     (3, "범위 10% 증가"),
                     (6, "적을 2초 동안 흡입"),
                     (9, "쿨타임 20% 감소"),
                     (12, "최종 대미지 30% 증가")
                 }, new [] { ElementType.Normal },
                     false, false, false) },
-                { DiceType.Stun, CreateDefault(DiceType.Stun, "Stun Dice", "포이즌 다이스가 진화한 모습입니다. 적 하나를 강하게 때리고 확률로 기절시켜 발을 묶습니다. 벽 앞까지 밀려온 적을 끊어 낼 때 믿을 수 있습니다.", 87, 11, 140, 58, 10, 2, 3.5f, new []{
+                { DiceType.Stun, CreateDefault(DiceType.Stun, "Stun Dice", "포이즌 다이스가 진화한 모습입니다. 적 하나를 강하게 때리고 확률로 기절시켜 발을 묶습니다. 벽 앞까지 밀려온 적을 끊어 낼 때 믿을 수 있습니다.", 6.4f, 0.64f, 140, 58, 10, 2, 3.5f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "스턴 확률 10% 증가"),
                     (9, "쿨타임 10% 감소"),
                     (12, "스턴된 적이 받는 피해 20% 증가")
                 }, new [] { ElementType.Dark },
                     false, false, false) },
-                { DiceType.ArmorBreak, CreateDefault(DiceType.ArmorBreak, "Armor Break Dice", "파이어 다이스가 진화한 모습입니다. 적의 방어력을 깎아 그 뒤로 들어가는 모든 공격을 더 아프게 만듭니다. 단단한 적과 보스에게 특히 강합니다.", 78, 10, 150, 64, 11, 2, 3.2f, new []{
+                { DiceType.ArmorBreak, CreateDefault(DiceType.ArmorBreak, "Armor Break Dice", "파이어 다이스가 진화한 모습입니다. 적의 방어력을 깎아 그 뒤로 들어가는 모든 공격을 더 아프게 만듭니다. 단단한 적과 보스에게 특히 강합니다.", 6f, 0.6f, 150, 64, 11, 2, 3.2f, new []{
                     (3, "최종 대미지 10% 증가"),
                     (6, "방어력 감소 10% 증가"),
                     (9, "쿨타임 20% 감소"),
                     (12, "방깎 상태 적이 받는 피해 10% 증가")
                 }, new [] { ElementType.Fire },
                     false, false, false) },
-                { DiceType.Wind, CreateDefault(DiceType.Wind, "Wind Dice", "아이스 다이스가 진화한 모습입니다. 벽 앞에 몰린 적들을 한꺼번에 때리고 확률로 뒤쪽까지 밀어냅니다. 총알을 쏘지 않고 벽 앞 전체를 직접 칩니다.", 40, 5, 135, 56, 9, 2, 2.9f, new []{
+                { DiceType.Wind, CreateDefault(DiceType.Wind, "Wind Dice", "아이스 다이스가 진화한 모습입니다. 벽 앞에 몰린 적들을 한꺼번에 때리고 확률로 뒤쪽까지 밀어냅니다. 총알을 쏘지 않고 벽 앞 전체를 직접 칩니다.", 6.8f, 0.68f, 135, 56, 9, 2, 2.9f, new []{
                     (3, "밀어내는 거리 10% 증가"),
                     (6, "밀리는 적이 받는 피해 10% 증가"),
                     (9, "밀어내기 확률 10% 추가 증가"),
                     (12, "밀어내는 대상 +1")
                 }, new [] { ElementType.Water },
                     false, false, false) },
-                { DiceType.Time, CreateDefault(DiceType.Time, "Time Dice", "썬더 다이스가 진화한 모습입니다. 적을 공격하는 동시에 다른 다이스의 남은 쿨타임을 당겨, 보드 전체의 화력을 끌어올립니다.", 85, 11, 170, 70, 12, 3, 4.0f, new []{
+                { DiceType.Time, CreateDefault(DiceType.Time, "Time Dice", "썬더 다이스가 진화한 모습입니다. 적을 공격하는 동시에 다른 다이스의 남은 쿨타임을 당겨, 보드 전체의 화력을 끌어올립니다.", 5.6f, 0.56f, 170, 70, 12, 3, 4.0f, new []{
                     (3, "쿨타임 감소량 5% 추가 증가"),
                     (6, "대상 +1"),
                     (9, "자신의 쿨타임 10% 감소"),
                     (12, "쿨타임 감소량 10% 추가 증가")
                 }, new [] { ElementType.Light },
                     false, false, false) },
-                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "토네이도 다이스가 도달하는 최종 형태입니다. 적과 그 주변을 첫 타 70%, 이어서 0.2초 간격으로 10%씩 세 번 더 두드립니다.", 140, 27, 3.0f, new []{
+                { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "토네이도 다이스가 도달하는 최종 형태입니다. 적과 그 주변을 첫 타 70%, 이어서 0.2초 간격으로 10%씩 세 번 더 두드립니다.", 12f, 1.2f, 3.0f, new []{
                     (3, "최종 대미지 30% 증가"),
                     (6, "소환 중인 동안 NormalDice 최종 대미지 20% 증가"),
                     (9, "소환 중인 동안 모든 다이스 크리티컬 확률 10% 증가"),
                     (12, "소환 중인 동안 모든 다이스 크리티컬 대미지 20% 증가")
                 }) },
-                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "아머브레이크 다이스가 도달하는 최종 형태입니다. 일반 폭발보다 훨씬 넓은 강화 폭발로 무리를 통째로 태웁니다.", 148, 30, 3.3f, new []{
+                { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "아머브레이크 다이스가 도달하는 최종 형태입니다. 일반 폭발보다 훨씬 넓은 강화 폭발로 무리를 통째로 태웁니다.", 9f, 0.9f, 3.3f, new []{
                     (3, "최종 대미지 20% 증가"),
                     (6, "소환 중인 동안 FireDice 폭발 범위 20% 증가"),
                     (9, "폭발이 30% 확률로 한 번 더 발생"),
                     (12, "폭발 최종 피해 30% 증가")
                 }) },
-                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "윈드 다이스가 도달하는 최종 형태입니다. 적과 그 주변을 함께 때리고 강한 둔화를 겁니다.", 135, 27, 3.5f, new []{
+                { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "윈드 다이스가 도달하는 최종 형태입니다. 적과 그 주변을 함께 때리고 강한 둔화를 겁니다.", 10.2f, 1.02f, 3.5f, new []{
                     (3, "최종 대미지 20% 증가"),
                     (6, "IceDice 둔화 지속시간 50% 증가"),
                     (9, "공격 시 빙결 부여"),
                     (12, "둔화된 적이 받는 피해 15% 증가")
                 }) },
-                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "스턴 다이스가 도달하는 최종 형태입니다. 적 하나를 때리고 중독과 둔화를 함께 걸어 오래 붙잡아 둡니다.", 132, 27, 3.3f, new []{
+                { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "스턴 다이스가 도달하는 최종 형태입니다. 적 하나를 때리고 중독과 둔화를 함께 걸어 오래 붙잡아 둡니다.", 9.6f, 0.96f, 3.3f, new []{
                     (3, "최종 대미지 20% 증가"),
                     (6, "소환 중인 동안 PoisonDice 중독 피해량 50% 증가"),
                     (9, "중독 적용 시 30% 확률로 주변 적 1명에게 전이"),
                     (12, "중독된 적이 받는 피해 15% 증가")
                 }) },
-                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "타임 다이스가 도달하는 최종 형태입니다. 번개가 더 많은 적에게 전이되어 넓게 퍼진 무리를 한 번에 훑습니다.", 156, 32, 3.0f, new []{
+                { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "타임 다이스가 도달하는 최종 형태입니다. 번개가 더 많은 적에게 전이되어 넓게 퍼진 무리를 한 번에 훑습니다.", 8.4f, 0.84f, 3.0f, new []{
                     (3, "전이 대상 +2"),
                     (6, "소환 중인 동안 ThunderDice 최종 대미지 20% 증가"),
                     (9, "30% 확률로 추가 1명에게 50% 피해"),
@@ -852,8 +936,8 @@ namespace OJ.Dice
             DiceType diceType,
             string displayName,
             string description,
-            int baseAttack,
-            int levelUpAttackIncrease,
+            float baseAttackPercent,
+            float attackPercentPerLevel,
             int baseGoldCost,
             int goldCostPerLevel,
             int baseScrollCost,
@@ -874,8 +958,8 @@ namespace OJ.Dice
                 summonable = summonable,
                 canMerge = canMerge,
                 showStarUI = showStarUI,
-                baseAttack = baseAttack,
-                levelUpAttackIncrease = levelUpAttackIncrease,
+                baseAttackPercent = baseAttackPercent,
+                attackPercentPerLevel = attackPercentPerLevel,
                 baseGoldCost = baseGoldCost,
                 goldCostPerLevel = goldCostPerLevel,
                 baseScrollCost = baseScrollCost,
@@ -899,8 +983,8 @@ namespace OJ.Dice
             DiceType diceType,
             string displayName,
             string description,
-            int baseAttack,
-            int levelUpAttackIncrease,
+            float baseAttackPercent,
+            float attackPercentPerLevel,
             float baseCooldown,
             (int level, string desc)[] milestones)
         {
@@ -909,8 +993,8 @@ namespace OJ.Dice
                 diceType = diceType,
                 displayName = displayName,
                 description = description,
-                baseAttack = baseAttack,
-                levelUpAttackIncrease = levelUpAttackIncrease,
+                baseAttackPercent = baseAttackPercent,
+                attackPercentPerLevel = attackPercentPerLevel,
                 baseGoldCost = 0,
                 goldCostPerLevel = 0,
                 baseScrollCost = 0,

@@ -492,6 +492,11 @@ namespace OJ.Dice
         /// 공격력을 <b>1성 기준</b>으로 뽑는 이유는 이 화면이 쿨타임도 그렇게 보여 주기
         /// 때문이다(<c>GetCooldown(type, 1)</c>). 성급은 보드 위에서 정해지는 값이라
         /// 로비에는 없다. 장비 보정은 들어간다 — 장비는 전투 밖에서도 끼고 있다.
+        ///
+        /// <b>숫자 뒤에 비율을 괄호로 같이 적는다.</b> 다이스 공격력이 장비 공격력의
+        /// 퍼센트가 된 뒤에는 숫자만 보여 주면 그것이 왜 그 값인지 — 장비를 올린 결과인지
+        /// 다이스를 올린 결과인지 — 화면에서 알 수 없다. 숫자는 둘이 곱해진 결과이고,
+        /// 괄호 안이 이 다이스가 가진 몫이다.
         /// </summary>
         private string BuildDescriptionText(DiceMetaDataDatabase.DiceMeta meta, int level)
         {
@@ -504,8 +509,9 @@ namespace OJ.Dice
                 builder.AppendLine(meta.description);
 
             const int lobbyStar = 1;
-            builder.AppendFormat("공격력 {0}",
-                DiceMetaDataProvider.CalculateDamage(currentDiceType, lobbyStar, level));
+            builder.AppendFormat("공격력 {0}  (장비 공격력의 {1:0.#}%)",
+                DiceMetaDataProvider.CalculateDamage(currentDiceType, lobbyStar, level),
+                DiceMetaDataProvider.GetAttackPercent(currentDiceType, level) * 100f);
 
             string trait = DiceTraitText.Detailed(currentDiceType, level, battle);
             if (!string.IsNullOrEmpty(trait))

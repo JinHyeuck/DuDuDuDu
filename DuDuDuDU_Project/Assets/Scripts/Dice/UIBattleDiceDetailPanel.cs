@@ -197,8 +197,19 @@ namespace OJ.Dice
             // 4성 노말과 1성 노말은 네 배 차이가 난다 — 로비의 1성 기준 표시와 다른
             // 숫자가 나오는 것이 정상이고, 여기서 알고 싶은 것은 "지금 이 놈이 얼마나
             // 때리는가"다.
+            //
+            // 비율을 괄호로 같이 적는다. 다이스 공격력이 장비 공격력의 퍼센트가 된 뒤에는
+            // 숫자 하나만으로는 "이 다이스가 센 것"과 "장비가 센 것"이 구분되지 않는다.
+            // 비율은 성급과 무관하다 — 성급은 뒤에서 pip 으로 곱해지므로 로비 표시와 같은 값이다.
             if (damageText != null)
-                damageText.SetText("공격력 {0}", DiceMetaDataProvider.CalculateDamage(currentDiceType, currentDiceStar, level));
+            {
+                // string.Format 으로 미리 만들어 SetText(string) 에 넘긴다. TMP 의
+                // SetText(string, float, ...) 포맷 파서는 "{1:0.#}" 의 '#' 를 모른다 —
+                // 자리 수를 생략하는 표기는 .NET 쪽에만 있다.
+                damageText.SetText(string.Format("공격력 {0}  ({1:0.#}%)",
+                    DiceMetaDataProvider.CalculateDamage(currentDiceType, currentDiceStar, level),
+                    DiceMetaDataProvider.GetAttackPercent(currentDiceType, level) * 100f));
+            }
 
             if (traitText != null)
                 traitText.SetText(DiceTraitText.Short(currentDiceType, level, battle));
