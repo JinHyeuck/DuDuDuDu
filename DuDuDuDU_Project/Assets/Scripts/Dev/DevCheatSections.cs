@@ -549,6 +549,19 @@ namespace OJ.Dev
             DevCheatUI.CreateButton("Battle", sceneRow, "전투로", DevCheatUI.ButtonColor,
                 () => SceneFlowManager.LoadBattle());
 
+            // 타이틀이 하는 것과 같은 경로(예약 → 전투)를 탄다. 완료 플래그는 건드리지 않는다 —
+            // 마친 세이브에서도 다시 보기만 한다. 단축키 Shift+F3 과 같다.
+            DevCheatUI.CreateSectionTitle(root, "튜토리얼");
+            OJ.Tutorial.TutorialProgressManager tutorial = OJ.Tutorial.TutorialProgressManager.Instance;
+            DevCheatUI.CreateHelpText(root,
+                tutorial == null ? "TutorialProgressManager 가 없다."
+                    : "인게임 첫 튜토리얼 " + (tutorial.IsInGameCompleted ? "마침" : "안 함"));
+            DevCheatUI.CreateButton("Tutorial", root, "인게임 튜토리얼 시작", DevCheatUI.AccentColor, () =>
+            {
+                OJ.Tutorial.TutorialProgressManager.Instance?.RequestInGameRun();
+                SceneFlowManager.LoadBattle();
+            });
+
             DevCheatUI.CreateSectionTitle(root, "세이브");
             DevCheatUI.CreateButton("Save", root, "즉시 저장", DevCheatUI.ButtonColor,
                 () => GameContainer.SaveService?.SaveAll());
