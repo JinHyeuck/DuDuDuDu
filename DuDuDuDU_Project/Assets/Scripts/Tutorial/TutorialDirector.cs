@@ -283,15 +283,13 @@ namespace OJ.Tutorial
             GameContainer.UI?.Hide<UIWaveRewardPreviewDialog>();
 
             int stageIndex = game.CurrentStageData != null ? game.CurrentStageData.stageIndex : 1;
-            int bestStage = StageProgressManager.Instance != null
-                ? StageProgressManager.Instance.GetHighestUnlockedStageIndex()
-                : stageIndex;
 
             result.Open(
                 isWin: true,
                 stageIndex: stageIndex,
                 reachedWaveCount: game.CurrentWaveIndex,
-                bestStageIndex: bestStage,
+                // 튜토리얼은 스테이지 기록에 남지 않으므로 이번 판이 곧 최고 기록이다.
+                bestWave: game.CurrentWaveIndex,
                 rewards: new List<PointRewardEntry>(),
                 onClose: SceneFlowManager.LoadLobby);
 

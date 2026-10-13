@@ -57,7 +57,16 @@ namespace OJ.Hunting
             callback?.Invoke();
         }
 
-        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int bestStageIndex, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
+        /// <summary>
+        /// 결과를 채우고 연다.
+        ///
+        /// <b>아래 칸은 "그 스테이지의 최고 웨이브" 다.</b> 예전에는 "Best Stage" 로 지금까지 열린
+        /// 가장 높은 스테이지를 보였는데, 방금 한 판과 상관없는 숫자라 무엇을 뜻하는지 애매했다.
+        /// 이번 판의 웨이브(큰 숫자)와 나란히 놓여야 "이번에 얼마나 갔고, 이 스테이지 최고는 얼마인가" 로 읽힌다.
+        /// </summary>
+        /// <param name="reachedWaveCount">이번 판에 깬 웨이브 수.</param>
+        /// <param name="bestWave">이 스테이지에서 가장 멀리 간 웨이브. 이번 판을 포함한다.</param>
+        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int bestWave, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
         {
             closeAction = onClose;
 
@@ -76,13 +85,13 @@ namespace OJ.Hunting
             }
 
             if (mainValueText != null)
-                mainValueText.SetText("{0}", Mathf.Max(0, reachedWaveCount));
+                mainValueText.SetText("Wave {0}", Mathf.Max(0, reachedWaveCount));
 
             if (bestStageLabelText != null)
-                bestStageLabelText.SetText("Best Stage");
+                bestStageLabelText.SetText("최고 기록");
 
             if (bestStageValueText != null)
-                bestStageValueText.SetText("{0}", Mathf.Max(1, bestStageIndex));
+                bestStageValueText.SetText("Wave {0}", Mathf.Max(Mathf.Max(0, reachedWaveCount), bestWave));
 
             BindRewards(rewards);
             Enter();
