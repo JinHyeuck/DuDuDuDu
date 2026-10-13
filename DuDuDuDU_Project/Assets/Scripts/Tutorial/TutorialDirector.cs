@@ -11,6 +11,7 @@ using OJ.Hunting;
 using OJ.Point;
 using OJ.Rewind;
 using OJ.SceneFlow;
+using OJ.Stage;
 using OJ.UI;
 
 namespace OJ.Tutorial
@@ -266,7 +267,33 @@ namespace OJ.Tutorial
 
             overlay.ClearAll();
             overlay.Exit();
-            SceneFlowManager.LoadLobby();
+
+            // 본편 스테이지를 깼을 때와 같은 결과창을 띄운다. 닫으면 로비로 간다.
+            // 오버레이를 먼저 닫아야 한다 — 그 창은 매 프레임 맨 위로 올라와 결과창을 덮는다.
+            //
+            // <b>보상 칸은 비어 있다.</b> 튜토리얼은 재화를 주지 않고(이 판의 보상은 진화로 만든
+            // 다이스다), 지급하지 않은 것을 결과창에 그리면 거짓말이 된다.
+            UIStageResultDialog result = GameContainer.UI?.Get<UIStageResultDialog>();
+            if (result == null)
+            {
+                SceneFlowManager.LoadLobby();
+                return;
+            }
+
+            GameContainer.UI?.Hide<UIWaveRewardPreviewDialog>();
+
+            int stageIndex = game.CurrentStageData != null ? game.CurrentStageData.stageIndex : 1;
+            int bestStage = StageProgressManager.Instance != null
+                ? StageProgressManager.Instance.GetHighestUnlockedStageIndex()
+                : stageIndex;
+
+            result.Open(
+                isWin: true,
+                stageIndex: stageIndex,
+                reachedWaveCount: game.CurrentWaveIndex,
+                bestStageIndex: bestStage,
+                rewards: new List<PointRewardEntry>(),
+                onClose: SceneFlowManager.LoadLobby);
         }
 
         /// <summary>
