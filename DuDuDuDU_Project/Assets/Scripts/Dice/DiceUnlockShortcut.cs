@@ -21,7 +21,7 @@ namespace OJ.Dice
         /// <summary>이 정의로 갈 수 있는 곳이 있는가. 버튼을 띄울지 정하는 데 쓴다.</summary>
         public static bool CanGo(DiceUnlockDefinition definition)
         {
-            return definition != null && definition.HasContentSource;
+            return definition != null && definition.HasRevisitableSource;
         }
 
         /// <summary>

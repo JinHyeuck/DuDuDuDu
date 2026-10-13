@@ -148,6 +148,25 @@ namespace OJ.Dice
             return best;
         }
 
+        /// <summary>
+        /// 인게임 첫 튜토리얼이 주는 다이스. 없으면 <c>DiceType.Max</c>.
+        ///
+        /// 튜토리얼은 이 다이스로 <b>진화를 가르친다</b>(Docs/IngameTutorialSteps.md).
+        /// <c>MergeSystem.TryEvolve</c> 가 대상 보유를 검사하므로, 판 안에서 진화시키기
+        /// 전에 이미 보유 상태여야 한다 — 지급 시점은 튜토리얼 쪽 몫이다.
+        /// </summary>
+        public DiceType GetTutorialUnlock()
+        {
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                DiceUnlockDefinition definition = definitions[i];
+                if (definition != null && definition.tutorialReward)
+                    return definition.diceType;
+            }
+
+            return DiceType.Max;
+        }
+
         /// <summary>이 다이스를 열어 주는 층. 없으면 0 이다.</summary>
         public int GetUnlockFloorOf(DiceType diceType)
         {
@@ -188,6 +207,7 @@ namespace OJ.Dice
             var seenFloors = new HashSet<int>();
             var seenStars = new HashSet<int>();
             var seenStages = new HashSet<int>();
+            int tutorialCount = 0;
 
             for (int i = 0; i < definitions.Count; i++)
             {
@@ -235,6 +255,16 @@ namespace OJ.Dice
                         problems.Add("요구 별이 중복이다: " + definition.starRequirement + "개");
                 }
 
+                if (definition.tutorialReward)
+                {
+                    tutorialCount++;
+
+                    // 튜토리얼은 기본 다이스 하나를 진화시켜 이 다이스를 만들어 보인다.
+                    // 킹이면 특수를 먼저 거쳐야 해서 한 판 안에 못 보여 준다.
+                    if (DiceEvolution.GetTier(diceType) != DiceTier.Special)
+                        problems.Add("튜토리얼 보상은 특수 다이스여야 한다(기본 다이스의 진화 대상): " + diceType);
+                }
+
                 if (definition.stageRequirement > 0)
                 {
                     if (stageCount > 0 && definition.stageRequirement > stageCount)
@@ -244,6 +274,10 @@ namespace OJ.Dice
                         problems.Add("요구 스테이지가 중복이다: " + definition.stageRequirement);
                 }
             }
+
+            // 튜토리얼은 한 판이고 진화도 한 번만 가르친다. 둘을 켜면 하나는 영영 안 나온다.
+            if (tutorialCount > 1)
+                problems.Add("튜토리얼 보상이 " + tutorialCount + "개다. 하나만 켤 수 있다.");
 
             // 특수 5 + 킹 5 가 빠짐없이 있어야 한다. 빠진 다이스는 영영 못 얻는다 —
             // 가격도 보상처도 없는 상태가 되기 때문이다.
@@ -293,6 +327,15 @@ namespace OJ.Dice
         /// <b>진화 재료 순서는 검사하지 않는다.</b> KingFire(탑 30층)의 재료는
         /// ArmorBreak(별 36)인데, 세 컨텐츠의 난이도를 비교할 공통 축이 없어 코드로 판정할 수 없다.
         /// 어긋나도 치명적이지 않다 — 진화만 못 하고 편성에는 쓴다.
+        ///
+        /// <b>Time 은 튜토리얼 보상이다.</b> 첫 튜토리얼이 4성 번개를 Time 으로 진화시켜
+        /// 보스를 잡게 하고, 그 다이스를 그대로 준다("변신한 다이스를 얻었다").
+        /// 원래 있던 스테이지 14 경로는 <b>뺐다</b> — 모든 유저가 튜토리얼에서 이미 보유하므로
+        /// 그 자리는 언제나 환급(재화)만 나오는 죽은 미끼가 된다. 가격은 남긴다(환급액).
+        ///
+        /// <b>스테이지 14 는 KingThunder 가 받았다</b>(탑 140층에서 옮김). KingThunder 의 진화
+        /// 재료가 Time 이라 "튜토리얼에서 받은 Time 을 킹으로 올린다" 는 길이 처음부터 열린다.
+        /// 탑 140층은 비었다 — 한 다이스를 두 곳에 걸면 뒤에 닿는 쪽은 언제나 환급이다.
         /// </summary>
         public static List<DiceUnlockDefinition> BuildDefaults()
         {
@@ -301,18 +344,19 @@ namespace OJ.Dice
                 Make(DiceType.Tornado, price: 120, stars: 15),
                 Make(DiceType.ArmorBreak, price: 180, stars: 36),
                 Make(DiceType.Wind, price: 260, stage: 8),
-                Make(DiceType.Time, price: 360, stage: 14),
+                Make(DiceType.Time, price: 360, tutorial: true),
                 Make(DiceType.Stun, price: 480, stage: 22),
 
                 Make(DiceType.KingFire, price: 200, floor: 30),
                 Make(DiceType.KingIce, price: 280, floor: 100),
-                Make(DiceType.KingThunder, price: 360, floor: 140),
+                Make(DiceType.KingThunder, price: 360, stage: 14),
                 Make(DiceType.KingNormal, price: 450, floor: 190),
                 Make(DiceType.KingPoison, price: 560, floor: 250),
             };
         }
 
-        private static DiceUnlockDefinition Make(DiceType diceType, int price, int stars = 0, int stage = 0, int floor = 0)
+        private static DiceUnlockDefinition Make(
+            DiceType diceType, int price, int stars = 0, int stage = 0, int floor = 0, bool tutorial = false)
         {
             return new DiceUnlockDefinition
             {
@@ -321,6 +365,7 @@ namespace OJ.Dice
                 starRequirement = stars,
                 stageRequirement = stage,
                 towerFloor = floor,
+                tutorialReward = tutorial,
             };
         }
 
