@@ -92,7 +92,8 @@ namespace OJ.Tutorial
                 // 직전으로 돌아가므로, 그때 손에 있는 것이 정확히 이 값이다.
                 waveClearSP = retrySp,
 
-                baseMonsterHp = 5,
+                // 5 로는 벽이 한 번도 안 맞았다(플레이 확인). 현상금·보스 HP 도 이 값에서 나오므로 같이 오른다.
+                baseMonsterHp = 10,
                 baseMonsterDefense = 0,
                 waveHpLinearFactor = 0.145f,
                 waveHpQuadraticFactor = 0.018f,
