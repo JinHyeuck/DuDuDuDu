@@ -96,8 +96,8 @@ namespace OJ.Hunting
             }
 
             if (mainValueText != null)
-                // 이번 판 웨이브가 주인공이다. "/전체" 는 작게 붙여 기준만 알린다.
-                mainValueText.SetText("{0}<size=55%>/{1}</size>", Mathf.Max(0, reachedWaveCount), Mathf.Max(1, totalWaves));
+                // 이번 판 웨이브가 주인공이다. "/전체" 는 작고 회색으로 붙여 기준만 알린다.
+                mainValueText.SetText("{0}<size=55%><color=#A6A6A6>/{1}</color></size>", Mathf.Max(0, reachedWaveCount), Mathf.Max(1, totalWaves));
 
             if (bestStageLabelText != null)
                 bestStageLabelText.SetText("최고 기록");
