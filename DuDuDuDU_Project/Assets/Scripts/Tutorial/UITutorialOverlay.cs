@@ -74,10 +74,19 @@ namespace OJ.Tutorial
             Top,
         }
 
-        private const float HolePadding = 14f;
+        private const float HolePadding = 8f;
 
-        /// <summary>구멍 가장자리에서 바깥으로 딤드가 짙어지는 폭.</summary>
-        private const float Feather = 36f;
+        /// <summary>
+        /// 구멍 가장자리에서 바깥으로 딤드가 짙어지는 폭. 넓으면 옆 칸(머지 단계의 불·얼음 다이스)까지
+        /// 밝게 비쳐 그것도 눌러야 하는 것처럼 보인다 — 플레이로 확인했다. 칸 사이 틈보다 조금 넓게만 둔다.
+        /// </summary>
+        private const float Feather = 24f;
+
+        /// <summary>
+        /// 구멍 경계 바로 바깥의 진하기(딤드 대비 비율). 0 부터 올리면 경계가 흐려 어디까지가 구멍인지
+        /// 안 보인다. 여기서 시작해 <see cref="Feather"/> 만큼 가며 딤드와 같아진다.
+        /// </summary>
+        private const float EdgeStart = 0.45f;
 
         /// <summary>구멍 모서리의 반지름.</summary>
         private const float CornerRadius = 28f;
@@ -562,8 +571,12 @@ namespace OJ.Tutorial
                     float qy = Mathf.Max(Mathf.Abs(y + 0.5f - center) - (half - CornerRadius), 0f);
                     float distance = Mathf.Sqrt(qx * qx + qy * qy) - CornerRadius;
 
-                    float a = Mathf.Clamp01(distance / Feather);
-                    a = a * a * (3f - 2f * a);
+                    float a = 0f;
+                    if (distance > 0f)
+                    {
+                        float t = Mathf.Clamp01(distance / Feather);
+                        a = EdgeStart + (1f - EdgeStart) * (t * t * (3f - 2f * t));
+                    }
                     pixels[y * size + x] = new Color32(0, 0, 0, (byte)Mathf.RoundToInt(a * 255f));
                 }
             }
