@@ -4,6 +4,7 @@ using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using Cysharp.Threading.Tasks;
 using VContainer;
 using OJ.Core;
 using OJ.Analytics;
@@ -19,6 +20,7 @@ using OJ.Rewind;
 using OJ.SceneFlow;
 using OJ.Stage;
 using OJ.Tower;
+using OJ.Tutorial;
 using OJ.UI;
 using OJ.Utils;
 
@@ -159,6 +161,15 @@ namespace OJ.Hunting
             }
 
             ChangeState(InGameState.Setting);
+
+            if (battle.Tutorial.IsActive)
+            {
+                // 튜토리얼 판에서는 유물 선제 배치를 하지 않는다. 대본이 첫 소환 여섯 칸을
+                // 정해 두었는데, 유물이 먼저 그 칸을 채우면 머지 단계의 구멍이 엉뚱한 다이스를 연다.
+                new TutorialDirector(battle).RunAsync(this.GetCancellationTokenOnDestroy()).Forget();
+                return;
+            }
+
             StartCoroutine(CoApplyStageStartRelics());
         }
 
@@ -372,7 +383,11 @@ namespace OJ.Hunting
             PlayUI_Field?.gameObject.SetActive(state == InGameState.Setting);
             // 관리 단계에서도 나갈 수 있어야 한다. 웨이브 사이에 그만두려는 사람이
             // 다음 웨이브를 억지로 시작해야 했던 것이 예전 동작이다.
-            Pause?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
+            //
+            // 튜토리얼 판에서는 감춘다. 나가면 튜토리얼을 마치지 않은 채 로비에 서게 되고,
+            // 다음 실행에서 처음부터 다시 해야 한다 — 나갈 이유를 주지 않는 편이 낫다.
+            Pause?.gameObject.SetActive(
+                (state == InGameState.Wave || state == InGameState.Setting) && !battle.Tutorial.IsActive);
             Speed?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
@@ -714,6 +729,17 @@ namespace OJ.Hunting
             CloseBattlePhaseUI();
             RelicManager.Instance?.EndWave();
 
+            // 튜토리얼은 지면 보상도 결과창도 없다. 디렉터가 "다시 해 봐요" 를 띄우고 판을 다시 연다.
+            if (battle.Tutorial.IsActive)
+            {
+                RunHistoryManager.Instance?.EndRun(
+                    RunResultType.Fail,
+                    CurrentWaveIndex,
+                    wall != null ? wall.CurrentHp : 0);
+                battle.Tutorial.NotifyFailed();
+                return;
+            }
+
             // 탑은 실패 처리가 통째로 다르다. 웨이브 비율 보상이 없고(층은 하나뿐이다),
             // 대신 <b>남은 적 체력</b>을 기록해 다음 도전에서 진척을 보여 준다
             // (기획서 5.6 "보스 체력 12% 잔여 · 이전보다 6%p 개선").
@@ -803,6 +829,13 @@ namespace OJ.Hunting
             if (towerRun != null)
             {
                 InitializeTowerFloor(towerRun);
+                return;
+            }
+
+            // 튜토리얼 예약도 탑과 같은 모양이다. 한 번만 나온다.
+            if (TutorialProgressManager.Instance != null && TutorialProgressManager.Instance.ConsumePendingRun())
+            {
+                InitializeTutorial();
                 return;
             }
 
@@ -916,6 +949,45 @@ namespace OJ.Hunting
         /// 여전히 열리고, 규칙만 막으면 눌리는 버튼이 아무 일도 안 해 고장으로 보인다.
         /// 실제 차단은 각 시스템이 <c>battle.Tower.IsActive</c> 로 한다.
         /// </summary>
+        /// <summary>
+        /// 튜토리얼 판을 세운다. 본편 갈래와 거의 같고, 다른 것은 셋이다 —
+        /// StageData 를 코드로 만들고(<see cref="TutorialStage.Build"/>), 유물 시작 SP 를 더하지 않고,
+        /// 디렉터가 대본을 쥐도록 <see cref="TutorialRunManager.Begin"/> 을 부른다.
+        /// </summary>
+        private void InitializeTutorial()
+        {
+            battle.Tutorial.Begin();
+
+            CurrentStageData = TutorialStage.Build(battle.Summon.SummonsPerCostIncrease);
+
+            ApplyStageTheme();
+
+            Run.BeginRun(
+                seed: Environment.TickCount,
+                stageIndex: CurrentStageData.stageIndex,
+                wallMaxHp: CurrentStageData.wallHp,
+                monstersPerWave: CurrentStageData.monstersPerWave,
+                initialSummonPoint: 0,
+                initialSummonCost: 0);
+
+            battle.ElementUpgrade.ResetRunState();
+            battle.Bounty.ResetWaveState();
+            battle.Rewind.BeginRun();
+            deathRewindPromptOpen = false;
+            wall.SetInit(WallHp);
+
+            // 유물 시작 SP 보너스를 더하지 않는다. 시작 SP 는 "정확히 여섯 번 소환" 으로
+            // 계산된 값이라(TutorialStage.Build) 한 점이라도 남으면 첫 단계의 딤드가 안 풀린다.
+            battle.Summon.SetStageStartSp(CurrentStageData.initialSP, TutorialStage.StartSummonCost);
+
+            RunHistoryManager.Instance?.StartRun(CurrentStageData, WallHp);
+            UpdateWaveText();
+
+            Debug.Log("[튜토리얼] 판 시작 — 웨이브 " + CurrentStageData.totalWaves +
+                      " / 시작 SP " + CurrentStageData.initialSP +
+                      " / 웨이브 클리어 SP " + CurrentStageData.waveClearSP);
+        }
+
         private void HideTowerForbiddenUI()
         {
             // <b>컴포넌트가 붙은 오브젝트를 통째로 끄지 않는다.</b> 그 오브젝트에는 다른
@@ -986,7 +1058,10 @@ namespace OJ.Hunting
             }
 
             battle.BattlePoints?.Add(BattlePointType.EnhanceStone, 1);
-            RelicManager.Instance?.ApplyWaveClearRelics(wall);
+
+            // 튜토리얼 판에서는 유물이 끼지 않는다(UIDiceSummonSystem 의 같은 판단).
+            if (!battle.Tutorial.IsActive)
+                RelicManager.Instance?.ApplyWaveClearRelics(wall);
 
             // 현상금 보상은 웨이브가 끝나는 이 자리에서만 들어온다. 잡은 순간 주면
             // 전투 중에 SP 로 소환이 되어 "관리 단계에 쓰라"는 뜻이 무너진다.
@@ -995,7 +1070,10 @@ namespace OJ.Hunting
             if (CurrentStageData != null)
             {
                 battle.Summon.AddSP(CurrentStageData.waveClearSP);
-                ShowWaveRewardPreview();
+
+                // 튜토리얼은 골드를 주지 않으므로 "골드 +N" 미리보기가 거짓말이 된다.
+                if (!battle.Tutorial.IsActive)
+                    ShowWaveRewardPreview();
             }
 
             RunHistoryManager.Instance?.RecordWaveComplete(
@@ -1003,7 +1081,9 @@ namespace OJ.Hunting
                 wall != null ? wall.CurrentHp : 0,
                 battle.Summon.currentSP);
 
-            if (CurrentStageData != null)
+            // 튜토리얼 판은 스테이지 진행도에 남지 않는다. stageIndex 가 1 이라 그대로 두면
+            // 1스테이지를 깬 것으로 적힌다.
+            if (CurrentStageData != null && !battle.Tutorial.IsActive)
                 StageProgressManager.Instance?.RecordClearedWave(CurrentStageData.stageIndex, CurrentWaveIndex);
 
             if (CurrentStageData != null && CurrentWaveIndex >= CurrentStageData.totalWaves)
@@ -1228,6 +1308,19 @@ namespace OJ.Hunting
             isGameOver = true;
             inGameState = InGameState.None;
             CloseBattlePhaseUI();
+
+            // 튜토리얼은 보상도 결과창도 없다 — 보상은 진화로 만든 다이스다(디렉터가 이미 줬다).
+            // 스테이지 진행도에도 남기지 않는다. 끝맺음은 디렉터가 한다.
+            if (battle.Tutorial.IsActive)
+            {
+                RunHistoryManager.Instance?.EndRun(
+                    RunResultType.Clear,
+                    CurrentWaveIndex,
+                    wall != null ? wall.CurrentHp : 0);
+                GameContainer.UI?.Hide<UIDamageContributionPanel>();
+                battle.Tutorial.NotifyCleared();
+                return;
+            }
 
             int stageIndex = CurrentStageData != null ? CurrentStageData.stageIndex : 1;
             StageClearGrade clearGrade = StageRewardCalculator.GetClearGrade(wall.CurrentHp, wall.TotalHp);

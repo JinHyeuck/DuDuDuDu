@@ -60,7 +60,10 @@ namespace OJ.Dice
             int fromStar = from.Star;
             DiceType toType = to.Type;
             int toStar = to.Star;
-            DiceType mergedType = GetRandomMergedType(fromType);
+            // 튜토리얼 대본이 정해 둔 결과가 있으면 그것이다(노멀 둘 → 번개). 한 번 쓰면 사라진다.
+            DiceType mergedType = battle.Tutorial.TryTakeForcedMergeType(out DiceType forced)
+                ? forced
+                : GetRandomMergedType(fromType);
             battle.DiceStars.OnDiceRemove(fromType, fromStar);
             battle.DiceStars.OnDiceRemove(toType, toStar);
 
@@ -82,7 +85,9 @@ namespace OJ.Dice
                 battle.Game.CurrentWaveIndex);
 
             Destroy(from.gameObject);
-            RelicManager.Instance?.ApplyMergeInsurance();
+            // 튜토리얼 판에서는 유물이 끼지 않는다(UIDiceSummonSystem 의 같은 판단).
+            if (!battle.Tutorial.IsActive)
+                RelicManager.Instance?.ApplyMergeInsurance();
 
             // 머지만 센다. 진화(TryEvolve)·교환(TryExchange)은 같은 파일에 있지만
             // 기획의 "다이스 머지 n회" 가 가리키는 행동이 아니다.

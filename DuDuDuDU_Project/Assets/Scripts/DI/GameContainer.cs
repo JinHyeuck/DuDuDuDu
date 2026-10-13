@@ -18,6 +18,7 @@ using OJ.Stage;
 using OJ.StageReward;
 using OJ.StageStar;
 using OJ.Tower;
+using OJ.Tutorial;
 using OJ.UI;
 using OJ.Utils;
 
@@ -260,6 +261,13 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 튜토리얼 진행. 생성자 의존이 없다. 스테이지 세이브를 <b>읽기만</b> 하므로
+            // (이미 본편을 한 세이브는 건너뛴다) 등록 순서와 무관하다 — ReadFrom 은 파일
+            // 전체를 받아 자기 몫과 스테이지 몫을 같이 본다.
+            builder.Register<TutorialProgressManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 통합 세이브. 7.5 이후 <b>이것이 유일한 진행도 저장소다.</b>
             // ISaveOnApplicationLifecycle 로 등록해 앱이 멈출 때 파일이 쓰이게 한다.
             //
@@ -314,6 +322,7 @@ namespace OJ.DI
             BonusDiceManager.Instance = container.Resolve<BonusDiceManager>();
             EntitlementManager.Instance = container.Resolve<EntitlementManager>();
             SpecialSevenDaysManager.Instance = container.Resolve<SpecialSevenDaysManager>();
+            TutorialProgressManager.Instance = container.Resolve<TutorialProgressManager>();
             MissionManager.Instance = container.Resolve<MissionManager>();
             SeasonPassManager.Instance = container.Resolve<SeasonPassManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();

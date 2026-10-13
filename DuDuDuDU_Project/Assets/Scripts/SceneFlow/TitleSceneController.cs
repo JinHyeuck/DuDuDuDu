@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using OJ.Dice;
 using OJ.Equipment;
+using OJ.Tutorial;
 using OJ.Utils;
 
 namespace OJ.SceneFlow
@@ -25,6 +26,17 @@ namespace OJ.SceneFlow
             // 8.3a 에서 둘 다 컨테이너가 BeforeSceneLoad 에 만든다. 여기보다 이르므로
             // 이 줄은 할 일이 없어졌다.
             yield return new WaitForSecondsRealtime(staySeconds);
+
+            // 인게임 첫 튜토리얼을 아직 안 했으면 로비가 아니라 튜토리얼 판으로 간다
+            // (Docs/IngameTutorialSteps.md). 예약은 전투의 InitializeStage 가 한 번만 꺼낸다.
+            TutorialProgressManager tutorial = TutorialProgressManager.Instance;
+            if (tutorial != null && !tutorial.IsInGameCompleted)
+            {
+                tutorial.RequestInGameRun();
+                SceneFlowManager.LoadBattle();
+                yield break;
+            }
+
             SceneFlowManager.LoadLobby();
         }
     }

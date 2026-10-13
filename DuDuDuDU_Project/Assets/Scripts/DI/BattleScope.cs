@@ -10,6 +10,7 @@ using OJ.Hunting;
 using OJ.SceneFlow;
 using OJ.Rewind;
 using OJ.Tower;
+using OJ.Tutorial;
 
 namespace OJ.DI
 {
@@ -149,6 +150,11 @@ namespace OJ.DI
             // 웨이브가 시작된 뒤다.
             var rewind = new WaveRewindManager(context);
 
+            // 튜토리얼도 같은 이유로 여기서 만든다. <b>만들기만 하고 켜지 않는다</b> —
+            // 이 판이 튜토리얼인지는 GameManager.InitializeStage 가 예약을 꺼내 보고 정한다.
+            // 탑과 같은 순서다.
+            var tutorial = new TutorialRunManager();
+
             // 전투 재화 창구. 값은 이 판의 RunState 가 들고 있어서, 창구를 만들려면
             // GameManager 를 먼저 꺼내야 한다 — 아래 Bind 인자에서 한 번 더 Resolve 하지 않고
             // 이 지역변수를 넘기는 것이 그래서다(Resolve 를 두 번 해도 같은 것이 오지만,
@@ -174,7 +180,8 @@ namespace OJ.DI
                 battlePoints,
                 tower,
                 contribution,
-                rewind);
+                rewind,
+                tutorial);
 
             // 등록한 13개 말고도 씬에는 창구가 필요한 컴포넌트가 있다
             // (Wall · PlayerFireRateUI · UIRemoveDice). 그것들은 다른 곳에서

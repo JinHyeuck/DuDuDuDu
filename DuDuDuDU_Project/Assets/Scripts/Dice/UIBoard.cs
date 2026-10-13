@@ -136,6 +136,15 @@ namespace OJ.Dice
 
         public UIDice GetDice(int slotIndex) => diceMap[slotIndex];
 
+        /// <summary>칸의 사각형. 범위 밖이거나 아직 칸을 안 만들었으면 null. 튜토리얼이 그 칸만 열어 둔다.</summary>
+        public RectTransform GetSlotRect(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= slots.Count || slots[slotIndex] == null)
+                return null;
+
+            return slots[slotIndex].transform as RectTransform;
+        }
+
         public int GetSlotIndexFromObject(GameObject hitObj)
         {
             if (hitObj == null)

@@ -141,6 +141,8 @@ namespace OJ.Core.Tests
             state.SpecialSevenDays.ClaimedDays.Add(3);
             state.SpecialSevenDays.LastAutoOpenDate = "2026-10-06";
 
+            state.Tutorial.InGameCompleted = true;
+
             return state;
         }
 
@@ -238,6 +240,9 @@ namespace OJ.Core.Tests
                 "specialSevenDays.claimedDays");
             Assert.That(actual.SpecialSevenDays.LastAutoOpenDate,
                 Is.EqualTo(expected.SpecialSevenDays.LastAutoOpenDate), "specialSevenDays.lastAutoOpenDate");
+
+            Assert.That(actual.Tutorial.InGameCompleted,
+                Is.EqualTo(expected.Tutorial.InGameCompleted), "tutorial.inGameCompleted");
         }
 
         // --- 직렬화 왕복 ------------------------------------------------------------------
@@ -516,6 +521,9 @@ namespace OJ.Core.Tests
                 "    \"purchased\": false,",
                 "    \"claimedDays\": [],",
                 "    \"lastAutoOpenDate\": \"\"",
+                "  },",
+                "  \"tutorial\": {",
+                "    \"inGameCompleted\": false",
                 "  }",
                 "}",
             })));

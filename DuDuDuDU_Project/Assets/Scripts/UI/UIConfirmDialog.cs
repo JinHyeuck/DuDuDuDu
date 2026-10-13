@@ -41,6 +41,9 @@ namespace OJ.UI
         /// <paramref name="onCancel"/> 은 생략할 수 있다 — 취소는 "아무 일도 없음"이
         /// 대부분이라 매번 빈 람다를 쓰게 하는 것이 낭비다.
         /// </summary>
+        /// <summary>확인 버튼. 튜토리얼이 그 자리만 열어 둔다.</summary>
+        public RectTransform ConfirmButtonRect => confirmButton != null ? confirmButton.transform as RectTransform : null;
+
         public void Open(
             string title,
             string message,

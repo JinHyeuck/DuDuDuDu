@@ -5,6 +5,7 @@ using OJ.Element;
 using OJ.Hunting;
 using OJ.Rewind;
 using OJ.Tower;
+using OJ.Tutorial;
 
 namespace OJ.DI
 {
@@ -99,5 +100,8 @@ namespace OJ.DI
         /// 사고가 조용히 삼켜진다 — <see cref="Tower"/> 가 같은 이유로 같은 모양이다.
         /// </summary>
         WaveRewindManager Rewind { get; }
+
+        /// <summary>이번 전투가 튜토리얼 판인지와 그 판의 대본. 튜토리얼이 아니면 <c>IsActive</c> 가 거짓이다.</summary>
+        TutorialRunManager Tutorial { get; }
     }
 }
