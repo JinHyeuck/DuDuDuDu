@@ -37,6 +37,11 @@ namespace OJ.Tutorial
         // ── 2웨이브(재) ────────────────────────
         Wave2Retry,
 
+        // ── 3웨이브 전: 속성강화 ───────────────
+        UpgradeOpen,
+        UpgradeLevelUp,
+        UpgradeClose,
+
         // ── 3웨이브: 손 놓기 ───────────────────
         SummonHint,
         BountyHint,

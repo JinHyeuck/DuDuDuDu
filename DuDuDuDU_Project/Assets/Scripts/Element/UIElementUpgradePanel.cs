@@ -85,6 +85,18 @@ namespace OJ.Element
                 battle.ElementUpgrade.OnElementLevelChanged -= OnElementLevelChanged;
         }
 
+        /// <summary>이 속성 줄의 강화 버튼. 아직 줄을 안 만들었거나 없으면 null.</summary>
+        public RectTransform GetUpgradeButtonRect(ElementType elementType)
+        {
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] != null && items[i].ElementType == elementType)
+                    return items[i].UpgradeButtonRect;
+            }
+
+            return null;
+        }
+
         public void Open()
         {
             Enter();

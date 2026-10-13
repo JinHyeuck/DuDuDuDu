@@ -50,6 +50,9 @@ namespace OJ.Element
 
         }
 
+        /// <summary>강화 창을 여는 버튼(보드 왼쪽 "강화" 칸). 튜토리얼이 그 자리만 열어 둔다.</summary>
+        public RectTransform OpenButtonRect => ElementUpgrade != null ? ElementUpgrade.transform as RectTransform : null;
+
         public int GetLevel(ElementType elementType)
         {
             if (elementType == ElementType.Max)

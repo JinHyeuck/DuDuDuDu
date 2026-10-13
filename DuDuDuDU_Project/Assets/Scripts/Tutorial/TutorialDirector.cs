@@ -6,6 +6,7 @@ using UnityEngine;
 using OJ.Bounty;
 using OJ.DI;
 using OJ.Dice;
+using OJ.Element;
 using OJ.Hunting;
 using OJ.Point;
 using OJ.Rewind;
@@ -194,6 +195,11 @@ namespace OJ.Tutorial
             Enter(TutorialStep.Wave2Retry);
             await Until(() => game.inGameState == InGameState.Setting);
 
+            // 3웨이브 전: 속성강화 ─────────────────────────────────────
+            // 진화 직전에 마석을 진화 비용까지 맞춰 주므로(GrantEvolveGift) 여기서 마석을 써도
+            // 진화가 막히지 않는다. 이 시점 마석은 웨이브 두 번 클리어분(2개)이고 첫 강화는 1개다.
+            await RunUpgradeAsync();
+
             // 3웨이브: 손 놓기 ───────────────────────────────────────
             await RunHintsAsync(game, summon, summonButton, playButton, banner, bountyDialog);
 
@@ -302,6 +308,59 @@ namespace OJ.Tutorial
                 Guide(playButton, "준비되면 웨이브를 시작해요.", dim: false);
                 await Until(() => game.inGameState == InGameState.Wave);
             }
+        }
+
+        /// <summary>
+        /// 속성강화 한 번 — 강화 버튼 → 번개의 속성 줄 강화 → 창 닫기. 셋 다 딤드다.
+        /// 고르는 속성은 머지로 만든 번개의 속성이다. 보드에서 가장 센 다이스라 효과가 바로 보이고,
+        /// 뒤에서 진화시킬 4성도 같은 계통이다.
+        /// </summary>
+        private async UniTask RunUpgradeAsync()
+        {
+            ElementUpgradeManager upgrade = battle.ElementUpgrade;
+            UIElementUpgradePanel panel = GameContainer.UI?.Get<UIElementUpgradePanel>();
+            if (upgrade == null || panel == null || upgrade.OpenButtonRect == null)
+            {
+                Debug.LogError("[튜토리얼] 속성강화 버튼이나 창이 없어 강화 단계를 건너뛴다.");
+                return;
+            }
+
+            ElementType element = ElementOf(TutorialStage.MergeResult);
+
+            Enter(TutorialStep.UpgradeOpen);
+            Guide(upgrade.OpenButtonRect, "웨이브를 막으면 마석도 받아요.\n마석으로 속성을 강화할 수 있어요!", dim: true);
+            await Until(() => panel.isEnter);
+
+            // 창이 막 열린 프레임에는 줄이 아직 없을 수 있다(UIElementUpgradePanel.BuildIfNeeded).
+            await Until(() => panel.GetUpgradeButtonRect(element) != null);
+
+            Enter(TutorialStep.UpgradeLevelUp);
+            int before = upgrade.GetLevel(element);
+            Guide(panel.GetUpgradeButtonRect(element), "번개 주사위의 속성을 강화해 봐요.", dim: true);
+            await Until(() => upgrade.GetLevel(element) > before);
+
+            Enter(TutorialStep.UpgradeClose);
+            RectTransform close = panel.FindExitButtonRect("Exit");
+            if (close != null)
+            {
+                Guide(close, "강화한 만큼 같은 속성 주사위가 모두 세져요.\n창을 닫아요.", dim: true);
+            }
+            else
+            {
+                overlay.ClearAll();
+                overlay.SetTalk("강화한 만큼 같은 속성 주사위가 모두 세져요.\n창을 닫아요.", where: UITutorialOverlay.TalkPlacement.Top);
+            }
+
+            await Until(() => !panel.isEnter);
+            overlay.ClearAll();
+        }
+
+        private static ElementType ElementOf(DiceType type)
+        {
+            DiceMetaDataDatabase.DiceMeta meta = DiceMetaDataProvider.GetMeta(type);
+            return meta != null && meta.elementType != null && meta.elementType.Length > 0
+                ? meta.elementType[0]
+                : ElementType.Light;
         }
 
         private async UniTask HandleFailureAsync()
