@@ -70,7 +70,7 @@ namespace OJ.Core
         /// <b>표를 압축하지 마라.</b> 조사에서 나온 사실이 두 가지 있는데, 둘 다
         /// "지금 값이 같다"는 것이지 "같아야 한다"는 것이 아니다:
         ///
-        ///  * 6종 전부 <c>baseAttack = 2</c>, <c>attackPerLevel = 3</c>, <c>scrollPerLevel = 1</c> 이다.
+        ///  * 6종 전부 <c>baseAttack = 3</c>, <c>attackPerLevel = 3</c>, <c>scrollPerLevel = 1</c> 이다.
         ///    실제로 다른 것은 골드 2열과 <c>baseScroll</c> 뿐이다. 공통 3열을 상수로 빼면
         ///    장비 하나만 공격력 곡선을 다르게 하고 싶어지는 날 <b>표가 아니라 코드를</b>
         ///    고쳐야 한다. 밸런스 수치를 SO 로 올리는 것이 이 리팩토링의 결정 3번이므로,
@@ -86,19 +86,19 @@ namespace OJ.Core
             switch (equipmentTypeIndex)
             {
                 case WeaponIndex:
-                    return new EquipmentUpgradeRule { baseGold = 120, goldPerLevel = 52, baseScroll = 3, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return new EquipmentUpgradeRule { baseGold = 120, goldPerLevel = 52, baseScroll = 3, scrollPerLevel = 1, baseAttack = 3, attackPerLevel = 3 };
                 case HelmetIndex:
-                    return new EquipmentUpgradeRule { baseGold = 95, goldPerLevel = 48, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return new EquipmentUpgradeRule { baseGold = 95, goldPerLevel = 48, baseScroll = 2, scrollPerLevel = 1, baseAttack = 3, attackPerLevel = 3 };
                 case ArmorIndex:
-                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 48, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 48, baseScroll = 2, scrollPerLevel = 1, baseAttack = 3, attackPerLevel = 3 };
                 case RingIndex:
-                    return new EquipmentUpgradeRule { baseGold = 110, goldPerLevel = 50, baseScroll = 3, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return new EquipmentUpgradeRule { baseGold = 110, goldPerLevel = 50, baseScroll = 3, scrollPerLevel = 1, baseAttack = 3, attackPerLevel = 3 };
                 case ShoesIndex:
-                    return new EquipmentUpgradeRule { baseGold = 90, goldPerLevel = 46, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return new EquipmentUpgradeRule { baseGold = 90, goldPerLevel = 46, baseScroll = 2, scrollPerLevel = 1, baseAttack = 3, attackPerLevel = 3 };
                 case NecklaceIndex:
-                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 50, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 50, baseScroll = 2, scrollPerLevel = 1, baseAttack = 3, attackPerLevel = 3 };
                 default:
-                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 50, baseScroll = 2, scrollPerLevel = 1, baseAttack = 2, attackPerLevel = 3 };
+                    return new EquipmentUpgradeRule { baseGold = 100, goldPerLevel = 50, baseScroll = 2, scrollPerLevel = 1, baseAttack = 3, attackPerLevel = 3 };
             }
         }
 
@@ -162,26 +162,34 @@ namespace OJ.Core
         /// <summary>
         /// EquipmentManager.GetEquipmentAttack 의 산출식.
         /// <code>
-        ///   if (level &lt;= 1) return 0;
-        ///   return OJMath.Max(0, baseAttack + ((level - 1) * attackPerLevel));
+        ///   return OJMath.Max(0, baseAttack + ((OJMath.Max(1, level) - 1) * attackPerLevel));
         /// </code>
         ///
-        /// <b>레벨 1 은 0 이지 baseAttack 이 아니다.</b> 조기 반환을 빼고
-        /// <c>OJMath.Max(0, baseAttack + ((level - 1) * attackPerLevel))</c> 만 남기면
-        /// 레벨 1 에서 0 대신 2 가 나온다 — 장비 6종이 전부 그러므로 전투력이 통째로
-        /// 12 만큼 뛴다. 골든 core.equipUpgrade.attack[*][1] 이 그 변이를 잡는다.
+        /// <b>레벨 1 이 0 이 아니라 baseAttack 이다. 그 조기 반환을 일부러 걷어냈다.</b>
         ///
-        /// 조기 반환 조건이 <c>&lt;= 1</c> 이지 <c>&lt; 1</c> 이 아닌 것도 그 자리다.
-        /// 레벨이 0 이나 음수로 들어오는 경로는 지금 없다(GetLevel 이 <c>OJMath.Max(1, ·)</c> 로
-        /// 이미 자른다). 그래도 조건을 <c>&lt; 1</c> 로 느슨하게 하면 레벨 1 이 2 를 내므로
-        /// 위와 같은 사고가 된다.
+        /// 예전에는 <c>if (level &lt;= 1) return 0;</c> 이 맨 앞에 있었고, 그래서 신규 유저의
+        /// 장비 총 공격력이 0 이었다. 당시에는 그게 살았다 — 다이스 공격력이
+        /// <c>다이스 정수 + 장비 정수</c> 였으므로 장비가 0 이어도 다이스 쪽 15 가 남았다.
+        ///
+        /// 다이스 퍼센트 개편(<see cref="DamageFormula"/>)이 그 덧셈을 곱셈으로 바꿨다.
+        /// 이제 기본 공격력이 <c>장비 총 공격력 × 다이스 퍼센트</c> 하나이므로,
+        /// <b>장비가 0 이면 모든 다이스의 데미지가 하한 1 로 떨어진다.</b> 즉 조기 반환을
+        /// 되살리는 것은 "레벨 1 값을 0 으로 되돌리는" 변경이 아니라 신규 설치를 깨는 변경이다.
+        ///
+        /// <c>OJMath.Max(1, level)</c> 하한이 조기 반환 자리를 대신한다. 레벨 0·음수로
+        /// 들어오는 경로는 지금 없지만(GetLevel 이 이미 자른다) 이 함수는 public 이고,
+        /// 하한이 없으면 레벨 -5 가 <c>3 + (-6)*3 = -15</c> → 바깥 Max(0,·) 로 0 이 되어
+        /// 레벨 1 과 갈린다. 골든 <c>core.equipUpgrade.attack[*][-5|0|1]</c> 세 열이 같은 값인
+        /// 것이 그 하한의 증거다.
+        ///
+        /// <c>baseAttack</c> 이 2 에서 3 으로 오른 것도 같은 개편이다. 레벨 1 총합을
+        /// 6종 × 3 = 18 로 맞춰, 노말 다이스 1레벨(100%)의 1성 데미지가 개편 전(8)과
+        /// 거의 같게(9) 떨어지도록 한 값이다. 2 로 두면 12 가 되어 초반 데미지가 6 으로
+        /// 내려가고, 스테이지 1 웨이브 1 몬스터(체력 7)를 한 방에 못 잡는다.
         /// </summary>
         public static int Attack(int baseAttack, int attackPerLevel, int level)
         {
-            if (level <= 1)
-                return 0;
-
-            return OJMath.Max(0, baseAttack + ((level - 1) * attackPerLevel));
+            return OJMath.Max(0, baseAttack + ((OJMath.Max(1, level) - 1) * attackPerLevel));
         }
 
         /// <summary>규칙표에서 공격력까지 한 번에.</summary>
