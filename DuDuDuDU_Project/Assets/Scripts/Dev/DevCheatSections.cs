@@ -562,6 +562,18 @@ namespace OJ.Dev
                 SceneFlowManager.LoadBattle();
             });
 
+            // 열린 것들의 해금 연출·가이드를 다음 로비 진입에 다시 본다(Docs/ContentUnlock.md).
+            DevCheatUI.CreateSectionTitle(root, "컨텐츠 해금");
+            OJ.ContentUnlock.ContentUnlockManager unlocks = OJ.ContentUnlock.ContentUnlockManager.Instance;
+            DevCheatUI.CreateHelpText(root,
+                unlocks == null ? "ContentUnlockManager 가 없다."
+                    : "마지막 클리어 " + unlocks.LastClearedStage + " · 남은 연출 " + unlocks.GetVisitQueue().Count + "개(이번 진입분)");
+            DevCheatUI.CreateButton("ResetUnlockAnnouncements", root, "해금 연출 기록 초기화 → 로비", DevCheatUI.AccentColor, () =>
+            {
+                OJ.ContentUnlock.ContentUnlockManager.Instance?.ResetAnnouncements();
+                SceneFlowManager.LoadLobby();
+            });
+
             DevCheatUI.CreateSectionTitle(root, "세이브");
             DevCheatUI.CreateButton("Save", root, "즉시 저장", DevCheatUI.ButtonColor,
                 () => GameContainer.SaveService?.SaveAll());

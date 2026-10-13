@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
+using OJ.ContentUnlock;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
@@ -171,6 +172,10 @@ namespace OJ.Lobby
         /// </summary>
         public void ShowTab(LobbyTab tab)
         {
+            // 아직 안 열린 탭은 넘어가지 않고 언제 열리는지만 알린다(Docs/ContentUnlock.md).
+            if (TryExplainLockedTab(tab))
+                return;
+
             SetPageActive<UIShopPage>(tab == LobbyTab.Shop);
             SetPageActive<UIEquipmentPage>(tab == LobbyTab.Equipment);
             SetPageActive<UIDiceGrowthPage>(tab == LobbyTab.Bullet);
@@ -185,6 +190,28 @@ namespace OJ.Lobby
                     button.SetState(button._tab == tab);
                 }
             }
+        }
+
+        /// <summary>
+        /// 잠긴 탭이면 안내 창을 띄우고 true. 로비 밖(문지기 없음)이나 표에 없는 탭은 열린 것으로 본다.
+        /// </summary>
+        private static bool TryExplainLockedTab(LobbyTab tab)
+        {
+            LobbyContentGate gate = LobbyContentGate.Current;
+            if (gate == null || !LobbyContentGate.TryGetContentOfTab(tab, out OJ.Core.ContentId id) || gate.IsAccessible(id))
+                return false;
+
+            OJ.Core.ContentUnlockDefinition definition = ContentUnlockManager.Instance?.GetDefinition(id);
+            string name = definition != null ? definition.displayName : tab.ToString();
+            string message = definition != null && definition.requiredClear > 0
+                ? definition.requiredClear + "스테이지를 클리어하면 열려요."
+                : "곧 열려요.";
+
+            UIConfirmDialog dialog = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (dialog != null)
+                dialog.Open(name, message, "확인", null, null);
+
+            return true;
         }
 
         private void RefreshStageUI()

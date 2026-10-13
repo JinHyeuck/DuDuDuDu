@@ -19,6 +19,7 @@ using OJ.StageReward;
 using OJ.StageStar;
 using OJ.Tower;
 using OJ.Tutorial;
+using OJ.ContentUnlock;
 using OJ.UI;
 using OJ.Utils;
 
@@ -268,6 +269,13 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 컨텐츠 해금 연출 기록(Docs/ContentUnlock.md). 생성자 의존이 없다. 열림 판정은
+            // StageProgressManager 를 <b>부를 때</b> 읽고, ReadFrom 은 파일의 스테이지 몫을 읽기만
+            // 하므로(튜토리얼과 같다) 등록 순서와 무관하다.
+            builder.Register<ContentUnlockManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 통합 세이브. 7.5 이후 <b>이것이 유일한 진행도 저장소다.</b>
             // ISaveOnApplicationLifecycle 로 등록해 앱이 멈출 때 파일이 쓰이게 한다.
             //
@@ -323,6 +331,7 @@ namespace OJ.DI
             EntitlementManager.Instance = container.Resolve<EntitlementManager>();
             SpecialSevenDaysManager.Instance = container.Resolve<SpecialSevenDaysManager>();
             TutorialProgressManager.Instance = container.Resolve<TutorialProgressManager>();
+            ContentUnlockManager.Instance = container.Resolve<ContentUnlockManager>();
             MissionManager.Instance = container.Resolve<MissionManager>();
             SeasonPassManager.Instance = container.Resolve<SeasonPassManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();

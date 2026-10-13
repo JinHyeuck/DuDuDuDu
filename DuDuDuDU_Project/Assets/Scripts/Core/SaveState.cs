@@ -173,6 +173,15 @@ namespace OJ.Core
         /// </summary>
         public TutorialSave Tutorial { get; } = new TutorialSave();
 
+        /// <summary>
+        /// 컨텐츠 해금 연출을 봤는가. (<c>OJ.ContentUnlock.ContentUnlockManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> 필드를 <i>더하는</i> 것이라 예전 세이브에는 이 키가 없고,
+        /// 그 상태는 <see cref="ContentUnlockSave.Initialized"/> 가 false 인 것으로 읽힌다 —
+        /// 이미 스테이지를 깬 세이브에 연출이 쏟아지지 않게 하는 판단은 읽는 쪽(매니저)이 한다.
+        /// </summary>
+        public ContentUnlockSave ContentUnlock { get; } = new ContentUnlockSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -529,5 +538,18 @@ namespace OJ.Core
     {
         /// <summary>인게임 첫 튜토리얼(Docs/IngameTutorialSteps.md)을 끝까지 마쳤는가.</summary>
         public bool InGameCompleted { get; set; }
+    }
+
+    /// <summary>컨텐츠 해금 연출 기록. (<c>OJ.ContentUnlock.ContentUnlockManager</c>, Docs/ContentUnlock.md)</summary>
+    public sealed class ContentUnlockSave
+    {
+        /// <summary>
+        /// 이 세이브가 연출 기록을 들고 있는가. 이 기능보다 먼저 생긴 세이브는 false 다 —
+        /// 그때는 이미 열린 것을 본 것으로 채운다(<c>ContentUnlockRules.ShouldBackfill</c>).
+        /// </summary>
+        public bool Initialized { get; set; }
+
+        /// <summary>연출(또는 가이드)을 끝까지 본 컨텐츠. <c>ContentId</c> 이름, 오름차순.</summary>
+        public List<string> Announced { get; } = new List<string>();
     }
 }
