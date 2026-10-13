@@ -47,8 +47,25 @@ namespace OJ.Tutorial
         [SerializeField] private TMP_Text bubbleText;
         [SerializeField] private TMP_Text hintText;
 
+        /// <summary>말풍선을 어디 둘지. 대부분은 <see cref="Auto"/> 로 충분하다.</summary>
+        public enum TalkPlacement
+        {
+            /// <summary>가리키는 곳을 피해서 둔다(<see cref="PlaceBubble"/> 주석).</summary>
+            Auto = 0,
+
+            /// <summary>화면 위쪽 전장. 아래쪽 창(상세 패널)을 가리면 안 될 때.</summary>
+            Top,
+        }
+
         private const float HolePadding = 14f;
         private const float BubbleOffsetY = 560f;
+        private const float BubbleGap = 30f;
+
+        /// <summary>
+        /// 말풍선 중심이 내려갈 수 있는 가장 낮은 자리. 이 아래는 다이스 보드다 —
+        /// 손가락 단계(입력을 막지 않는다)에서 보드를 덮으면 유저가 만지려는 것을 가린다.
+        /// </summary>
+        private const float BubbleLowestY = -190f;
         private const float FingerBob = 22f;
 
         private readonly List<RectTransform> holeTargets = new List<RectTransform>();
@@ -56,6 +73,7 @@ namespace OJ.Tutorial
         private RectTransform fingerTarget;
         private bool tapMode;
         private bool tapped;
+        private TalkPlacement placement;
 
         private readonly Vector3[] corners = new Vector3[4];
 
@@ -118,8 +136,10 @@ namespace OJ.Tutorial
         /// 말풍선을 띄운다. <paramref name="tapToContinue"/> 면 화면 전체가 탭을 받고,
         /// <see cref="ConsumeTap"/> 이 그 탭을 한 번 돌려준다. null 이면 거둔다.
         /// </summary>
-        public void SetTalk(string text, bool tapToContinue = false)
+        public void SetTalk(string text, bool tapToContinue = false, TalkPlacement where = TalkPlacement.Auto)
         {
+            placement = where;
+
             bool show = !string.IsNullOrEmpty(text);
             if (bubble != null)
                 bubble.gameObject.SetActive(show);
@@ -267,8 +287,13 @@ namespace OJ.Tutorial
         }
 
         /// <summary>
-        /// 말풍선은 가리키는 곳의 <b>반대편</b>에 둔다. 같은 쪽에 두면 열어 둔 구멍을 말풍선이 가린다.
-        /// 가리키는 곳이 없으면 가운데다.
+        /// 말풍선은 가리키는 곳을 가리지 않게 둔다.
+        /// <list type="bullet">
+        /// <item>가리키는 곳이 아래쪽(보드·버튼)이면 위쪽 전장에 둔다.</item>
+        /// <item>위쪽(현상금 띠·딜미터기)이면 그 <b>바로 아래</b>에 두되 보드까지는 내려가지 않는다.
+        ///       반대편(아래쪽)에 두면 보드를 덮어, 손가락 단계에서 유저가 만지려는 것을 가린다.</item>
+        /// <item>가리키는 곳이 없으면 가운데다.</item>
+        /// </list>
         /// </summary>
         private void PlaceBubble()
         {
@@ -279,8 +304,16 @@ namespace OJ.Tutorial
             RectTransform focus = fingerTarget != null ? fingerTarget
                 : holeTargets.Count > 0 ? holeTargets[0] : null;
 
-            if (focus != null && TryGetUnionRect(SingleTarget(focus), out Rect local))
-                y = local.center.y < 0f ? BubbleOffsetY : -BubbleOffsetY;
+            if (placement == TalkPlacement.Top)
+            {
+                y = BubbleOffsetY;
+            }
+            else if (focus != null && TryGetUnionRect(SingleTarget(focus), out Rect local))
+            {
+                y = local.center.y < 0f
+                    ? BubbleOffsetY
+                    : Mathf.Max(local.yMin - BubbleGap - bubble.rect.height * 0.5f, BubbleLowestY);
+            }
 
             bubble.anchoredPosition = new Vector2(0f, y);
         }
@@ -343,7 +376,13 @@ namespace OJ.Tutorial
 
         private static readonly Color DimColor = new Color(0f, 0f, 0f, 0.68f);
         private static readonly Color BubbleColor = new Color(0.10f, 0.12f, 0.20f, 0.94f);
-        private static readonly Color RingColor = new Color(1f, 0.84f, 0.25f, 0.95f);
+        private static readonly Color ArrowColor = new Color(1f, 0.84f, 0.25f, 0.95f);
+
+        /// <summary>
+        /// 원은 <b>옅게</b> 깐다. 내장 원 스프라이트는 속이 찬 원이라 진하게 칠하면 가리키는 버튼의
+        /// 글자와 그림을 덮는다 — 플레이로 확인한 사고다.
+        /// </summary>
+        private static readonly Color RingColor = new Color(1f, 0.84f, 0.25f, 0.28f);
         private static readonly Color HintColor = new Color(1f, 1f, 1f, 0.6f);
 
         /// <summary>에디터 굽기 전용.</summary>
@@ -388,7 +427,7 @@ namespace OJ.Tutorial
             overlay.fingerRing = ring.rectTransform;
             UIBountyUIFactory.SetRect(overlay.fingerRing, new Vector2(150f, 150f), Vector2.zero);
 
-            Image arrow = UIBountyUIFactory.CreateImage("Arrow", fingerObject.transform, RingColor);
+            Image arrow = UIBountyUIFactory.CreateImage("Arrow", fingerObject.transform, ArrowColor);
             arrow.sprite = arrowSprite;
             arrow.preserveAspect = true;
             arrow.raycastTarget = false;

@@ -216,7 +216,9 @@ namespace OJ.Tutorial
 
                 Enter(TutorialStep.EvolveClose);
                 overlay.ClearAll();
-                overlay.SetTalk(DiceName(TutorialStage.EvolveTarget) + " 주사위로 변신했어요!\n바깥을 눌러 창을 닫아요.");
+                overlay.SetTalk(
+                    DiceName(TutorialStage.EvolveTarget) + "(으)로 변신했어요!\n바깥을 눌러 창을 닫아요.",
+                    where: UITutorialOverlay.TalkPlacement.Top);
                 await Until(() => !detail.isEnter);
             }
             else
@@ -237,7 +239,7 @@ namespace OJ.Tutorial
             TutorialProgressManager.Instance?.MarkInGameCompleted();
             Time.timeScale = 1f;
             overlay.SetDim();
-            await TalkAsync("튜토리얼 완료!\n변신한 " + DiceName(TutorialStage.EvolveTarget) + " 주사위는 이제 당신 거예요.");
+            await TalkAsync("튜토리얼 완료!\n변신한 " + DiceName(TutorialStage.EvolveTarget) + "은(는) 이제 당신 거예요.");
 
             overlay.ClearAll();
             overlay.Exit();
