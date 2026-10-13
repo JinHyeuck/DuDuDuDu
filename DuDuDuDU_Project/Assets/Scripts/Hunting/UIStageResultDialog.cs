@@ -115,6 +115,22 @@ namespace OJ.Hunting
         }
 
         /// <summary>
+        /// 스테이지 이름 칸("Stage N")을 다른 글자로 바꾼다. <see cref="Open"/> 뒤에 부른다.
+        /// 스테이지가 아닌 판(튜토리얼)이 같은 결과창을 쓸 때 쓴다.
+        /// </summary>
+        public void SetStageLabel(string label)
+        {
+            if (stageLabelText == null)
+                return;
+
+            foreach (var text in stageLabelText)
+            {
+                if (text != null)
+                    text.SetText(label);
+            }
+        }
+
+        /// <summary>
         /// 재화가 아닌 보상(다이스 등)을 한 칸 더 그린다. <see cref="Open"/> 뒤에 부른다.
         ///
         /// <b>왜 따로인가.</b> 재화 보상은 <c>PointRewardEntry</c> 로 오고 아이콘도 재화 표에서 찾는다.

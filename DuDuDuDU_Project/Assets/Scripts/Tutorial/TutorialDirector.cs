@@ -295,6 +295,9 @@ namespace OJ.Tutorial
                 rewards: new List<PointRewardEntry>(),
                 onClose: SceneFlowManager.LoadLobby);
 
+            // 튜토리얼 판의 StageData 는 성장식 때문에 stageIndex 가 1 이지만 1스테이지가 아니다.
+            result.SetStageLabel("Tutorial");
+
             // 이 판의 보상은 진화로 만든 다이스다. 재화 칸 자리에 그 다이스를 그린다.
             result.AppendItemReward(DiceMetaDataProvider.GetIcon(TutorialStage.EvolveTarget), 1);
         }
