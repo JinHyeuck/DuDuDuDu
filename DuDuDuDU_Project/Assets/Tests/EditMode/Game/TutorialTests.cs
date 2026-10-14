@@ -106,24 +106,20 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 선물로 주는 4성을 진화하면 튜토리얼이 보여 주려는 다이스가 되고, 그 다이스가 곧
-        /// 언락 표의 튜토리얼 보상이다. 셋 중 하나만 바뀌면 진화 버튼이 조용히 실패하거나
-        /// (대상 미보유) 엉뚱한 다이스를 준다.
+        /// 선물로 주는 4성을 진화하면 튜토리얼이 보여 주려는 다이스가 되고, <b>그 다이스는
+        /// 처음부터 보유다</b>. 둘 중 하나만 어긋나면 진화 버튼이 조용히 실패한다 —
+        /// <c>MergeSystem.TryEvolve</c> 가 대상 보유를 보고, 거짓이면 아무 일도 없다.
+        ///
+        /// 예전에는 이 보유를 언락 표의 "튜토리얼 보상" 칸이 채웠다. 특수 5종이
+        /// 처음부터 보유로 바뀌면서 그 칸이 사라졌고(<c>DiceEvolution.IsOwnedFromStart</c>),
+        /// 지킬 것은 "진화 대상이 그 열 종 안에 있는가" 가 됐다.
         /// </summary>
         [Test]
-        public void 선물_진화_대상이_언락_표의_튜토리얼_보상이다()
+        public void 선물_진화_대상은_처음부터_보유다()
         {
             Assert.That(DiceEvolution.TryGetEvolveTarget(TutorialStage.GiftDice, out DiceType target), Is.True);
             Assert.That(target, Is.EqualTo(TutorialStage.EvolveTarget));
-
-            DiceType tutorialUnlock = DiceType.Max;
-            foreach (DiceUnlockDefinition definition in DiceUnlockDatabase.BuildDefaults())
-            {
-                if (definition.tutorialReward)
-                    tutorialUnlock = definition.diceType;
-            }
-
-            Assert.That(tutorialUnlock, Is.EqualTo(TutorialStage.EvolveTarget));
+            Assert.That(DiceEvolution.IsOwnedFromStart(TutorialStage.EvolveTarget), Is.True);
         }
 
         [Test]

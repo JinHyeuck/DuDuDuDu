@@ -78,7 +78,7 @@ namespace OJ.Dice
             if (diceType == DiceType.Max)
                 return false;
 
-            if (DiceEvolution.GetTier(diceType) == DiceTier.Base)
+            if (DiceEvolution.IsOwnedFromStart(diceType))
                 return true;
 
             return owned.Contains(diceType);
@@ -90,7 +90,7 @@ namespace OJ.Dice
         /// </summary>
         public int GetPrice(DiceType diceType)
         {
-            if (diceType == DiceType.Max || DiceEvolution.GetTier(diceType) == DiceTier.Base)
+            if (diceType == DiceType.Max || DiceEvolution.IsOwnedFromStart(diceType))
                 return 0;
 
             return DiceUnlockDatabaseProvider.Database.GetPrice(diceType);
@@ -197,9 +197,12 @@ namespace OJ.Dice
             if (diceType == DiceType.Max)
                 return false;
 
-            // 기본 다이스는 줄 것이 없다. 여기 오면 데이터가 잘못된 것이고,
-            // DiceUnlockDatabase.Validate 가 에디터에서 먼저 잡는다.
-            if (DiceEvolution.GetTier(diceType) == DiceTier.Base)
+            // 처음부터 보유하는 것(기본 5종·특수 5종)은 줄 것도 환급할 것도 없다.
+            // <b>아래 price 검사보다 먼저여야 한다</b> — 그쪽은 "보유인데 가격이 없다" 를
+            // 사고로 보고 LogError 를 내므로, 가격 자체가 없는 이 10종이 거기 닿으면
+            // 정상 동작이 에러 로그가 된다. DiceUnlockDatabase.Validate 가 목록에
+            // 이것들이 들어오는 것을 에디터에서 먼저 잡는다.
+            if (DiceEvolution.IsOwnedFromStart(diceType))
                 return false;
 
             if (!alreadyOwned)
@@ -263,6 +266,13 @@ namespace OJ.Dice
         {
             owned.Clear();
 
+            // 규칙 보유로 바뀐 줄은 <b>상태에서도 지운다</b>(아래 루프 뒤에서 한 번에).
+            // 담지 않는 것만으로는 부족하다 — <c>SaveService.VerifyRoundTrip</c> 이
+            // "파일에서 읽은 상태" 와 "읽은 뒤 다시 모은 상태" 를 JSON 으로 대조하므로,
+            // 파일에만 남아 있으면 로드마다 "ReadFrom 이 무언가를 빠뜨렸다" 가 찍힌다.
+            // 실제로 특수 5종을 규칙 보유로 바꾼 직후 그 에러가 났다.
+            List<string> staleKeys = null;
+
             foreach (var entry in state.OwnedDice)
             {
                 // 지금 enum 에 없는 이름이 세이브에 남아 있을 수 있다. 그 한 줄 때문에 예외가 나면
@@ -274,15 +284,27 @@ namespace OJ.Dice
                 if (!Enum.IsDefined(typeof(DiceType), diceType) || diceType == DiceType.Max)
                     continue;
 
-                // 기본 다이스는 규칙으로 보유다. 옛 세이브나 손댄 파일에 들어 있어도 담지 않는다 —
+                // 기본·특수는 규칙으로 보유다. 옛 세이브나 손댄 파일에 들어 있어도 담지 않는다 —
                 // 담으면 WriteTo 가 그것을 다시 뱉어 "정본이 셋" 상태가 파일에 굳는다.
-                if (DiceEvolution.GetTier(diceType) == DiceTier.Base)
+                // (특수 5종은 2026-10-14 에 규칙 보유로 바뀌었다. 그 전 세이브에는 들어 있다.)
+                if (DiceEvolution.IsOwnedFromStart(diceType))
+                {
+                    staleKeys = staleKeys ?? new List<string>();
+                    staleKeys.Add(entry.Key);
                     continue;
+                }
 
                 if (entry.Value <= 0)
                     continue;
 
                 owned.Add(diceType);
+            }
+
+            // 순회 중에 지우면 컬렉션이 바뀌어 예외가 난다. 모아서 한 번에 지운다.
+            if (staleKeys != null)
+            {
+                for (int i = 0; i < staleKeys.Count; i++)
+                    state.OwnedDice.Remove(staleKeys[i]);
             }
 
             isLoaded = true;

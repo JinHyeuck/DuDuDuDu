@@ -72,9 +72,8 @@ namespace OJ.EditorTools
                 Debug.LogWarning("[언락] 에셋이 없어 코드 기본값으로 표를 뽑는다.");
 
             var sb = new StringBuilder();
-            sb.AppendLine("다이스\t단계\t재화\t가격\t별\t스테이지\t층\t튜토리얼");
+            sb.AppendLine("다이스\t단계\t재화\t가격\t별\t스테이지\t층");
 
-            int specialTotal = 0;
             int kingTotal = 0;
 
             for (int i = 0; i < definitions.Count; i++)
@@ -86,8 +85,6 @@ namespace OJ.EditorTools
                 DiceTier tier = DiceEvolution.GetTier(d.diceType);
                 if (tier == DiceTier.King)
                     kingTotal += d.price;
-                else if (tier == DiceTier.Special)
-                    specialTotal += d.price;
 
                 sb.Append(d.diceType).Append('\t')
                   .Append(tier).Append('\t')
@@ -95,12 +92,13 @@ namespace OJ.EditorTools
                   .Append(d.price).Append('\t')
                   .Append(Cell(d.starRequirement)).Append('\t')
                   .Append(Cell(d.stageRequirement)).Append('\t')
-                  .Append(Cell(d.towerFloor)).Append('\t')
-                  .Append(d.tutorialReward ? "O" : "-").AppendLine();
+                  .Append(Cell(d.towerFloor)).AppendLine();
             }
 
             sb.AppendLine();
-            sb.AppendLine("특수 합계\t" + specialTotal + "\tSpecialDiceCore");
+
+            // 특수 합계 줄이 있었다. 특수 5종이 처음부터 보유가 되면서 이 표에서 빠졌다 —
+            // 0 만 찍히는 줄을 남기면 "값이 0 인가, 항목이 사라졌나" 가 구분되지 않는다.
             sb.AppendLine("킹 합계\t" + kingTotal + "\tMythicScroll");
 
             Debug.Log("[언락] 표" + System.Environment.NewLine + sb);

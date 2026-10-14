@@ -15,193 +15,219 @@ MonoBehaviour:
   stages:
   - stageIndex: 1
     theme: 0
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
+    totalWaves: 10
+    monstersPerWave: 18
+    wallHp: 450
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 21
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 12
+    baseMonsterDefense: 5
+    waveHpLinearFactor: 0.25
+    waveHpQuadraticFactor: 0.05
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 3.5
+    bossDefenseMultiplier: 2
     bossScaleMultiplier: 1.45
     concept: 0
-    monsterMoveSpeedMultiplier: 0.6
+    monsterMoveSpeedMultiplier: 0.9
     monsterScaleMultiplier: 1
     spawnIntervalMultiplier: 1
   - stageIndex: 2
     theme: 1
-    totalWaves: 15
-    monstersPerWave: 40
-    wallHp: 100
+    totalWaves: 10
+    monstersPerWave: 34
+    wallHp: 600
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 15
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 6
+    baseMonsterDefense: 7
+    waveHpLinearFactor: 0.23
+    waveHpQuadraticFactor: 0.034
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 6
+    bossDefenseMultiplier: 2
     bossScaleMultiplier: 1.45
     concept: 1
-    monsterMoveSpeedMultiplier: 0.6
+    monsterMoveSpeedMultiplier: 0.8
     monsterScaleMultiplier: 0.85
-    spawnIntervalMultiplier: 0.5
+    spawnIntervalMultiplier: 0.6
   - stageIndex: 3
     theme: 2
-    totalWaves: 15
+    totalWaves: 10
     monstersPerWave: 6
-    wallHp: 100
+    wallHp: 300
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 156
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 45
+    baseMonsterDefense: 9
+    waveHpLinearFactor: 0.29
+    waveHpQuadraticFactor: 0.06
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 2.2
+    bossDefenseMultiplier: 2
     bossScaleMultiplier: 1.45
     concept: 2
-    monsterMoveSpeedMultiplier: 0.5
+    monsterMoveSpeedMultiplier: 0.75
     monsterScaleMultiplier: 1.35
     spawnIntervalMultiplier: 3
   - stageIndex: 4
     theme: 3
-    totalWaves: 15
-    monstersPerWave: 40
-    wallHp: 100
+    totalWaves: 10
+    monstersPerWave: 14
+    wallHp: 400
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 24
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 14
+    baseMonsterDefense: 11
+    waveHpLinearFactor: 0.24
+    waveHpQuadraticFactor: 0.028
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 3
+    bossDefenseMultiplier: 2
     bossScaleMultiplier: 1.45
-    concept: 1
-    monsterMoveSpeedMultiplier: 0.6
-    monsterScaleMultiplier: 0.85
-    spawnIntervalMultiplier: 0.5
+    concept: 3
+    monsterMoveSpeedMultiplier: 1.5
+    monsterScaleMultiplier: 0.9
+    spawnIntervalMultiplier: 1.2
   - stageIndex: 5
     theme: 4
     totalWaves: 10
     monstersPerWave: 20
-    wallHp: 100
-    initialSP: 117
-    waveClearSP: 103
-    baseMonsterHp: 63
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    wallHp: 500
+    initialSP: 100
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 12
+    baseMonsterDefense: 14
+    waveHpLinearFactor: 0.25
+    waveHpQuadraticFactor: 0.026
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 3.5
+    bossDefenseMultiplier: 2
     bossScaleMultiplier: 1.45
     concept: 0
-    monsterMoveSpeedMultiplier: 0.6
+    monsterMoveSpeedMultiplier: 0.9
     monsterScaleMultiplier: 1
     spawnIntervalMultiplier: 1
   - stageIndex: 6
     theme: 0
-    totalWaves: 15
-    monstersPerWave: 6
-    wallHp: 100
+    totalWaves: 10
+    monstersPerWave: 16
+    wallHp: 400
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 264
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 13
+    baseMonsterDefense: 48
+    waveHpLinearFactor: 0.23
+    waveHpQuadraticFactor: 0.02
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 3
+    bossDefenseMultiplier: 1.2
     bossScaleMultiplier: 1.45
-    concept: 2
-    monsterMoveSpeedMultiplier: 0.5
-    monsterScaleMultiplier: 1.35
-    spawnIntervalMultiplier: 3
+    concept: 4
+    monsterMoveSpeedMultiplier: 0.7
+    monsterScaleMultiplier: 1.1
+    spawnIntervalMultiplier: 1.1
   - stageIndex: 7
     theme: 1
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
+    totalWaves: 10
+    monstersPerWave: 40
+    wallHp: 600
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 25
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 5
+    baseMonsterDefense: 19
+    waveHpLinearFactor: 0.28
+    waveHpQuadraticFactor: 0.024
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 6
+    bossDefenseMultiplier: 2
     bossScaleMultiplier: 1.45
+    concept: 1
+    monsterMoveSpeedMultiplier: 0.85
+    monsterScaleMultiplier: 0.85
+    spawnIntervalMultiplier: 0.58
   - stageIndex: 8
     theme: 2
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
+    totalWaves: 10
+    monstersPerWave: 7
+    wallHp: 350
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 28
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 40
+    baseMonsterDefense: 66
+    waveHpLinearFactor: 0.27
+    waveHpQuadraticFactor: 0.014
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 2
+    bossDefenseMultiplier: 1.2
     bossScaleMultiplier: 1.45
+    concept: 2
+    monsterMoveSpeedMultiplier: 0.8
+    monsterScaleMultiplier: 1.35
+    spawnIntervalMultiplier: 2.8
   - stageIndex: 9
     theme: 3
-    totalWaves: 15
-    monstersPerWave: 20
-    wallHp: 100
+    totalWaves: 10
+    monstersPerWave: 18
+    wallHp: 520
     initialSP: 100
-    waveClearSP: 80
-    baseMonsterHp: 32
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 12
+    baseMonsterDefense: 24
+    waveHpLinearFactor: 0.29
+    waveHpQuadraticFactor: 0.02
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 3
+    bossDefenseMultiplier: 1.8
     bossScaleMultiplier: 1.45
+    concept: 3
+    monsterMoveSpeedMultiplier: 1.6
+    monsterScaleMultiplier: 0.9
+    spawnIntervalMultiplier: 1.1
   - stageIndex: 10
     theme: 4
-    totalWaves: 20
-    monstersPerWave: 20
-    wallHp: 100
-    initialSP: 84
-    waveClearSP: 74
-    baseMonsterHp: 32
-    baseMonsterDefense: 0
-    waveHpLinearFactor: 0.145
-    waveHpQuadraticFactor: 0.018
+    totalWaves: 10
+    monstersPerWave: 24
+    wallHp: 500
+    initialSP: 100
+    waveClearSP: 115
+    waveClearStone: 2
+    baseMonsterHp: 11
+    baseMonsterDefense: 28
+    waveHpLinearFactor: 0.23
+    waveHpQuadraticFactor: 0.016
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
-    bossHpMultiplier: 6.4
-    bossDefenseMultiplier: 2.5
+    bossHpMultiplier: 3.5
+    bossDefenseMultiplier: 1.8
     bossScaleMultiplier: 1.45
+    concept: 0
+    monsterMoveSpeedMultiplier: 1
+    monsterScaleMultiplier: 1.05
+    spawnIntervalMultiplier: 0.9
   - stageIndex: 11
     theme: 0
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 38
@@ -217,7 +243,7 @@ MonoBehaviour:
     theme: 1
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 42
@@ -233,7 +259,7 @@ MonoBehaviour:
     theme: 2
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 45
@@ -249,7 +275,7 @@ MonoBehaviour:
     theme: 3
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 49
@@ -265,7 +291,7 @@ MonoBehaviour:
     theme: 4
     totalWaves: 10
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 117
     waveClearSP: 103
     baseMonsterHp: 58
@@ -281,7 +307,7 @@ MonoBehaviour:
     theme: 0
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 56
@@ -297,7 +323,7 @@ MonoBehaviour:
     theme: 1
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 59
@@ -313,7 +339,7 @@ MonoBehaviour:
     theme: 2
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 63
@@ -329,7 +355,7 @@ MonoBehaviour:
     theme: 3
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 67
@@ -345,7 +371,7 @@ MonoBehaviour:
     theme: 4
     totalWaves: 20
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 84
     waveClearSP: 74
     baseMonsterHp: 63
@@ -361,7 +387,7 @@ MonoBehaviour:
     theme: 0
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 74
@@ -377,7 +403,7 @@ MonoBehaviour:
     theme: 1
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 78
@@ -393,7 +419,7 @@ MonoBehaviour:
     theme: 2
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 81
@@ -409,7 +435,7 @@ MonoBehaviour:
     theme: 3
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 85
@@ -425,7 +451,7 @@ MonoBehaviour:
     theme: 4
     totalWaves: 10
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 117
     waveClearSP: 103
     baseMonsterHp: 98
@@ -441,7 +467,7 @@ MonoBehaviour:
     theme: 0
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 93
@@ -457,7 +483,7 @@ MonoBehaviour:
     theme: 1
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 96
@@ -473,7 +499,7 @@ MonoBehaviour:
     theme: 2
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 100
@@ -489,7 +515,7 @@ MonoBehaviour:
     theme: 3
     totalWaves: 15
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 100
     waveClearSP: 80
     baseMonsterHp: 104
@@ -505,7 +531,7 @@ MonoBehaviour:
     theme: 4
     totalWaves: 20
     monstersPerWave: 20
-    wallHp: 100
+    wallHp: 500
     initialSP: 84
     waveClearSP: 74
     baseMonsterHp: 97

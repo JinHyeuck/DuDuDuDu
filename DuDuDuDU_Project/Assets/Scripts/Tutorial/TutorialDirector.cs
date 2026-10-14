@@ -419,22 +419,15 @@ namespace OJ.Tutorial
         // ── 진화 선물 ─────────────────────────────────────────────────
 
         /// <summary>
-        /// 보스 앞의 선물 셋 — Time 영구 보유, 마석, 4성 번개. 놓은 4성을 돌려준다(못 놓으면 null).
+        /// 보스 앞의 선물 둘 — 마석, 4성 번개. 놓은 4성을 돌려준다(못 놓으면 null).
         ///
-        /// <b>보유를 먼저 준다.</b> <c>MergeSystem.TryEvolve</c> 가 대상 보유를 보므로,
-        /// 없으면 진화 버튼이 조용히 실패한다(DiceUnlockDatabase 의 튜토리얼 보상 주석).
+        /// <b>보유를 지급하던 줄이 사라졌다(2026-10-14).</b> <c>MergeSystem.TryEvolve</c> 가
+        /// 대상 보유를 보는 것은 그대로지만, 진화 대상(<c>TutorialStage.EvolveTarget</c>)이
+        /// 포함된 특수 5종이 <b>처음부터 보유</b>로 바뀌었다
+        /// (<c>DiceEvolution.IsOwnedFromStart</c>). 줄 것이 없으니 지급도 환급도 없다.
         /// </summary>
         private UIDice GrantEvolveGift()
         {
-            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
-            if (ownership != null)
-            {
-                // 이미 보유했으면(세이브 초기화 뒤 다시 하는 경우) 가격만큼 환급이 담긴다.
-                var refunds = new List<PointRewardEntry>();
-                ownership.GrantFromContent(TutorialStage.EvolveTarget, refunds);
-                PointRewardUtility.GrantRewards(refunds);
-            }
-
             // 마석은 "맞춘다". 더하면 앞 웨이브 수급에 따라 진화 뒤 남는 양이 달라진다.
             // 이미 더 있으면 깎지 않는다 — 번 것을 튜토리얼이 가져가지 않는다.
             int cost = DiceEvolution.GetEvolveCost(TutorialStage.GiftDice);
