@@ -142,8 +142,10 @@ namespace OJ.Core.Tests
         /// EveryGoldenKeyIsConsumed 가 "골든에 없는 키"라고 터진다.
         ///
         /// 입력은 장비 공격력만 남기고 전부 중립이라(비율 1f, 증가 0f, pip=1, lv=1)
-        /// 반올림 전 값이 정확히 장비 공격력 * 0.5f 다. 0.5f 는 2의 거듭제곱이라
+        /// 반올림 전 값이 정확히 장비 공격력 * 0.75f 다. 0.75f 는 2진 유한소수(3/4)라
         /// 이 곱셈에는 오차가 없고, 뒤따르는 *1f / +0 은 비트를 보존한다.
+        /// (2026-10-14 다이스 딜 1.5배로 배수가 0.5 → 0.75 가 되면서 경계 입력을 옮겨 적었다.
+        /// 배수가 또 바뀌면 맨 앞의 가드가 먼저 터진다.)
         ///
         /// 퍼센트 개편 전에는 이 축이 <c>BaseAttack</c>(다이스의 정수 공격력)이었다.
         /// 비율을 1f 로 두고 같은 숫자를 장비 쪽에 넣으면 attackBase 가 같은 float 이라
@@ -152,14 +154,18 @@ namespace OJ.Core.Tests
         [Test]
         public void RoundingIsHalfToEven_NotHalfUp()
         {
-            // { 장비 공격력, 기대 반환값 } — 반올림 전 값은 장비 공격력 / 2.0 다.
+            // 아래 경계값은 배수 0.75 에서만 .5 에 걸린다. 배수가 바뀌면 여기부터 다시 맞출 것.
+            Assert.That(DamageFormula.GlobalDamageBalanceMultiplier, Is.EqualTo(0.75f),
+                "데미지 배수가 바뀌었다 — 아래 경계 입력(장비 공격력 × 배수 = x.5)을 다시 고를 것.");
+
+            // { 장비 공격력, 기대 반환값 } — 반올림 전 값은 장비 공격력 × 0.75 다.
             int[][] midpoints =
             {
-                new[] { 15, 8 },   //  7.5 → 8 : 내림(7)만 잡는다. 올림도 8 이다.  (= 개편 전 neutral)
-                new[] { 17, 8 },   //  8.5 → 8 : 올림이면 9. 규칙 교체를 잡는 핵심.
-                new[] { 19, 10 },  //  9.5 → 10: 내림이면 9.
-                new[] { 21, 10 },  // 10.5 → 10: 올림이면 11.
-                new[] { 33, 16 },  // 16.5 → 16: 기준선 damage[Normal][pip=1][lv=6] 과 같은 경계.
+                new[] { 2, 2 },    //  1.5 → 2 : 내림(1)만 잡는다. 올림도 2 다.
+                new[] { 6, 4 },    //  4.5 → 4 : 올림이면 5. 규칙 교체를 잡는 핵심.
+                new[] { 10, 8 },   //  7.5 → 8 : 내림이면 7.
+                new[] { 14, 10 },  // 10.5 → 10: 올림이면 11.
+                new[] { 22, 16 },  // 16.5 → 16: 올림이면 17.
             };
 
             var mismatches = new List<string>();
@@ -194,7 +200,9 @@ namespace OJ.Core.Tests
         /// </summary>
         private static string ScaledText(int equipAttack)
         {
-            return (equipAttack / 2) + (((equipAttack % 2) == 0) ? ".0" : ".5");
+            // 장비 공격력 × 0.75 = 장비 공격력 × 3 / 4. 경계 입력은 전부 나머지가 2(= .5)다.
+            int quarters = equipAttack * 3;
+            return (quarters / 4) + ((quarters % 4) == 2 ? ".5" : "." + (quarters % 4) * 25);
         }
 
         private static string GoldenKey(string caseName)

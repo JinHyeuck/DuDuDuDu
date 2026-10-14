@@ -1454,12 +1454,11 @@ UniTask가 패키지로 와도 `Library/ScriptAssemblies/UniTask.dll`로 똑같�
 | 증상 | 원인 | 복구 시점 |
 |---|---|---|
 | 전투 다이스 상세창이 반쯤 빈 채로 뜬다 (아이콘·이름·쿨타임만 나오고 진화/교환 버튼이 없다) | 진화 개편으로 `UIBattleDiceDetailPanel` 의 직렬화 필드가 통째로 바뀌었는데 프리팹이 아직 옛 판이다. 이름이 같은 셋(`iconImage`/`nameText`/`coolTimeText`)만 살아남고 나머지는 `None` 이다 | 유니티에서 **`OJ/개발/전투 다이스 상세창 프리팹 굽기`** 를 한 번 돌리면 끝. 같은 경로에 덮으므로 GUID·카탈로그 참조는 유지된다 |
-| 골든 기준선의 `dice.*` · `state.damageInputs` 구획이 옛 수치를 적고 있다 | 두 번 겹쳤다. (1) 진화 개편에서 특수 5종·킹 5종의 공격력·원소·설명문이 바뀌고 `recipe` 키가 `tier`/`evolveTo`/`evolveCost`/`exchangeCost` 로 교체됐다. (2) **다이스 퍼센트 개편**에서 `dice[*].baseAttack`/`levelUpAttackIncrease` 두 키가 `baseAttackPercent`/`attackPercentPerLevel` 로 바뀌었고 `dice.damage` 전체가 새 식의 값이 된다. 이 구획들은 사람이 diff 로 보는 기록이라 테스트가 안 잡는다(`core.*` 만 단언한다 — 그쪽은 Mono 러너로 실측해 전부 갱신했다) | 유니티에서 골든 덤퍼를 한 번 돌려 `Tests/Golden/formula_baseline.txt` 를 재생성 |
 
 > 0.5단계 추출은 전부 씬 인스턴스 연결을 유지한 채 끝났으므로 그 시점에 의도적 미동작은 없었다.
 > 10.4에서 씬 인스턴스를 실제로 제거할 때부터 여기에 쌓인다.
 >
-> **위 두 줄은 씬에서 뺀 것이 아니라 굽기·재생성을 안 돌린 것이다.** 둘 다 유니티를 켜야
+> **위 줄은 씬에서 뺀 것이 아니라 굽기를 안 돌린 것이다.** (골든 재생성 줄은 2026-10-14 다이스 딜 1.5배 때 다시 떠서 지웠다.) 유니티를 켜야
 > 하는 작업이라 코드 쪽 변경과 같은 커밋에 담을 수 없다. 돌리고 나면 이 줄을 지운다.
 >
 > **참고 — 이 목록이 필요한 이유.** `LobbyLayoutController`의 `[SerializeField] IDialog equipmentPanel`처럼
