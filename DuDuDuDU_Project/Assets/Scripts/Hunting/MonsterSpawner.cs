@@ -144,7 +144,7 @@ namespace OJ.Hunting
                 return;
 
             timer += Time.deltaTime;
-            if (timer >= spawnInterval)
+            if (timer >= GetStageSpawnInterval())
             {
                 SpawnNext();
                 timer = 0f;
@@ -465,7 +465,10 @@ namespace OJ.Hunting
             // 성립하지 않으므로 폴백을 지운다 — 남기면 스탯 0 짜리 몬스터로 조용히 굴러간다.
             int monsterHp = battle.Game.GetCurrentWaveMonsterHp();
             int monsterDefense = battle.Game.GetCurrentWaveMonsterDefense();
-            monster.SetCombatStats(monsterHp, monsterDefense);
+            StageData stage = battle.Game.CurrentStageData;
+            monster.SetCombatStats(monsterHp, monsterDefense, stage != null ? stage.monsterScaleMultiplier : 1f);
+            // OnSpawn 이 ApplyMoveSpeed 를 되돌려 놓으므로 반드시 그 뒤다.
+            monster.ConfigureStageSpeed(stage != null ? stage.monsterMoveSpeedMultiplier : 1f);
 
             regularSpawnCount++;
         }
@@ -487,6 +490,8 @@ namespace OJ.Hunting
             int monsterDefense = battle.Game.GetCurrentWaveBossDefense();
             float monsterScale = battle.Game.GetCurrentWaveBossScale();
             monster.SetCombatStats(monsterHp, monsterDefense, monsterScale);
+            StageData stage = battle.Game.CurrentStageData;
+            monster.ConfigureStageSpeed(stage != null ? stage.monsterMoveSpeedMultiplier : 1f);
             bossSpawnedInWave = true;
 
             OnBossSpawned?.Invoke();
@@ -616,6 +621,13 @@ namespace OJ.Hunting
         private bool IsBossWave()
         {
             return battle.Game.IsBossWave();
+        }
+
+        // 스테이지 콘셉트의 등장 간격. 정예는 듬성듬성, 물량은 촘촘하게.
+        private float GetStageSpawnInterval()
+        {
+            StageData stage = battle.Game.CurrentStageData;
+            return stage != null ? spawnInterval * stage.spawnIntervalMultiplier : spawnInterval;
         }
 
         private int GetRegularSpawnTarget()

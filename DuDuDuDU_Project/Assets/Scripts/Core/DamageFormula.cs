@@ -76,7 +76,8 @@ namespace OJ.Core
         // 0.5f 와 2f 는 2의 거듭제곱이라 float 곱셈에서 오차가 전혀 없다.
         // "같은 값"이라는 이유로 1f / 2f 같은 식으로 바꾸지 말 것 — 상수 폴딩에 기대는 순간
         // 컴파일러 설정에 따라 결과가 흔들릴 여지가 생긴다.
-        public const float GlobalDamageBalanceMultiplier = 0.5f;
+        // 0.5 → 0.75 (2026-10-14, 다이스 딜 1.5배). 0.75 도 2진 유한소수라 오차가 없다.
+        public const float GlobalDamageBalanceMultiplier = 0.75f;
         public const float KingDiceDamageMultiplier = 2f;
 
         /// <summary>

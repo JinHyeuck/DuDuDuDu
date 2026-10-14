@@ -92,6 +92,8 @@ namespace OJ.Hunting
         private float _slowUntilTime;
         private float _poisonUntilTime;
         private float _poisonDamageMultiplier = 1f;
+        // 중독 틱을 딜미터기에 올릴 다이스. 마지막으로 중독을 건 쪽이다.
+        private DiceType _poisonSource = DiceType.Poison;
         private int _poisonDamageTakenBonusPercent;
         private int _stunDamageTakenBonusPercent;
         private float _stunDamageTakenBonusUntil;
@@ -431,10 +433,12 @@ namespace OJ.Hunting
             ApplyMoveSpeed = Mathf.Max(moveSpeed * 0.2f, ApplyMoveSpeed * Mathf.Clamp(multiplier, 0.1f, 1f));
         }
 
-        public void ApplyPoison(float duration = 4f, float damageMultiplier = 1f)
+        public void ApplyPoison(float duration = 4f, float damageMultiplier = 1f, DiceType source = DiceType.Poison)
         {
             if (!IsAlive)
                 return;
+
+            _poisonSource = source;
 
             _poisonUntilTime = Mathf.Max(_poisonUntilTime, Clock.GameTime + Mathf.Max(0.1f, duration));
             _poisonDamageMultiplier = Mathf.Max(_poisonDamageMultiplier, Mathf.Max(0.1f, damageMultiplier));
@@ -580,6 +584,9 @@ namespace OJ.Hunting
                 Color typeColor = DiceMetaDataProvider.GetColor(DiceType.Poison);
 
                 int appliedDamage = TakeDamage(intdamage);
+                // 중독 틱도 딜미터기에 올린다. 직접 타격(AttackContent.HitMonster)만 세면
+                // 독 다이스의 몫이 대부분 빠진다.
+                battle.Contribution?.Record(_poisonSource, appliedDamage);
                 if (appliedDamage > 0)
                     dtObj.GetComponent<DamageText>().SetText(appliedDamage, typeColor);
                 else
@@ -906,6 +913,17 @@ namespace OJ.Hunting
             // moveSpeed 자체는 건드리지 않는다. 그것은 프리팹 값이고, 풀에서 재사용될 때
             // OnSpawn 이 ApplyMoveSpeed 를 여기로 되돌리는 기준점이다 — 깎아 두면
             // 같은 인스턴스가 본편 몬스터로 나왔을 때 느려진 채로 나온다.
+            ApplyMoveSpeed = moveSpeed * _towerSpeedMultiplier;
+        }
+
+        /// <summary>
+        /// 본편 스테이지의 속도 배수. <b><c>OnSpawn</c> 뒤에 불러야 한다.</b>
+        /// 탑의 속도 배수와 같은 칸을 쓴다 — 둘 다 "슬로우가 아니라 기본 속도" 라서,
+        /// 슬로우가 풀릴 때 되돌아갈 기준이 이 값이어야 한다(<c>UpdateTimedStates</c>).
+        /// </summary>
+        public void ConfigureStageSpeed(float speedMultiplier)
+        {
+            _towerSpeedMultiplier = Mathf.Max(0.05f, speedMultiplier);
             ApplyMoveSpeed = moveSpeed * _towerSpeedMultiplier;
         }
 

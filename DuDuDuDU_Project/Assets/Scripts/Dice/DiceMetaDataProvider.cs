@@ -15,7 +15,8 @@ namespace OJ.Dice
         // GlobalDamageBalanceMultiplier / KingDiceDamageMultiplier 는 DamageFormula 로 옮겼다.
         // 여기 복사본을 남겨 두면 둘이 조용히 갈라져 데미지가 어긋나므로 일부러 지웠다.
         // 값이 필요하면 DamageFormula.GlobalDamageBalanceMultiplier 를 참조할 것.
-        private const float CooldownBalanceMultiplier = 2f;
+        // 전 다이스 공통 쿨타임 배수. 2 → 1 (2026-10-13, 쿨타임 반토막).
+        private const float CooldownBalanceMultiplier = 1f;
         private static DiceMetaDataDatabase database;
         private static bool missingDatabaseLogged;
         private static Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta> defaults;
