@@ -18,7 +18,6 @@ namespace OJ.Shop
     public sealed class UIShopGridCard : MonoBehaviour
     {
         [SerializeField] private Image background;
-        [SerializeField] private Image edge;
         [SerializeField] private Image icon;
 
         /// <summary>받는 수량. 스샷의 카드 한가운데 큰 숫자다.</summary>
@@ -32,6 +31,9 @@ namespace OJ.Shop
         [SerializeField] private TMP_Text priceText;
 
         private Action onClick;
+
+        /// <summary>티어 그림이 없어 재화 아이콘으로 떨어질 때 쓰는 칸 크기.</summary>
+        private static readonly Vector2 FallbackIconSize = new Vector2(130f, 130f);
 
         private void Awake()
         {
@@ -53,15 +55,41 @@ namespace OJ.Shop
         /// <param name="costType">지불 재화. <see cref="PointType.Max"/> 면 현금이다.</param>
         /// <param name="priceLabel">버튼에 적을 가격.</param>
         /// <param name="affordable">지금 살 수 있나. 현금일 때는 무시된다.</param>
+        /// <param name="tierArt">
+        /// 수량 티어 전용 그림(낱개 → 봉지 → 상자). 시안이 티어마다 다른 그림을 쓴다 —
+        /// 재화 아이콘 하나를 세 번 그리면 <b>5 와 150 이 같은 그림</b>이 되어 티어가 안 읽힌다.
+        /// 비어 있으면 재화 아이콘으로 떨어진다.
+        /// </param>
         public void Bind(
             PointType rewardType, int rewardAmount,
-            PointType costType, string priceLabel, bool affordable, Action clickCallback)
+            PointType costType, string priceLabel, bool affordable, Action clickCallback,
+            Sprite tierArt = null)
         {
             onClick = clickCallback;
 
             bool isCash = costType == PointType.Max;
 
-            SetIcon(icon, PointRewardUtility.GetPointIcon(rewardType));
+            // 티어 그림은 텍스처 한가운데 제 크기로 그려져 있다. Image 를 텍스처 크기로 맞추면
+            // 투명 여백째로 올라가 <b>그림이 시안 크기 그대로</b> 나온다 — 늘이거나 줄이지 않는다.
+            // 재화 아이콘으로 떨어질 때만 고정 칸에 맞춘다.
+            if (tierArt != null)
+            {
+                SetIcon(icon, tierArt);
+                if (icon != null)
+                {
+                    icon.preserveAspect = false;
+                    icon.rectTransform.sizeDelta = tierArt.rect.size;
+                }
+            }
+            else
+            {
+                SetIcon(icon, PointRewardUtility.GetPointIcon(rewardType));
+                if (icon != null)
+                {
+                    icon.preserveAspect = true;
+                    icon.rectTransform.sizeDelta = FallbackIconSize;
+                }
+            }
 
             if (amountText != null)
                 amountText.SetText(ShopText.FormatAmount(rewardAmount));
@@ -78,26 +106,11 @@ namespace OJ.Shop
             // 현금은 항상 누를 수 있다. 재화가 모자란 개념이 없다.
             bool interactable = isCash || affordable;
 
+            // 버튼 색을 코드로 칠하지 않는다 — 노란 버튼은 스프라이트(Big_Btn_Yellow)이고,
+            // 거기에 색을 곱하면 <b>시안에 없는 색</b>이 된다. 못 사는 상태는 Button 의
+            // disabledColor 가 흐리게 처리한다.
             if (buyButton != null)
-            {
                 buyButton.interactable = interactable;
-
-                var image = buyButton.targetGraphic as Image;
-                if (image != null)
-                {
-                    image.color = !interactable
-                        ? UIShopUIFactory.DisabledColor
-                        : (isCash ? UIShopUIFactory.CashAccent : UIShopUIFactory.Accent);
-                }
-            }
-
-            if (priceText != null)
-                priceText.color = isCash ? Color.black : Color.white;
-
-            if (background != null)
-                background.color = UIShopUIFactory.CardColor;
-            if (edge != null)
-                edge.color = UIShopUIFactory.CardEdge;
         }
 
         /// <summary>
@@ -119,50 +132,77 @@ namespace OJ.Shop
         // 아래는 에디터 굽기 전용. 런타임에 부르지 않는다.
         // ──────────────────────────────────────────────────────────────
 
-        internal const float CardHeight = 300f;
+        /// <summary>
+        /// 카드 한 장의 보이는 크기. 시안 실측 327x465 이고 <c>Shop_Item_Btn</c> 을 x3 배 한 것과 같다.
+        /// </summary>
+        internal static Vector2 CardSize => UIShopUIFactory.TierCardSize;
 
-        /// <summary>에디터 굽기 전용.</summary>
+        internal static float CardHeight => UIShopUIFactory.TierCardSize.y;
+
+        /// <summary>
+        /// 에디터 굽기 전용. 시안(Art/Layout/Shop_Feather_Layout.png)의 카드를 그대로 옮긴다.
+        ///
+        /// <b>좌표는 카드 위쪽 기준으로 실측한 값이다.</b> PSD 에서 카드가 (30,706)-(357,1171) 이고
+        /// 머리 숫자·그림·가격 버튼이 그 안 어디에 있는지를 재서 중심 좌표로 바꿔 적었다.
+        /// </summary>
         internal static UIShopGridCard Create(Transform parent, TMP_FontAsset font)
         {
-            Image edge = UIShopUIFactory.CreateImage("GridCard", parent, UIShopUIFactory.CardEdge);
+            GameObject root = UIShopUIFactory.CreateRect("GridCard", parent);
+            UIShopUIFactory.SetRect(root.GetComponent<RectTransform>(), CardSize, Vector2.zero);
 
-            var card = edge.gameObject.AddComponent<UIShopGridCard>();
-            card.edge = edge;
+            var card = root.AddComponent<UIShopGridCard>();
 
-            Image background = UIShopUIFactory.CreateImage("Panel", edge.transform, UIShopUIFactory.CardColor);
-            UIShopUIFactory.Stretch(background.rectTransform);
-            background.rectTransform.offsetMin = new Vector2(3f, 3f);
-            background.rectTransform.offsetMax = new Vector2(-3f, -3f);
-            card.background = background;
+            // 카드 바탕. 머리 밴드까지 한 장에 그려져 있어 9슬라이스가 아니라 통짜 x3 배다.
+            card.background = UIShopUIFactory.CreateSpriteAt(
+                "Bg", root.transform, UIShopUIFactory.Art("Shop/Shop_Item_Btn"),
+                UIShopUIFactory.KitScale, Vector2.zero);
 
-            Transform p = background.transform;
+            // 수량. 시안은 이 숫자가 카드 제목이라 50pt 다("숫자가 제목일땐 50pt").
+            card.amountText = UIShopUIFactory.CreateText("Amount", root.transform, "50", 50f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIShopUIFactory.SetRect(card.amountText.rectTransform, new Vector2(300f, 64f), new Vector2(0f, 181f));
 
-            card.nameText = UIShopUIFactory.CreateText("Name", p, "무료젬", 22f,
-                TextAlignmentOptions.Center, UIShopUIFactory.MutedText, font);
-            UIShopUIFactory.SetRect(card.nameText.rectTransform, new Vector2(280f, 28f), new Vector2(0f, 112f));
-
-            card.icon = UIShopUIFactory.CreateImage("Icon", p, Color.white);
-            UIShopUIFactory.SetRect(card.icon.rectTransform, new Vector2(110f, 110f), new Vector2(0f, 34f));
+            // 티어 그림은 배율 1 이다 — 시안의 그림 뭉치를 그대로 한 장으로 뽑은 것이라
+            // 이미 화면 크기다. 크기는 Bind 가 스프라이트마다 다시 맞춘다.
+            card.icon = UIShopUIFactory.CreateImage("Icon", root.transform, Color.white);
+            UIShopUIFactory.SetRect(card.icon.rectTransform, FallbackIconSize, new Vector2(0f, 32f));
             card.icon.raycastTarget = false;
 
-            card.amountText = UIShopUIFactory.CreateText("Amount", p, "50", 44f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UIShopUIFactory.SetRect(card.amountText.rectTransform, new Vector2(280f, 52f), new Vector2(0f, -42f));
+            // 스프라이트 없는 Image 는 흰 사각형으로 그려진다. Bind 가 켤 때까지 꺼 둔다.
+            card.icon.enabled = false;
 
-            card.buyButton = UIShopUIFactory.CreateButton("Buy", p, string.Empty,
-                UIShopUIFactory.Accent, Color.white, 26f, font);
-            UIShopUIFactory.SetRect(card.buyButton.GetComponent<RectTransform>(),
-                new Vector2(250f, 68f), new Vector2(0f, -104f));
+            card.buyButton = UIShopUIFactory.CreateSpriteButton(
+                "Buy", root.transform, UIShopUIFactory.Art("Ingame/Big_Btn_Yellow"),
+                UIShopUIFactory.PriceButtonSize, new Vector2(0f, -145f),
+                string.Empty, 45f, Color.white, font);
 
-            // 기본 CreateButton 의 라벨은 가운데 정렬로 판을 다 쓴다. 지불 아이콘이 왼쪽에
-            // 들어가야 하므로 라벨을 오른쪽으로 밀고 아이콘 자리를 낸다.
-            card.priceText = card.buyButton.GetComponentInChildren<TMP_Text>();
-            UIShopUIFactory.StretchWithMargin(card.priceText.rectTransform, 58f, 12f);
-            card.priceText.alignment = TextAlignmentOptions.Left;
+            // CreateSpriteButton 이 만든 빈 라벨은 안 쓴다. 가격은 아래 Row 안에 들어간다.
+            UnityEngine.Object.DestroyImmediate(card.buyButton.GetComponentInChildren<TMP_Text>().gameObject);
 
-            card.priceIcon = UIShopUIFactory.CreateImage("PriceIcon", card.buyButton.transform, Color.white);
-            UIShopUIFactory.SetRect(card.priceIcon.rectTransform, new Vector2(40f, 40f), new Vector2(-92f, 0f));
+            // 지불 아이콘 + 가격을 한 줄로 가운데 모은다. 현금이면 아이콘이 꺼지는데,
+            // 좌표로 박아 두면 그때 가격만 왼쪽에 치우쳐 남는다.
+            var row = UIShopUIFactory.CreateRect("Row", card.buyButton.transform);
+            UIShopUIFactory.Stretch(row.GetComponent<RectTransform>());
+            row.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 5f);
+
+            var layout = row.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 8f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            card.priceIcon = UIShopUIFactory.CreateImage("PriceIcon", row.transform, Color.white);
             card.priceIcon.raycastTarget = false;
+            card.priceIcon.enabled = false;
+            card.priceIcon.preserveAspect = true;
+            var iconSize = card.priceIcon.gameObject.AddComponent<LayoutElement>();
+            iconSize.preferredWidth = 52f;
+            iconSize.preferredHeight = 52f;
+
+            card.priceText = UIShopUIFactory.CreateText("Price", row.transform, "1,2000원", 45f,
+                TextAlignmentOptions.Center, Color.white, font);
 
             return card;
         }

@@ -16,7 +16,6 @@ namespace OJ.Shop
     public sealed class UIShopOfferCard : MonoBehaviour
     {
         [SerializeField] private Image background;
-        [SerializeField] private Image edge;
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private Image artImage;
 
@@ -61,11 +60,19 @@ namespace OJ.Shop
         /// 카드를 채운다. <paramref name="secondary"/> 가 null 이면 두 번째 버튼을 끄고
         /// 첫 번째를 가운데로 넓힌다.
         /// </summary>
+        /// <param name="cardBackground">
+        /// 카드 바탕 스프라이트. 시안이 상자마다 색을 달리한다(일반 청록 · 영웅 보라).
+        /// 비어 있으면 구워진 바탕 그대로 둔다.
+        /// </param>
         public void Bind(
             string title, Sprite art, string caption, string footnote,
             string primaryText, bool primaryEnabled, Action primary,
-            string secondaryText, bool secondaryEnabled, Action secondary)
+            string secondaryText, bool secondaryEnabled, Action secondary,
+            Sprite cardBackground = null)
         {
+            if (background != null && cardBackground != null)
+                background.sprite = cardBackground;
+
             onPrimary = primary;
             onSecondary = secondary;
 
@@ -74,11 +81,13 @@ namespace OJ.Shop
 
             if (artImage != null)
             {
+                // 아트가 없으면 흰 사각형이 뜬다. 색으로 눕히지 말고 통째로 끈다 —
+                // 시안의 상자 자리는 비면 비는 것이 맞고, 회색 네모가 서면 그것이 상품처럼 보인다.
                 artImage.sprite = art;
+                artImage.enabled = art != null;
 
-                // 아트가 없으면 흰 사각형이 뜬다. 아직 이미지가 없는 상품이 대부분이라
-                // (기획서 10장) 없을 때는 카드색으로 눕혀 자리만 남긴다.
-                artImage.color = art != null ? Color.white : UIShopUIFactory.RowColor;
+                if (art != null)
+                    artImage.rectTransform.sizeDelta = art.rect.size * GemBoxArtScale;
             }
 
             if (captionText != null)
@@ -96,21 +105,9 @@ namespace OJ.Shop
             if (hasSecondary)
                 ApplyButton(secondaryButton, secondaryLabel, secondaryText, secondaryEnabled, UIShopUIFactory.Accent);
 
-            if (primaryButton != null)
-            {
-                // 버튼이 하나뿐이면 카드 폭을 다 쓴다. 반쪽짜리 버튼이 왼쪽에 홀로 남으면
-                // 오른쪽이 비어 "버튼이 하나 빠진 카드"로 읽힌다.
-                RectTransform rect = primaryButton.GetComponent<RectTransform>();
-                rect.anchorMin = new Vector2(hasSecondary ? 0.06f : 0.12f, 0f);
-                rect.anchorMax = new Vector2(hasSecondary ? 0.48f : 0.88f, 0f);
-                rect.offsetMin = new Vector2(0f, 24f);
-                rect.offsetMax = new Vector2(0f, 24f + ButtonHeight);
-            }
-
-            if (background != null)
-                background.color = UIShopUIFactory.CardColor;
-            if (edge != null)
-                edge.color = UIShopUIFactory.CardEdge;
+            // 버튼이 하나뿐이면 카드 폭을 다 쓴다. 반쪽짜리 버튼이 왼쪽에 홀로 남으면
+            // 오른쪽이 비어 "버튼이 하나 빠진 카드"로 읽힌다.
+            LayoutButtons(this, hasSecondary);
         }
 
         /// <summary>
@@ -144,11 +141,9 @@ namespace OJ.Shop
             if (button == null)
                 return;
 
+            // 색을 곱하지 않는다. 시안의 버튼은 스프라이트이고, 못 누르는 상태는
+            // Button 의 disabledColor 가 흐리게 처리한다.
             button.interactable = enabled;
-
-            var image = button.targetGraphic as Image;
-            if (image != null)
-                image.color = enabled ? color : UIShopUIFactory.DisabledColor;
         }
 
         private void HandlePrimary() => onPrimary?.Invoke();
@@ -158,80 +153,127 @@ namespace OJ.Shop
         // 아래는 에디터 굽기 전용. 런타임에 부르지 않는다.
         // ──────────────────────────────────────────────────────────────
 
-        internal const float CardHeight = 420f;
+        /// <summary>시안 실측. <c>Shop_DiaBox_Btn</c> 을 x3 배 한 크기다.</summary>
+        internal static readonly Vector2 CardSize = new Vector2(491f, 465f);
+
+        internal static float CardHeight => CardSize.y;
 
         /// <summary>등급 아이콘 칸 수. 뽑기 상자의 등급 구간이 최대 3단계다.</summary>
         public const int RarityIconSlots = 3;
-        private const float ButtonHeight = 72f;
 
-        /// <summary>에디터 굽기 전용.</summary>
+        /// <summary>버튼 둘을 나란히 놓을 때의 크기·간격. 시안의 영웅 상자(187 + 242)를 고르게 나눈 값이다.</summary>
+        private static readonly Vector2 PairButtonSize = new Vector2(212f, 100f);
+
+        /// <summary>버튼 하나만 쓸 때. 시안의 일반 상자 "무료" 버튼이 440x100 이다.</summary>
+        private static readonly Vector2 SoloButtonSize = new Vector2(440f, 100f);
+
+        private const float ButtonCenterY = 1583f;
+
+        /// <summary>상자 그림 배율. DiaBox 는 64x64 에 그림이 55x41 이라 x5 가 시안의 275x205 다.</summary>
+        private const float GemBoxArtScale = 5f;
+
+        /// <summary>
+        /// 에디터 굽기 전용. 시안 <c>Art/Layout/Shop_PackageDiaBox_Layout.png</c> 의 보석 보물상자다.
+        ///
+        /// <b>버튼 수에 따라 폭이 달라진다.</b> 시안은 일반 상자가 넓은 버튼 하나,
+        /// 영웅 상자가 좁은 버튼 둘이다. 템플릿은 하나뿐이므로 둘 다 만들어 두고
+        /// <see cref="LayoutButtons"/> 가 쓰는 쪽에 맞춰 폭을 바꾼다 —
+        /// 좁은 버튼 하나만 남겨 두면 <b>혼자 왼쪽에 치우쳐</b> 선다.
+        /// </summary>
         internal static UIShopOfferCard Create(Transform parent, TMP_FontAsset font)
         {
-            Image edge = UIShopUIFactory.CreateImage("OfferCard", parent, UIShopUIFactory.CardEdge);
+            GameObject root = UIShopUIFactory.CreateRect("OfferCard", parent);
+            UIShopUIFactory.SetRect(root.GetComponent<RectTransform>(), CardSize, Vector2.zero);
 
-            var card = edge.gameObject.AddComponent<UIShopOfferCard>();
-            card.edge = edge;
+            // <b>가로 레이아웃 그룹 안에서는 크기를 스스로 밝혀야 한다.</b> 안 그러면 선호 높이가
+            // 0 으로 읽혀 카드가 납작해지고, 바탕 스프라이트(768)만 제자리에 남아
+            // <b>위아래 섹션을 덮는다</b> — 머리글 바가 사라진 것처럼 보인다.
+            LayoutElement size = root.AddComponent<LayoutElement>();
+            size.preferredWidth = CardSize.x;
+            size.preferredHeight = CardSize.y;
+            size.flexibleHeight = 0f;
 
-            Image background = UIShopUIFactory.CreateImage("Panel", edge.transform, UIShopUIFactory.CardColor);
-            UIShopUIFactory.StretchWithMargin(background.rectTransform, 3f, 3f);
-            background.rectTransform.offsetMin = new Vector2(3f, 3f);
-            background.rectTransform.offsetMax = new Vector2(-3f, -3f);
-            card.background = background;
+            var card = root.AddComponent<UIShopOfferCard>();
+            Transform p = root.transform;
 
-            Transform p = background.transform;
+            card.background = UIShopUIFactory.CreateSpriteAt(
+                "Bg", p, UIShopUIFactory.Art("Shop/Shop_DiaBox_Btn"), UIShopUIFactory.KitScale, Vector2.zero);
 
-            card.titleText = UIShopUIFactory.CreateText("Title", p, "일반 보석 상자", 32f,
+            card.titleText = UIShopUIFactory.CreateText("Title", p, "일반 보석상자", 45f,
                 TextAlignmentOptions.Center, Color.white, font);
-            card.titleText.rectTransform.anchorMin = new Vector2(0f, 1f);
-            card.titleText.rectTransform.anchorMax = new Vector2(1f, 1f);
-            card.titleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            card.titleText.rectTransform.offsetMin = new Vector2(12f, -58f);
-            card.titleText.rectTransform.offsetMax = new Vector2(-12f, -14f);
+            UIShopUIFactory.SetRect(card.titleText.rectTransform, new Vector2(420f, 60f), Local(283.5f, 1253.5f));
 
-            card.artImage = UIShopUIFactory.CreateImage("Art", p, UIShopUIFactory.RowColor);
-            UIShopUIFactory.SetRect(card.artImage.rectTransform, new Vector2(140f, 140f), new Vector2(0f, 86f));
-            card.artImage.raycastTarget = false;
+            // 상자 그림. DiaBox 는 64x64 에 그림이 55x41 이라 x5 배가 시안의 275x205 다.
+            card.artImage = UIShopUIFactory.CreateSpriteAt(
+                "Art", p, UIShopUIFactory.Art("Shop/DiaBox_1"), 5f, Local(274.5f, 1420f));
 
-            card.captionText = UIShopUIFactory.CreateText("Caption", p, "Com / Nor / Rare", 24f,
-                TextAlignmentOptions.Center, UIShopUIFactory.MutedText, font);
-            UIShopUIFactory.SetRect(card.captionText.rectTransform, new Vector2(360f, 32f), new Vector2(0f, 8f));
+            // 등급 구간과 확률은 시안에 자리가 없다. 제목 바로 아래 한 줄로 작게 넣는다 —
+            // 기획서 8.2-4 가 "확률 상시 노출"을 요구해서 지울 수는 없고, 상자 그림 위에
+            // 겹쳐 놓으면 둘 다 안 읽힌다. <b>두 줄이 아니라 한 줄</b>이라
+            // <see cref="footnoteText"/> 는 만들지 않고 호출부가 합쳐서 보낸다.
+            card.captionText = UIShopUIFactory.CreateText("Caption", p, "커먼 ~ 레어 · 확률 미정", 30f,
+                TextAlignmentOptions.Center, UIShopUIFactory.NoticeColor, font);
+            UIShopUIFactory.SetRect(card.captionText.rectTransform, new Vector2(470f, 40f), Local(275.5f, 1296f));
 
-            card.footnoteText = UIShopUIFactory.CreateText("Footnote", p, "확률 보기", 22f,
-                TextAlignmentOptions.Center, UIShopUIFactory.MutedText, font);
-            UIShopUIFactory.SetRect(card.footnoteText.rectTransform, new Vector2(360f, 30f), new Vector2(0f, -88f));
-
-            // 등급 아이콘 3칸. 아트 아래 가로로 나란히 둔다.
+            // 등급 아이콘 줄은 시안에 없다. 필드만 남겨 둔다(칸을 만들면 시안에 없는 줄이 하나 는다).
             card.rarityIcons = new Image[RarityIconSlots];
-            for (int i = 0; i < RarityIconSlots; i++)
-            {
-                Image slot = UIShopUIFactory.CreateImage("Rarity" + i, p, Color.white);
-                UIShopUIFactory.SetRect(slot.rectTransform, new Vector2(62f, 62f),
-                    new Vector2((i - 1) * 72f, -38f));
-                slot.raycastTarget = false;
-                card.rarityIcons[i] = slot;
-            }
 
-            card.primaryButton = UIShopUIFactory.CreateButton("Primary", p, "1회",
-                UIShopUIFactory.Accent, Color.white, 28f, font);
+            card.primaryButton = UIShopUIFactory.CreateKitButton(
+                "Primary", p, "Ingame/Big_Btn_Yellow", PairButtonSize, Vector2.zero,
+                "1회", 32f, Color.white, font);
             card.primaryLabel = card.primaryButton.GetComponentInChildren<TMP_Text>();
 
-            card.secondaryButton = UIShopUIFactory.CreateButton("Secondary", p, "10회",
-                UIShopUIFactory.Accent, Color.white, 28f, font);
+            card.secondaryButton = UIShopUIFactory.CreateKitButton(
+                "Secondary", p, "Ingame/Big_Btn_Green", PairButtonSize, Vector2.zero,
+                "10회", 32f, Color.white, font);
             card.secondaryLabel = card.secondaryButton.GetComponentInChildren<TMP_Text>();
 
-            RectTransform secondRect = card.secondaryButton.GetComponent<RectTransform>();
-            secondRect.anchorMin = new Vector2(0.52f, 0f);
-            secondRect.anchorMax = new Vector2(0.94f, 0f);
-            secondRect.offsetMin = new Vector2(0f, 24f);
-            secondRect.offsetMax = new Vector2(0f, 24f + ButtonHeight);
-
-            RectTransform firstRect = card.primaryButton.GetComponent<RectTransform>();
-            firstRect.anchorMin = new Vector2(0.06f, 0f);
-            firstRect.anchorMax = new Vector2(0.48f, 0f);
-            firstRect.offsetMin = new Vector2(0f, 24f);
-            firstRect.offsetMax = new Vector2(0f, 24f + ButtonHeight);
-
+            LayoutButtons(card, both: true);
             return card;
+        }
+
+        /// <summary>
+        /// 버튼 자리를 잡는다. 굽기와 <see cref="Bind"/> 가 같은 함수를 쓴다 —
+        /// 둘이 각자 좌표를 들면 데이터에 따라 <b>버튼이 겹치거나 치우친</b> 카드가 나온다.
+        /// </summary>
+        private static void LayoutButtons(UIShopOfferCard card, bool both)
+        {
+            if (card.primaryButton == null)
+                return;
+
+            var primary = (RectTransform)card.primaryButton.transform;
+            Vector4 pad = UIShopUIFactory.ButtonPad(UIShopUIFactory.KitScale);
+            float padX = pad.x + pad.z;
+            float padY = pad.y + pad.w;
+            float offsetY = -(pad.y - pad.w) * 0.5f;
+
+            if (both)
+            {
+                float half = PairButtonSize.x * 0.5f + 16f;
+                primary.sizeDelta = new Vector2(PairButtonSize.x + padX, PairButtonSize.y + padY);
+                primary.anchoredPosition = Local(275.5f - half, ButtonCenterY) + new Vector2(0f, offsetY);
+
+                if (card.secondaryButton != null)
+                {
+                    var secondary = (RectTransform)card.secondaryButton.transform;
+                    secondary.sizeDelta = primary.sizeDelta;
+                    secondary.anchoredPosition = Local(275.5f + half, ButtonCenterY) + new Vector2(0f, offsetY);
+                }
+
+                return;
+            }
+
+            primary.sizeDelta = new Vector2(SoloButtonSize.x + padX, SoloButtonSize.y + padY);
+            primary.anchoredPosition = Local(275.5f, ButtonCenterY) + new Vector2(0f, offsetY);
+        }
+
+        /// <summary>
+        /// PSD 절대 좌표 → 카드 안쪽 좌표. 왼쪽 카드가 (30,1208)-(521,1673) 이라 중심이 (275.5, 1440.5) 다.
+        /// 오른쪽 카드는 같은 카드를 옮긴 것이라 좌표를 따로 재지 않는다.
+        /// </summary>
+        private static Vector2 Local(float psdX, float psdY)
+        {
+            return new Vector2(psdX - 275.5f, 1440.5f - psdY);
         }
     }
 }
