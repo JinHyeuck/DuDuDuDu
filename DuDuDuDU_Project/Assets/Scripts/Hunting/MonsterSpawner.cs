@@ -492,6 +492,11 @@ namespace OJ.Hunting
             monster.SetCombatStats(monsterHp, monsterDefense, monsterScale);
             StageData stage = battle.Game.CurrentStageData;
             monster.ConfigureStageSpeed(stage != null ? stage.monsterMoveSpeedMultiplier : 1f);
+
+            // 역할 표시. 통과했을 때의 벽 피해가 일반 몬스터의 5배다
+            // (OJ.Core.WallLeakFormula). OnSpawn 이 끈 뒤이므로 이 자리여야 한다 —
+            // ConfigureStageSpeed 와 같은 제약이고 같은 이유다.
+            monster.ConfigureAsStageBoss();
             bossSpawnedInWave = true;
 
             OnBossSpawned?.Invoke();

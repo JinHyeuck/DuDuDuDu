@@ -57,8 +57,9 @@ namespace OJ.Tutorial
         public const DiceType GiftDice = DiceType.Thunder;
 
         /// <summary>
-        /// 진화로 만들어 보이고 그대로 주는 다이스. <c>DiceUnlockDatabase</c> 의
-        /// 튜토리얼 보상(<c>GetTutorialUnlock</c>)과 같아야 한다 — 테스트가 지킨다.
+        /// 진화로 만들어 보이는 다이스. <b>처음부터 보유하는 특수 5종 중 하나여야 한다</b>
+        /// (<c>DiceEvolution.IsOwnedFromStart</c>) — <c>MergeSystem.TryEvolve</c> 가 대상
+        /// 보유를 보고, 거짓이면 진화 버튼이 조용히 아무 일도 하지 않는다. 테스트가 지킨다.
         /// </summary>
         public const DiceType EvolveTarget = DiceType.Time;
 

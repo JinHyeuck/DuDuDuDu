@@ -32,6 +32,22 @@ namespace OJ.Stage
         Horde = 1,
         [InspectorName("정예")]
         Elite = 2,
+
+        /// <summary>
+        /// 빠른 돌격. 마리 수는 적지만 이동속도가 빨라 <b>벽까지 오는 시간이 짧다</b> —
+        /// 그래서 같은 체력이어도 다이스가 쏠 수 있는 횟수가 줄어든다.
+        /// 답은 얼음(둔화)·바람(밀기)·스턴처럼 <b>시간을 버는</b> 효과다.
+        /// </summary>
+        [InspectorName("빠른 돌격")]
+        Rush = 3,
+
+        /// <summary>
+        /// 중장갑. 체력보다 <b>방어력</b>이 높다. 방어 감쇄는 100/(100+방어)로 모든 다이스에
+        /// 똑같이 걸리므로 성급을 올려도 비율이 안 변한다 — 답은 방어력을 깎는 것(방깎)이거나
+        /// 남은 체력 비례로 때리는 독이다.
+        /// </summary>
+        [InspectorName("중장갑")]
+        Armored = 4,
     }
 
     public enum StageClearGrade
@@ -62,6 +78,21 @@ namespace OJ.Stage
         [Min(1)] public int wallHp = 100;
         [Min(0)] public int initialSP = 100;
         [Min(0)] public int waveClearSP = 12;
+
+        /// <summary>
+        /// 웨이브 하나를 막을 때 주는 전투 강화석.
+        ///
+        /// <b>왜 스테이지마다 다른가.</b> 이 값이 곧 <b>한 판에 할 수 있는 전략적 선택의
+        /// 수</b>다. 강화석은 진화(10)·교환(5)·속성강화(1·2·3…)가 함께 쓰는 유일한 재화라,
+        /// 웨이브 수 × 이 값이 "레어 다이스를 하나 띄울 수 있는가, 속성을 올릴 수 있는가,
+        /// 둘 다인가" 를 정한다. 웨이브를 15에서 10으로 줄이면서 1 로 두면 마지막 웨이브에야
+        /// 진화가 가능해져 <b>그 선택이 판에 영향을 못 준다</b> — 그래서 수급을 스테이지
+        /// 데이터로 올렸다.
+        ///
+        /// 기본값 1 은 이 필드가 없던 옛 항목(11스테이지 이후)의 동작이다. 그쪽은
+        /// 15웨이브라 한 판 예산이 그대로 15 로 유지된다.
+        /// </summary>
+        [Min(0)] public int waveClearStone = 1;
         [Min(1)] public int baseMonsterHp = 20;
         [Min(0)] public int baseMonsterDefense = 0;
         [Min(0.01f)] public float waveHpLinearFactor = 0.16f;
@@ -123,6 +154,8 @@ namespace OJ.Stage
             {
                 case StageConcept.Horde: return "대규모 물량";
                 case StageConcept.Elite: return "정예";
+                case StageConcept.Rush: return "빠른 돌격";
+                case StageConcept.Armored: return "중장갑";
                 default: return "기본";
             }
         }

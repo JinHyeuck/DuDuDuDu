@@ -1059,7 +1059,12 @@ namespace OJ.Hunting
                 return;
             }
 
-            battle.BattlePoints?.Add(BattlePointType.EnhanceStone, 1);
+            // 수급량은 스테이지 데이터가 정한다(StageData.waveClearStone). 리터럴 1 이었던
+            // 자리다 — 웨이브 수를 줄이면서 한 판의 강화석 예산이 같이 줄어, 진화가 마지막
+            // 웨이브에나 가능해졌기 때문이다. 탑은 위에서 이미 돌아갔다.
+            int waveClearStone = CurrentStageData != null ? Mathf.Max(0, CurrentStageData.waveClearStone) : 1;
+            if (waveClearStone > 0)
+                battle.BattlePoints?.Add(BattlePointType.EnhanceStone, waveClearStone);
 
             // 튜토리얼 판에서는 유물이 끼지 않는다(UIDiceSummonSystem 의 같은 판단).
             if (!battle.Tutorial.IsActive)
