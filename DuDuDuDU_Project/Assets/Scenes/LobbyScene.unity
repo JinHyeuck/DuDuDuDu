@@ -726,11 +726,27 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 887810886}
+    m_TransformParent: {fileID: 919905683}
     m_Modifications:
+    - target: {fileID: 1483849406025030671, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4293785082
+      objectReference: {fileID: 0}
+    - target: {fileID: 1483849406025030671, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 3458647467653875148, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
       propertyPath: m_Name
       value: UISeasonPassLobbyButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 5583228743801939035, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4291277501
+      objectReference: {fileID: 0}
+    - target: {fileID: 5583228743801939035, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 6367900373422716696, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
       propertyPath: m_Pivot.x
@@ -782,15 +798,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6367900373422716696, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6367900373422716696, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6367900373422716696, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6367900373422716696, guid: 0b0806ad2c0b98d4d973b8d5fcf95723, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -3310,11 +3326,19 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 887810886}
+    m_TransformParent: {fileID: 919905683}
     m_Modifications:
     - target: {fileID: 2195476219523670151, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
       propertyPath: m_Name
       value: UIQuestLobbyButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 4448479689138290351, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4293654010
+      objectReference: {fileID: 0}
+    - target: {fileID: 4448479689138290351, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 6002353780739382391, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
       propertyPath: m_Pivot.x
@@ -3366,15 +3390,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6002353780739382391, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6002353780739382391, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6002353780739382391, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 6002353780739382391, guid: eaf2c7b282ed59b4485c8bb45128ddaa, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -4122,11 +4146,6 @@ RectTransform:
   - {fileID: 1860290417}
   - {fileID: 727032413}
   - {fileID: 837397977}
-  - {fileID: 1109359849}
-  - {fileID: 730434959}
-  - {fileID: 166461926}
-  - {fileID: 2076520373}
-  - {fileID: 1828695252}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4331,6 +4350,11 @@ RectTransform:
   - {fileID: 626011764}
   - {fileID: 985358724}
   - {fileID: 160919534}
+  - {fileID: 1109359849}
+  - {fileID: 730434959}
+  - {fileID: 166461926}
+  - {fileID: 2076520373}
+  - {fileID: 1828695252}
   m_Father: {fileID: 727032413}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -5277,7 +5301,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 887810886}
+    m_TransformParent: {fileID: 919905683}
     m_Modifications:
     - target: {fileID: 496979006919889353, guid: a43d937cd63e3d040b1cd86c9cb59e13, type: 3}
       propertyPath: m_Name
@@ -5333,15 +5357,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7853617596500135603, guid: a43d937cd63e3d040b1cd86c9cb59e13, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7853617596500135603, guid: a43d937cd63e3d040b1cd86c9cb59e13, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7853617596500135603, guid: a43d937cd63e3d040b1cd86c9cb59e13, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7853617596500135603, guid: a43d937cd63e3d040b1cd86c9cb59e13, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -8952,8 +8976,16 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 887810886}
+    m_TransformParent: {fileID: 919905683}
     m_Modifications:
+    - target: {fileID: 2347764485424984481, guid: 40d12462f4278b64187ade31d843668a, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 6361069135693151961, guid: 40d12462f4278b64187ade31d843668a, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 7268085817507221355, guid: 40d12462f4278b64187ade31d843668a, type: 3}
       propertyPath: m_Name
       value: UISpecialSevenDaysLobbyButton
@@ -9008,15 +9040,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7812776257911426473, guid: 40d12462f4278b64187ade31d843668a, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7812776257911426473, guid: 40d12462f4278b64187ade31d843668a, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7812776257911426473, guid: 40d12462f4278b64187ade31d843668a, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 7812776257911426473, guid: 40d12462f4278b64187ade31d843668a, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -10436,7 +10468,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 887810886}
+    m_TransformParent: {fileID: 919905683}
     m_Modifications:
     - target: {fileID: 1865956505672197135, guid: 727fe78784ef58d4590c23a6e9a3539c, type: 3}
       propertyPath: m_Name
@@ -10492,15 +10524,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4060227131549274821, guid: 727fe78784ef58d4590c23a6e9a3539c, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 4060227131549274821, guid: 727fe78784ef58d4590c23a6e9a3539c, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 4060227131549274821, guid: 727fe78784ef58d4590c23a6e9a3539c, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 4060227131549274821, guid: 727fe78784ef58d4590c23a6e9a3539c, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -10521,6 +10553,10 @@ PrefabInstance:
     - target: {fileID: 4060227131549274821, guid: 727fe78784ef58d4590c23a6e9a3539c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6165396288138301721, guid: 727fe78784ef58d4590c23a6e9a3539c, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
