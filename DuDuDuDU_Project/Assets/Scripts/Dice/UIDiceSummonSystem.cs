@@ -134,7 +134,15 @@ namespace OJ.Dice
                 spText.text = sp.ToString();
                 spText.color = Color.white;
                 if (summonButton != null)
+                {
                     summonButton.enabled = false;
+
+                    // 버튼 글자 "뽑기" 는 더는 뽑지 않으니 거짓말이다. 보유 SP 표시판으로 바꾼다.
+                    Transform caption = summonButton.transform.Find("SummoText");
+                    TMP_Text captionText = caption != null ? caption.GetComponent<TMP_Text>() : null;
+                    if (captionText != null)
+                        captionText.text = "보유 SP";
+                }
                 return;
             }
 

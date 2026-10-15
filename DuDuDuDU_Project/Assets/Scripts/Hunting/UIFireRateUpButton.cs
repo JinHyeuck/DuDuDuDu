@@ -80,7 +80,7 @@ namespace OJ.Hunting
             if (battle.Summon != null && battle.Summon.spText != null)
                 label.font = battle.Summon.spText.font;
             label.alignment = TextAlignmentOptions.Center;
-            label.fontSize = 34f;
+            label.fontSize = 30f;
             label.color = Color.white;
             label.raycastTarget = false;
 
@@ -142,8 +142,8 @@ namespace OJ.Hunting
             }
 
             float next = TestModeRules.FireRateDelay(level + 1, player.BaseFireRate);
-            label.text = "공속 UP " + player.fireRate.ToString("0.0#") + "→" + next.ToString("0.0#")
-                + "\n" + cost + " SP";
+            // 화살표 글자는 폰트에 없다(PORTING.md). 다음 단계의 딜레이만 적는다.
+            label.text = "공속 UP " + next.ToString("0.0#") + "초\n" + cost + " SP";
 
             bool can = CanUpgrade(out _);
             button.interactable = can;

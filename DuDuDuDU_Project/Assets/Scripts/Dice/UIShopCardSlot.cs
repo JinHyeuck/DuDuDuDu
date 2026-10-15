@@ -16,7 +16,7 @@ namespace OJ.Dice
     public sealed class UIShopCardSlot : MonoBehaviour
     {
         /// <summary>카드(Wanted_Bg x2)의 보이는 크기.</summary>
-        internal static readonly Vector2 VisibleSize = new Vector2(296f, 232f);
+        internal static readonly Vector2 VisibleSize = new Vector2(296f, 196f);
 
         private static readonly Color CardTextColor = new Color(0x86 / 255f, 0x57 / 255f, 0x31 / 255f, 1f);
         private static readonly Color LackColor = new Color(0.83f, 0f, 0.15f, 1f);
@@ -167,36 +167,36 @@ namespace OJ.Dice
 
             slot.kindText = UIBountyUIFactory.CreateText("Kind", card, "다이스 지급", 24f,
                 TextAlignmentOptions.Center, CardTextColor, font, plainMaterial);
-            UIBountyUIFactory.SetRect(slot.kindText.rectTransform, new Vector2(190f, 34f), new Vector2(-30f, 88f));
+            UIBountyUIFactory.SetRect(slot.kindText.rectTransform, new Vector2(190f, 30f), new Vector2(-30f, 70f));
 
             // 재료 줄 — [주재료] + [보조].
             GameObject row = UIBountyUIFactory.CreateRect("Ingredients", card);
-            UIBountyUIFactory.SetRect(row.GetComponent<RectTransform>(), new Vector2(280f, 76f), new Vector2(0f, 28f));
+            UIBountyUIFactory.SetRect(row.GetComponent<RectTransform>(), new Vector2(280f, 60f), new Vector2(0f, 18f));
             slot.ingredientRow = row;
 
-            slot.mainIcon = CreateDiceIcon("Main", row.transform, new Vector2(-72f, 0f), 66f);
-            slot.mainStarText = CreateStarText("MainStar", row.transform, new Vector2(-72f, -34f), font);
+            slot.mainIcon = CreateDiceIcon("Main", row.transform, new Vector2(-72f, 0f), 56f);
+            slot.mainStarText = CreateStarText("MainStar", row.transform, new Vector2(-48f, -22f), font);
             slot.plusIcon = UIBountyUIFactory.CreateSprite("Plus", row.transform,
                 UIBountyUIFactory.LoadSprite("Ingame/Icon_Plus"), 1f, new Vector2(26f, 26f), Vector2.zero, false);
-            slot.subIcon = CreateDiceIcon("Sub", row.transform, new Vector2(72f, 0f), 66f);
-            slot.subStarText = CreateStarText("SubStar", row.transform, new Vector2(72f, -34f), font);
+            slot.subIcon = CreateDiceIcon("Sub", row.transform, new Vector2(72f, 0f), 56f);
+            slot.subStarText = CreateStarText("SubStar", row.transform, new Vector2(96f, -22f), font);
 
             // 결과 — 큰 아이콘과 이름.
-            slot.resultIcon = CreateDiceIcon("Result", card, new Vector2(-84f, -52f), 76f);
-            slot.resultStarText = CreateStarText("ResultStar", card, new Vector2(-84f, -92f), font);
+            slot.resultIcon = CreateDiceIcon("Result", card, new Vector2(-92f, -50f), 68f);
+            slot.resultStarText = CreateStarText("ResultStar", card, new Vector2(-70f, -76f), font);
 
             slot.nameText = UIBountyUIFactory.CreateText("Name", card, "이름", 26f,
                 TextAlignmentOptions.Left, CardTextColor, font, plainMaterial);
-            UIBountyUIFactory.SetRect(slot.nameText.rectTransform, new Vector2(170f, 36f), new Vector2(40f, -40f));
+            UIBountyUIFactory.SetRect(slot.nameText.rectTransform, new Vector2(170f, 34f), new Vector2(40f, -34f));
 
             slot.costText = UIBountyUIFactory.CreateText("Cost", card, "2 SP", 28f,
                 TextAlignmentOptions.Left, Color.white, font);
-            UIBountyUIFactory.SetRect(slot.costText.rectTransform, new Vector2(170f, 38f), new Vector2(40f, -82f));
+            UIBountyUIFactory.SetRect(slot.costText.rectTransform, new Vector2(170f, 36f), new Vector2(40f, -70f));
 
             // 잠금 — 카드 오른쪽 위. 카드 전체 버튼과 별개라 누르면 구매가 되지 않는다.
             Image lockBg = UIBountyUIFactory.CreateSprite("Lock", card,
-                UIBountyUIFactory.LoadSprite("Ingame/Btn_Gray"), 3f, new Vector2(56f + 24f, 56f + 24f),
-                new Vector2(VisibleSize.x / 2f - 42f, VisibleSize.y / 2f - 36f), true);
+                UIBountyUIFactory.LoadSprite("Ingame/Btn_Gray"), 3f, new Vector2(44f + 24f, 44f + 24f),
+                new Vector2(VisibleSize.x / 2f - 40f, VisibleSize.y / 2f - 36f), true);
             lockBg.raycastTarget = true;
             slot.lockButton = lockBg.gameObject.AddComponent<Button>();
             slot.lockButton.targetGraphic = lockBg;
@@ -204,7 +204,7 @@ namespace OJ.Dice
             slot.lockedSprite = UIBountyUIFactory.LoadSprite("Upgrade/Icon_lock");
             slot.unlockedSprite = UIBountyUIFactory.LoadSprite("Upgrade/Icon_Unlock");
             slot.lockIcon = UIBountyUIFactory.CreateSprite("LockIcon", lockBg.transform,
-                slot.unlockedSprite, 1f, new Vector2(36f, 36f), Vector2.zero, false);
+                slot.unlockedSprite, 1f, new Vector2(30f, 30f), Vector2.zero, false);
             slot.lockIcon.preserveAspect = true;
 
             return slot;
@@ -221,9 +221,9 @@ namespace OJ.Dice
 
         private static TMP_Text CreateStarText(string name, Transform parent, Vector2 position, TMP_FontAsset font)
         {
-            TMP_Text text = UIBountyUIFactory.CreateText(name, parent, "1성", 20f,
+            TMP_Text text = UIBountyUIFactory.CreateText(name, parent, "1성", 18f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UIBountyUIFactory.SetRect(text.rectTransform, new Vector2(80f, 26f), position);
+            UIBountyUIFactory.SetRect(text.rectTransform, new Vector2(56f, 24f), position);
             return text;
         }
     }
