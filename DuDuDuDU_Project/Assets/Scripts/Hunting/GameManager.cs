@@ -51,9 +51,13 @@ namespace OJ.Hunting
         ///
         /// 튜토리얼(대본이 Setting 을 기다린다)과 탑(층 하나짜리)에는 걸리지 않는다
         /// — <see cref="IsContinuousWave"/>.
-        /// 정식 규칙으로 돌아가려면 이 값만 false 로 바꾼다.
+        /// 값은 Dev 패널(모드 탭)의 토글이 정하며 <see cref="OJ.Dev.TestModeFlags"/> 에 남는다.
         /// </summary>
-        public static bool TestContinuousWave = true;
+        public static bool TestContinuousWave
+        {
+            get => OJ.Dev.TestModeFlags.ContinuousWave;
+            set => OJ.Dev.TestModeFlags.ContinuousWave = value;
+        }
 
         /// <summary>이 판에 연속 웨이브 테스트 규칙이 실제로 걸려 있는가.</summary>
         public bool IsContinuousWave =>
@@ -168,6 +172,10 @@ namespace OJ.Hunting
             battle.Spawner.OnBossSpawned += OnBossSpawned;
 
             InitializeStage();
+
+            // 공속 UP 테스트 모드. 튜토리얼·탑에는 걸지 않는다(소환이 대본이거나 없다).
+            if (OJ.Dev.TestModeFlags.FireRateUp && !battle.Tutorial.IsActive && !battle.Tower.IsActive)
+                UIFireRateUpButton.Create(battle);
 
             // 기여도 패널은 본편·탑 둘 다에서 뜬다. 접어 둔 사람에게는 접힌 채로
             // 나타난다(그 상태는 UIDamageContributionPanel 이 세션 동안 기억한다).

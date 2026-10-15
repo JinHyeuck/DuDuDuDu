@@ -235,7 +235,7 @@ namespace OJ.Dice
 
             for (int i = 0; i < total; i++)
             {
-                if (board.GetDice(i) == null)
+                if (board.GetDice(i) == null && board.IsSlotUnlocked(i))
                     emptySlots.Add(i);
             }
 
