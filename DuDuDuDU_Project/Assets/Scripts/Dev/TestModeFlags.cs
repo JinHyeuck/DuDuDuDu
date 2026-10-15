@@ -21,6 +21,7 @@ namespace OJ.Dev
         private const string ContinuousWaveKey = "Dev.TestMode.ContinuousWave";
         private const string SlotUnlockKey = "Dev.TestMode.SlotUnlock";
         private const string FireRateUpKey = "Dev.TestMode.FireRateUp";
+        private const string CardModeKey = "Dev.TestMode.CardMode";
 
         /// <summary>웨이브가 끝나면 곧바로 다음 웨이브, 웨이브 중에도 소환·머지·진화·강화.</summary>
         public static bool ContinuousWave
@@ -43,6 +44,13 @@ namespace OJ.Dev
             set => Write(FireRateUpKey, value);
         }
 
+        /// <summary>조합식 카드 상점. 켜면 소환 버튼 대신 카드 3장 + 리롤로 다이스를 얻는다.</summary>
+        public static bool CardMode
+        {
+            get => Read(CardModeKey);
+            set => Write(CardModeKey, value);
+        }
+
         private static bool Read(string key)
         {
             try { return PlayerPrefs.GetInt(key, 0) != 0; }
@@ -58,6 +66,7 @@ namespace OJ.Dev
         public static bool ContinuousWave { get => false; set { } }
         public static bool SlotUnlock { get => false; set { } }
         public static bool FireRateUp { get => false; set { } }
+        public static bool CardMode { get => false; set { } }
 #endif
     }
 }

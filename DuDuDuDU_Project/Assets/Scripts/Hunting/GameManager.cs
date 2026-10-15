@@ -36,6 +36,9 @@ namespace OJ.Hunting
         /// </summary>
         [Inject] private IBattleRefs battle;
 
+        /// <summary>카드 상점의 보유 판정. 머지 시스템이 쓰는 것과 같은 루트 서비스다.</summary>
+        [Inject] private DiceOwnershipManager ownership;
+
         private bool isGameOver { get => Run.IsGameOver; set => Run.IsGameOver = value; }
 
         public int WallHp => Run.WallHp;
@@ -77,6 +80,58 @@ namespace OJ.Hunting
         /// 웨이브가 끝나면 한꺼번에 주는 대신 처치마다 n등분해 준다.
         /// </summary>
         private int waveSpGranted;
+
+        // ── 조합식 카드 모드 ────────────────────────────────────────
+
+        /// <summary>카드 상점의 상태. 카드 모드가 아니면 쓰이지 않는다.</summary>
+        public CardShop Shop { get; } = new CardShop();
+
+        /// <summary>
+        /// 이 판이 카드 모드인가. <b>판이 시작될 때 한 번 정한다</b> — Dev 패널에서 도중에 토글해도
+        /// 한 판 안에서 소환 방식이 바뀌지 않는다. 튜토리얼·탑에는 걸지 않는다.
+        /// </summary>
+        public bool CardModeActive { get; private set; }
+
+        /// <summary>
+        /// 잠기지 않은 카드를 새로 뽑는다(웨이브 준비 단계 진입, 연속 웨이브에서는 웨이브 시작).
+        /// 보드에 무엇이 있느냐에 따라 머지·조합 카드가 나오므로 <b>그때그때의 보드</b>를 본다.
+        /// </summary>
+        public void RefreshShopCards()
+        {
+            if (!CardModeActive)
+                return;
+
+            Shop.Refresh(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
+        }
+
+        /// <summary>리롤. 1 SP 를 내고 잠기지 않은 카드를 새로 뽑는다.</summary>
+        public bool TryRerollShop()
+        {
+            if (!CardModeActive || !CanManageBoard)
+                return false;
+
+            if (!battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, DiceRecipes.RerollCostSp))
+                return false;
+
+            Shop.Reroll(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
+            return true;
+        }
+
+        /// <summary>카드를 산다. 성공하면 그 칸을 비운다.</summary>
+        public bool TryBuyShopCard(int index)
+        {
+            if (!CardModeActive || !CanManageBoard)
+                return false;
+
+            if (index < 0 || index >= Shop.Count)
+                return false;
+
+            if (!battle.Merge.TryBuyShopCard(Shop[index]))
+                return false;
+
+            Shop.Consume(index);
+            return true;
+        }
 
         public bool IsBoardLockedByWave =>
             inGameState == InGameState.Wave && !IsContinuousWave;
@@ -178,6 +233,9 @@ namespace OJ.Hunting
             battle.Spawner.OnBossSpawned += OnBossSpawned;
 
             InitializeStage();
+
+            CardModeActive = OJ.Dev.TestModeFlags.CardMode && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
+            battle.Summon.UpdateSPUI();
 
             // 공속 UP 테스트 모드. 튜토리얼·탑에는 걸지 않는다(소환이 대본이거나 없다).
             if (OJ.Dev.TestModeFlags.FireRateUp && !battle.Tutorial.IsActive && !battle.Tower.IsActive)
@@ -520,6 +578,8 @@ namespace OJ.Hunting
                 UpdateWaveText();
             }
 
+            UpdateCardShopUI(state);
+
             // 되돌리기 버튼은 웨이브 중에만, 그리고 실제로 되돌릴 수 있을 때만 뜬다.
             // 남은 횟수가 0 이면 아예 없는 편이 낫다 — 눌리지 않는 버튼은 고장으로 읽힌다.
             //
@@ -538,6 +598,24 @@ namespace OJ.Hunting
                 GameContainer.UI?.Show<UIWaveRewindButton>();
             else
                 GameContainer.UI?.Hide<UIWaveRewindButton>();
+        }
+
+        /// <summary>
+        /// 카드 상점 창을 상태에 맞춘다. 보드를 만질 수 있는 때(준비 단계, 연속 웨이브 중의 웨이브)에만 뜬다.
+        /// 카드는 준비 단계에 들어올 때, 연속 웨이브에서는 웨이브가 시작될 때 새로 뽑는다.
+        /// </summary>
+        private void UpdateCardShopUI(InGameState state)
+        {
+            if (!CardModeActive)
+                return;
+
+            if (state == InGameState.Setting || (state == InGameState.Wave && IsContinuousWave))
+                RefreshShopCards();
+
+            if (CanManageBoard)
+                GameContainer.UI?.Show<UICardShopPanel>();
+            else
+                GameContainer.UI?.Hide<UICardShopPanel>();
         }
 
         /// <summary>
@@ -626,6 +704,7 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<UIBountyBanner>();
             GameContainer.UI?.Hide<UIBountySelectDialog>();
             GameContainer.UI?.Hide<UIBattleWarning>();
+            GameContainer.UI?.Hide<UICardShopPanel>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
             GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
