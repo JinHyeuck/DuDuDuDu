@@ -127,6 +127,25 @@ namespace OJ.Dice
             int sp = currentSP;
             int cost = summonCost;
 
+            // 카드 모드에서는 소환 버튼이 SP 표시판일 뿐이다. 비용이 없으니 "n / 비용" 대신 SP 만 보인다.
+            bool cardMode = battle != null && battle.Game != null && battle.Game.CardModeActive;
+            if (cardMode)
+            {
+                spText.text = sp.ToString();
+                spText.color = Color.white;
+                if (summonButton != null)
+                {
+                    summonButton.enabled = false;
+
+                    // 버튼 글자 "뽑기" 는 더는 뽑지 않으니 거짓말이다. 보유 SP 표시판으로 바꾼다.
+                    Transform caption = summonButton.transform.Find("SummoText");
+                    TMP_Text captionText = caption != null ? caption.GetComponent<TMP_Text>() : null;
+                    if (captionText != null)
+                        captionText.text = "보유 SP";
+                }
+                return;
+            }
+
             spText.text = $"{sp} / {cost}";
             spText.color = sp >= cost ? Color.white : Color.red;
         }
@@ -155,7 +174,11 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return;
 
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
+                return;
+
+            // 카드 모드에서는 다이스를 카드로만 얻는다.
+            if (battle.Game.CardModeActive)
                 return;
 
             if (currentSP < summonCost)
@@ -235,7 +258,7 @@ namespace OJ.Dice
 
             for (int i = 0; i < total; i++)
             {
-                if (board.GetDice(i) == null)
+                if (board.GetDice(i) == null && board.IsSlotUnlocked(i))
                     emptySlots.Add(i);
             }
 

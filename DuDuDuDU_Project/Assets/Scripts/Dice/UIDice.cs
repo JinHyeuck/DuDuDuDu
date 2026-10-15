@@ -196,7 +196,7 @@ namespace OJ.Dice
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
                 return;
 
             originalParent = transform.parent;
@@ -208,7 +208,7 @@ namespace OJ.Dice
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
                 return;
 
             if (canvas == null) return;
@@ -219,7 +219,7 @@ namespace OJ.Dice
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
                 return;
 
             canvasGroup.blocksRaycasts = true;
@@ -268,7 +268,7 @@ namespace OJ.Dice
             GameManager game = battle.Game;
             InGameState state = game != null ? game.inGameState : InGameState.None;
 
-            if (state == InGameState.Wave)
+            if (state == InGameState.Wave && !game.IsContinuousWave)
             {
                 battle.Board?.OpenBattleDiceDetail(this);
                 return;
@@ -287,13 +287,13 @@ namespace OJ.Dice
 
             lastPointerClickTime = Time.unscaledTime;
 
-            if (state == InGameState.Setting)
+            if (game != null && game.CanManageBoard)
                 HandleSingleClick(++clickSequence).Forget();
         }
 
         private void TryAutoMergeSameDice()
         {
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
                 return;
 
             MergeSystem merge = battle.Merge;
@@ -345,7 +345,7 @@ namespace OJ.Dice
             // 0.35초를 기다린 뒤라 그 사이 씬이 내려갔을 수 있다. 원래의 null 검사가
             // 그 경우를 막고 있었으니 창구 뒤를 보는 형태로만 옮긴다.
             GameManager game = battle.Game;
-            if (game == null || game.inGameState != InGameState.Setting)
+            if (game == null || !game.CanManageBoard)
                 return;
 
             battle.Board?.OpenBattleDiceDetail(this);

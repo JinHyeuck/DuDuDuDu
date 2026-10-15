@@ -36,6 +36,9 @@ namespace OJ.Hunting
         /// </summary>
         [Inject] private IBattleRefs battle;
 
+        /// <summary>카드 상점의 보유 판정. 머지 시스템이 쓰는 것과 같은 루트 서비스다.</summary>
+        [Inject] private DiceOwnershipManager ownership;
+
         private bool isGameOver { get => Run.IsGameOver; set => Run.IsGameOver = value; }
 
         public int WallHp => Run.WallHp;
@@ -43,6 +46,95 @@ namespace OJ.Hunting
         public Wall wall;
 
         public InGameState inGameState = InGameState.None;
+
+        /// <summary>
+        /// <b>테스트용 연속 웨이브.</b> 켜면 웨이브가 끝나도 관리 단계(Setting)로 내려가지 않고
+        /// 곧바로 다음 웨이브가 시작되며, 웨이브 중에도 소환·머지·진화·교환·속성강화가 열린다.
+        /// 첫 웨이브는 평소처럼 관리 단계에서 시작 버튼으로 연다.
+        ///
+        /// 튜토리얼(대본이 Setting 을 기다린다)과 탑(층 하나짜리)에는 걸리지 않는다
+        /// — <see cref="IsContinuousWave"/>.
+        /// 값은 Dev 패널(모드 탭)의 토글이 정하며 <see cref="OJ.Dev.TestModeFlags"/> 에 남는다.
+        /// </summary>
+        public static bool TestContinuousWave
+        {
+            get => OJ.Dev.TestModeFlags.ContinuousWave;
+            set => OJ.Dev.TestModeFlags.ContinuousWave = value;
+        }
+
+        /// <summary>이 판에 연속 웨이브 테스트 규칙이 실제로 걸려 있는가.</summary>
+        public bool IsContinuousWave =>
+            TestContinuousWave && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
+
+        /// <summary>
+        /// 지금 보드를 만질 수 있는가(소환·머지·진화·교환·속성강화). 평소에는 관리 단계뿐이고,
+        /// 연속 웨이브 테스트 중에는 웨이브 중에도 된다.
+        /// </summary>
+        public bool CanManageBoard =>
+            inGameState == InGameState.Setting
+            || (inGameState == InGameState.Wave && IsContinuousWave);
+
+        /// <summary>웨이브라서 보드 조작이 막혀 있는가. 상태가 None 인 경우는 각 호출부의 기존 판단을 따른다.</summary>
+        /// <summary>
+        /// 연속 웨이브에서 이번 웨이브의 클리어 SP 를 지금까지 얼마나 나눠 줬나.
+        /// 웨이브가 끝나면 한꺼번에 주는 대신 처치마다 n등분해 준다.
+        /// </summary>
+        private int waveSpGranted;
+
+        // ── 조합식 카드 모드 ────────────────────────────────────────
+
+        /// <summary>카드 상점의 상태. 카드 모드가 아니면 쓰이지 않는다.</summary>
+        public CardShop Shop { get; } = new CardShop();
+
+        /// <summary>
+        /// 이 판이 카드 모드인가. <b>판이 시작될 때 한 번 정한다</b> — Dev 패널에서 도중에 토글해도
+        /// 한 판 안에서 소환 방식이 바뀌지 않는다. 튜토리얼·탑에는 걸지 않는다.
+        /// </summary>
+        public bool CardModeActive { get; private set; }
+
+        /// <summary>
+        /// 잠기지 않은 카드를 새로 뽑는다(웨이브 준비 단계 진입, 연속 웨이브에서는 웨이브 시작).
+        /// 보드에 무엇이 있느냐에 따라 머지·조합 카드가 나오므로 <b>그때그때의 보드</b>를 본다.
+        /// </summary>
+        public void RefreshShopCards()
+        {
+            if (!CardModeActive)
+                return;
+
+            Shop.Refresh(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
+        }
+
+        /// <summary>리롤. 1 SP 를 내고 잠기지 않은 카드를 새로 뽑는다.</summary>
+        public bool TryRerollShop()
+        {
+            if (!CardModeActive || !CanManageBoard)
+                return false;
+
+            if (!battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, DiceRecipes.RerollCostSp))
+                return false;
+
+            Shop.Reroll(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
+            return true;
+        }
+
+        /// <summary>카드를 산다. 성공하면 그 칸을 비운다.</summary>
+        public bool TryBuyShopCard(int index)
+        {
+            if (!CardModeActive || !CanManageBoard)
+                return false;
+
+            if (index < 0 || index >= Shop.Count)
+                return false;
+
+            if (!battle.Merge.TryBuyShopCard(Shop[index]))
+                return false;
+
+            Shop.Consume(index);
+            return true;
+        }
+
+        public bool IsBoardLockedByWave =>
+            inGameState == InGameState.Wave && !IsContinuousWave;
 
         public int WaveMonsterCount => Run.WaveMonsterCount;
         public int WaveMonsterDeadCount { get => Run.WaveMonsterDeadCount; set => Run.WaveMonsterDeadCount = value; }
@@ -141,6 +233,13 @@ namespace OJ.Hunting
             battle.Spawner.OnBossSpawned += OnBossSpawned;
 
             InitializeStage();
+
+            CardModeActive = OJ.Dev.TestModeFlags.CardMode && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
+            battle.Summon.UpdateSPUI();
+
+            // 공속 UP 테스트 모드. 튜토리얼·탑에는 걸지 않는다(소환이 대본이거나 없다).
+            if (OJ.Dev.TestModeFlags.FireRateUp && !battle.Tutorial.IsActive && !battle.Tower.IsActive)
+                UIFireRateUpButton.Create(battle);
 
             // 기여도 패널은 본편·탑 둘 다에서 뜬다. 접어 둔 사람에게는 접힌 채로
             // 나타난다(그 상태는 UIDamageContributionPanel 이 세션 동안 기억한다).
@@ -421,8 +520,8 @@ namespace OJ.Hunting
             // 흐리게 만든다(치우지 않는다 — 빈 자리는 기능이 사라진 것처럼 보인다).
             // 창이 열린 채 웨이브가 시작될 수 있으므로(그 창은 전체 화면을 덮지 않는다)
             // 닫는 것까지 해야 한다.
-            battle.ElementUpgrade.SetUpgradeUIAvailable(state == InGameState.Setting);
-            if (state != InGameState.Setting)
+            battle.ElementUpgrade.SetUpgradeUIAvailable(CanManageBoard);
+            if (!CanManageBoard)
                 GameContainer.UI?.Hide<UIElementUpgradePanel>();
 
             // 관리 단계마다 자동으로 뜨던 조합 진행도 창(UIDiceCraftProgressDialog)은
@@ -465,6 +564,7 @@ namespace OJ.Hunting
                 battle.Spawner.PlayWave();
                 Time.timeScale = timeSpeed;
                 WaveMonsterDeadCount = 0;
+                waveSpGranted = 0;
                 SetSpeedText();
                 RunHistoryManager.Instance?.RecordWaveStart(
                     CurrentWaveIndex,
@@ -477,6 +577,8 @@ namespace OJ.Hunting
                 Time.timeScale = 1;
                 UpdateWaveText();
             }
+
+            UpdateCardShopUI(state);
 
             // 되돌리기 버튼은 웨이브 중에만, 그리고 실제로 되돌릴 수 있을 때만 뜬다.
             // 남은 횟수가 0 이면 아예 없는 편이 낫다 — 눌리지 않는 버튼은 고장으로 읽힌다.
@@ -499,6 +601,24 @@ namespace OJ.Hunting
         }
 
         /// <summary>
+        /// 카드 상점 창을 상태에 맞춘다. 보드를 만질 수 있는 때(준비 단계, 연속 웨이브 중의 웨이브)에만 뜬다.
+        /// 카드는 준비 단계에 들어올 때, 연속 웨이브에서는 웨이브가 시작될 때 새로 뽑는다.
+        /// </summary>
+        private void UpdateCardShopUI(InGameState state)
+        {
+            if (!CardModeActive)
+                return;
+
+            if (state == InGameState.Setting || (state == InGameState.Wave && IsContinuousWave))
+                RefreshShopCards();
+
+            if (CanManageBoard)
+                GameContainer.UI?.Show<UICardShopPanel>();
+            else
+                GameContainer.UI?.Hide<UICardShopPanel>();
+        }
+
+        /// <summary>
         /// 탑의 시계를 돌린다. <b>이 <c>Update</c> 는 탑을 위해 새로 생긴 것이다</b> —
         /// 본편 전투에는 프레임마다 할 일이 없었다.
         ///
@@ -511,11 +631,34 @@ namespace OJ.Hunting
             battle.Tower.Tick(Time.deltaTime);
         }
 
+        /// <summary>
+        /// 연속 웨이브: 이 웨이브의 클리어 SP 를 처치 수로 n등분해 <b>죽을 때마다</b> 준다.
+        /// 누적 비율로 계산해 정수 반올림이 쌓여도 합이 정확히 waveClearSP 가 된다.
+        /// </summary>
+        private void GrantKillShareSp()
+        {
+            if (!IsContinuousWave || CurrentStageData == null || WaveMonsterCount <= 0)
+                return;
+
+            int total = Mathf.Max(0, CurrentStageData.waveClearSP);
+            int due = Mathf.Min(total, Mathf.FloorToInt(
+                (float)total * Mathf.Min(WaveMonsterDeadCount, WaveMonsterCount) / WaveMonsterCount));
+
+            int delta = due - waveSpGranted;
+            if (delta <= 0)
+                return;
+
+            waveSpGranted = due;
+            battle.Summon.AddSP(delta);
+        }
+
         public void RemoveMonsterDeadCount()
         {
             if (inGameState != InGameState.Wave)
                 return;
             WaveMonsterDeadCount++;
+
+            GrantKillShareSp();
 
 #if UNITY_EDITOR || DEV_DEFINE
             // 탑의 목표 처치 수가 안 맞을 때 어디서 새는지 보려고 한 줄씩 찍는다.
@@ -561,6 +704,7 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<UIBountyBanner>();
             GameContainer.UI?.Hide<UIBountySelectDialog>();
             GameContainer.UI?.Hide<UIBattleWarning>();
+            GameContainer.UI?.Hide<UICardShopPanel>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
             GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
@@ -1076,7 +1220,12 @@ namespace OJ.Hunting
 
             if (CurrentStageData != null)
             {
-                battle.Summon.AddSP(CurrentStageData.waveClearSP);
+                // 연속 웨이브는 처치마다 나눠 줬으므로 남은 몫(현상금만 남은 끝, 나머지 반올림)만 준다.
+                int waveClearSp = IsContinuousWave
+                    ? Mathf.Max(0, CurrentStageData.waveClearSP - waveSpGranted)
+                    : CurrentStageData.waveClearSP;
+                battle.Summon.AddSP(waveClearSp);
+                waveSpGranted = 0;
 
                 // 튜토리얼은 골드를 주지 않으므로 "골드 +N" 미리보기가 거짓말이 된다.
                 if (!battle.Tutorial.IsActive)
@@ -1101,6 +1250,15 @@ namespace OJ.Hunting
             }
 
             RelicManager.Instance?.EndWave();
+
+            // 테스트용 연속 웨이브: 관리 단계를 건너뛰고 곧바로 다음 웨이브를 연다.
+            // Wave → Wave 진입도 스냅샷·WaveIndex++·현상금·스포너 리셋을 그대로 탄다.
+            if (IsContinuousWave)
+            {
+                ChangeState(InGameState.Wave);
+                return;
+            }
+
             ChangeState(InGameState.Setting);
         }
 

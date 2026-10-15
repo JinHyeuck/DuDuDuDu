@@ -142,6 +142,12 @@ namespace OJ.EditorTools
             if (error != null)
                 return error;
 
+            // 연속 웨이브 테스트 규칙이 켜져 있으면 관리 단계가 오지 않아 측정이 정식 규칙과
+            // 달라진다. 도는 동안만 끄고 Stop 에서 되돌린다.
+            if (!running)
+                savedContinuousWave = GameManager.TestContinuousWave;
+            GameManager.TestContinuousWave = false;
+
             running = true;
             waitingForLobby = false;
             waitFrames = 0;
@@ -188,8 +194,12 @@ namespace OJ.EditorTools
             return null;
         }
 
+        private static bool savedContinuousWave;
+
         public static void Stop()
         {
+            if (running)
+                GameManager.TestContinuousWave = savedContinuousWave;
             running = false;
             EditorApplication.update -= Update;
         }
