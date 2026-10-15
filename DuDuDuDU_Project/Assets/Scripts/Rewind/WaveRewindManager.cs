@@ -524,7 +524,9 @@ namespace OJ.Rewind
             for (int i = 0; i < board.Length; i++)
             {
                 battle.DiceStars.OnDiceSpawn(board[i].Type, board[i].Star);
-                battle.Board.SpawnDice(board[i].Type, board[i].Star, board[i].SlotIndex);
+                // 소환 연출은 끈다. 되돌리기는 "원래 있던 판" 을 복원하는 것이지
+                // 스물네 칸을 새로 소환하는 것이 아니다.
+                battle.Board.SpawnDice(board[i].Type, board[i].Star, board[i].SlotIndex, playSummonFx: false);
             }
         }
 

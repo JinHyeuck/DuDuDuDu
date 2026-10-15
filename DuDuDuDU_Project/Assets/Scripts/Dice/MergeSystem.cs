@@ -71,6 +71,11 @@ namespace OJ.Dice
 
             to.Init(mergedType, newStar, to.SlotIndex);
 
+            // 결과물 속성 색의 먼지가 터진다. 색을 <b>결과</b>에서 가져오는 것이 요점이다 —
+            // 노말 둘이 불이 되는 판이 있으므로(GetRandomMergedType) 재료 색으로 뿌리면
+            // 무엇이 나왔는지를 가리는 연출이 된다.
+            DiceFx.PlayMerge(to.transform as RectTransform, DiceMetaDataProvider.GetColor(mergedType));
+
             battle.DiceStars.OnDiceSpawn(mergedType, newStar);
             // RunHistoryManager 는 루트에 사는 별개 서비스라 ?. 를 그대로 둔다.
             // 반면 웨이브 번호의 GameManager null 검사는 지웠다 — 이 메서드는 맨 위에서
@@ -171,6 +176,10 @@ namespace OJ.Dice
             // baseAttack 으로 올렸다 — DiceMetaDataDatabase 에셋 참조.
             const int evolvedStar = 1;
             ReplaceInPlace(dice, target, evolvedStar);
+
+            // 진화한 자리에 속성 색 번개가 내리친다. ReplaceInPlace 는 같은 오브젝트를
+            // 그대로 두므로(새로 찍지 않는다) 연출 대상이 도중에 사라지지 않는다.
+            DiceFx.PlayEvolve(dice.transform as RectTransform, DiceMetaDataProvider.GetColor(target));
 
             if (DiceEvolution.GetTier(target) == DiceTier.King)
                 RelicManager.Instance?.OnMythicCrafted(target);
