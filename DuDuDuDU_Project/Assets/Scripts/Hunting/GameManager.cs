@@ -72,6 +72,12 @@ namespace OJ.Hunting
             || (inGameState == InGameState.Wave && IsContinuousWave);
 
         /// <summary>웨이브라서 보드 조작이 막혀 있는가. 상태가 None 인 경우는 각 호출부의 기존 판단을 따른다.</summary>
+        /// <summary>
+        /// 연속 웨이브에서 이번 웨이브의 클리어 SP 를 지금까지 얼마나 나눠 줬나.
+        /// 웨이브가 끝나면 한꺼번에 주는 대신 처치마다 n등분해 준다.
+        /// </summary>
+        private int waveSpGranted;
+
         public bool IsBoardLockedByWave =>
             inGameState == InGameState.Wave && !IsContinuousWave;
 
@@ -500,6 +506,7 @@ namespace OJ.Hunting
                 battle.Spawner.PlayWave();
                 Time.timeScale = timeSpeed;
                 WaveMonsterDeadCount = 0;
+                waveSpGranted = 0;
                 SetSpeedText();
                 RunHistoryManager.Instance?.RecordWaveStart(
                     CurrentWaveIndex,
@@ -546,11 +553,34 @@ namespace OJ.Hunting
             battle.Tower.Tick(Time.deltaTime);
         }
 
+        /// <summary>
+        /// 연속 웨이브: 이 웨이브의 클리어 SP 를 처치 수로 n등분해 <b>죽을 때마다</b> 준다.
+        /// 누적 비율로 계산해 정수 반올림이 쌓여도 합이 정확히 waveClearSP 가 된다.
+        /// </summary>
+        private void GrantKillShareSp()
+        {
+            if (!IsContinuousWave || CurrentStageData == null || WaveMonsterCount <= 0)
+                return;
+
+            int total = Mathf.Max(0, CurrentStageData.waveClearSP);
+            int due = Mathf.Min(total, Mathf.FloorToInt(
+                (float)total * Mathf.Min(WaveMonsterDeadCount, WaveMonsterCount) / WaveMonsterCount));
+
+            int delta = due - waveSpGranted;
+            if (delta <= 0)
+                return;
+
+            waveSpGranted = due;
+            battle.Summon.AddSP(delta);
+        }
+
         public void RemoveMonsterDeadCount()
         {
             if (inGameState != InGameState.Wave)
                 return;
             WaveMonsterDeadCount++;
+
+            GrantKillShareSp();
 
 #if UNITY_EDITOR || DEV_DEFINE
             // 탑의 목표 처치 수가 안 맞을 때 어디서 새는지 보려고 한 줄씩 찍는다.
@@ -1111,7 +1141,12 @@ namespace OJ.Hunting
 
             if (CurrentStageData != null)
             {
-                battle.Summon.AddSP(CurrentStageData.waveClearSP);
+                // 연속 웨이브는 처치마다 나눠 줬으므로 남은 몫(현상금만 남은 끝, 나머지 반올림)만 준다.
+                int waveClearSp = IsContinuousWave
+                    ? Mathf.Max(0, CurrentStageData.waveClearSP - waveSpGranted)
+                    : CurrentStageData.waveClearSP;
+                battle.Summon.AddSP(waveClearSp);
+                waveSpGranted = 0;
 
                 // 튜토리얼은 골드를 주지 않으므로 "골드 +N" 미리보기가 거짓말이 된다.
                 if (!battle.Tutorial.IsActive)
