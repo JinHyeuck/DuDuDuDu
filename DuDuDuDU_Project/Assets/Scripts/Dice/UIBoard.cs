@@ -65,7 +65,15 @@ namespace OJ.Dice
             // <c>GameManager.CoApplyStageStartRelics</c> 한 곳으로 모았다.
         }
 
-        public void SpawnDice(DiceType type, int star, int slotIndex)
+        /// <summary>
+        /// 칸에 다이스를 놓는다.
+        ///
+        /// <paramref name="playSummonFx"/> 는 <b>"방금 생겼다" 와 "원래 있던 것을 다시
+        /// 놓는다" 를 가른다.</b> 되돌리기(<c>WaveRewindManager.RestoreBoard</c>)와 탑 편성
+        /// 배치는 보드를 통째로 다시 깔기 때문에, 켜 두면 스물네 칸이 한꺼번에 튀어올라
+        /// 소환으로 보인다. 소환·선물·쌍둥이·선제배치는 전부 기본값으로 둔다.
+        /// </summary>
+        public void SpawnDice(DiceType type, int star, int slotIndex, bool playSummonFx = true)
         {
             if (diceMap[slotIndex] != null) return;
 
@@ -75,6 +83,9 @@ namespace OJ.Dice
             var dice = resolver.Instantiate(dicePrefab, slots[slotIndex].transform);
             dice.Init(type, star, slotIndex);
             diceMap[slotIndex] = dice;
+
+            if (playSummonFx)
+                DiceFx.PlaySummon(dice.transform);
         }
 
         public void ClearDice(int slotIndex)
