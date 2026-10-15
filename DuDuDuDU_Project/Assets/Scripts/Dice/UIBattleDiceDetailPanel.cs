@@ -247,7 +247,7 @@ namespace OJ.Dice
         /// </summary>
         private void RefreshActionButtons()
         {
-            bool canAct = battle.Game != null && battle.Game.inGameState == InGameState.Setting;
+            bool canAct = battle.Game != null && battle.Game.CanManageBoard;
             int owned = battle.BattlePoints != null
                 ? battle.BattlePoints.Get(BattlePointType.EnhanceStone)
                 : 0;

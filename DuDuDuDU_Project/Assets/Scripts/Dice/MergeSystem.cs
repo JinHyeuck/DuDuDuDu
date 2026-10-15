@@ -40,7 +40,7 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return false;
 
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
                 return false;
 
             if (from == null || to == null)
@@ -151,7 +151,7 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return false;
 
-            if (dice == null || battle.Game.inGameState == InGameState.Wave)
+            if (dice == null || battle.Game.IsBoardLockedByWave)
                 return false;
 
             // 보는 것은 <b>대상</b>의 보유다 — Normal 을 4성까지 올려도 Tornado 가 없으면 못 간다.
@@ -190,7 +190,7 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return false;
 
-            if (dice == null || battle.Game.inGameState == InGameState.Wave)
+            if (dice == null || battle.Game.IsBoardLockedByWave)
                 return false;
 
             if (!DiceEvolution.CanExchange(dice.Type))

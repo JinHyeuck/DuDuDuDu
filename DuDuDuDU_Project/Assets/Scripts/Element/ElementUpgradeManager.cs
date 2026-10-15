@@ -88,7 +88,7 @@ namespace OJ.Element
             // <b>버튼을 숨기는 것만으로는 부족하다.</b> 그건 프리팹 한 번 잘못 만지면
             // 사라지는 규칙이고, 규칙이 사라진 사실은 화면에 안 나타난다. 값을 실제로
             // 깎는 자리에서 막아야 한다.
-            if (battle.Game.inGameState != InGameState.Setting)
+            if (!battle.Game.CanManageBoard)
                 return false;
 
             int cost = GetNextUpgradeCost(elementType);

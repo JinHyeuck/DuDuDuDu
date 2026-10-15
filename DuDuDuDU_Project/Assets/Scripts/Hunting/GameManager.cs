@@ -44,6 +44,33 @@ namespace OJ.Hunting
 
         public InGameState inGameState = InGameState.None;
 
+        /// <summary>
+        /// <b>테스트용 연속 웨이브.</b> 켜면 웨이브가 끝나도 관리 단계(Setting)로 내려가지 않고
+        /// 곧바로 다음 웨이브가 시작되며, 웨이브 중에도 소환·머지·진화·교환·속성강화가 열린다.
+        /// 첫 웨이브는 평소처럼 관리 단계에서 시작 버튼으로 연다.
+        ///
+        /// 튜토리얼(대본이 Setting 을 기다린다)과 탑(층 하나짜리)에는 걸리지 않는다
+        /// — <see cref="IsContinuousWave"/>.
+        /// 정식 규칙으로 돌아가려면 이 값만 false 로 바꾼다.
+        /// </summary>
+        public static bool TestContinuousWave = true;
+
+        /// <summary>이 판에 연속 웨이브 테스트 규칙이 실제로 걸려 있는가.</summary>
+        public bool IsContinuousWave =>
+            TestContinuousWave && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
+
+        /// <summary>
+        /// 지금 보드를 만질 수 있는가(소환·머지·진화·교환·속성강화). 평소에는 관리 단계뿐이고,
+        /// 연속 웨이브 테스트 중에는 웨이브 중에도 된다.
+        /// </summary>
+        public bool CanManageBoard =>
+            inGameState == InGameState.Setting
+            || (inGameState == InGameState.Wave && IsContinuousWave);
+
+        /// <summary>웨이브라서 보드 조작이 막혀 있는가. 상태가 None 인 경우는 각 호출부의 기존 판단을 따른다.</summary>
+        public bool IsBoardLockedByWave =>
+            inGameState == InGameState.Wave && !IsContinuousWave;
+
         public int WaveMonsterCount => Run.WaveMonsterCount;
         public int WaveMonsterDeadCount { get => Run.WaveMonsterDeadCount; set => Run.WaveMonsterDeadCount = value; }
         /// <summary>
@@ -421,8 +448,8 @@ namespace OJ.Hunting
             // 흐리게 만든다(치우지 않는다 — 빈 자리는 기능이 사라진 것처럼 보인다).
             // 창이 열린 채 웨이브가 시작될 수 있으므로(그 창은 전체 화면을 덮지 않는다)
             // 닫는 것까지 해야 한다.
-            battle.ElementUpgrade.SetUpgradeUIAvailable(state == InGameState.Setting);
-            if (state != InGameState.Setting)
+            battle.ElementUpgrade.SetUpgradeUIAvailable(CanManageBoard);
+            if (!CanManageBoard)
                 GameContainer.UI?.Hide<UIElementUpgradePanel>();
 
             // 관리 단계마다 자동으로 뜨던 조합 진행도 창(UIDiceCraftProgressDialog)은
@@ -1101,6 +1128,15 @@ namespace OJ.Hunting
             }
 
             RelicManager.Instance?.EndWave();
+
+            // 테스트용 연속 웨이브: 관리 단계를 건너뛰고 곧바로 다음 웨이브를 연다.
+            // Wave → Wave 진입도 스냅샷·WaveIndex++·현상금·스포너 리셋을 그대로 탄다.
+            if (IsContinuousWave)
+            {
+                ChangeState(InGameState.Wave);
+                return;
+            }
+
             ChangeState(InGameState.Setting);
         }
 

@@ -155,7 +155,7 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return;
 
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
                 return;
 
             if (currentSP < summonCost)
