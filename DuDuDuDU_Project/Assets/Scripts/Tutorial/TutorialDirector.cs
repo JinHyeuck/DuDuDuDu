@@ -218,10 +218,12 @@ namespace OJ.Tutorial
             if (gift != null)
             {
                 overlay.SetDim(RectOf(gift));
-                await PopAsync(gift.transform);
 
-                // 자리를 잡은 4성을 잠깐 보여 준다. 연출이 끝나자마자 다음 말풍선이 뜨면 어색하다.
-                float resume = Time.unscaledTime + 0.5f;
+                // 팝은 <c>UIBoard.SpawnDice</c> 가 이미 걸었다(<c>DiceFx.PlaySummon</c>).
+                // 여기서 또 걸면 두 쪽이 같은 <c>localScale</c> 에 써서 서로를 덮는다 —
+                // 기다리기만 한다. 뒤의 0.5초는 자리를 잡은 4성을 잠깐 보여 주는 시간이다
+                // (연출이 끝나자마자 다음 말풍선이 뜨면 어색하다).
+                float resume = Time.unscaledTime + DiceFx.SummonSeconds + 0.5f;
                 await Until(() => Time.unscaledTime >= resume);
             }
 
@@ -461,35 +463,6 @@ namespace OJ.Tutorial
             }
 
             return -1;
-        }
-
-        /// <summary>
-        /// 놓인 선물이 커졌다 작아지며 자리를 잡는다. 0 → 1.3 → 1.
-        /// 배속·일시정지를 타지 않는다 — 연출 길이를 시간 설정에 묶지 않는다.
-        /// </summary>
-        private async UniTask PopAsync(Transform target)
-        {
-            const float GrowSeconds = 0.22f;
-            const float SettleSeconds = 0.14f;
-            const float Peak = 1.3f;
-
-            float elapsed = 0f;
-            target.localScale = Vector3.zero;
-
-            while (elapsed < GrowSeconds + SettleSeconds)
-            {
-                await UniTask.Yield(PlayerLoopTiming.Update, token);
-                if (target == null)
-                    return;
-
-                elapsed += Time.unscaledDeltaTime;
-                float scale = elapsed < GrowSeconds
-                    ? Mathf.LerpUnclamped(0f, Peak, UIEase.OutQuad(elapsed / GrowSeconds))
-                    : Mathf.Lerp(Peak, 1f, UIEase.OutQuad(Mathf.Clamp01((elapsed - GrowSeconds) / SettleSeconds)));
-                target.localScale = Vector3.one * scale;
-            }
-
-            target.localScale = Vector3.one;
         }
 
         // ── 도우미 ────────────────────────────────────────────────────
