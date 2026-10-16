@@ -298,6 +298,7 @@ namespace OJ.EditorTools
 
             GameManager game = battle.Game;
             WatchStall();
+            OpenAllSlots(battle);
 
             if (game.inGameState == InGameState.None)
             {
@@ -365,6 +366,22 @@ namespace OJ.EditorTools
             game.OnClick_PlayUI();
         }
 
+        /// <summary>
+        /// 자리 구매(첫 줄만 무료)를 꺼서 보드 전체를 쓴다. 봇은 자리를 사지 않으므로 그대로 두면 첫 줄 7칸으로만
+        /// 측정되고, 그것은 사람이 SP 로 자리를 열어 쓰는 실제 플레이보다 훨씬 가혹한 하한이다.
+        /// 보드 판 단위 설정이라 판마다 다시 켜진다 — 매 프레임 확인한다. 측정 준비일 뿐 플레이 조작이 아니다.
+        /// </summary>
+        private static void OpenAllSlots(IBattleRefs battle)
+        {
+            UIBoard board = battle.Board;
+            if (board == null || !board.IsSlotLockActive)
+                return;
+
+            FieldInfo field = typeof(UIBoard).GetField("slotLockActive", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field != null)
+                field.SetValue(board, false);
+        }
+
         /// <summary>큐에 남은 스테이지가 있으면 <b>게임이 로비로 돌아오기를 기다린다.</b></summary>
         private static void NextStageOrStop()
         {
@@ -421,7 +438,7 @@ namespace OJ.EditorTools
             {
                 if (board.diceMap[i] != null)
                     alive++;
-                else
+                else if (board.IsSlotUnlocked(i))
                     emptySlots++;
             }
 

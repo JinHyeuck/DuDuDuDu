@@ -60,7 +60,7 @@ namespace OJ.Bounty
         public event Action OnReady;
 
         // 지금 살아 있는 현상금 → 등급. 잡았을 때 어느 등급인지 알려면 개체마다 들고 있어야 한다
-        // (쿨타임 30초 < 처치 시간이면 서로 다른 등급이 동시에 살 수 있다).
+        // (쿨타임 60초 < 처치 시간이면 서로 다른 등급이 동시에 살 수 있다).
         private readonly Dictionary<Monster, int> active = new Dictionary<Monster, int>();
 
         public BountyManager(IBattleRefs battle)

@@ -82,8 +82,8 @@ namespace OJ.Dice
         // ── 에디터 굽기 ────────────────────────────────────────────────────────────
 
         // 삭제 버튼과 같은 자리·같은 크기다(BattleScene 의 DiceRemove: 오른쪽 아래 기준).
-        private static readonly Vector2 Size = new Vector2(274f, 106f);
-        private static readonly Vector2 Position = new Vector2(-204.6f, 90.7f);
+        private static readonly Vector2 Size = new Vector2(230f, 106f);
+        private static readonly Vector2 Position = new Vector2(-135f, 90.7f);
 
         /// <summary>에디터 굽기 전용.</summary>
         public static UIProbabilityUpButton Create(Transform parent, TMP_FontAsset font)
@@ -117,6 +117,9 @@ namespace OJ.Dice
                 TextAlignmentOptions.Center, Color.white, font);
             UIBountyUIFactory.SetRect(dialog.label.rectTransform, new Vector2(Size.x - 24f, Size.y - 20f), new Vector2(0f, 3f));
             dialog.label.lineSpacing = -8f;
+            dialog.label.enableAutoSizing = true;
+            dialog.label.fontSizeMin = 22f;
+            dialog.label.fontSizeMax = 30f;
 
             return dialog;
         }

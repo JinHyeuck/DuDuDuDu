@@ -104,6 +104,20 @@ namespace OJ.Core
         public float BountyCooldown { get; set; }
 
         /// <summary>
+        /// 통장에 지금까지 맡겨 돌려받은 횟수. 다음에 맡길 금액을 정한다(<see cref="SavingsRules.DepositFor"/>).
+        /// </summary>
+        public int SavingsStep { get; set; }
+
+        /// <summary>지금 통장에 맡겨 둔 금액(SP). 0 이면 맡긴 것이 없다.</summary>
+        public int SavingsDeposit { get; set; }
+
+        /// <summary>
+        /// 통장이 돌려주기까지 남은 시간(초). 0 이면 맡긴 것이 없다(Ready).
+        /// 되돌리기 스냅샷에 들어간다 — SP 와 같이 돌아가야 "맡긴 SP 가 사라지는" 일이 없다.
+        /// </summary>
+        public float SavingsTimer { get; set; }
+
+        /// <summary>
         /// 판을 시작한다. <b>모든 런 범위 필드를 여기서 한 번에</b> 세운다 —
         /// 필드를 늘리면 반드시 여기도 늘려야 하고, 그러지 않으면 이전 판 값이 새어 나간다.
         /// 그것이 이 클래스가 존재하는 이유다.
@@ -125,6 +139,9 @@ namespace OJ.Core
             IsGameOver = false;
             HighestDefeatedBountyGrade = 0;
             BountyCooldown = 0f;
+            SavingsStep = 0;
+            SavingsDeposit = 0;
+            SavingsTimer = 0f;
         }
 
         /// <summary>
@@ -152,6 +169,9 @@ namespace OJ.Core
             public bool IsGameOver;
             public int HighestDefeatedBountyGrade;
             public float BountyCooldown;
+            public int SavingsStep;
+            public int SavingsDeposit;
+            public float SavingsTimer;
         }
 
         /// <summary>
@@ -181,6 +201,9 @@ namespace OJ.Core
                 IsGameOver = IsGameOver,
                 HighestDefeatedBountyGrade = HighestDefeatedBountyGrade,
                 BountyCooldown = BountyCooldown,
+                SavingsStep = SavingsStep,
+                SavingsDeposit = SavingsDeposit,
+                SavingsTimer = SavingsTimer,
             };
         }
 
@@ -202,6 +225,9 @@ namespace OJ.Core
             IsGameOver = snapshot.IsGameOver;
             HighestDefeatedBountyGrade = snapshot.HighestDefeatedBountyGrade;
             BountyCooldown = snapshot.BountyCooldown;
+            SavingsStep = snapshot.SavingsStep;
+            SavingsDeposit = snapshot.SavingsDeposit;
+            SavingsTimer = snapshot.SavingsTimer;
         }
     }
 }

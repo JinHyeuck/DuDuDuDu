@@ -222,10 +222,10 @@ namespace OJ.Core.Tests
         // ── 쿨타임(실시간 현상금) ─────────────────────────────────────
 
         [Test]
-        public void Cooldown_IsThirtySeconds_AndTicksDownToZeroWithoutGoingNegative()
+        public void Cooldown_IsOneMinute_AndTicksDownToZeroWithoutGoingNegative()
         {
-            Assert.AreEqual(30f, BountyFormula.CooldownSeconds);
-            Assert.AreEqual(25f, BountyFormula.Tick(30f, 5f));
+            Assert.AreEqual(60f, BountyFormula.CooldownSeconds);
+            Assert.AreEqual(55f, BountyFormula.Tick(60f, 5f));
             Assert.AreEqual(0f, BountyFormula.Tick(1f, 5f));
             Assert.AreEqual(0f, BountyFormula.Tick(0f, 5f));
         }

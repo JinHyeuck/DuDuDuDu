@@ -176,8 +176,8 @@ namespace OJ.Bounty
         // ──────────────────────────────────────────────────────────────
 
         // 시작 버튼이 있던 하단 왼쪽. 보드 아래 여백(약 205px) 안에 들어가는 크기다.
-        private static readonly Vector2 Size = new Vector2(200f, 190f);
-        private static readonly Vector2 Position = new Vector2(150f, 100f);
+        private static readonly Vector2 Size = new Vector2(170f, 190f);
+        private static readonly Vector2 Position = new Vector2(105f, 100f);
 
         /// <summary>에디터 굽기 전용.</summary>
         public static UIBountyButton Create(Transform parent, TMP_FontAsset font, Material plainMaterial)

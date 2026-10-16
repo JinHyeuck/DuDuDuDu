@@ -25,8 +25,8 @@ namespace OJ.Core
         /// <summary>"현상금 몬스터를 부르지 않는다" 를 뜻하는 등급 값.</summary>
         public const int NoneGrade = 0;
 
-        /// <summary>현상금을 한 번 소환한 뒤 다음 소환까지 기다리는 시간(초). 게임 시간(배속에 비례)이다.</summary>
-        public const float CooldownSeconds = 30f;
+        /// <summary>현상금을 한 번 소환한 뒤 다음 소환까지 기다리는 시간(초). 게임 시간(배속에 비례)이다. 30초였다가 1분으로 늘렸다.</summary>
+        public const float CooldownSeconds = 60f;
 
         /// <summary>
         /// 쿨타임을 <paramref name="deltaTime"/> 만큼 흘린다. 0 아래로 내려가지 않는다.

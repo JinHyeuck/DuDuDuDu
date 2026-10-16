@@ -54,6 +54,12 @@ namespace OJ.Hunting
         /// </summary>
         public static bool LegacySetupFlow;
 
+        /// <summary>통장(SP 를 맡기고 45초 뒤 +10%). 실시간 판에서만 쓰인다.</summary>
+        public OJ.Economy.SavingsManager Savings { get; private set; }
+
+        /// <summary>행운 주사위(SP → 마석 1~10개). 실시간 판에서만 쓰인다.</summary>
+        public OJ.Economy.LuckyDiceManager LuckyDice { get; private set; }
+
         /// <summary>
         /// 이 판이 <b>실시간 진행</b>인가. 웨이브가 끝나도 준비 단계로 내려가지 않고 곧바로 다음 웨이브가
         /// 시작되며, 웨이브 중에도 소환·머지·진화·교환·속성강화·자리구매가 열려 있다.
@@ -176,6 +182,9 @@ namespace OJ.Hunting
             battle.Bounty.OnSpawned += OnBountySpawned;
             battle.Spawner.OnBossSpawned += OnBossSpawned;
 
+            Savings = new OJ.Economy.SavingsManager(battle);
+            LuckyDice = new OJ.Economy.LuckyDiceManager(battle);
+
             InitializeStage();
 
             // 기여도 패널은 본편·탑 둘 다에서 뜬다. 접어 둔 사람에게는 접힌 채로
@@ -214,6 +223,8 @@ namespace OJ.Hunting
                 // 삭제 버튼 자리의 확률업 버튼과, 소환 버튼 위의 확률 띠.
                 GameContainer.UI?.Show<UIProbabilityUpButton>();
                 GameContainer.UI?.Show<UISummonRateStrip>();
+                GameContainer.UI?.Show<OJ.Economy.UISavingsButton>();
+                GameContainer.UI?.Show<OJ.Economy.UILuckyDiceButton>();
 
                 StartCoroutine(CoRealtimeStart());
             }
@@ -539,7 +550,10 @@ namespace OJ.Hunting
 
             // 현상금 쿨타임은 웨이브 중에만 흐른다. 게임 시간이라 일시정지에서는 멈추고 배속에서는 빨리 흐른다.
             if (inGameState == InGameState.Wave)
+            {
                 battle.Bounty.Tick(Time.deltaTime);
+                Savings.Tick(Time.deltaTime);
+            }
         }
 
         /// <summary>
@@ -617,6 +631,9 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<UIBattleWarning>();
             GameContainer.UI?.Hide<UIProbabilityUpButton>();
             GameContainer.UI?.Hide<UISummonRateStrip>();
+            GameContainer.UI?.Hide<OJ.Economy.UISavingsButton>();
+            GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceButton>();
+            GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceOddsTooltip>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
             GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
