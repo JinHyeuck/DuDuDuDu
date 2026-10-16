@@ -17,8 +17,11 @@ namespace OJ.Dice
         /// <summary>기본 2성 + 기본 1성 → 레어.</summary>
         CraftRare,
 
-        /// <summary>레어 + 같은 계통 기본 1성 → 신화(킹).</summary>
-        CraftMythic,
+        /// <summary>
+        /// 신화 다이스 소환. <b>어느 신화인지는 카드가 정하지 않는다</b> — 눌러서 목록에서 고른다
+        /// (<see cref="MythicList"/>). 값(SP)은 목록에서 고른 뒤에야 치른다.
+        /// </summary>
+        MythicSummon,
     }
 
     /// <summary>
@@ -47,6 +50,9 @@ namespace OJ.Dice
 
         public bool IsEmpty => Kind == ShopCardKind.None;
 
+        /// <summary>신화 소환 카드인가(주황 카드, 눌러서 목록을 연다).</summary>
+        public bool IsMythic => Kind == ShopCardKind.MythicSummon;
+
         public int Cost
         {
             get
@@ -56,7 +62,7 @@ namespace OJ.Dice
                     case ShopCardKind.GrantDice: return DiceRecipes.GrantCostSp;
                     case ShopCardKind.MergeDice: return DiceRecipes.MergeCostSp;
                     case ShopCardKind.CraftRare: return DiceRecipes.RareCostSp;
-                    case ShopCardKind.CraftMythic: return DiceRecipes.MythicCostSp;
+                    case ShopCardKind.MythicSummon: return DiceRecipes.MythicCostSp;
                     default: return 0;
                 }
             }
@@ -85,13 +91,23 @@ namespace OJ.Dice
             };
         }
 
+        /// <summary>신화 소환 카드. 결과 다이스는 비어 있다(목록에서 고른다).</summary>
+        public static ShopCard Mythic()
+        {
+            return new ShopCard
+            {
+                Kind = ShopCardKind.MythicSummon,
+                Result = DiceType.Max,
+                ResultStar = 1,
+            };
+        }
+
+        /// <summary>레어 조합 카드. 신화는 <see cref="Mythic"/> 이다.</summary>
         public static ShopCard Craft(DiceRecipe recipe)
         {
             return new ShopCard
             {
-                Kind = DiceEvolution.GetTier(recipe.Result) == DiceTier.King
-                    ? ShopCardKind.CraftMythic
-                    : ShopCardKind.CraftRare,
+                Kind = ShopCardKind.CraftRare,
                 Result = recipe.Result,
                 ResultStar = 1,
                 MainType = recipe.MainType,
@@ -228,7 +244,6 @@ namespace OJ.Dice
         {
             var merges = new List<DiceType>(5);
             var rares = new List<DiceRecipe>(5);
-            var mythics = new List<DiceRecipe>(5);
 
             IReadOnlyList<DiceType> bases = DiceEvolution.BaseTypes;
             for (int i = 0; i < bases.Count; i++)
@@ -239,12 +254,12 @@ namespace OJ.Dice
             }
 
             CollectCraftable(context, DiceRecipes.Rare, rares);
-            CollectCraftable(context, DiceRecipes.Mythic, mythics);
 
+            // 신화 카드는 재료가 없어도 나온다 — 무엇이 모자란지는 목록이 보여 준다(MythicList).
             int total = GrantWeight
                 + (merges.Count > 0 ? MergeWeight : 0)
                 + (rares.Count > 0 ? RareWeight : 0)
-                + (mythics.Count > 0 ? MythicWeight : 0);
+                + MythicWeight;
 
             int roll = nextInt(total);
 
@@ -266,7 +281,7 @@ namespace OJ.Dice
                 roll -= RareWeight;
             }
 
-            return ShopCard.Craft(mythics[nextInt(mythics.Count)]);
+            return ShopCard.Mythic();
         }
 
         private static DiceType PickGrantType(IShopContext context, Func<int, int> nextInt)

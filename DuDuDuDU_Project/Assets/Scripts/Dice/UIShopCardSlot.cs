@@ -22,6 +22,9 @@ namespace OJ.Dice
         private static readonly Color LackColor = new Color(0.83f, 0f, 0.15f, 1f);
         private static readonly Color DimColor = new Color(0.62f, 0.62f, 0.62f, 1f);
 
+        // 신화 카드의 바탕. 종이(Wanted_Bg)에 곱해지므로 주황빛 종이가 된다.
+        private static readonly Color MythicColor = new Color(1f, 0.58f, 0.18f, 1f);
+
         [SerializeField] private Button buyButton;
         [SerializeField] private Image background;
         [SerializeField] private Button lockButton;
@@ -39,6 +42,7 @@ namespace OJ.Dice
         [SerializeField] private TMP_Text resultStarText;
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text costText;
+        [SerializeField] private TMP_Text mythicText;
 
         private int index;
 
@@ -69,20 +73,40 @@ namespace OJ.Dice
         public void Bind(ShopCard card, bool canBuy, bool affordable)
         {
             bool empty = card.IsEmpty;
+            bool mythic = card.IsMythic;
+            bool normal = !empty && !mythic;
 
-            ingredientRow.SetActive(!empty && card.MainCount > 0);
-            ApplyResultLayout(!empty && card.MainCount == 0);
-            resultIcon.gameObject.SetActive(!empty);
-            resultStarText.gameObject.SetActive(!empty);
+            // 신화 카드는 재료·결과를 카드에 적지 않는다. 글자 네 줄이 전부다.
+            mythicText.gameObject.SetActive(mythic);
+            kindText.gameObject.SetActive(normal || empty);
+            ingredientRow.SetActive(normal && card.MainCount > 0);
+            ApplyResultLayout(normal && card.MainCount == 0);
+            resultIcon.gameObject.SetActive(normal);
+            resultStarText.gameObject.SetActive(normal);
+            nameText.gameObject.SetActive(normal);
+            costText.gameObject.SetActive(normal);
             lockButton.gameObject.SetActive(!empty);
-            nameText.gameObject.SetActive(!empty);
-            costText.gameObject.SetActive(!empty);
 
             if (empty)
             {
                 kindText.text = "품절";
                 background.color = DimColor;
                 buyButton.interactable = false;
+                return;
+            }
+
+            lockIcon.sprite = card.Locked ? lockedSprite : unlockedSprite;
+
+            if (mythic)
+            {
+                // 눌러서 목록을 여는 카드라 재화가 모자라도 눌린다. 모자란 것은 SP 줄만 붉게 알린다.
+                background.color = MythicColor;
+                buyButton.interactable = true;
+
+                string cost = "SP" + card.Cost;
+                if (!affordable)
+                    cost = "<color=#C8001F>" + cost + "</color>";
+                mythicText.text = "신화\n다이스\n소환\n" + cost;
                 return;
             }
 
@@ -107,8 +131,6 @@ namespace OJ.Dice
 
             costText.text = card.Cost + " SP";
             costText.color = affordable ? Color.white : LackColor;
-
-            lockIcon.sprite = card.Locked ? lockedSprite : unlockedSprite;
         }
 
         private static void SetDice(Image icon, TMP_Text starText, DiceType type, int star)
@@ -136,7 +158,7 @@ namespace OJ.Dice
                 case ShopCardKind.GrantDice: return "다이스 지급";
                 case ShopCardKind.MergeDice: return "다이스 머지";
                 case ShopCardKind.CraftRare: return "레어 조합";
-                case ShopCardKind.CraftMythic: return "신화 조합";
+                case ShopCardKind.MythicSummon: return "신화 소환";
                 default: return string.Empty;
             }
         }
@@ -232,6 +254,13 @@ namespace OJ.Dice
             UIBountyUIFactory.SetRect(slot.costText.rectTransform, new Vector2(270f, 48f), new Vector2(0f, -top + 50f));
 
             slot.ApplyResultLayout(false);
+
+            // 신화 카드의 글자 — 네 줄(신화 / 다이스 / 소환 / SP50). 카드를 가득 채운다.
+            slot.mythicText = UIBountyUIFactory.CreateText("Mythic", card, "신화\n다이스\n소환\nSP50", 56f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIBountyUIFactory.SetRect(slot.mythicText.rectTransform, new Vector2(250f, 300f), new Vector2(0f, -8f));
+            slot.mythicText.lineSpacing = -10f;
+            slot.mythicText.gameObject.SetActive(false);
 
             // 잠금 — 카드 오른쪽 위. 카드 전체 버튼과 별개라 누르면 구매가 되지 않는다.
             Image lockBg = UIBountyUIFactory.CreateSprite("Lock", card,

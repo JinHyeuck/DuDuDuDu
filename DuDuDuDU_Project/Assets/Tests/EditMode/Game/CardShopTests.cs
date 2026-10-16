@@ -158,20 +158,61 @@ namespace OJ.Game.Tests
         }
 
         [Test]
-        public void UnownedKing_NeverOffered()
+        public void MythicCard_CanAppearEvenWithoutMaterials()
         {
-            var ctx = new FakeContext();
-            ctx.Board[(DiceType.Tornado, 1)] = 1;
-            ctx.Board[(DiceType.Normal, 1)] = 1;
-            ctx.NotOwned.Add(DiceType.KingNormal);
-
-            for (int seed = 0; seed < 80; seed++)
+            bool saw = false;
+            for (int seed = 0; seed < 200 && !saw; seed++)
             {
                 var shop = new CardShop();
-                shop.Refresh(ctx, Seeded(seed));
+                shop.Refresh(new FakeContext(), Seeded(seed));
                 for (int i = 0; i < shop.Count; i++)
-                    Assert.AreNotEqual(ShopCardKind.CraftMythic, shop[i].Kind);
+                {
+                    if (shop[i].Kind == ShopCardKind.MythicSummon)
+                    {
+                        saw = true;
+                        Assert.IsTrue(shop[i].IsMythic);
+                        Assert.AreEqual(50, shop[i].Cost);
+                    }
+                }
             }
+
+            Assert.IsTrue(saw);
+        }
+
+        [Test]
+        public void MythicList_SortsCraftableThenMissingThenNotOwned()
+        {
+            var ctx = new FakeContext();
+
+            // KingNormal(Tornado + Normal1): 둘 다 있다 → 소환 가능.
+            ctx.Board[(DiceType.Tornado, 1)] = 1;
+            ctx.Board[(DiceType.Normal, 1)] = 1;
+
+            // KingFire(ArmorBreak + Fire1): 보조만 있다 → 주재료가 모자라다.
+            ctx.Board[(DiceType.Fire, 1)] = 1;
+
+            // KingIce: 아무것도 없다 → 둘 다 모자라다. KingThunder 는 미보유.
+            ctx.NotOwned.Add(DiceType.KingThunder);
+            ctx.NotOwned.Add(DiceType.KingPoison);
+
+            System.Collections.Generic.List<MythicOption> list = MythicList.Build(ctx);
+
+            Assert.AreEqual(5, list.Count);
+            Assert.AreEqual(DiceType.KingNormal, list[0].Recipe.Result);
+            Assert.AreEqual(MythicOptionState.Craftable, list[0].State);
+
+            Assert.AreEqual(MythicOptionState.MissingMaterials, list[1].State);
+            Assert.AreEqual(MythicOptionState.MissingMaterials, list[2].State);
+            Assert.AreEqual(MythicOptionState.NotOwned, list[3].State);
+            Assert.AreEqual(MythicOptionState.NotOwned, list[4].State);
+
+            MythicOption fire = list[1].Recipe.Result == DiceType.KingFire ? list[1] : list[2];
+            Assert.IsTrue(fire.NeedMain);
+            Assert.IsFalse(fire.NeedSub);
+
+            MythicOption ice = list[1].Recipe.Result == DiceType.KingIce ? list[1] : list[2];
+            Assert.IsTrue(ice.NeedMain);
+            Assert.IsTrue(ice.NeedSub);
         }
 
         [Test]
@@ -206,7 +247,7 @@ namespace OJ.Game.Tests
             Assert.AreEqual(10, ShopCard.Grant(DiceType.Normal).Cost);
             Assert.AreEqual(20, ShopCard.Merge(DiceType.Normal).Cost);
             Assert.AreEqual(30, ShopCard.Craft(DiceRecipes.Rare[0]).Cost);
-            Assert.AreEqual(50, ShopCard.Craft(DiceRecipes.Mythic[0]).Cost);
+            Assert.AreEqual(50, ShopCard.Mythic().Cost);
         }
     }
 }

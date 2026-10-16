@@ -107,7 +107,7 @@ namespace OJ.Dice
             for (int i = 0; i < slots.Length && i < shop.Count; i++)
             {
                 ShopCard card = shop[i];
-                bool canBuy = !card.IsEmpty && HasMaterials(card, board);
+                bool canBuy = !card.IsEmpty && (card.IsMythic || HasMaterials(card, board));
                 bool affordable = !card.IsEmpty && CanAfford(card);
                 slots[i].Bind(card, canBuy, affordable);
             }
@@ -146,6 +146,13 @@ namespace OJ.Dice
 
         private void OnBuy(int index)
         {
+            // 신화 카드는 사는 것이 아니라 목록을 연다 — 값은 목록에서 하나를 고를 때 치른다.
+            if (battle.Game.Shop[index].IsMythic)
+            {
+                GameContainer.UI?.Get<UIMythicListDialog>()?.Open(index);
+                return;
+            }
+
             battle.Game.TryBuyShopCard(index);
         }
 
@@ -213,11 +220,11 @@ namespace OJ.Dice
 
             // 버튼 줄. 킷 버튼(32²)은 여백이 사방 4px 이라 x3 로 12px 씩 키운다.
             panel.recipeButton = CreateKitButton("RecipeButton", view.transform, "Ingame/Big_Btn_Yellow",
-                new Vector2(190f, 56f), new Vector2(-400f, 204f), "조합식", font, out _);
+                new Vector2(190f, 88f), new Vector2(-400f, 216f), "조합식", font, out _);
             panel.rerollButton = CreateKitButton("RerollButton", view.transform, "Ingame/Big_Btn_Green",
-                new Vector2(210f, 56f), new Vector2(400f, 204f), "리롤", font, out panel.rerollLabel);
+                new Vector2(210f, 88f), new Vector2(400f, 216f), "리롤", font, out panel.rerollLabel);
             panel.collapseButton = CreateKitButton("CollapseButton", view.transform, "Ingame/Btn_Gray",
-                new Vector2(150f, 56f), new Vector2(0f, 204f), "접기", font, out panel.collapseLabel);
+                new Vector2(150f, 88f), new Vector2(0f, 216f), "접기", font, out panel.collapseLabel);
 
             GameObject row = UIBountyUIFactory.CreateRect("CardRow", view.transform);
             UIBountyUIFactory.Stretch(row.GetComponent<RectTransform>());

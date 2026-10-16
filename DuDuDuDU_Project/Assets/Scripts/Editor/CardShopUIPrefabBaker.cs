@@ -18,6 +18,8 @@ namespace OJ.EditorTools
     {
         private const string PanelPath = "Assets/Prefab/Refactory/BattleScene/UICardShopPanel.prefab";
         private const string BookPath = "Assets/Prefab/Refactory/BattleScene/UIRecipeBookDialog.prefab";
+        private const string MythicListPath = "Assets/Prefab/Refactory/BattleScene/UIMythicListDialog.prefab";
+        private const string CinematicPath = "Assets/Prefab/Refactory/BattleScene/UIMythicSummonCinematic.prefab";
         private const string HannaFontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
 
         [MenuItem("OJ/개발/조합식 카드/UI 프리팹 굽기")]
@@ -43,7 +45,12 @@ namespace OJ.EditorTools
             BakeOne("__RecipeBookBakeRoot", BookPath,
                 (parent) => UIRecipeBookDialog.Create(parent, font, plain).gameObject);
 
-            Debug.Log("[굽기] 조합식 카드 UI 둘을 구웠다." + System.Environment.NewLine +
+            BakeOne("__MythicListBakeRoot", MythicListPath,
+                (parent) => UIMythicListDialog.Create(parent, font, plain).gameObject);
+            BakeOne("__MythicCinematicBakeRoot", CinematicPath,
+                (parent) => UIMythicSummonCinematic.Create(parent, font, plain).gameObject);
+
+            Debug.Log("[굽기] 조합식 카드 UI 넷을 구웠다." + System.Environment.NewLine +
                       "  다음: OJ/개발/다이얼로그 카탈로그/훑어서 갱신 을 돌려 등재할 것.");
         }
 
