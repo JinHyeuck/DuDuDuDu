@@ -69,10 +69,23 @@ namespace OJ.Dice
             base.OnDestroy();
         }
 
+        // 신화 소환 가능 여부를 확인하는 간격(초). 목록을 만드는 일이라 매 프레임은 과하다.
+        private const float MythicCheckInterval = 0.25f;
+        private float mythicCheckTimer;
+
         private void Update()
         {
-            if (_isEnter)
-                Refresh();
+            if (!_isEnter)
+                return;
+
+            mythicCheckTimer += Time.unscaledDeltaTime;
+            if (mythicCheckTimer >= MythicCheckInterval)
+            {
+                mythicCheckTimer = 0f;
+                battle.Game.EnsureMythicCard();
+            }
+
+            Refresh();
         }
 
         private void Subscribe()

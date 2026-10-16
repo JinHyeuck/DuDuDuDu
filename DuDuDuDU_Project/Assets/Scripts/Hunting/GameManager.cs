@@ -104,6 +104,15 @@ namespace OJ.Hunting
             Shop.Refresh(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
         }
 
+        /// <summary>소환할 수 있는 신화가 생겼는데 카드가 없으면 신화 카드를 한 장 둔다. 카드 창이 주기적으로 부른다.</summary>
+        public void EnsureMythicCard()
+        {
+            if (!CardModeActive || !CanManageBoard)
+                return;
+
+            Shop.EnsureMythic(new BoardShopContext(battle.Board, ownership));
+        }
+
         /// <summary>
         /// 신화 카드(<paramref name="cardIndex"/>)에서 <paramref name="king"/> 을 소환한다. 성공하면 그 칸을 비우고
         /// 소환된(숨겨진) 다이스를 돌려준다 — 연출이 끝나면 <c>MergeSystem.RevealMythic</c> 으로 드러낸다.

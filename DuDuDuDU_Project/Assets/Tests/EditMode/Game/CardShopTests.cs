@@ -190,6 +190,59 @@ namespace OJ.Game.Tests
         }
 
         [Test]
+        public void MythicCard_IsAlwaysPresent_WhenAKingIsCraftable()
+        {
+            var ctx = new FakeContext();
+            ctx.Board[(DiceType.Tornado, 1)] = 1;
+            ctx.Board[(DiceType.Normal, 1)] = 1;
+
+            // 확률에 맡기지 않는다 — 어떤 난수로 갱신해도 한 장은 신화 카드다.
+            for (int seed = 0; seed < 100; seed++)
+            {
+                var shop = new CardShop();
+                shop.Refresh(ctx, Seeded(seed));
+
+                int mythics = 0;
+                for (int i = 0; i < shop.Count; i++)
+                    if (shop[i].IsMythic) mythics++;
+
+                Assert.AreEqual(1, mythics, "seed " + seed);
+            }
+        }
+
+        [Test]
+        public void EnsureMythic_FillsAnEmptySlot_OnceMaterialsAppear_AndNotTwice()
+        {
+            var ctx = new FakeContext();
+            var shop = new CardShop();
+            shop.Refresh(ctx, Seeded(5));
+            for (int i = 0; i < shop.Count; i++) Assert.IsFalse(shop[i].IsMythic);
+
+            Assert.IsFalse(shop.EnsureMythic(ctx));
+
+            ctx.Board[(DiceType.Tornado, 1)] = 1;
+            ctx.Board[(DiceType.Normal, 1)] = 1;
+
+            Assert.IsTrue(shop.EnsureMythic(ctx));
+            Assert.IsFalse(shop.EnsureMythic(ctx));
+        }
+
+        [Test]
+        public void EnsureMythic_NeverReplacesALockedCard()
+        {
+            var ctx = new FakeContext();
+            var shop = new CardShop();
+            shop.Refresh(ctx, Seeded(9));
+            for (int i = 0; i < shop.Count; i++) shop.ToggleLock(i);
+
+            ctx.Board[(DiceType.Tornado, 1)] = 1;
+            ctx.Board[(DiceType.Normal, 1)] = 1;
+
+            Assert.IsFalse(shop.EnsureMythic(ctx));
+            for (int i = 0; i < shop.Count; i++) Assert.IsFalse(shop[i].IsMythic);
+        }
+
+        [Test]
         public void MythicCard_CanBeOffered_WhenAKingIsCraftable()
         {
             var ctx = new FakeContext();
