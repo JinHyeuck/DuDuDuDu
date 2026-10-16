@@ -255,11 +255,23 @@ namespace OJ.Dice
 
             CollectCraftable(context, DiceRecipes.Rare, rares);
 
-            // 신화 카드는 재료가 없어도 나온다 — 무엇이 모자란지는 목록이 보여 준다(MythicList).
+            // 신화 카드는 <b>지금 소환할 수 있는 신화가 하나라도 있을 때만</b> 나온다 —
+            // 보유했고 재료도 보드에 있는 것(MythicList 의 Craftable). 그래서 이 카드를 누르면
+            // 목록 맨 위에는 반드시 소환 가능한 줄이 있다.
+            bool mythicReady = false;
+            foreach (MythicOption option in MythicList.Build(context))
+            {
+                if (option.State == MythicOptionState.Craftable)
+                {
+                    mythicReady = true;
+                    break;
+                }
+            }
+
             int total = GrantWeight
                 + (merges.Count > 0 ? MergeWeight : 0)
                 + (rares.Count > 0 ? RareWeight : 0)
-                + MythicWeight;
+                + (mythicReady ? MythicWeight : 0);
 
             int roll = nextInt(total);
 

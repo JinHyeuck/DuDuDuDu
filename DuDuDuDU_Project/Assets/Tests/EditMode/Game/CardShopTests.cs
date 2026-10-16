@@ -158,13 +158,49 @@ namespace OJ.Game.Tests
         }
 
         [Test]
-        public void MythicCard_CanAppearEvenWithoutMaterials()
+        public void MythicCard_NeverOffered_WhenNothingIsCraftable()
         {
-            bool saw = false;
-            for (int seed = 0; seed < 200 && !saw; seed++)
+            var ctx = new FakeContext();
+            ctx.Board[(DiceType.Tornado, 1)] = 1; // 주재료만 있다 — 보조(Normal 1성)가 없다.
+
+            for (int seed = 0; seed < 200; seed++)
             {
                 var shop = new CardShop();
-                shop.Refresh(new FakeContext(), Seeded(seed));
+                shop.Refresh(ctx, Seeded(seed));
+                for (int i = 0; i < shop.Count; i++)
+                    Assert.AreNotEqual(ShopCardKind.MythicSummon, shop[i].Kind);
+            }
+        }
+
+        [Test]
+        public void MythicCard_NeverOffered_WhenTheKingIsNotOwned()
+        {
+            var ctx = new FakeContext();
+            ctx.Board[(DiceType.Tornado, 1)] = 1;
+            ctx.Board[(DiceType.Normal, 1)] = 1;
+            ctx.NotOwned.Add(DiceType.KingNormal);
+
+            for (int seed = 0; seed < 200; seed++)
+            {
+                var shop = new CardShop();
+                shop.Refresh(ctx, Seeded(seed));
+                for (int i = 0; i < shop.Count; i++)
+                    Assert.AreNotEqual(ShopCardKind.MythicSummon, shop[i].Kind);
+            }
+        }
+
+        [Test]
+        public void MythicCard_CanBeOffered_WhenAKingIsCraftable()
+        {
+            var ctx = new FakeContext();
+            ctx.Board[(DiceType.Tornado, 1)] = 1;
+            ctx.Board[(DiceType.Normal, 1)] = 1;
+
+            bool saw = false;
+            for (int seed = 0; seed < 300 && !saw; seed++)
+            {
+                var shop = new CardShop();
+                shop.Refresh(ctx, Seeded(seed));
                 for (int i = 0; i < shop.Count; i++)
                 {
                     if (shop[i].Kind == ShopCardKind.MythicSummon)
