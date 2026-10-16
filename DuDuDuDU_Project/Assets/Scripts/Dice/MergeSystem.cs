@@ -156,7 +156,7 @@ namespace OJ.Dice
             if (board == null || battle.BattlePoints == null)
                 return false;
 
-            BattlePointType currency = card.UsesStone ? BattlePointType.EnhanceStone : BattlePointType.SummonPoint;
+            const BattlePointType currency = BattlePointType.SummonPoint;
             if (battle.BattlePoints.Get(currency) < card.Cost)
                 return false;
 
@@ -179,8 +179,11 @@ namespace OJ.Dice
                         return false;
                     break;
 
+                case ShopCardKind.MythicSummon:
+                    // 신화 카드는 목록에서 하나를 골라야 산다 — TryCraftMythic.
+                    return false;
+
                 case ShopCardKind.CraftRare:
-                case ShopCardKind.CraftMythic:
                     main = board.FindDice(card.MainType, card.MainStar);
                     sub = board.FindDice(card.SubType, card.SubStar, main);
                     if (main == null || sub == null)
@@ -243,6 +246,68 @@ namespace OJ.Dice
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// 신화 하나를 소환한다(신화 카드 → 목록에서 고른 뒤). 성공하면 <b>소환된 다이스</b>를 돌려주고
+        /// 그 다이스는 <b>숨겨진 채</b>다 — 연출이 끝나는 곳에서 <see cref="RevealMythic"/> 로 드러낸다.
+        ///
+        /// <b>검증 → 차감 → 변경</b> 순서는 <see cref="TryBuyShopCard"/> 와 같다. 연출 동안 화면 전체가
+        /// 입력을 막으므로 그 사이에 보드가 바뀌어 결과가 틀어질 일은 없다.
+        /// </summary>
+        public UIDice TryCraftMythic(DiceType king)
+        {
+            if (battle.Tower.IsActive || battle.Game.IsBoardLockedByWave)
+                return null;
+
+            UIBoard board = battle.Board;
+            if (board == null || battle.BattlePoints == null)
+                return null;
+
+            if (!DiceRecipes.TryGet(king, out DiceRecipe recipe) || DiceEvolution.GetTier(king) != DiceTier.King)
+                return null;
+
+            if (!ownership.IsOwned(king))
+                return null;
+
+            UIDice main = board.FindDice(recipe.MainType, recipe.MainStar);
+            UIDice sub = board.FindDice(recipe.SubType, recipe.SubStar, main);
+            if (main == null || sub == null)
+                return null;
+
+            if (!battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, DiceRecipes.MythicCostSp))
+                return null;
+
+            battle.DiceStars.OnDiceRemove(sub.Type, sub.Star);
+            board.ClearDice(sub.SlotIndex);
+
+            ReplaceInPlace(main, king, 1);
+
+            // 날아와 자리를 잡을 때까지 보이지 않는다. 슬롯·쿨타임 상태는 이미 신화로 바뀌어 있다.
+            CanvasGroup group = main.GetComponent<CanvasGroup>();
+            if (group != null)
+                group.alpha = 0f;
+
+            RelicManager.Instance?.OnMythicCrafted(king);
+            RunHistoryManager.Instance?.RecordCraft(king, battle.Game.CurrentWaveIndex);
+            return main;
+        }
+
+        /// <summary>
+        /// 숨겨 둔 신화 다이스를 드러내고 소환 연출을 낸다 — 기존에 신화가 나올 때와 같은
+        /// 연출(<see cref="DiceFx.PlaySummon"/> 팝 + <see cref="DiceFx.PlayEvolve"/> 번개)이다.
+        /// </summary>
+        public void RevealMythic(UIDice dice)
+        {
+            if (dice == null)
+                return;
+
+            CanvasGroup group = dice.GetComponent<CanvasGroup>();
+            if (group != null)
+                group.alpha = 1f;
+
+            DiceFx.PlaySummon(dice.transform);
+            DiceFx.PlayEvolve(dice.transform as RectTransform, DiceMetaDataProvider.GetColor(dice.Type));
         }
 
         // ── 진화 · 교환 ──────────────────────────────────────────────────────────────

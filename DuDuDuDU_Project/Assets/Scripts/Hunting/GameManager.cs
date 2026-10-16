@@ -104,7 +104,36 @@ namespace OJ.Hunting
             Shop.Refresh(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
         }
 
-        /// <summary>리롤. 1 SP 를 내고 잠기지 않은 카드를 새로 뽑는다.</summary>
+        /// <summary>소환할 수 있는 신화가 생겼는데 카드가 없으면 신화 카드를 한 장 둔다. 카드 창이 주기적으로 부른다.</summary>
+        public void EnsureMythicCard()
+        {
+            if (!CardModeActive || !CanManageBoard)
+                return;
+
+            Shop.EnsureMythic(new BoardShopContext(battle.Board, ownership));
+        }
+
+        /// <summary>
+        /// 신화 카드(<paramref name="cardIndex"/>)에서 <paramref name="king"/> 을 소환한다. 성공하면 그 칸을 비우고
+        /// 소환된(숨겨진) 다이스를 돌려준다 — 연출이 끝나면 <c>MergeSystem.RevealMythic</c> 으로 드러낸다.
+        /// </summary>
+        public UIDice TrySummonMythic(int cardIndex, DiceType king)
+        {
+            if (!CardModeActive || !CanManageBoard)
+                return null;
+
+            if (cardIndex < 0 || cardIndex >= Shop.Count || !Shop[cardIndex].IsMythic)
+                return null;
+
+            UIDice dice = battle.Merge.TryCraftMythic(king);
+            if (dice == null)
+                return null;
+
+            Shop.Consume(cardIndex);
+            return dice;
+        }
+
+        /// <summary>리롤. 10 SP 를 내고 잠기지 않은 카드를 새로 뽑는다.</summary>
         public bool TryRerollShop()
         {
             if (!CardModeActive || !CanManageBoard)

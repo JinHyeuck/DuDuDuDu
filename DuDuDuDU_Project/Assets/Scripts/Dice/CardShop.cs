@@ -17,8 +17,11 @@ namespace OJ.Dice
         /// <summary>기본 2성 + 기본 1성 → 레어.</summary>
         CraftRare,
 
-        /// <summary>레어 + 같은 계통 기본 1성 → 신화(킹).</summary>
-        CraftMythic,
+        /// <summary>
+        /// 신화 다이스 소환. <b>어느 신화인지는 카드가 정하지 않는다</b> — 눌러서 목록에서 고른다
+        /// (<see cref="MythicList"/>). 값(SP)은 목록에서 고른 뒤에야 치른다.
+        /// </summary>
+        MythicSummon,
     }
 
     /// <summary>
@@ -47,8 +50,8 @@ namespace OJ.Dice
 
         public bool IsEmpty => Kind == ShopCardKind.None;
 
-        /// <summary>값을 마석으로 치르는가(조합 카드). 아니면 SP 다.</summary>
-        public bool UsesStone => Kind == ShopCardKind.CraftRare || Kind == ShopCardKind.CraftMythic;
+        /// <summary>신화 소환 카드인가(주황 카드, 눌러서 목록을 연다).</summary>
+        public bool IsMythic => Kind == ShopCardKind.MythicSummon;
 
         public int Cost
         {
@@ -58,8 +61,8 @@ namespace OJ.Dice
                 {
                     case ShopCardKind.GrantDice: return DiceRecipes.GrantCostSp;
                     case ShopCardKind.MergeDice: return DiceRecipes.MergeCostSp;
-                    case ShopCardKind.CraftRare: return DiceRecipes.RareCostStone;
-                    case ShopCardKind.CraftMythic: return DiceRecipes.MythicCostStone;
+                    case ShopCardKind.CraftRare: return DiceRecipes.RareCostSp;
+                    case ShopCardKind.MythicSummon: return DiceRecipes.MythicCostSp;
                     default: return 0;
                 }
             }
@@ -88,13 +91,23 @@ namespace OJ.Dice
             };
         }
 
+        /// <summary>신화 소환 카드. 결과 다이스는 비어 있다(목록에서 고른다).</summary>
+        public static ShopCard Mythic()
+        {
+            return new ShopCard
+            {
+                Kind = ShopCardKind.MythicSummon,
+                Result = DiceType.Max,
+                ResultStar = 1,
+            };
+        }
+
+        /// <summary>레어 조합 카드. 신화는 <see cref="Mythic"/> 이다.</summary>
         public static ShopCard Craft(DiceRecipe recipe)
         {
             return new ShopCard
             {
-                Kind = DiceEvolution.GetTier(recipe.Result) == DiceTier.King
-                    ? ShopCardKind.CraftMythic
-                    : ShopCardKind.CraftRare,
+                Kind = ShopCardKind.CraftRare,
                 Result = recipe.Result,
                 ResultStar = 1,
                 MainType = recipe.MainType,
@@ -161,7 +174,82 @@ namespace OJ.Dice
         public void Refresh(IShopContext context, Func<int, int> nextInt)
         {
             RollUnlocked(context, nextInt);
+            PlaceMythicIfReady(context);
             Changed?.Invoke();
+        }
+
+        /// <summary>
+        /// 소환할 수 있는 신화가 있는데 카드가 없으면 한 장을 신화 카드로 채운다. 바뀌었으면 true.
+        ///
+        /// <b>뽑기 확률에 맡기지 않는다.</b> 가중치로만 뽑으면 재료를 다 모아 놓고도 신화 카드가
+        /// 몇 판씩 안 나올 수 있다 — 재료는 준비 단계 중에 모이는데 카드는 그때그때가 아니라
+        /// 갱신 때만 뽑기 때문이다. 그래서 갱신 직후와 <b>재료가 갖춰진 순간</b>(창이 주기적으로 부른다)
+        /// 둘 다 이 규칙을 건다.
+        /// </summary>
+        public bool EnsureMythic(IShopContext context)
+        {
+            if (!PlaceMythicIfReady(context))
+                return false;
+
+            Changed?.Invoke();
+            return true;
+        }
+
+        private bool PlaceMythicIfReady(IShopContext context)
+        {
+            if (!IsMythicCraftable(context))
+                return false;
+
+            for (int i = 0; i < cards.Length; i++)
+            {
+                if (cards[i].IsMythic)
+                    return false;
+            }
+
+            // 빈 칸 → 잠기지 않은 지급 카드 → 잠기지 않은 아무 카드 순으로 자리를 잡는다.
+            // 잠근 카드는 건드리지 않는다.
+            int target = -1;
+            for (int i = 0; i < cards.Length && target < 0; i++)
+            {
+                if (cards[i].IsEmpty)
+                    target = i;
+            }
+
+            for (int i = 0; i < cards.Length && target < 0; i++)
+            {
+                if (!cards[i].Locked && cards[i].Kind == ShopCardKind.GrantDice)
+                    target = i;
+            }
+
+            for (int i = 0; i < cards.Length && target < 0; i++)
+            {
+                if (!cards[i].Locked)
+                    target = i;
+            }
+
+            if (target < 0)
+                return false;
+
+            cards[target] = ShopCard.Mythic();
+            return true;
+        }
+
+        /// <summary>지금 소환할 수 있는 신화(보유 + 재료)가 하나라도 있는가.</summary>
+        private static bool IsMythicCraftable(IShopContext context)
+        {
+            IReadOnlyList<DiceRecipe> recipes = DiceRecipes.Mythic;
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                DiceRecipe recipe = recipes[i];
+                if (context.IsOwned(recipe.Result)
+                    && context.CountOnBoard(recipe.MainType, recipe.MainStar) >= 1
+                    && context.CountOnBoard(recipe.SubType, recipe.SubStar) >= 1)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>리롤. 규칙은 갱신과 같다 — 비용은 부르는 쪽이 낸다.</summary>
@@ -231,7 +319,6 @@ namespace OJ.Dice
         {
             var merges = new List<DiceType>(5);
             var rares = new List<DiceRecipe>(5);
-            var mythics = new List<DiceRecipe>(5);
 
             IReadOnlyList<DiceType> bases = DiceEvolution.BaseTypes;
             for (int i = 0; i < bases.Count; i++)
@@ -242,12 +329,16 @@ namespace OJ.Dice
             }
 
             CollectCraftable(context, DiceRecipes.Rare, rares);
-            CollectCraftable(context, DiceRecipes.Mythic, mythics);
+
+            // 신화 카드는 <b>지금 소환할 수 있는 신화가 하나라도 있을 때만</b> 나온다 —
+            // 보유했고 재료도 보드에 있는 것(MythicList 의 Craftable). 그래서 이 카드를 누르면
+            // 목록 맨 위에는 반드시 소환 가능한 줄이 있다.
+            bool mythicReady = IsMythicCraftable(context);
 
             int total = GrantWeight
                 + (merges.Count > 0 ? MergeWeight : 0)
                 + (rares.Count > 0 ? RareWeight : 0)
-                + (mythics.Count > 0 ? MythicWeight : 0);
+                + (mythicReady ? MythicWeight : 0);
 
             int roll = nextInt(total);
 
@@ -269,7 +360,7 @@ namespace OJ.Dice
                 roll -= RareWeight;
             }
 
-            return ShopCard.Craft(mythics[nextInt(mythics.Count)]);
+            return ShopCard.Mythic();
         }
 
         private static DiceType PickGrantType(IShopContext context, Func<int, int> nextInt)

@@ -69,10 +69,23 @@ namespace OJ.Dice
             base.OnDestroy();
         }
 
+        // 신화 소환 가능 여부를 확인하는 간격(초). 목록을 만드는 일이라 매 프레임은 과하다.
+        private const float MythicCheckInterval = 0.25f;
+        private float mythicCheckTimer;
+
         private void Update()
         {
-            if (_isEnter)
-                Refresh();
+            if (!_isEnter)
+                return;
+
+            mythicCheckTimer += Time.unscaledDeltaTime;
+            if (mythicCheckTimer >= MythicCheckInterval)
+            {
+                mythicCheckTimer = 0f;
+                battle.Game.EnsureMythicCard();
+            }
+
+            Refresh();
         }
 
         private void Subscribe()
@@ -107,7 +120,7 @@ namespace OJ.Dice
             for (int i = 0; i < slots.Length && i < shop.Count; i++)
             {
                 ShopCard card = shop[i];
-                bool canBuy = !card.IsEmpty && HasMaterials(card, board);
+                bool canBuy = !card.IsEmpty && (card.IsMythic || HasMaterials(card, board));
                 bool affordable = !card.IsEmpty && CanAfford(card);
                 slots[i].Bind(card, canBuy, affordable);
             }
@@ -141,14 +154,18 @@ namespace OJ.Dice
             if (battle.BattlePoints == null)
                 return false;
 
-            OJ.BattlePointType currency = card.UsesStone
-                ? OJ.BattlePointType.EnhanceStone
-                : OJ.BattlePointType.SummonPoint;
-            return battle.BattlePoints.Get(currency) >= card.Cost;
+            return battle.BattlePoints.Get(OJ.BattlePointType.SummonPoint) >= card.Cost;
         }
 
         private void OnBuy(int index)
         {
+            // 신화 카드는 사는 것이 아니라 목록을 연다 — 값은 목록에서 하나를 고를 때 치른다.
+            if (battle.Game.Shop[index].IsMythic)
+            {
+                GameContainer.UI?.Get<UIMythicListDialog>()?.Open(index);
+                return;
+            }
+
             battle.Game.TryBuyShopCard(index);
         }
 
@@ -178,13 +195,13 @@ namespace OJ.Dice
         // 조립 헬퍼는 UIBountyUIFactory 를 쓴다(같은 이유 — UIWaveRewindButton 주석).
 
         /// <summary>패널 크기. 카드 셋(296x232 + 틈 20)과 위의 버튼 줄이 들어간다.</summary>
-        private static readonly Vector2 PanelSize = new Vector2(1040f, 290f);
+        private static readonly Vector2 PanelSize = new Vector2(1040f, 520f);
 
         /// <summary>
         /// 화면 세로 중심에서의 위치. 보드(중심 -551, 칸이 -368 아래)의 바로 위다 —
         /// <b>다이스 칸을 가리지 않는 것이 이 값의 조건이다.</b>
         /// </summary>
-        internal const float CenterY = -135f;
+        internal const float CenterY = -20f;
 
         private static readonly Color TrayColor = new Color(0x63 / 255f, 0x64 / 255f, 0x81 / 255f, 0.94f);
 
@@ -210,17 +227,17 @@ namespace OJ.Dice
             // 받침 — 현상금 선택 창의 카드 받침과 같은 상자(636481).
             Image tray = UIBountyUIFactory.CreateSprite("Tray", view.transform,
                 UIBountyUIFactory.LoadSprite("Upgrade/Ui_Popup_SmallBox"), 4f,
-                new Vector2(PanelSize.x, 224f), new Vector2(0f, -33f), true);
+                new Vector2(PanelSize.x, 424f), new Vector2(0f, -48f), true);
             tray.color = TrayColor;
             tray.raycastTarget = true;
 
             // 버튼 줄. 킷 버튼(32²)은 여백이 사방 4px 이라 x3 로 12px 씩 키운다.
             panel.recipeButton = CreateKitButton("RecipeButton", view.transform, "Ingame/Big_Btn_Yellow",
-                new Vector2(190f, 56f), new Vector2(-400f, 114f), "조합식", font, out _);
+                new Vector2(190f, 88f), new Vector2(-400f, 216f), "조합식", font, out _);
             panel.rerollButton = CreateKitButton("RerollButton", view.transform, "Ingame/Big_Btn_Green",
-                new Vector2(210f, 56f), new Vector2(400f, 114f), "리롤", font, out panel.rerollLabel);
+                new Vector2(210f, 88f), new Vector2(400f, 216f), "리롤", font, out panel.rerollLabel);
             panel.collapseButton = CreateKitButton("CollapseButton", view.transform, "Ingame/Btn_Gray",
-                new Vector2(150f, 56f), new Vector2(0f, 114f), "접기", font, out panel.collapseLabel);
+                new Vector2(150f, 88f), new Vector2(0f, 216f), "접기", font, out panel.collapseLabel);
 
             GameObject row = UIBountyUIFactory.CreateRect("CardRow", view.transform);
             UIBountyUIFactory.Stretch(row.GetComponent<RectTransform>());
@@ -230,7 +247,7 @@ namespace OJ.Dice
             for (int i = 0; i < panel.slots.Length; i++)
             {
                 float x = (i - 1) * (UIShopCardSlot.VisibleSize.x + 20f);
-                panel.slots[i] = UIShopCardSlot.Create(row.transform, i, new Vector2(x, -33f), font, plainMaterial);
+                panel.slots[i] = UIShopCardSlot.Create(row.transform, i, new Vector2(x, -48f), font, plainMaterial);
             }
 
             return panel;
