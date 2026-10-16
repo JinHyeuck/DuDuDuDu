@@ -42,15 +42,15 @@ namespace OJ.Core.Tests
         }
 
         [TestCase(1, 30)]
-        [TestCase(2, 35)]
-        [TestCase(3, 40)]
-        [TestCase(4, 45)]
-        [TestCase(5, 50)]
-        [TestCase(9, 70)]
+        [TestCase(2, 60)]
+        [TestCase(3, 90)]
+        [TestCase(4, 120)]
+        [TestCase(5, 150)]
+        [TestCase(9, 270)]
         [TestCase(10, -1)]
         [TestCase(99, -1)]
         [TestCase(0, 30)]
-        public void UpgradeCost_AddsFiveEachLevel_AndStopsAtMax(int level, int expected)
+        public void UpgradeCost_AddsThirtyEachLevel_AndStopsAtMax(int level, int expected)
         {
             Assert.AreEqual(expected, SummonStarRules.UpgradeCost(level));
         }
