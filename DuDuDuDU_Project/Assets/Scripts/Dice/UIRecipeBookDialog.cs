@@ -177,7 +177,7 @@ namespace OJ.Dice
                 TextAlignmentOptions.Left, Color.white, font);
             UIBountyUIFactory.SetRect(row.nameText.rectTransform, new Vector2(240f, 40f), new Vector2(110f, 0f));
 
-            row.costText = UIBountyUIFactory.CreateText("Cost", r, "60 SP", 30f,
+            row.costText = UIBountyUIFactory.CreateText("Cost", r, "30 SP", 30f,
                 TextAlignmentOptions.Right, Color.white, font);
             UIBountyUIFactory.SetRect(row.costText.rectTransform, new Vector2(200f, 40f), new Vector2(320f, 0f));
 

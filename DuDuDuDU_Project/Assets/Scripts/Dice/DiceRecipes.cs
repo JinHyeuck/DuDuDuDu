@@ -49,19 +49,19 @@ namespace OJ.Dice
         // 지급·머지를 10배로 올렸다 — 수급이 정리되면 이 네 값만 만진다.
 
         /// <summary>다이스 지급 카드(SP).</summary>
-        public const int GrantCostSp = 20;
+        public const int GrantCostSp = 10;
 
         /// <summary>다이스 머지 카드(SP).</summary>
-        public const int MergeCostSp = 40;
+        public const int MergeCostSp = 20;
 
         /// <summary>레어 조합 카드(SP).</summary>
-        public const int RareCostSp = 60;
+        public const int RareCostSp = 30;
 
         /// <summary>신화 조합 카드(SP).</summary>
-        public const int MythicCostSp = 100;
+        public const int MythicCostSp = 50;
 
         /// <summary>리롤(SP).</summary>
-        public const int RerollCostSp = 1;
+        public const int RerollCostSp = 10;
 
         /// <summary>한 번에 제시되는 카드 수.</summary>
         public const int CardCount = 3;
