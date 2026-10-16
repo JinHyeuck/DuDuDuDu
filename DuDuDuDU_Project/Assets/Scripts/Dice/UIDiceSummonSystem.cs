@@ -127,25 +127,6 @@ namespace OJ.Dice
             int sp = currentSP;
             int cost = summonCost;
 
-            // 카드 모드에서는 소환 버튼이 SP 표시판일 뿐이다. 비용이 없으니 "n / 비용" 대신 SP 만 보인다.
-            bool cardMode = battle != null && battle.Game != null && battle.Game.CardModeActive;
-            if (cardMode)
-            {
-                spText.text = sp.ToString();
-                spText.color = Color.white;
-                if (summonButton != null)
-                {
-                    summonButton.enabled = false;
-
-                    // 버튼 글자 "뽑기" 는 더는 뽑지 않으니 거짓말이다. 보유 SP 표시판으로 바꾼다.
-                    Transform caption = summonButton.transform.Find("SummoText");
-                    TMP_Text captionText = caption != null ? caption.GetComponent<TMP_Text>() : null;
-                    if (captionText != null)
-                        captionText.text = "보유 SP";
-                }
-                return;
-            }
-
             spText.text = $"{sp} / {cost}";
             spText.color = sp >= cost ? Color.white : Color.red;
         }
@@ -175,10 +156,6 @@ namespace OJ.Dice
                 return;
 
             if (battle.Game.IsBoardLockedByWave)
-                return;
-
-            // 카드 모드에서는 다이스를 카드로만 얻는다.
-            if (battle.Game.CardModeActive)
                 return;
 
             if (currentSP < summonCost)
@@ -239,7 +216,10 @@ namespace OJ.Dice
             UpdateSPUI();
 
             DiceType type = scripted ? script.Type : summonable[Random.Range(0, summonable.Count)];
-            int star = relicsApply ? RelicManager.Instance.RollSummonStar() : 1;
+            // 성급: 확률업 레벨이 굴린 값과 유물이 정한 값 중 큰 쪽. 유물 효과를 덮어쓰지 않는다.
+            int rolledStar = SummonStarRules.RollStar(ProbLevel, Random.Range(0, 100));
+            int relicStar = relicsApply ? RelicManager.Instance.RollSummonStar() : 1;
+            int star = Mathf.Max(rolledStar, relicStar);
             battle.DiceStars.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
             if (relicsApply)
@@ -249,6 +229,37 @@ namespace OJ.Dice
             // 기록해서 덮으면 안 된다. RelicManager·RunHistoryManager 는 루트 서비스라
             // 로비에서도 살아 있어야 하므로 ?. 를 그대로 둔다.
             RunHistoryManager.Instance?.RecordSummon(type, star, battle.Game.CurrentWaveIndex, spentCost, currentSP);
+        }
+
+        // ── 확률업 ────────────────────────────────────────────────────
+
+        /// <summary>지금 확률업 레벨. 값은 <c>RunState</c> 가 들고 여기는 창문이다.</summary>
+        public int ProbLevel => battle != null && battle.Game != null
+            ? SummonStarRules.ClampLevel(battle.Game.Run.SummonProbLevel)
+            : SummonStarRules.MinLevel;
+
+        /// <summary>한 레벨 올리는 비용. 최대 레벨이면 -1.</summary>
+        public int NextProbUpgradeCost => SummonStarRules.UpgradeCost(ProbLevel);
+
+        /// <summary>
+        /// SP 를 내고 확률업 레벨을 올린다. 최대면 거절. <b>재화는 검증한 뒤에만 낸다</b> —
+        /// <c>TrySpend</c> 가 모자라면 아무것도 깎지 않는다.
+        /// </summary>
+        public bool TryUpgradeProbability()
+        {
+            if (battle.Tower.IsActive || battle.Tutorial.IsActive)
+                return false;
+
+            int cost = NextProbUpgradeCost;
+            if (cost < 0)
+                return false;
+
+            if (!battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, cost))
+                return false;
+
+            RunState run = battle.Game.Run;
+            run.SummonProbLevel = SummonStarRules.ClampLevel(run.SummonProbLevel + 1);
+            return true;
         }
 
         private int GetRandomEmptySlot()

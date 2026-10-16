@@ -48,23 +48,21 @@ namespace OJ.Hunting
         public InGameState inGameState = InGameState.None;
 
         /// <summary>
-        /// <b>테스트용 연속 웨이브.</b> 켜면 웨이브가 끝나도 관리 단계(Setting)로 내려가지 않고
-        /// 곧바로 다음 웨이브가 시작되며, 웨이브 중에도 소환·머지·진화·교환·속성강화가 열린다.
-        /// 첫 웨이브는 평소처럼 관리 단계에서 시작 버튼으로 연다.
-        ///
-        /// 튜토리얼(대본이 Setting 을 기다린다)과 탑(층 하나짜리)에는 걸리지 않는다
-        /// — <see cref="IsContinuousWave"/>.
-        /// 값은 Dev 패널(모드 탭)의 토글이 정하며 <see cref="OJ.Dev.TestModeFlags"/> 에 남는다.
+        /// <b>레거시 준비 단계 흐름</b>(시작 버튼을 눌러야 웨이브가 열리고 웨이브 사이에 준비 단계가 있다).
+        /// 일반 판은 실시간이라 꺼져 있고, <c>BalanceAutoPlay</c> 가 측정하는 동안만 켠다 —
+        /// 튜토리얼·탑은 <see cref="IsContinuousWave"/> 가 알아서 이 흐름을 탄다.
         /// </summary>
-        public static bool TestContinuousWave
-        {
-            get => OJ.Dev.TestModeFlags.ContinuousWave;
-            set => OJ.Dev.TestModeFlags.ContinuousWave = value;
-        }
+        public static bool LegacySetupFlow;
 
-        /// <summary>이 판에 연속 웨이브 테스트 규칙이 실제로 걸려 있는가.</summary>
+        /// <summary>
+        /// 이 판이 <b>실시간 진행</b>인가. 웨이브가 끝나도 준비 단계로 내려가지 않고 곧바로 다음 웨이브가
+        /// 시작되며, 웨이브 중에도 소환·머지·진화·교환·속성강화·자리구매가 열려 있다.
+        /// 판에 들어오면 3초 카운트다운 뒤 첫 웨이브가 저절로 열린다.
+        ///
+        /// 튜토리얼(대본이 Setting 과 시작 버튼을 기다린다)과 탑(층 하나짜리)은 해당하지 않는다.
+        /// </summary>
         public bool IsContinuousWave =>
-            TestContinuousWave && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
+            !LegacySetupFlow && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
 
         /// <summary>
         /// 지금 보드를 만질 수 있는가(소환·머지·진화·교환·속성강화). 평소에는 관리 단계뿐이고,
@@ -80,87 +78,6 @@ namespace OJ.Hunting
         /// 웨이브가 끝나면 한꺼번에 주는 대신 처치마다 n등분해 준다.
         /// </summary>
         private int waveSpGranted;
-
-        // ── 조합식 카드 모드 ────────────────────────────────────────
-
-        /// <summary>카드 상점의 상태. 카드 모드가 아니면 쓰이지 않는다.</summary>
-        public CardShop Shop { get; } = new CardShop();
-
-        /// <summary>
-        /// 이 판이 카드 모드인가. <b>판이 시작될 때 한 번 정한다</b> — Dev 패널에서 도중에 토글해도
-        /// 한 판 안에서 소환 방식이 바뀌지 않는다. 튜토리얼·탑에는 걸지 않는다.
-        /// </summary>
-        public bool CardModeActive { get; private set; }
-
-        /// <summary>
-        /// 잠기지 않은 카드를 새로 뽑는다(웨이브 준비 단계 진입, 연속 웨이브에서는 웨이브 시작).
-        /// 보드에 무엇이 있느냐에 따라 머지·조합 카드가 나오므로 <b>그때그때의 보드</b>를 본다.
-        /// </summary>
-        public void RefreshShopCards()
-        {
-            if (!CardModeActive)
-                return;
-
-            Shop.Refresh(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
-        }
-
-        /// <summary>소환할 수 있는 신화가 생겼는데 카드가 없으면 신화 카드를 한 장 둔다. 카드 창이 주기적으로 부른다.</summary>
-        public void EnsureMythicCard()
-        {
-            if (!CardModeActive || !CanManageBoard)
-                return;
-
-            Shop.EnsureMythic(new BoardShopContext(battle.Board, ownership));
-        }
-
-        /// <summary>
-        /// 신화 카드(<paramref name="cardIndex"/>)에서 <paramref name="king"/> 을 소환한다. 성공하면 그 칸을 비우고
-        /// 소환된(숨겨진) 다이스를 돌려준다 — 연출이 끝나면 <c>MergeSystem.RevealMythic</c> 으로 드러낸다.
-        /// </summary>
-        public UIDice TrySummonMythic(int cardIndex, DiceType king)
-        {
-            if (!CardModeActive || !CanManageBoard)
-                return null;
-
-            if (cardIndex < 0 || cardIndex >= Shop.Count || !Shop[cardIndex].IsMythic)
-                return null;
-
-            UIDice dice = battle.Merge.TryCraftMythic(king);
-            if (dice == null)
-                return null;
-
-            Shop.Consume(cardIndex);
-            return dice;
-        }
-
-        /// <summary>리롤. 10 SP 를 내고 잠기지 않은 카드를 새로 뽑는다.</summary>
-        public bool TryRerollShop()
-        {
-            if (!CardModeActive || !CanManageBoard)
-                return false;
-
-            if (!battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, DiceRecipes.RerollCostSp))
-                return false;
-
-            Shop.Reroll(new BoardShopContext(battle.Board, ownership), max => UnityEngine.Random.Range(0, max));
-            return true;
-        }
-
-        /// <summary>카드를 산다. 성공하면 그 칸을 비운다.</summary>
-        public bool TryBuyShopCard(int index)
-        {
-            if (!CardModeActive || !CanManageBoard)
-                return false;
-
-            if (index < 0 || index >= Shop.Count)
-                return false;
-
-            if (!battle.Merge.TryBuyShopCard(Shop[index]))
-                return false;
-
-            Shop.Consume(index);
-            return true;
-        }
 
         public bool IsBoardLockedByWave =>
             inGameState == InGameState.Wave && !IsContinuousWave;
@@ -240,7 +157,6 @@ namespace OJ.Hunting
             // 이미 비었으면 뗄 것도 없으므로 ?. 를 쓴다 — 여기는 사고가 아니라 정리 경로다.
             if (battle != null && battle.Bounty != null)
             {
-                battle.Bounty.OnWaveResolved -= OnBountyResolved;
                 battle.Bounty.OnSpawned -= OnBountySpawned;
             }
 
@@ -257,18 +173,10 @@ namespace OJ.Hunting
         {
             // 배틀 스코프는 모든 Start 앞에 빌드되므로 여기서 battle.Bounty 는 살아 있다.
             // 구독을 Awake 로 올리면 그때는 아직 null 이다.
-            battle.Bounty.OnWaveResolved += OnBountyResolved;
             battle.Bounty.OnSpawned += OnBountySpawned;
             battle.Spawner.OnBossSpawned += OnBossSpawned;
 
             InitializeStage();
-
-            CardModeActive = OJ.Dev.TestModeFlags.CardMode && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
-            battle.Summon.UpdateSPUI();
-
-            // 공속 UP 테스트 모드. 튜토리얼·탑에는 걸지 않는다(소환이 대본이거나 없다).
-            if (OJ.Dev.TestModeFlags.FireRateUp && !battle.Tutorial.IsActive && !battle.Tower.IsActive)
-                UIFireRateUpButton.Create(battle);
 
             // 기여도 패널은 본편·탑 둘 다에서 뜬다. 접어 둔 사람에게는 접힌 채로
             // 나타난다(그 상태는 UIDamageContributionPanel 이 세션 동안 기억한다).
@@ -298,7 +206,21 @@ namespace OJ.Hunting
                 return;
             }
 
-            StartCoroutine(CoApplyStageStartRelics());
+            // 실시간: 삭제 영역을 걷고(씬은 건드리지 않고 끈다) 3초 카운트다운 뒤 웨이브를 연다.
+            if (IsContinuousWave)
+            {
+                HideDeleteArea();
+
+                // 삭제 버튼 자리의 확률업 버튼과, 소환 버튼 위의 확률 띠.
+                GameContainer.UI?.Show<UIProbabilityUpButton>();
+                GameContainer.UI?.Show<UISummonRateStrip>();
+
+                StartCoroutine(CoRealtimeStart());
+            }
+            else
+            {
+                StartCoroutine(CoApplyStageStartRelics());
+            }
         }
 
         /// <summary>
@@ -339,16 +261,6 @@ namespace OJ.Hunting
                 battle.DiceStars.OnDiceSpawn(entry.DiceType, entry.Star);
                 battle.Board.SpawnDice(entry.DiceType, entry.Star, i);
             }
-        }
-
-        /// <summary>
-        /// 현상금이 정리됐다. <b>일반 몬스터를 먼저 다 잡은 웨이브</b>에서는 이것이
-        /// 웨이브를 끝내는 마지막 조각이다 — 그 순서에서는 아무도
-        /// <see cref="RemoveMonsterDeadCount"/> 를 다시 부르지 않기 때문이다.
-        /// </summary>
-        private void OnBountyResolved()
-        {
-            TryCompleteWave();
         }
 
         /// <summary>
@@ -507,8 +419,9 @@ namespace OJ.Hunting
         {
             inGameState = state;
 
-            PlayUI?.gameObject.SetActive(state == InGameState.Setting);
-            PlayUI_Field?.gameObject.SetActive(state == InGameState.Setting);
+            bool legacyStart = state == InGameState.Setting && !IsContinuousWave;
+            PlayUI?.gameObject.SetActive(legacyStart);
+            PlayUI_Field?.gameObject.SetActive(legacyStart || countdownActive);
             // 관리 단계에서도 나갈 수 있어야 한다. 웨이브 사이에 그만두려는 사람이
             // 다음 웨이브를 억지로 시작해야 했던 것이 예전 동작이다.
             //
@@ -521,24 +434,21 @@ namespace OJ.Hunting
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
             WaveText?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
 
-            // 현상금 띠는 관리 단계에만 뜬다. 웨이브 중에는 바꿀 수도 없고 몬스터가
-            // 내려오는 길 한가운데를 가린다.
-            //
-            // <b>Show/Hide 를 여기 두는 이유.</b> 상태를 아는 곳이 여기 하나뿐이다.
-            // 띠가 스스로 판단하게 하면 매 프레임 inGameState 를 들여다보게 되고,
-            // 그것은 이벤트로 바꿔 놓은 것을 다시 폴링으로 되돌리는 일이다.
+            // 경고 띠는 스스로 2초쯤 뒤에 사라지지만, 그 전에 웨이브가 끝나 준비 단계까지 따라 들어오면
+            // 남은 시간을 기다리지 않고 여기서 거둔다.
             if (state == InGameState.Setting)
-            {
-                GameContainer.UI?.Show<UIBountyBanner>();
-                // 경고 띠는 스스로 2초쯤 뒤에 사라지지만, 그 전에 웨이브가 끝나면
-                // 관리 단계까지 따라 들어온다. 남은 시간을 기다리지 않고 여기서 거둔다.
                 GameContainer.UI?.Hide<UIBattleWarning>();
+
+            // 현상금 버튼은 실시간 판의 웨이브 중에만 뜬다(아이콘을 눌러 즉시 소환하는 시스템이라 필드가 열려 있을 때만 뜻이 있다).
+            // <b>Show/Hide 를 여기 두는 이유.</b> 상태를 아는 곳이 여기 하나뿐이다 — 버튼이 스스로 판단하게 하면
+            // 매 프레임 inGameState 를 들여다보게 되고, 그것은 이벤트로 바꿔 놓은 것을 폴링으로 되돌리는 일이다.
+            if (state == InGameState.Wave && IsContinuousWave)
+            {
+                GameContainer.UI?.Show<UIBountyButton>();
             }
             else
             {
-                GameContainer.UI?.Hide<UIBountyBanner>();
-                // 선택 창이 열린 채 웨이브가 시작되는 경로는 지금 없지만(창이 화면을
-                // 덮어 시작 버튼을 누를 수 없다) 닫아 두는 편이 싸다.
+                GameContainer.UI?.Hide<UIBountyButton>();
                 GameContainer.UI?.Hide<UIBountySelectDialog>();
             }
 
@@ -575,18 +485,6 @@ namespace OJ.Hunting
                 // 한 웨이브라(기획서 3.2) 이 줄이 그대로 층 리셋이 된다.
                 battle.Contribution.BeginWave();
 
-                // 탑에는 현상금이 없다. 기획서 2장이 두 콘텐츠의 축을 분리하라고 했고,
-                // 현상금은 "관리 단계에 무엇을 부를까" 를 고르는 시스템이라 관리 단계가
-                // 없는 탑에서는 고를 자리 자체가 없다.
-                //
-                // 지금은 SelectedGrade 가 0(소환 X)이라 불러도 아무 일이 없지만,
-                // 기본값 하나에 기대는 것과 규칙으로 끊는 것은 다르다.
-                if (!battle.Tower.IsActive)
-                {
-                    // 스포너가 첫 Update 를 돌기 전에 이번 웨이브의 현상금 등급을 확정한다.
-                    // PlayWave 뒤로 미루면 그 사이에 ShouldSpawn 이 지난 웨이브 값을 답한다.
-                    battle.Bounty.BeginWave(CurrentWaveIndex);
-                }
                 Run.WaveMonsterCount = GetWaveTargetCount();
                 UpdateWaveText();
                 SetRemainMonster(0);
@@ -606,8 +504,6 @@ namespace OJ.Hunting
                 Time.timeScale = 1;
                 UpdateWaveText();
             }
-
-            UpdateCardShopUI(state);
 
             // 되돌리기 버튼은 웨이브 중에만, 그리고 실제로 되돌릴 수 있을 때만 뜬다.
             // 남은 횟수가 0 이면 아예 없는 편이 낫다 — 눌리지 않는 버튼은 고장으로 읽힌다.
@@ -630,24 +526,6 @@ namespace OJ.Hunting
         }
 
         /// <summary>
-        /// 카드 상점 창을 상태에 맞춘다. 보드를 만질 수 있는 때(준비 단계, 연속 웨이브 중의 웨이브)에만 뜬다.
-        /// 카드는 준비 단계에 들어올 때, 연속 웨이브에서는 웨이브가 시작될 때 새로 뽑는다.
-        /// </summary>
-        private void UpdateCardShopUI(InGameState state)
-        {
-            if (!CardModeActive)
-                return;
-
-            if (state == InGameState.Setting || (state == InGameState.Wave && IsContinuousWave))
-                RefreshShopCards();
-
-            if (CanManageBoard)
-                GameContainer.UI?.Show<UICardShopPanel>();
-            else
-                GameContainer.UI?.Hide<UICardShopPanel>();
-        }
-
-        /// <summary>
         /// 탑의 시계를 돌린다. <b>이 <c>Update</c> 는 탑을 위해 새로 생긴 것이다</b> —
         /// 본편 전투에는 프레임마다 할 일이 없었다.
         ///
@@ -658,6 +536,10 @@ namespace OJ.Hunting
         private void Update()
         {
             battle.Tower.Tick(Time.deltaTime);
+
+            // 현상금 쿨타임은 웨이브 중에만 흐른다. 게임 시간이라 일시정지에서는 멈추고 배속에서는 빨리 흐른다.
+            if (inGameState == InGameState.Wave)
+                battle.Bounty.Tick(Time.deltaTime);
         }
 
         /// <summary>
@@ -730,10 +612,11 @@ namespace OJ.Hunting
             // <b>기여도 패널은 여기서 거두지 않는다.</b> 결과창 앞의 뜸(WaitBeforeResult)
             // 동안 마지막 숫자가 보여야 그 시간이 "볼 것이 있는 시간" 이 된다.
             // 거두는 것은 결과창이 실제로 뜨기 직전이다.
-            GameContainer.UI?.Hide<UIBountyBanner>();
+            GameContainer.UI?.Hide<UIBountyButton>();
             GameContainer.UI?.Hide<UIBountySelectDialog>();
             GameContainer.UI?.Hide<UIBattleWarning>();
-            GameContainer.UI?.Hide<UICardShopPanel>();
+            GameContainer.UI?.Hide<UIProbabilityUpButton>();
+            GameContainer.UI?.Hide<UISummonRateStrip>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
             GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
@@ -746,14 +629,6 @@ namespace OJ.Hunting
 
             if (WaveMonsterDeadCount < WaveMonsterCount)
                 return false;
-
-            if (!battle.Bounty.IsWaveResolved)
-            {
-                // 일반 몬스터는 다 잡았고 현상금만 남았다. 게이지는 가득 찬 채로 두고
-                // 현상금이 벽에 닿거나 죽기를 기다린다 — 면역 덕에 반드시 그중 하나로 끝난다.
-                SetRemainMonster(WaveMonsterDeadCount);
-                return false;
-            }
 
             // <b>끝내기 전에 마지막 처치를 화면에 찍는다.</b> 이 줄이 없으면
             // <c>RemoveMonsterDeadCount</c> 가 여기서 true 를 받고 곧바로 돌아가
@@ -1200,6 +1075,93 @@ namespace OJ.Hunting
             RelicManager.Instance?.TryApplyStageStartDice();
         }
 
+        // ── 실시간 시작 ─────────────────────────────────────────────────
+
+        /// <summary>판에 들어오거나 되돌린 뒤 웨이브가 열리기까지의 카운트다운(초).</summary>
+        public const int StartCountdownSeconds = 3;
+
+        private bool countdownActive;
+
+        /// <summary>시작 버튼이 없어진 판에서 쓰는 시작 순서: 유물 선제 배치 → 카운트다운 → 웨이브.</summary>
+        private IEnumerator CoRealtimeStart()
+        {
+            yield return CoApplyStageStartRelics();
+            yield return CoCountdownThenWave();
+        }
+
+        /// <summary>
+        /// 3 · 2 · 1 을 중앙에 띄우고 웨이브를 연다. <b>실제 시간</b>으로 센다 — 되돌리기 직후에는
+        /// <c>timeScale</c> 이 0 일 수 있고, 배속을 켜 둔 사람에게도 같은 3초여야 한다.
+        ///
+        /// 카운트 동안에도 소환·머지·자리구매는 된다(준비 단계 상태라 보드가 열려 있다).
+        /// 도중에 판이 끝났으면(나가기를 눌렀다) 웨이브를 열지 않는다 — 끝난 판에서 몬스터가 나오면 안 된다.
+        /// </summary>
+        private IEnumerator CoCountdownThenWave()
+        {
+            countdownActive = true;
+
+            Transform iconTransform = PlayUI_Field != null ? PlayUI_Field.transform.Find("Image") : null;
+            TMP_Text label = PlayUI_Field != null ? PlayUI_Field.GetComponentInChildren<TMP_Text>(true) : null;
+            string originalText = label != null ? label.text : null;
+            float originalSize = label != null ? label.fontSize : 0f;
+
+            // 3 · 2 · 1 은 크게 — 원래 글자("Play Wave")는 이 크기로는 멀리서 안 읽힌다.
+            if (label != null)
+                label.fontSize = originalSize * 3f;
+
+            if (PlayUI_Field != null)
+                PlayUI_Field.gameObject.SetActive(true);
+            if (iconTransform != null)
+                iconTransform.gameObject.SetActive(false);
+
+            for (int n = StartCountdownSeconds; n >= 1; n--)
+            {
+                if (label != null)
+                    label.SetText(n.ToString());
+
+                yield return new WaitForSecondsRealtime(1f);
+
+                if (isGameOver || inGameState == InGameState.None)
+                    break;
+            }
+
+            countdownActive = false;
+            if (label != null && originalText != null)
+            {
+                label.SetText(originalText);
+                label.fontSize = originalSize;
+            }
+            if (iconTransform != null)
+                iconTransform.gameObject.SetActive(true);
+            if (PlayUI_Field != null)
+                PlayUI_Field.gameObject.SetActive(false);
+
+            if (isGameOver || inGameState == InGameState.None)
+                yield break;
+
+            ChangeState(InGameState.Wave);
+        }
+
+        /// <summary>
+        /// 되돌리기가 끝난 뒤의 재개. 레거시 흐름이면 준비 단계에서 시작 버튼을 기다리고,
+        /// 실시간이면 같은 3초 카운트다운 뒤 웨이브를 다시 연다.
+        /// </summary>
+        public void EnterAfterRewind()
+        {
+            ChangeState(InGameState.Setting);
+
+            if (IsContinuousWave)
+                StartCoroutine(CoCountdownThenWave());
+        }
+
+        /// <summary>삭제 영역을 끈다. 씬 YAML 을 손대지 않고 런타임에 끈다 — 드롭 대상이 없어지므로 삭제 동작도 같이 죽는다.</summary>
+        private static void HideDeleteArea()
+        {
+            UIRemoveDice area = FindFirstObjectByType<UIRemoveDice>(FindObjectsInactive.Include);
+            if (area != null)
+                area.gameObject.SetActive(false);
+        }
+
         private int GetWaveTargetCount()
         {
             // 탑은 목표가 <c>monstersPerWave</c> 와 다르다. 분열형 적이 죽으면서 자식을
@@ -1242,10 +1204,6 @@ namespace OJ.Hunting
             // 튜토리얼 판에서는 유물이 끼지 않는다(UIDiceSummonSystem 의 같은 판단).
             if (!battle.Tutorial.IsActive)
                 RelicManager.Instance?.ApplyWaveClearRelics(wall);
-
-            // 현상금 보상은 웨이브가 끝나는 이 자리에서만 들어온다. 잡은 순간 주면
-            // 전투 중에 SP 로 소환이 되어 "관리 단계에 쓰라"는 뜻이 무너진다.
-            battle.Bounty.GrantPendingRewards();
 
             if (CurrentStageData != null)
             {

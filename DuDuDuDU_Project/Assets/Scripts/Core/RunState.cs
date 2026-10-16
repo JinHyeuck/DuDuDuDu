@@ -69,6 +69,13 @@ namespace OJ.Core
         public int SummonsSinceLastCostIncrease { get; set; }
 
         /// <summary>
+        /// 확률업 레벨(<see cref="SummonStarRules"/>). SP 소환으로 나오는 다이스의 성급 확률을 정한다.
+        /// 소환 비용과 같은 이유로 <b>런이 소유하고 되돌리기 스냅샷에 같이 들어간다</b> — SP 는 되돌아가는데
+        /// 레벨만 남으면 되돌린 뒤 같은 SP 로 한 번 더 올릴 수 있다.
+        /// </summary>
+        public int SummonProbLevel { get; set; } = SummonStarRules.MinLevel;
+
+        /// <summary>
         /// 전투 강화석. <c>BattlePointType.EnhanceStone</c> 의 값이다.
         ///
         /// 예전에는 <c>PointType.BattleEnhanceStone</c> 으로 <c>PointManager</c> 안에 있었다.
@@ -82,30 +89,19 @@ namespace OJ.Core
         public bool IsGameOver { get; set; }
 
         /// <summary>
-        /// 이번 판에 켜 둔 현상금 등급. 0 이면 "소환 X".
-        ///
-        /// <b>토글은 판이 끝날 때까지 유지된다</b> — 1웨이브에서 켜면 2웨이브 준비
-        /// 단계에서 아무것도 누르지 않아도 계속 나온다. 그래서 이 값은 웨이브가 아니라
-        /// 런이 소유한다.
-        /// </summary>
-        public int SelectedBountyGrade { get; set; }
-
-        /// <summary>
         /// 이번 판에 잡아낸 현상금 최고 등급. 0 이면 아직 하나도 못 잡았다.
         /// 다음 등급 해금의 유일한 근거이며 <b>판이 끝나면 사라진다</b>.
         /// </summary>
         public int HighestDefeatedBountyGrade { get; set; }
 
         /// <summary>
-        /// 이번 웨이브에 현상금을 잡아서 확정된 보상. 웨이브가 끝날 때 지급하고 0 으로 돌린다.
+        /// 다음 현상금을 소환할 수 있기까지 남은 시간(초). 0 이면 준비됨(Ready).
         ///
-        /// <b>즉시 주지 않는 이유.</b> 현상금은 웨이브 초반에 죽는데, 그 순간 SP 가
-        /// 들어오면 전투 중에 소환이 되어 버린다. 관리 단계에서 쓰라고 주는 재화다.
+        /// 현상금이 실시간이 되면서 "웨이브마다 고른다" 가 "아이콘을 눌러 즉시 소환하고
+        /// 30초를 기다린다" 로 바뀌었다(<c>BountyFormula.CooldownSeconds</c>). 이 값은 웨이브가 아니라
+        /// 런이 소유하고 되돌리기 스냅샷에 들어간다 — 되돌리면 그 시점의 남은 시간으로 돌아간다.
         /// </summary>
-        public int PendingBountySummonPoint { get; set; }
-
-        /// <summary>이번 웨이브에 확정된 현상금 강화석. <see cref="PendingBountySummonPoint"/> 와 같은 규칙.</summary>
-        public int PendingBountyEnhanceStone { get; set; }
+        public float BountyCooldown { get; set; }
 
         /// <summary>
         /// 판을 시작한다. <b>모든 런 범위 필드를 여기서 한 번에</b> 세운다 —
@@ -124,12 +120,11 @@ namespace OJ.Core
             SummonPoint = initialSummonPoint;
             SummonCost = initialSummonCost;
             SummonsSinceLastCostIncrease = 0;
+            SummonProbLevel = SummonStarRules.MinLevel;
             EnhanceStone = 0;
             IsGameOver = false;
-            SelectedBountyGrade = 0;
             HighestDefeatedBountyGrade = 0;
-            PendingBountySummonPoint = 0;
-            PendingBountyEnhanceStone = 0;
+            BountyCooldown = 0f;
         }
 
         /// <summary>
@@ -152,12 +147,11 @@ namespace OJ.Core
             public int SummonPoint;
             public int SummonCost;
             public int SummonsSinceLastCostIncrease;
+            public int SummonProbLevel;
             public int EnhanceStone;
             public bool IsGameOver;
-            public int SelectedBountyGrade;
             public int HighestDefeatedBountyGrade;
-            public int PendingBountySummonPoint;
-            public int PendingBountyEnhanceStone;
+            public float BountyCooldown;
         }
 
         /// <summary>
@@ -182,12 +176,11 @@ namespace OJ.Core
                 SummonPoint = SummonPoint,
                 SummonCost = SummonCost,
                 SummonsSinceLastCostIncrease = SummonsSinceLastCostIncrease,
+                SummonProbLevel = SummonProbLevel,
                 EnhanceStone = EnhanceStone,
                 IsGameOver = IsGameOver,
-                SelectedBountyGrade = SelectedBountyGrade,
                 HighestDefeatedBountyGrade = HighestDefeatedBountyGrade,
-                PendingBountySummonPoint = PendingBountySummonPoint,
-                PendingBountyEnhanceStone = PendingBountyEnhanceStone,
+                BountyCooldown = BountyCooldown,
             };
         }
 
@@ -204,12 +197,11 @@ namespace OJ.Core
             SummonPoint = snapshot.SummonPoint;
             SummonCost = snapshot.SummonCost;
             SummonsSinceLastCostIncrease = snapshot.SummonsSinceLastCostIncrease;
+            SummonProbLevel = snapshot.SummonProbLevel;
             EnhanceStone = snapshot.EnhanceStone;
             IsGameOver = snapshot.IsGameOver;
-            SelectedBountyGrade = snapshot.SelectedBountyGrade;
             HighestDefeatedBountyGrade = snapshot.HighestDefeatedBountyGrade;
-            PendingBountySummonPoint = snapshot.PendingBountySummonPoint;
-            PendingBountyEnhanceStone = snapshot.PendingBountyEnhanceStone;
+            BountyCooldown = snapshot.BountyCooldown;
         }
     }
 }

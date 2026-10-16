@@ -40,6 +40,8 @@ namespace OJ.Core.Tests
                     field.SetValue(state, salt + i);
                 else if (field.FieldType == typeof(bool))
                     field.SetValue(state, (salt + i) % 2 == 0);
+                else if (field.FieldType == typeof(float))
+                    field.SetValue(state, (float)(salt + i));
                 else
                     Assert.Fail(
                         $"{field.Name} 은 {field.FieldType} 이라 이 테스트가 채울 줄 모른다. " +
@@ -112,6 +114,8 @@ namespace OJ.Core.Tests
                     fields[i].SetValue(state, Marker);
                 else if (fields[i].FieldType == typeof(bool))
                     fields[i].SetValue(state, true);
+                else if (fields[i].FieldType == typeof(float))
+                    fields[i].SetValue(state, (float)Marker);
             }
 
             state.BeginRun(
@@ -130,6 +134,12 @@ namespace OJ.Core.Tests
                 {
                     Assert.AreNotEqual(
                         Marker, value,
+                        $"{fields[i].Name} 을 BeginRun 이 세우지 않는다. 이전 판 값이 다음 판으로 샌다.");
+                }
+                else if (fields[i].FieldType == typeof(float))
+                {
+                    Assert.AreNotEqual(
+                        (float)Marker, value,
                         $"{fields[i].Name} 을 BeginRun 이 세우지 않는다. 이전 판 값이 다음 판으로 샌다.");
                 }
                 else if (fields[i].FieldType == typeof(bool))

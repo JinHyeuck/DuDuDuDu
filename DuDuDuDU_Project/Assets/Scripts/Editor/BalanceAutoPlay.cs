@@ -142,11 +142,9 @@ namespace OJ.EditorTools
             if (error != null)
                 return error;
 
-            // 연속 웨이브 테스트 규칙이 켜져 있으면 관리 단계가 오지 않아 측정이 정식 규칙과
-            // 달라진다. 도는 동안만 끄고 Stop 에서 되돌린다.
-            if (!running)
-                savedContinuousWave = GameManager.TestContinuousWave;
-            GameManager.TestContinuousWave = false;
+            // 이 도구는 준비 단계에서 소환·머지하고 시작 버튼으로 웨이브를 여는 흐름을 전제로 측정한다.
+            // 실시간이 정식 규칙이 되었으므로 도는 동안만 레거시 흐름으로 돌리고 Stop 에서 끈다.
+            GameManager.LegacySetupFlow = true;
 
             running = true;
             waitingForLobby = false;
@@ -194,12 +192,9 @@ namespace OJ.EditorTools
             return null;
         }
 
-        private static bool savedContinuousWave;
-
         public static void Stop()
         {
-            if (running)
-                GameManager.TestContinuousWave = savedContinuousWave;
+            GameManager.LegacySetupFlow = false;
             running = false;
             EditorApplication.update -= Update;
         }

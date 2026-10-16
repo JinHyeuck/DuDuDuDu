@@ -126,27 +126,10 @@ namespace OJ.Tutorial
             overlay.SetDim();
             await TalkAsync("웨이브를 막으면 SP를 받아요.\n받은 SP는 다음 웨이브 전에 쓸 수 있어요.");
 
-            // 2웨이브 전: 현상금 ─────────────────────────────────────
-            Enter(TutorialStep.BountyOpen);
-            UIBountyBanner banner = GameContainer.UI?.Get<UIBountyBanner>();
-            UIBountySelectDialog bountyDialog = GameContainer.UI?.Get<UIBountySelectDialog>();
-            // 띠 전체가 아니라 <b>선택하기 버튼</b>을 가리킨다. 띠 가운데(현상금 정보)를 가리키면
-            // 거기를 누르게 되는데, 그 자리는 아무 일도 하지 않는다.
-            Guide(banner != null ? banner.ChangeButtonRect : null, "현상금 몬스터를 걸 수 있어요.\n잡으면 보상을 더 받아요!", dim: true);
-            await Until(() => bountyDialog != null && bountyDialog.isEnter);
-
-            Enter(TutorialStep.BountySelect);
-            Guide(bountyDialog.GetSlotRect(1), "1단계 현상금을 골라 봐요.", dim: true);
-            await Until(() => battle.Bounty.SelectedGrade == 1 && !bountyDialog.isEnter);
-
-            // 고른 것이 띠에 걸린 모습을 한 번 보여 준다. 선택 창이 닫히자마자 시작 버튼으로 넘어가면
-            // "무엇이 걸렸는지" 를 못 본 채 지나간다. 구멍을 띠에 연 채로 탭을 받는다.
-            Enter(TutorialStep.BountySet);
-            overlay.SetDim(RectOf(banner));
-            await TalkAsync("1단계 현상금이 걸렸어요!\n이번 웨이브에 현상금 몬스터가 나와요.");
-
+            // (현상금 안내 단계 — BountyOpen · BountySelect · BountySet — 는 현상금이 실시간 소환으로 바뀌면서
+            //  빠졌다. 튜토리얼은 진행방식이 굳은 뒤 다시 짠다.)
             Enter(TutorialStep.StartWave2);
-            Guide(playButton, "현상금을 걸었어요. 웨이브를 시작해요!", dim: true);
+            Guide(playButton, "이제 웨이브를 시작해요!", dim: true);
             await Until(() => game.inGameState == InGameState.Wave);
 
             // 2웨이브: 되돌리기 ──────────────────────────────────────
@@ -202,7 +185,7 @@ namespace OJ.Tutorial
             await RunUpgradeAsync();
 
             // 3웨이브: 손 놓기 ───────────────────────────────────────
-            await RunHintsAsync(game, summon, summonButton, playButton, banner, bountyDialog);
+            await RunHintsAsync(game, summon, summonButton, playButton);
 
             Enter(TutorialStep.Wave3);
             overlay.ClearAll();
@@ -309,8 +292,7 @@ namespace OJ.Tutorial
         /// </summary>
         private async UniTask RunHintsAsync(
             GameManager game, UIDiceSummonSystem summon,
-            RectTransform summonButton, RectTransform playButton,
-            UIBountyBanner banner, UIBountySelectDialog bountyDialog)
+            RectTransform summonButton, RectTransform playButton)
         {
             Enter(TutorialStep.SummonHint);
             if (game.inGameState == InGameState.Setting && summon.currentSP >= summon.summonCost)
@@ -318,22 +300,6 @@ namespace OJ.Tutorial
                 int before = summon.currentSP;
                 Guide(summonButton, "웨이브를 막을 때마다 SP가 쌓여요.\n소환해서 주사위를 늘려 봐요!", dim: false);
                 await Until(() => summon.currentSP < before || game.inGameState == InGameState.Wave);
-            }
-
-            Enter(TutorialStep.BountyHint);
-            if (game.inGameState == InGameState.Setting
-                && battle.Bounty.IsSelectable(2) && bountyDialog != null)
-            {
-                // 1단계를 잡으면 선택이 저절로 2단계로 올라간다(BountyManager.NotifyDefeated).
-                // 그래서 "골라라" 가 아니라 "올라갔다" 를 알린다.
-                Guide(banner != null ? banner.ChangeButtonRect : null, "1단계를 잡아서 2단계 현상금이 열렸어요.\n더 센 만큼 보상도 커요!", dim: false);
-                await Until(() => bountyDialog.isEnter || game.inGameState == InGameState.Wave);
-
-                if (bountyDialog.isEnter)
-                {
-                    overlay.ClearAll();
-                    await Until(() => !bountyDialog.isEnter || game.inGameState == InGameState.Wave);
-                }
             }
 
             Enter(TutorialStep.StartWave3);

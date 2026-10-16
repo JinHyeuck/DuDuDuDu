@@ -196,7 +196,7 @@ namespace OJ.Dice
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (battle.Game.IsBoardLockedByWave)
+            if (isMerging || battle.Game.IsBoardLockedByWave)
                 return;
 
             originalParent = transform.parent;
@@ -262,7 +262,7 @@ namespace OJ.Dice
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (eventData.button != PointerEventData.InputButton.Left)
+            if (eventData.button != PointerEventData.InputButton.Left || isMerging)
                 return;
 
             GameManager game = battle.Game;
@@ -293,7 +293,7 @@ namespace OJ.Dice
 
         private void TryAutoMergeSameDice()
         {
-            if (battle.Game.IsBoardLockedByWave)
+            if (isMerging || battle.Game.IsBoardLockedByWave)
                 return;
 
             MergeSystem merge = battle.Merge;
@@ -329,7 +329,72 @@ namespace OJ.Dice
             }
 
             if (target != null)
-                merge.TryMerge(this, target);
+                FlyAndMerge(target).Forget();
+        }
+
+        /// <summary>날아가는 시간(초). 짧아야 "슉" 이다 — 더블탭은 빠르게 정리하려는 동작이다.</summary>
+        private const float MergeFlyDuration = 0.14f;
+
+        /// <summary>합쳐지는 중인가(대상으로 날아가는 동안). 그동안 이 다이스는 드래그·클릭을 받지 않는다.</summary>
+        private bool isMerging;
+
+        /// <summary>
+        /// 더블탭 자동 머지의 중간 연출 — 누른 다이스가 대상 자리로 빠르게 날아가 닿는 순간 합쳐진다.
+        ///
+        /// <b>머지는 도착한 뒤에 한다.</b> 날아가는 동안 보드는 그대로이고, 도착했을 때 대상이 사라졌거나
+        /// 조건이 바뀌어 머지가 거절되면 다이스는 제자리로 돌아간다(허공에 뜬 채 남지 않게).
+        /// 시간은 실제 시간이라 배속에 상관없이 같은 속도로 날아간다.
+        /// </summary>
+        private async UniTaskVoid FlyAndMerge(UIDice target)
+        {
+            if (isMerging || canvas == null)
+            {
+                battle.Merge.TryMerge(this, target);
+                return;
+            }
+
+            isMerging = true;
+
+            Transform homeParent = transform.parent;
+            Vector3 homeLocalPosition = transform.localPosition;
+
+            // 다른 다이스 위로 날아가야 하니 캔버스 맨 위로 올린다(드래그와 같은 방식).
+            transform.SetParent(canvas.transform, true);
+            canvasGroup.blocksRaycasts = false;
+
+            Vector3 start = transform.position;
+            Vector3 baseScale = transform.localScale;
+
+            for (float t = 0f; t < MergeFlyDuration;)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+
+                // 기다리는 사이 씬이 내려갔거나 이 다이스가 사라졌다.
+                if (this == null)
+                    return;
+
+                t += Time.unscaledDeltaTime;
+                float k = Mathf.Clamp01(t / MergeFlyDuration);
+
+                // 처음엔 천천히 떠서 끝에서 가속한다 — 꽂히는 느낌.
+                float eased = k * k * (3f - 2f * k);
+                eased = Mathf.Lerp(eased, k * k, 0.6f);
+
+                Vector3 end = target != null ? target.transform.position : start;
+                transform.position = Vector3.LerpUnclamped(start, end, eased);
+                transform.localScale = baseScale * Mathf.Lerp(1f, 0.82f, k);
+            }
+
+            bool merged = target != null && battle.Merge.TryMerge(this, target);
+            if (merged)
+                return;
+
+            // 합쳐지지 않았다 — 제자리로.
+            transform.localScale = baseScale;
+            transform.SetParent(homeParent, false);
+            transform.localPosition = homeLocalPosition;
+            canvasGroup.blocksRaycasts = true;
+            isMerging = false;
         }
 
         private async UniTaskVoid HandleSingleClick(int sequence)

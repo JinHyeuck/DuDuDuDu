@@ -218,5 +218,41 @@ namespace OJ.Core.Tests
             Assert.AreEqual("-40", ShortNumberFormat.Format(-40));
             Assert.AreEqual("-5.550K", ShortNumberFormat.Format(-5550));
         }
+
+        // ── 쿨타임(실시간 현상금) ─────────────────────────────────────
+
+        [Test]
+        public void Cooldown_IsThirtySeconds_AndTicksDownToZeroWithoutGoingNegative()
+        {
+            Assert.AreEqual(30f, BountyFormula.CooldownSeconds);
+            Assert.AreEqual(25f, BountyFormula.Tick(30f, 5f));
+            Assert.AreEqual(0f, BountyFormula.Tick(1f, 5f));
+            Assert.AreEqual(0f, BountyFormula.Tick(0f, 5f));
+        }
+
+        [Test]
+        public void Tick_IgnoresNegativeTime_AndNegativeCooldownCountsAsZero()
+        {
+            Assert.AreEqual(10f, BountyFormula.Tick(10f, -3f));
+            Assert.AreEqual(0f, BountyFormula.Tick(-2f, 1f));
+        }
+
+        [Test]
+        public void IsReady_OnlyAtZero()
+        {
+            Assert.IsTrue(BountyFormula.IsReady(0f));
+            Assert.IsFalse(BountyFormula.IsReady(0.01f));
+        }
+
+        [TestCase(30f, "00:30")]
+        [TestCase(29.2f, "00:30")]
+        [TestCase(0.4f, "00:01")]
+        [TestCase(0f, "00:00")]
+        [TestCase(90f, "01:30")]
+        [TestCase(-5f, "00:00")]
+        public void FormatCooldown_RoundsUp(float cooldown, string expected)
+        {
+            Assert.AreEqual(expected, BountyFormula.FormatCooldown(cooldown));
+        }
     }
 }

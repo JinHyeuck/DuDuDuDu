@@ -7,7 +7,7 @@ namespace OJ.Bounty
 {
     /// <summary>
     /// 코드로 UI 를 굽는 세 클래스(<see cref="UIBountySelectDialog"/>·<see cref="UIBountySlot"/>·
-    /// <see cref="UIBountyBanner"/>)가 함께 쓰는 조립 도구.
+    /// <c>UIBountyButton</c>)가 함께 쓰는 조립 도구.
     ///
     /// <b>왜 따로 뺐나.</b> 기존 <c>UIBattleDiceDetailPanel</c> 은 같은 헬퍼 다섯 개를
     /// 자기 파일 안에 private static 으로 들고 있는데, 현상금은 파일이 셋이라 그대로 하면
