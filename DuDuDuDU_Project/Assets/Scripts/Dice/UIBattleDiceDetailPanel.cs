@@ -49,6 +49,9 @@ namespace OJ.Dice
         [Header("Actions")]
         [SerializeField] private Button evolveButton;
         [SerializeField] private TMP_Text evolveCostText;
+
+        [Tooltip("진화하면 무엇이 되는지 보여 주는 아이콘. 진화 버튼 왼쪽에 놓인다.")]
+        [SerializeField] private Image evolveTargetIcon;
         [SerializeField] private Button exchangeButton;
         [SerializeField] private TMP_Text exchangeCostText;
 
@@ -268,6 +271,15 @@ namespace OJ.Dice
                 evolveButton.gameObject.SetActive(hasEvolvePath);
                 if (hasEvolvePath)
                 {
+                    // 진화하면 무엇이 되는지 아이콘으로 보여 준다. 아직 보유하지 않은 다이스는 어둡게 —
+                    // "그 다이스를 먼저 얻어야 한다" 는 안내 문구와 같은 뜻을 눈으로 잇는다.
+                    if (evolveTargetIcon != null)
+                    {
+                        evolveTargetIcon.sprite = DiceMetaDataProvider.GetIcon(evolveTarget, 1);
+                        evolveTargetIcon.enabled = evolveTargetIcon.sprite != null;
+                        evolveTargetIcon.color = targetOwned ? Color.white : new Color(0.45f, 0.45f, 0.45f, 1f);
+                    }
+
                     evolveButton.interactable = canAct && starOk && targetOwned && owned >= evolveCost;
                     if (evolveCostText != null)
                     {
@@ -640,6 +652,20 @@ namespace OJ.Dice
                 "EvolveButton", panel.card, "진화", EvolveColor, font, out panel.evolveCostText);
             SetRect(panel.evolveButton.GetComponent<RectTransform>(),
                 new Vector2(ButtonWidth, ButtonHeight), new Vector2(-142f, buttonY));
+
+            // 진화 버튼 왼쪽 — 진화하면 되는 다이스의 아이콘. 글자는 그만큼 오른쪽으로 민다.
+            {
+                const float IconInset = 100f;
+                var label = panel.evolveButton.transform.Find("Label") as RectTransform;
+                var cost = panel.evolveCostText.rectTransform;
+                SetRect(label, new Vector2(ButtonWidth - IconInset, 40f), new Vector2(IconInset * 0.5f, 18f));
+                SetRect(cost, new Vector2(ButtonWidth - IconInset, 34f), new Vector2(IconInset * 0.5f, -20f));
+
+                panel.evolveTargetIcon = CreateImage("TargetIcon", panel.evolveButton.transform, Color.white);
+                SetRect(panel.evolveTargetIcon.rectTransform, new Vector2(76f, 76f), new Vector2(-ButtonWidth * 0.5f + 56f, 0f));
+                panel.evolveTargetIcon.preserveAspect = true;
+                panel.evolveTargetIcon.raycastTarget = false;
+            }
 
             panel.exchangeButton = CreateActionButton(
                 "ExchangeButton", panel.card, "교환", ExchangeColor, font, out panel.exchangeCostText);

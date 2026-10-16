@@ -177,15 +177,57 @@ namespace OJ.Dice
             const int evolvedStar = 1;
             ReplaceInPlace(dice, target, evolvedStar);
 
-            // 진화한 자리에 속성 색 번개가 내리친다. ReplaceInPlace 는 같은 오브젝트를
-            // 그대로 두므로(새로 찍지 않는다) 연출 대상이 도중에 사라지지 않는다.
-            DiceFx.PlayEvolve(dice.transform as RectTransform, DiceMetaDataProvider.GetColor(target));
-
             if (DiceEvolution.GetTier(target) == DiceTier.King)
+            {
                 RelicManager.Instance?.OnMythicCrafted(target);
+
+                // 킹이 나왔다 — 전체 화면 소환 연출. 연출이 끝나는 자리에서 다이스를 드러내고
+                // 번개·팝을 터뜨린다(RevealMythic). 연출 창을 못 얻으면 그냥 바로 드러낸다.
+                UIMythicSummonCinematic cinematic = GameContainer.UI?.Get<UIMythicSummonCinematic>();
+                if (cinematic != null)
+                {
+                    HideForCinematic(dice);
+                    cinematic.Play(target, dice);
+                }
+                else
+                {
+                    RevealMythic(dice);
+                }
+            }
+            else
+            {
+                // 진화한 자리에 속성 색 번개가 내리친다. ReplaceInPlace 는 같은 오브젝트를
+                // 그대로 두므로(새로 찍지 않는다) 연출 대상이 도중에 사라지지 않는다.
+                DiceFx.PlayEvolve(dice.transform as RectTransform, DiceMetaDataProvider.GetColor(target));
+            }
 
             RunHistoryManager.Instance?.RecordCraft(target, battle.Game.CurrentWaveIndex);
             return true;
+        }
+
+        /// <summary>날아와 자리를 잡을 때까지 킹 다이스를 보이지 않게 한다. 슬롯·쿨타임 상태는 이미 킹이다.</summary>
+        private static void HideForCinematic(UIDice dice)
+        {
+            CanvasGroup group = dice.GetComponent<CanvasGroup>();
+            if (group != null)
+                group.alpha = 0f;
+        }
+
+        /// <summary>
+        /// 숨겨 둔 킹 다이스를 드러내고 등장 연출을 낸다 — 팝(<see cref="DiceFx.PlaySummon"/>)과
+        /// 속성 색 번개(<see cref="DiceFx.PlayEvolve"/>). 소환 연출 창이 도착하는 순간 부른다.
+        /// </summary>
+        public void RevealMythic(UIDice dice)
+        {
+            if (dice == null)
+                return;
+
+            CanvasGroup group = dice.GetComponent<CanvasGroup>();
+            if (group != null)
+                group.alpha = 1f;
+
+            DiceFx.PlaySummon(dice.transform);
+            DiceFx.PlayEvolve(dice.transform as RectTransform, DiceMetaDataProvider.GetColor(dice.Type));
         }
 
         /// <summary>
