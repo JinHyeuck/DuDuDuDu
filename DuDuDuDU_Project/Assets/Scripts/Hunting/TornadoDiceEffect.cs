@@ -53,7 +53,7 @@ namespace OJ.Hunting
                 if (monster == null || monster.gameObject.activeInHierarchy == false)
                     continue;
 
-                monster.AddSmoothPull(center, pullDistance, pullDuration);
+                monster.AddSmoothPull(center, pullDistance, pullDuration, DiceType);
                 if (RelicManager.Instance != null)
                 {
                     monster.ApplyRelicDamageTakenBonus(

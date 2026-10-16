@@ -23,7 +23,7 @@ namespace OJ.Hunting
                 return;
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            target.ApplySlow(DiceMetaDataProvider.GetSlowDuration(DiceType, level));
+            target.ApplySlow(DiceMetaDataProvider.GetSlowDuration(DiceType, level), 0.8f, DiceType);
             PlayEffectAt(DiceType, target.transform.position);
 
             if (level < 6 || UnityEngine.Random.value > 0.3f)

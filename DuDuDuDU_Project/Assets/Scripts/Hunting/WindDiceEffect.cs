@@ -96,7 +96,7 @@ namespace OJ.Hunting
 
                 monster.PushBy(Vector2.up, distance);
                 if (level >= 6)
-                    monster.ApplyWindDamageTakenBonus(10, 3f);
+                    monster.ApplyWindDamageTakenBonus(10, 3f, DiceType);
                 if (RelicManager.Instance != null)
                     monster.ApplyRelicDamageTakenBonus(RelicManager.Instance.GetWindDamageTakenBonusPercent(), 3f);
                 PlayEffectAt(DiceType, effectPosition);
