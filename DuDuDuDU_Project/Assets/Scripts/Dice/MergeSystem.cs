@@ -156,7 +156,7 @@ namespace OJ.Dice
             if (board == null || battle.BattlePoints == null)
                 return false;
 
-            BattlePointType currency = card.UsesStone ? BattlePointType.EnhanceStone : BattlePointType.SummonPoint;
+            const BattlePointType currency = BattlePointType.SummonPoint;
             if (battle.BattlePoints.Get(currency) < card.Cost)
                 return false;
 

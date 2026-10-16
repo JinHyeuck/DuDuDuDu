@@ -34,8 +34,8 @@ namespace OJ.Dice
 
         protected override void OnEnter()
         {
-            Fill(rareRows, DiceRecipes.Rare, DiceRecipes.RareCostStone);
-            Fill(mythicRows, DiceRecipes.Mythic, DiceRecipes.MythicCostStone);
+            Fill(rareRows, DiceRecipes.Rare, DiceRecipes.RareCostSp);
+            Fill(mythicRows, DiceRecipes.Mythic, DiceRecipes.MythicCostSp);
         }
 
         private static void Fill(Row[] rows, System.Collections.Generic.IReadOnlyList<DiceRecipe> recipes, int cost)
@@ -50,7 +50,7 @@ namespace OJ.Dice
                 SetDice(row.resultIcon, null, r.Result, 1);
 
                 row.nameText.text = UIShopCardSlot.NameOf(r.Result);
-                row.costText.text = "마석 " + cost;
+                row.costText.text = cost + " SP";
             }
         }
 
@@ -177,7 +177,7 @@ namespace OJ.Dice
                 TextAlignmentOptions.Left, Color.white, font);
             UIBountyUIFactory.SetRect(row.nameText.rectTransform, new Vector2(240f, 40f), new Vector2(110f, 0f));
 
-            row.costText = UIBountyUIFactory.CreateText("Cost", r, "마석 10", 30f,
+            row.costText = UIBountyUIFactory.CreateText("Cost", r, "60 SP", 30f,
                 TextAlignmentOptions.Right, Color.white, font);
             UIBountyUIFactory.SetRect(row.costText.rectTransform, new Vector2(200f, 40f), new Vector2(320f, 0f));
 

@@ -47,9 +47,6 @@ namespace OJ.Dice
 
         public bool IsEmpty => Kind == ShopCardKind.None;
 
-        /// <summary>값을 마석으로 치르는가(조합 카드). 아니면 SP 다.</summary>
-        public bool UsesStone => Kind == ShopCardKind.CraftRare || Kind == ShopCardKind.CraftMythic;
-
         public int Cost
         {
             get
@@ -58,8 +55,8 @@ namespace OJ.Dice
                 {
                     case ShopCardKind.GrantDice: return DiceRecipes.GrantCostSp;
                     case ShopCardKind.MergeDice: return DiceRecipes.MergeCostSp;
-                    case ShopCardKind.CraftRare: return DiceRecipes.RareCostStone;
-                    case ShopCardKind.CraftMythic: return DiceRecipes.MythicCostStone;
+                    case ShopCardKind.CraftRare: return DiceRecipes.RareCostSp;
+                    case ShopCardKind.CraftMythic: return DiceRecipes.MythicCostSp;
                     default: return 0;
                 }
             }

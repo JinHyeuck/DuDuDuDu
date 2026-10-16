@@ -45,17 +45,20 @@ namespace OJ.Dice
     {
         // ── 카드 비용 ─────────────────────────────────────────────
 
+        // 네 카드 모두 SP 로 치른다(마석은 쓰지 않는다). 수급이 후한 동안 맛보기 밸런스로
+        // 지급·머지를 10배로 올렸다 — 수급이 정리되면 이 네 값만 만진다.
+
         /// <summary>다이스 지급 카드(SP).</summary>
-        public const int GrantCostSp = 2;
+        public const int GrantCostSp = 20;
 
         /// <summary>다이스 머지 카드(SP).</summary>
-        public const int MergeCostSp = 4;
+        public const int MergeCostSp = 40;
 
-        /// <summary>레어 조합 카드(마석).</summary>
-        public const int RareCostStone = 10;
+        /// <summary>레어 조합 카드(SP).</summary>
+        public const int RareCostSp = 60;
 
-        /// <summary>신화 조합 카드(마석).</summary>
-        public const int MythicCostStone = 20;
+        /// <summary>신화 조합 카드(SP).</summary>
+        public const int MythicCostSp = 100;
 
         /// <summary>리롤(SP).</summary>
         public const int RerollCostSp = 1;

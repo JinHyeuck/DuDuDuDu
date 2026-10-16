@@ -203,12 +203,10 @@ namespace OJ.Game.Tests
         [Test]
         public void Cost_FollowsTheCardKind()
         {
-            Assert.AreEqual(2, ShopCard.Grant(DiceType.Normal).Cost);
-            Assert.AreEqual(4, ShopCard.Merge(DiceType.Normal).Cost);
-            Assert.AreEqual(10, ShopCard.Craft(DiceRecipes.Rare[0]).Cost);
-            Assert.AreEqual(20, ShopCard.Craft(DiceRecipes.Mythic[0]).Cost);
-            Assert.IsFalse(ShopCard.Merge(DiceType.Normal).UsesStone);
-            Assert.IsTrue(ShopCard.Craft(DiceRecipes.Mythic[0]).UsesStone);
+            Assert.AreEqual(20, ShopCard.Grant(DiceType.Normal).Cost);
+            Assert.AreEqual(40, ShopCard.Merge(DiceType.Normal).Cost);
+            Assert.AreEqual(60, ShopCard.Craft(DiceRecipes.Rare[0]).Cost);
+            Assert.AreEqual(100, ShopCard.Craft(DiceRecipes.Mythic[0]).Cost);
         }
     }
 }
