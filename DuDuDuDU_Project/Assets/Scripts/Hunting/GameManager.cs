@@ -641,6 +641,7 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<OJ.Economy.UISavingsSelectDialog>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceButton>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceOddsTooltip>();
+            GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceResultPopup>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
             GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);

@@ -127,7 +127,8 @@ namespace OJ.Tutorial
             // 몬스터가 내려오는 것이 보이도록 잠깐 둔다. 가르치는 동안에는 게임을 세워 둔다.
             await DelaySeconds(2f);
 
-            // 1웨이브: 확률업 · 통장 ───────────────────────────────────
+            // 1웨이브: 자리 구매 · 확률업 · 통장 ───────────────────────
+            await RunSlotUnlockAsync();
             await RunProbabilityAsync(game, summon);
             await RunSavingsAsync(game);
 
@@ -190,6 +191,36 @@ namespace OJ.Tutorial
 
             // 이 판의 보상은 진화로 만든 다이스다. 재화 칸 자리에 그 다이스를 그린다.
             result.AppendItemReward(DiceMetaDataProvider.GetIcon(TutorialStage.EvolveTarget), 1);
+        }
+
+        /// <summary>
+        /// 자리 구매 — 첫 줄 밖의 칸은 잠겨 있다. 잠긴 칸을 눌러 SP 로 연다(여는 값은 구매마다 오른다).
+        /// SP 가 모자라면 채워 준다.
+        /// </summary>
+        private async UniTask RunSlotUnlockAsync()
+        {
+            UIBoard board = battle.Board;
+            RectTransform slot = board.GetSlotRect(TutorialStage.UnlockSlot);
+            if (slot == null || !board.IsSlotLockActive || board.IsSlotUnlocked(TutorialStage.UnlockSlot))
+            {
+                Debug.LogError("[튜토리얼] 잠긴 칸을 못 찾아 자리 구매 단계를 건너뛴다.");
+                return;
+            }
+
+            Enter(TutorialStep.SlotUnlock);
+            EnsureSp(board.NextSlotUnlockCost);
+            FreezeGame();
+
+            Guide(slot, "자리가 모자라면 SP로 열 수 있어요.\n잠긴 칸을 눌러 열어 봐요!", dim: true);
+            await Until(() => board.IsSlotUnlocked(TutorialStage.UnlockSlot));
+
+            Enter(TutorialStep.SlotUnlocked);
+            overlay.ClearAll();
+            overlay.SetDim();
+            await TalkAsync("자리를 열 때마다 다음 칸은 조금씩 비싸져요.");
+
+            overlay.ClearAll();
+            ThawGame();
         }
 
         /// <summary>
@@ -293,7 +324,12 @@ namespace OJ.Tutorial
             await Until(() => battle.BattlePoints.Get(BattlePointType.EnhanceStone) > stones);
 
             Enter(TutorialStep.LuckyDiceResult);
+
+            // 결과 연출(전체 화면)이 끝나기를 기다린다. 오버레이를 걷어 두어야 연출이 입력을 받고, 딤드에 안 가려진다.
             overlay.ClearAll();
+            await Until(() => UILuckyDiceResultPopup.IsPlaying);
+            await Until(() => !UILuckyDiceResultPopup.IsPlaying);
+
             overlay.SetDim();
             await TalkAsync("마석을 얻었어요!\n마석은 속성 강화와 진화에 쓰여요.");
 
@@ -504,17 +540,18 @@ namespace OJ.Tutorial
 
         private int FindGiftSlot()
         {
+            // 잠긴 칸에는 놓을 수 없다(UIBoard.SpawnDice). 열린 빈 칸만 쓴다.
             IReadOnlyList<int> candidates = TutorialStage.GiftSlotCandidates;
             for (int i = 0; i < candidates.Count; i++)
             {
-                if (battle.Board.GetDice(candidates[i]) == null)
+                if (battle.Board.GetDice(candidates[i]) == null && battle.Board.IsSlotUnlocked(candidates[i]))
                     return candidates[i];
             }
 
             int total = battle.Board.rows * battle.Board.cols;
             for (int i = 0; i < total; i++)
             {
-                if (battle.Board.GetDice(i) == null)
+                if (battle.Board.GetDice(i) == null && battle.Board.IsSlotUnlocked(i))
                     return i;
             }
 

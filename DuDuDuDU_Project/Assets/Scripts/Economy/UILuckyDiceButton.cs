@@ -14,8 +14,8 @@ namespace OJ.Economy
     /// 행운 주사위 버튼 — 소환 버튼과 확률업 사이. 100 SP 를 내고 굴리면 마석 1~10개가 나온다.
     /// 옆의 "?" 를 누르면 확률표(<see cref="UILuckyDiceOddsTooltip"/>)가 열린다.
     ///
-    /// 굴림은 눌린 순간 이미 끝나 있다(SP 차감·마석 지급). 숫자가 빠르게 도는 것은 <b>연출</b>이고,
-    /// 도는 동안 다시 눌러도 막지 않는다 — 막으면 "눌렀는데 안 된다" 로 보인다.
+    /// 굴림은 눌린 순간 이미 끝나 있다(SP 차감·마석 지급). 결과는 <b>전체 화면 연출</b>
+    /// (<see cref="UILuckyDiceResultPopup"/>)이 보여 준다 — 신화 다이스가 나올 때와 같은 방식이다.
     /// 되돌리기 등으로 SP 가 바뀌어도 어긋나지 않도록 상태는 매 프레임 읽는다.
     /// </summary>
     public sealed class UILuckyDiceButton : DialogBase
@@ -27,25 +27,14 @@ namespace OJ.Economy
         [SerializeField] private RectTransform bobTarget;
         [SerializeField] private Image icon;
         [SerializeField] private TMP_Text nameText;
-        [SerializeField] private GameObject bubble;
-        [SerializeField] private TMP_Text bubbleText;
-        [SerializeField] private Image bubbleStone;
         [SerializeField] private Image chipBackground;
         [SerializeField] private TMP_Text chipText;
         [SerializeField] private Sprite readySprite;
         [SerializeField] private Sprite blockedSprite;
 
         private static readonly Color DimColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-        private static readonly Color ResultColor = new Color(1f, 0.92f, 0.4f, 1f);
-
-        private const float SpinTime = 0.7f;
-        private const float SpinStep = 0.05f;
-        private const float ResultHold = 1.3f;
         private const float PopTime = 0.3f;
 
-        private int result;
-        private float rollAge = -1f;
-        private float nextSpin;
         private float popElapsed = PopTime;
         private bool canRoll;
         private int shownKind = -1;
@@ -61,24 +50,16 @@ namespace OJ.Economy
         protected override void OnEnter()
         {
             shownKind = -1;
-            rollAge = -1f;
             popElapsed = PopTime;
 
             if (chipText != null)
                 chipText.SetText(LuckyDiceRules.CostSp + " SP");
-
-            if (bubbleStone != null && bubbleStone.sprite == null)
-            {
-                bubbleStone.sprite = BattlePointUtility.GetIcon(BattlePointType.EnhanceStone);
-                bubbleStone.enabled = bubbleStone.sprite != null;
-            }
 
             Unlisten();
             listening = battle != null && battle.Game != null ? battle.Game.LuckyDice : null;
             if (listening != null)
                 listening.OnRolled += OnRolled;
 
-            bubble.SetActive(false);
             Refresh();
         }
 
@@ -107,7 +88,6 @@ namespace OJ.Economy
                 return;
 
             Refresh();
-            AnimateRoll();
             AnimateBob();
         }
 
@@ -151,41 +131,8 @@ namespace OJ.Economy
 
         private void OnRolled(int stones)
         {
-            result = stones;
-            rollAge = 0f;
-            nextSpin = 0f;
             popElapsed = 0f;
-            bubble.SetActive(true);
-            bubbleText.color = Color.white;
-        }
-
-        private void AnimateRoll()
-        {
-            if (rollAge < 0f)
-                return;
-
-            rollAge += Time.unscaledDeltaTime;
-
-            if (rollAge < SpinTime)
-            {
-                if (rollAge >= nextSpin)
-                {
-                    nextSpin = rollAge + SpinStep;
-                    bubbleText.SetText("+" + Random.Range(LuckyDiceRules.MinStones, LuckyDiceRules.MaxStones + 1));
-                }
-
-                return;
-            }
-
-            if (rollAge < SpinTime + ResultHold)
-            {
-                bubbleText.SetText("+" + result);
-                bubbleText.color = ResultColor;
-                return;
-            }
-
-            rollAge = -1f;
-            bubble.SetActive(false);
+            GameContainer.UI?.Get<UILuckyDiceResultPopup>()?.Play(stones);
         }
 
         private void AnimateBob()
@@ -193,14 +140,9 @@ namespace OJ.Economy
             if (bobTarget == null)
                 return;
 
-            float y = 0f;
             float scale = 1f;
-            float angle = 0f;
 
-            // 굴리는 동안은 데굴데굴 흔들고, 결과가 나온 순간 한 번 부푼다.
-            if (rollAge >= 0f && rollAge < SpinTime)
-                angle = Mathf.Sin(rollAge * 40f) * 14f;
-
+            // 굴린 순간 한 번 부푼다.
             if (popElapsed < PopTime)
             {
                 popElapsed += Time.unscaledDeltaTime;
@@ -208,9 +150,7 @@ namespace OJ.Economy
                 scale = 1f + 0.2f * Mathf.Sin(k * Mathf.PI);
             }
 
-            bobTarget.anchoredPosition = new Vector2(0f, y);
             bobTarget.localScale = Vector3.one * scale;
-            bobTarget.localRotation = Quaternion.Euler(0f, 0f, angle);
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -250,26 +190,6 @@ namespace OJ.Economy
             dialog.bobTarget = bob.GetComponent<RectTransform>();
 
             dialog.icon = CreateDiceFace(bob.transform);
-
-            // 결과 말풍선 — 굴릴 때만 뜬다. 마석 아이콘 + "+N".
-            GameObject bubble = UIBountyUIFactory.CreateRect("Bubble", view.transform);
-            UIBountyUIFactory.SetRect(bubble.GetComponent<RectTransform>(), new Vector2(112f, 40f), new Vector2(0f, 112f));
-            dialog.bubble = bubble;
-
-            Image bubbleBg = UIBountyUIFactory.CreateSprite("BubbleBg", bubble.transform,
-                UIBountyUIFactory.LoadSprite("Upgrade/Ui_Popup_SmallBox"), 3f, new Vector2(112f + 26f, 40f + 26f), Vector2.zero, true);
-            bubbleBg.color = new Color(0.25f, 0.18f, 0.12f, 0.95f);
-            bubbleBg.raycastTarget = false;
-
-            dialog.bubbleStone = UIBountyUIFactory.CreateImage("Stone", bubble.transform, Color.white);
-            UIBountyUIFactory.SetRect(dialog.bubbleStone.rectTransform, new Vector2(32f, 32f), new Vector2(-34f, 0f));
-            dialog.bubbleStone.preserveAspect = true;
-            dialog.bubbleStone.raycastTarget = false;
-
-            dialog.bubbleText = UIBountyUIFactory.CreateText("BubbleText", bubble.transform, "+7", 30f,
-                TextAlignmentOptions.Left, Color.white, font);
-            UIBountyUIFactory.SetRect(dialog.bubbleText.rectTransform, new Vector2(70f, 40f), new Vector2(18f, 0f));
-            bubble.SetActive(false);
 
             dialog.nameText = UIBountyUIFactory.CreateText("Name", view.transform, "행운 주사위", 24f,
                 TextAlignmentOptions.Center, Color.white, font);

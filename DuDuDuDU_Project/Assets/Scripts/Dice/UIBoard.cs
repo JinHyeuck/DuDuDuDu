@@ -296,8 +296,9 @@ namespace OJ.Dice
 
         private void SetUpSlotLocks(int total)
         {
-            // 자리구매는 정식 규칙이다. 튜토리얼(대본이 칸을 정해 둔다)과 탑(편성이 곧 배치다)만 뺀다.
-            slotLockActive = !battle.Tutorial.IsActive && !battle.Tower.IsActive;
+            // 자리구매는 정식 규칙이다. 탑(편성이 곧 배치다)만 뺀다.
+            // 튜토리얼도 켜 둔다 — 자리 구매를 가르친다. 대본 소환은 무료인 첫 줄에만 놓는다(TutorialStage).
+            slotLockActive = !battle.Tower.IsActive;
 
             purchasedSlotCount = 0;
             if (!slotLockActive)

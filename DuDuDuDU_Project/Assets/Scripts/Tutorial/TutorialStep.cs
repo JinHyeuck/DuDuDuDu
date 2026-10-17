@@ -16,7 +16,9 @@ namespace OJ.Tutorial
         Merge,
         StartWaves,
 
-        // ── 1웨이브: 확률업 · 통장 ─────────────
+        // ── 1웨이브: 자리 구매 · 확률업 · 통장 ──
+        SlotUnlock,
+        SlotUnlocked,
         ProbUp,
         ProbRates,
         Savings,

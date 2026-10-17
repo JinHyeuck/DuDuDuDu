@@ -296,7 +296,7 @@ namespace OJ.Economy
                 return;
 
             Button summon = battle != null && battle.Summon != null ? battle.Summon.summonButton : null;
-            Vector3 target = summon != null ? summon.transform.position : icon.transform.position;
+            Vector3 target = summon != null ? ToLocalWorld(summon.transform) : icon.transform.position;
             Vector3 origin = icon.transform.position;
 
             bool arrived = false;
@@ -332,6 +332,32 @@ namespace OJ.Economy
 
             if (arrived && summon != null)
                 SummonPop.Play(summon.transform);
+        }
+
+        /// <summary>
+        /// 다른 캔버스에 있는 대상의 위치를 이 창 캔버스의 월드 좌표로 바꾼다.
+        ///
+        /// <b>월드 좌표를 그대로 쓰면 안 된다.</b> 이 창은 오버레이 캔버스(좌표가 곧 화면 픽셀)이고 소환 버튼은
+        /// 카메라 캔버스(보드와 같은 월드)라 같은 숫자가 전혀 다른 자리를 가리킨다 — 코인이 엉뚱한 곳으로 날아갔다.
+        /// 화면 좌표를 거쳐 건너간다(<c>UIMythicSummonCinematic</c> 이 도착 자리를 구하는 것과 같은 방식).
+        /// </summary>
+        private Vector3 ToLocalWorld(Transform target)
+        {
+            Canvas targetCanvas = target.GetComponentInParent<Canvas>();
+            Camera targetCamera = targetCanvas != null && targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? (targetCanvas.worldCamera != null ? targetCanvas.worldCamera : Camera.main)
+                : null;
+            Vector2 screen = RectTransformUtility.WorldToScreenPoint(targetCamera, target.position);
+
+            var space = dialogView.transform as RectTransform;
+            Canvas myCanvas = space != null ? space.GetComponentInParent<Canvas>() : null;
+            Camera myCamera = myCanvas != null && myCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? myCanvas.worldCamera
+                : null;
+
+            return space != null && RectTransformUtility.ScreenPointToWorldPointInRectangle(space, screen, myCamera, out Vector3 world)
+                ? world
+                : target.position;
         }
 
         private void ClearCoins()

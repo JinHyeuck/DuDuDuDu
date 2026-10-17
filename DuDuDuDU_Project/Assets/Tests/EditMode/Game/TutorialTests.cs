@@ -77,6 +77,20 @@ namespace OJ.Game.Tests
             Assert.That(bySlot[TutorialStage.MergeSlotB], Is.EqualTo(DiceType.Normal));
         }
 
+        /// <summary>
+        /// 대본 소환은 전부 첫 줄(무료인 칸)에 놓인다. 튜토리얼도 자리 구매가 켜져 있어 잠긴 칸에는
+        /// 다이스를 놓을 수 없다 — 하나라도 밖에 있으면 그 소환이 조용히 실패해 첫 단계가 안 풀린다.
+        /// </summary>
+        [Test]
+        public void 대본_소환은_전부_첫_줄에_놓인다()
+        {
+            foreach (TutorialRunManager.ScriptedSummon summon in TutorialStage.OpeningSummons)
+                Assert.That(summon.SlotIndex, Is.LessThan(TutorialStage.FirstRowSlotCount), "칸 " + summon.SlotIndex);
+
+            Assert.That(TutorialStage.UnlockSlot, Is.GreaterThanOrEqualTo(TutorialStage.FirstRowSlotCount),
+                "자리 구매를 가르칠 칸은 잠긴 칸이어야 한다");
+        }
+
         /// <summary>대본의 칸이 겹치면 두 번째 소환이 랜덤 칸으로 새어 머지 구멍이 빈 칸을 연다.</summary>
         [Test]
         public void 대본_칸은_겹치지_않는다()

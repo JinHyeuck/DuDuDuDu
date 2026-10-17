@@ -38,23 +38,32 @@ namespace OJ.Tutorial
         /// <summary>
         /// 첫 소환 여섯 번. 순서와 칸이 고정이다.
         ///
-        /// 노멀 둘(9·10)은 <b>같은 줄에 붙여</b> 둔다. 머지 단계의 딤드 구멍이 두 칸을 감싸는
+        /// 노멀 둘(2·3)은 <b>같은 줄에 붙여</b> 둔다. 머지 단계의 딤드 구멍이 두 칸을 감싸는
         /// 사각형 하나라, 떨어뜨려 두면 그 사이 칸까지 구멍에 들어간다.
         /// </summary>
         public static readonly IReadOnlyList<TutorialRunManager.ScriptedSummon> OpeningSummons =
             new[]
             {
-                new TutorialRunManager.ScriptedSummon(DiceType.Normal, 9),
-                new TutorialRunManager.ScriptedSummon(DiceType.Normal, 10),
+                new TutorialRunManager.ScriptedSummon(DiceType.Normal, 2),
+                new TutorialRunManager.ScriptedSummon(DiceType.Normal, 3),
                 new TutorialRunManager.ScriptedSummon(DiceType.Normal, 5),
-                new TutorialRunManager.ScriptedSummon(DiceType.Fire, 8),
-                new TutorialRunManager.ScriptedSummon(DiceType.Ice, 11),
-                new TutorialRunManager.ScriptedSummon(DiceType.Poison, 6),
+                new TutorialRunManager.ScriptedSummon(DiceType.Fire, 4),
+                new TutorialRunManager.ScriptedSummon(DiceType.Ice, 6),
+                new TutorialRunManager.ScriptedSummon(DiceType.Poison, 1),
             };
 
+        /// <summary>
+        /// 한 줄의 칸 수. 자리 구매가 켜져 있어 첫 줄만 열려 있으므로 <b>대본 소환은 전부 이 안에 놓아야 한다</b> —
+        /// 잠긴 칸에는 다이스를 놓을 수 없다(<c>UIBoard.SpawnDice</c>). 테스트가 지킨다.
+        /// </summary>
+        public const int FirstRowSlotCount = 7;
+
+        /// <summary>자리 구매를 가르칠 때 여는 칸. 첫 줄 바로 다음 칸이다.</summary>
+        public const int UnlockSlot = FirstRowSlotCount;
+
         /// <summary>머지 단계에서 합칠 두 칸. <see cref="OpeningSummons"/> 의 첫 두 줄이다.</summary>
-        public const int MergeSlotA = 9;
-        public const int MergeSlotB = 10;
+        public const int MergeSlotA = 2;
+        public const int MergeSlotB = 3;
 
         /// <summary>노멀 둘을 합치면 나오는 것. 진화 단계에서 다시 만날 계통이다.</summary>
         public const DiceType MergeResult = DiceType.Thunder;
@@ -73,7 +82,7 @@ namespace OJ.Tutorial
         public const DiceType EvolveTarget = DiceType.Time;
 
         /// <summary>4성을 놓을 칸 후보. 앞에서부터 빈 칸을 쓴다(그 사이 유저가 칸을 채웠을 수 있다).</summary>
-        public static readonly IReadOnlyList<int> GiftSlotCandidates = new[] { 13, 14, 12, 15, 17, 18, 16, 19 };
+        public static readonly IReadOnlyList<int> GiftSlotCandidates = new[] { UnlockSlot, 4, 5, 6, 0, 1 };
 
         /// <summary>
         /// 이 판의 StageData. 시작 SP 와 웨이브 클리어 SP 는 대본의 소환 횟수에서 <b>계산한다</b> —

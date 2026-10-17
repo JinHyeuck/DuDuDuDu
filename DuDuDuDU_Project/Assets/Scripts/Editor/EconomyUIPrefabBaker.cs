@@ -41,6 +41,8 @@ namespace OJ.EditorTools
                 parent => UISavingsSelectDialog.Create(parent, font, plain).gameObject);
             BakeOne("__LuckyDiceBakeRoot", Folder + "UILuckyDiceButton.prefab",
                 parent => UILuckyDiceButton.Create(parent, font, plain).gameObject);
+            BakeOne("__LuckyResultBakeRoot", Folder + "UILuckyDiceResultPopup.prefab",
+                parent => UILuckyDiceResultPopup.Create(parent, font, plain).gameObject);
             BakeOne("__LuckyOddsBakeRoot", Folder + "UILuckyDiceOddsTooltip.prefab",
                 parent => UILuckyDiceOddsTooltip.Create(parent, font, plain).gameObject);
 
