@@ -104,9 +104,10 @@ namespace OJ.Core
         public float BountyCooldown { get; set; }
 
         /// <summary>
-        /// 통장에 지금까지 맡겨 돌려받은 횟수. 다음에 맡길 금액을 정한다(<see cref="SavingsRules.DepositFor"/>).
+        /// 지금 맡겨 둔 통장 선택지 번호(<see cref="SavingsRules"/>). 돌려줄 금액이 여기서 나온다.
+        /// 맡긴 것이 없으면(<see cref="SavingsTimer"/> 가 0) 뜻이 없다.
         /// </summary>
-        public int SavingsStep { get; set; }
+        public int SavingsOption { get; set; }
 
         /// <summary>지금 통장에 맡겨 둔 금액(SP). 0 이면 맡긴 것이 없다.</summary>
         public int SavingsDeposit { get; set; }
@@ -139,7 +140,7 @@ namespace OJ.Core
             IsGameOver = false;
             HighestDefeatedBountyGrade = 0;
             BountyCooldown = 0f;
-            SavingsStep = 0;
+            SavingsOption = 0;
             SavingsDeposit = 0;
             SavingsTimer = 0f;
         }
@@ -169,7 +170,7 @@ namespace OJ.Core
             public bool IsGameOver;
             public int HighestDefeatedBountyGrade;
             public float BountyCooldown;
-            public int SavingsStep;
+            public int SavingsOption;
             public int SavingsDeposit;
             public float SavingsTimer;
         }
@@ -201,7 +202,7 @@ namespace OJ.Core
                 IsGameOver = IsGameOver,
                 HighestDefeatedBountyGrade = HighestDefeatedBountyGrade,
                 BountyCooldown = BountyCooldown,
-                SavingsStep = SavingsStep,
+                SavingsOption = SavingsOption,
                 SavingsDeposit = SavingsDeposit,
                 SavingsTimer = SavingsTimer,
             };
@@ -225,7 +226,7 @@ namespace OJ.Core
             IsGameOver = snapshot.IsGameOver;
             HighestDefeatedBountyGrade = snapshot.HighestDefeatedBountyGrade;
             BountyCooldown = snapshot.BountyCooldown;
-            SavingsStep = snapshot.SavingsStep;
+            SavingsOption = snapshot.SavingsOption;
             SavingsDeposit = snapshot.SavingsDeposit;
             SavingsTimer = snapshot.SavingsTimer;
         }

@@ -37,7 +37,7 @@ namespace OJ.Hunting
         private readonly List<Mark> marks = new List<Mark>();
         private readonly List<SpriteRenderer> icons = new List<SpriteRenderer>();
 
-        // ?꾨젅?꾨쭏???곕뒗 ?꾩떆 移? 紐ъ뒪?곌? 留롮븘???덈줈 ?좊떦?섏? ?딅뒗??
+        // 프레임마다 쓰는 임시 칸. 몬스터가 많아도 새로 할당하지 않는다.
         private const int MaxIcons = 12;
         private readonly float[] widths = new float[MaxIcons];
         private readonly Sprite[] sprites = new Sprite[MaxIcons];

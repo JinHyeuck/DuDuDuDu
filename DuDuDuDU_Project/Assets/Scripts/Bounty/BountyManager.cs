@@ -132,7 +132,7 @@ namespace OJ.Bounty
                 if (battle == null || battle.Game == null)
                     return false;
 
-                if (battle.Tutorial.IsActive || battle.Tower.IsActive)
+                if (battle.Tower.IsActive)
                     return false;
 
                 return battle.Game.inGameState == InGameState.Wave && IsReady;

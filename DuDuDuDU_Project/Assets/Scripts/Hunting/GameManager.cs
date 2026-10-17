@@ -50,7 +50,7 @@ namespace OJ.Hunting
         /// <summary>
         /// <b>레거시 준비 단계 흐름</b>(시작 버튼을 눌러야 웨이브가 열리고 웨이브 사이에 준비 단계가 있다).
         /// 일반 판은 실시간이라 꺼져 있고, <c>BalanceAutoPlay</c> 가 측정하는 동안만 켠다 —
-        /// 튜토리얼·탑은 <see cref="IsContinuousWave"/> 가 알아서 이 흐름을 탄다.
+        /// 탑은 <see cref="IsContinuousWave"/> 가 알아서 이 흐름을 탄다(튜토리얼은 실시간이다).
         /// </summary>
         public static bool LegacySetupFlow;
 
@@ -65,10 +65,11 @@ namespace OJ.Hunting
         /// 시작되며, 웨이브 중에도 소환·머지·진화·교환·속성강화·자리구매가 열려 있다.
         /// 판에 들어오면 3초 카운트다운 뒤 첫 웨이브가 저절로 열린다.
         ///
-        /// 튜토리얼(대본이 Setting 과 시작 버튼을 기다린다)과 탑(층 하나짜리)은 해당하지 않는다.
+        /// 탑(층 하나짜리)은 해당하지 않는다. <b>튜토리얼은 실시간이다</b> — 가르치는 내용이 실시간 규칙이라서다.
+        /// 다만 카운트다운은 디렉터가 연다(<see cref="BeginTutorialWaves"/>): 소환·머지를 먼저 가르쳐야 한다.
         /// </summary>
         public bool IsContinuousWave =>
-            !LegacySetupFlow && !battle.Tutorial.IsActive && !battle.Tower.IsActive;
+            !LegacySetupFlow && !battle.Tower.IsActive;
 
         /// <summary>
         /// 지금 보드를 만질 수 있는가(소환·머지·진화·교환·속성강화). 평소에는 관리 단계뿐이고,
@@ -211,6 +212,9 @@ namespace OJ.Hunting
             {
                 // 튜토리얼 판에서는 유물 선제 배치를 하지 않는다. 대본이 첫 소환 여섯 칸을
                 // 정해 두었는데, 유물이 먼저 그 칸을 채우면 머지 단계의 구멍이 엉뚱한 다이스를 연다.
+                // 삭제 영역은 실시간 판과 같이 걷는다. 확률업·통장·행운 주사위·현상금 버튼은
+                // 디렉터가 가르칠 차례에 하나씩 연다(처음부터 다 보이면 무엇부터 눌러야 할지 모른다).
+                HideDeleteArea();
                 new TutorialDirector(battle).RunAsync(this.GetCancellationTokenOnDestroy()).Forget();
                 return;
             }
@@ -440,7 +444,8 @@ namespace OJ.Hunting
             // 다음 실행에서 처음부터 다시 해야 한다 — 나갈 이유를 주지 않는 편이 낫다.
             Pause?.gameObject.SetActive(
                 (state == InGameState.Wave || state == InGameState.Setting) && !battle.Tutorial.IsActive);
-            Speed?.gameObject.SetActive(state == InGameState.Wave);
+            // 튜토리얼에서는 배속을 감춘다 — 가르치는 중에 속도가 바뀌면 단계 타이밍이 어긋난다.
+            Speed?.gameObject.SetActive(state == InGameState.Wave && !battle.Tutorial.IsActive);
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
             WaveText?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
@@ -453,7 +458,8 @@ namespace OJ.Hunting
             // 현상금 버튼은 실시간 판의 웨이브 중에만 뜬다(아이콘을 눌러 즉시 소환하는 시스템이라 필드가 열려 있을 때만 뜻이 있다).
             // <b>Show/Hide 를 여기 두는 이유.</b> 상태를 아는 곳이 여기 하나뿐이다 — 버튼이 스스로 판단하게 하면
             // 매 프레임 inGameState 를 들여다보게 되고, 그것은 이벤트로 바꿔 놓은 것을 폴링으로 되돌리는 일이다.
-            if (state == InGameState.Wave && IsContinuousWave)
+            // 튜토리얼에서는 현상금을 가르칠 차례가 오기 전까지 감춘다(TutorialRunManager.IsBountyButtonAllowed).
+            if (state == InGameState.Wave && IsContinuousWave && battle.Tutorial.IsBountyButtonAllowed)
             {
                 GameContainer.UI?.Show<UIBountyButton>();
             }
@@ -632,6 +638,7 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<UIProbabilityUpButton>();
             GameContainer.UI?.Hide<UISummonRateStrip>();
             GameContainer.UI?.Hide<OJ.Economy.UISavingsButton>();
+            GameContainer.UI?.Hide<OJ.Economy.UISavingsSelectDialog>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceButton>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceOddsTooltip>();
             GameContainer.UI?.Hide<UIElementUpgradePanel>();
@@ -1168,6 +1175,16 @@ namespace OJ.Hunting
             ChangeState(InGameState.Setting);
 
             if (IsContinuousWave)
+                StartCoroutine(CoCountdownThenWave());
+        }
+
+        /// <summary>
+        /// 튜토리얼에서 소환·머지를 가르친 뒤 웨이브를 연다(3 · 2 · 1 카운트다운 뒤 실시간 웨이브).
+        /// 일반 판은 <see cref="CoRealtimeStart"/> 가 알아서 연다.
+        /// </summary>
+        public void BeginTutorialWaves()
+        {
+            if (battle.Tutorial.IsActive && inGameState == InGameState.Setting && !countdownActive)
                 StartCoroutine(CoCountdownThenWave());
         }
 

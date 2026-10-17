@@ -7,31 +7,52 @@ namespace OJ.Core.Tests
     {
         // ── 통장 ────────────────────────────────────────────────
 
-        [TestCase(0, 30)]
-        [TestCase(1, 40)]
-        [TestCase(2, 50)]
-        [TestCase(3, 50)]
-        [TestCase(100, 50)]
-        [TestCase(-4, 30)]
-        public void Savings_DepositRisesToTheCapAndStaysThere(int completed, int expected)
+        [TestCase(0, 30, 45, 30f)]
+        [TestCase(1, 40, 65, 45f)]
+        [TestCase(2, 50, 90, 60f)]
+        public void Savings_OptionsMatchTheTable(int option, int deposit, int payout, float seconds)
         {
-            Assert.AreEqual(expected, SavingsRules.DepositFor(completed));
-        }
-
-        [TestCase(30, 33)]
-        [TestCase(40, 44)]
-        [TestCase(50, 55)]
-        [TestCase(0, 0)]
-        [TestCase(-5, 0)]
-        public void Savings_PayoutIsPrincipalPlusTenPercent(int deposit, int expected)
-        {
-            Assert.AreEqual(expected, SavingsRules.PayoutFor(deposit));
+            Assert.AreEqual(deposit, SavingsRules.Deposit(option));
+            Assert.AreEqual(payout, SavingsRules.Payout(option));
+            Assert.AreEqual(seconds, SavingsRules.Duration(option));
+            Assert.AreEqual(payout - deposit, SavingsRules.Gain(option));
         }
 
         [Test]
-        public void Savings_TakesFortyFiveSeconds()
+        public void Savings_BiggerAndLongerOptionsPayBetterAndFaster()
         {
-            Assert.AreEqual(45f, SavingsRules.DurationSeconds);
+            for (int option = 1; option < SavingsRules.OptionCount; option++)
+            {
+                int prev = option - 1;
+
+                // 원금 대비 비율(백분율, 정수 비교)과 초당 이익이 모두 오른다. 큰 선택지를 고를 이유가 있어야 한다.
+                Assert.Greater(SavingsRules.Gain(option) * 100 / SavingsRules.Deposit(option),
+                    SavingsRules.Gain(prev) * 100 / SavingsRules.Deposit(prev));
+                Assert.Greater(SavingsRules.Gain(option) / SavingsRules.Duration(option),
+                    SavingsRules.Gain(prev) / SavingsRules.Duration(prev));
+            }
+        }
+
+        [Test]
+        public void Savings_EveryOptionReturnsMoreThanItCosts()
+        {
+            for (int option = 0; option < SavingsRules.OptionCount; option++)
+                Assert.Greater(SavingsRules.Payout(option), SavingsRules.Deposit(option));
+        }
+
+        [TestCase(-3, 0)]
+        [TestCase(0, 0)]
+        [TestCase(2, 2)]
+        [TestCase(9, 2)]
+        public void Savings_OptionIsClamped(int option, int expected)
+        {
+            Assert.AreEqual(expected, SavingsRules.ClampOption(option));
+        }
+
+        [Test]
+        public void Savings_CheapestDepositIsTheFirstOption()
+        {
+            Assert.AreEqual(SavingsRules.Deposit(0), SavingsRules.CheapestDeposit);
         }
 
         // ── 행운 주사위 ───────────────────────────────────────

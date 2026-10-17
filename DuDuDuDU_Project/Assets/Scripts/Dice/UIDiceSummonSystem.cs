@@ -247,7 +247,7 @@ namespace OJ.Dice
         /// </summary>
         public bool TryUpgradeProbability()
         {
-            if (battle.Tower.IsActive || battle.Tutorial.IsActive)
+            if (battle.Tower.IsActive)
                 return false;
 
             int cost = NextProbUpgradeCost;

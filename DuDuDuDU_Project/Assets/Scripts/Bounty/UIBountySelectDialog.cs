@@ -62,6 +62,18 @@ namespace OJ.Bounty
                 Refresh();
         }
 
+        /// <summary>등급 칸의 영역. 튜토리얼이 "이 칸을 골라요" 를 가리키는 데 쓴다. 없으면 null.</summary>
+        public RectTransform GetSlotRect(int grade)
+        {
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i] != null && slots[i].Grade == grade)
+                    return slots[i].transform as RectTransform;
+            }
+
+            return null;
+        }
+
         public void Refresh()
         {
             BountyManager bounty = battle != null ? battle.Bounty : null;

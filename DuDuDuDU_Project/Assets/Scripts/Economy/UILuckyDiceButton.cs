@@ -134,6 +134,16 @@ namespace OJ.Economy
             listening.TryRoll();
         }
 
+        /// <summary>
+        /// "?" 를 누를 수 있는가. 튜토리얼이 딤드 구멍 안에서 확률표가 열려 닫을 수 없게 되는 것을 막으려고
+        /// 굴리는 동안만 잠근다. 평소에는 언제나 켜져 있다.
+        /// </summary>
+        public void SetHelpInteractable(bool value)
+        {
+            if (helpButton != null)
+                helpButton.interactable = value;
+        }
+
         private void OnHelp()
         {
             GameContainer.UI?.Show<UILuckyDiceOddsTooltip>();

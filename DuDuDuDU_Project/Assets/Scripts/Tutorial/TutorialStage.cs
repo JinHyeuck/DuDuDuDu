@@ -20,13 +20,19 @@ namespace OJ.Tutorial
     {
         public const int TotalWaves = 4;
 
-        /// <summary>현상금 1단계를 거는 웨이브. 되돌리기를 가르치는 웨이브이기도 하다.</summary>
+        /// <summary>현상금을 가르치는 웨이브. 보스 앞이어야 한다(마지막 웨이브에는 현상금이 안 나온다).</summary>
         public const int BountyWave = 2;
+
+        /// <summary>속성강화·행운 주사위(마석)를 가르치는 웨이브.</summary>
+        public const int StoneWave = 2;
+
+        /// <summary>3성 진화를 가르치는 웨이브. 보스 바로 앞이다.</summary>
+        public const int EvolveWave = 3;
 
         /// <summary>처음 소환 비용. <c>UIDiceSummonSystem.SetStageStartSp</c> 의 기본값과 같아야 한다.</summary>
         public const int StartSummonCost = 10;
 
-        /// <summary>되돌린 뒤 SP 를 다 써서 소환하는 횟수.</summary>
+        /// <summary>웨이브 하나를 막고 받는 SP 가 소환 몇 번어치인가(실시간이라 처치마다 나눠 받는다).</summary>
         public const int RetrySummonCount = 3;
 
         /// <summary>
@@ -53,8 +59,11 @@ namespace OJ.Tutorial
         /// <summary>노멀 둘을 합치면 나오는 것. 진화 단계에서 다시 만날 계통이다.</summary>
         public const DiceType MergeResult = DiceType.Thunder;
 
-        /// <summary>보스 앞에서 주는 4성. 이것을 진화시켜 <see cref="EvolveTarget"/> 를 만든다.</summary>
+        /// <summary>보스 앞에서 주는 3성(진화가 3성부터라서다). 이것을 진화시켜 <see cref="EvolveTarget"/> 를 만든다.</summary>
         public const DiceType GiftDice = DiceType.Thunder;
+
+        /// <summary>선물의 성급. 진화 조건과 같아야 한다 — 낮추면 진화 버튼이 안 먹고, 높이면 가르치는 규칙이 틀린다.</summary>
+        public const int GiftStar = OJ.Dice.DiceEvolution.EvolveRequiredStar;
 
         /// <summary>
         /// 진화로 만들어 보이는 다이스. <b>처음부터 보유하는 특수 5종 중 하나여야 한다</b>
@@ -89,8 +98,8 @@ namespace OJ.Tutorial
                 wallHp = 100,
                 initialSP = openingSp,
 
-                // 1웨이브를 막고 받는 SP 가 곧 "되돌린 뒤 쓸 SP" 다. 되돌리기는 2웨이브 시작
-                // 직전으로 돌아가므로, 그때 손에 있는 것이 정확히 이 값이다.
+                // 실시간이라 웨이브 하나의 몫을 처치마다 나눠 받는다. 소환 몇 번어치로 맞춰 두면
+                // 디렉터가 "SP 가 이 정도 쌓였다" 를 전제로 안내할 수 있다.
                 waveClearSP = retrySp,
 
                 // 5 로는 벽이 한 번도 안 맞았다(플레이 확인). 현상금·보스 HP 도 이 값에서 나오므로 같이 오른다.

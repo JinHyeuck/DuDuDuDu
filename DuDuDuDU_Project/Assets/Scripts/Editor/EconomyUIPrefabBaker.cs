@@ -6,7 +6,7 @@ using OJ.Economy;
 namespace OJ.EditorTools
 {
     /// <summary>
-    /// 통장·행운 주사위 UI 셋(<see cref="UISavingsButton"/> · <see cref="UILuckyDiceButton"/> ·
+    /// 통장·행운 주사위 UI 셋(<see cref="UISavingsButton"/> · <see cref="UISavingsSelectDialog"/> · <see cref="UILuckyDiceButton"/> ·
     /// <see cref="UILuckyDiceOddsTooltip"/>)을 프리팹으로 굽는다.
     ///
     /// <b>같은 경로에 덮어쓴다.</b> GUID 가 유지되어 <c>DialogCatalog</c> 참조가 안 끊긴다.
@@ -37,6 +37,8 @@ namespace OJ.EditorTools
 
             BakeOne("__SavingsBakeRoot", Folder + "UISavingsButton.prefab",
                 parent => UISavingsButton.Create(parent, font, plain).gameObject);
+            BakeOne("__SavingsSelectBakeRoot", Folder + "UISavingsSelectDialog.prefab",
+                parent => UISavingsSelectDialog.Create(parent, font, plain).gameObject);
             BakeOne("__LuckyDiceBakeRoot", Folder + "UILuckyDiceButton.prefab",
                 parent => UILuckyDiceButton.Create(parent, font, plain).gameObject);
             BakeOne("__LuckyOddsBakeRoot", Folder + "UILuckyDiceOddsTooltip.prefab",

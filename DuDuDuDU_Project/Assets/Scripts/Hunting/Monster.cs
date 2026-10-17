@@ -443,8 +443,8 @@ namespace OJ.Hunting
         }
 
         /// <summary>
-        /// ???ㅼ씠?ㅺ? ?곹깭?댁긽??嫄멸퀬 ?덉쓬??癒몃━ ???꾩씠肄섏쑝濡??뚮┛?? <b>?쒖떆留??쒕떎</b> ???④낵???꾨옒 Apply* 媛 ?쒕떎.
-        /// <paramref name="source"/> 媛 <c>DiceType.Max</c>(異쒖쿂 紐⑤쫫)?대㈃ ?꾨Т寃껊룄 ?꾩슦吏 ?딅뒗??
+        /// 이 다이스가 상태이상을 걸고 있음을 머리 위 아이콘으로 알린다. <b>표시만 한다</b> — 효과는 아래 Apply* 가 한다.
+        /// <paramref name="source"/> 가 <c>DiceType.Max</c>(출처 모름)이면 아무것도 띄우지 않는다.
         /// </summary>
         private void MarkStatus(DiceType source, float duration)
         {
@@ -609,7 +609,7 @@ namespace OJ.Hunting
             if (addDistance <= 0.0001f)
                 return;
 
-            // ?밴린???쒓컙? 0.x珥덈씪 洹몃?濡??꾩슦硫?源쒕묀?닿퀬 ?앸궃?????덉뿉 ?쏀엳?꾨줉 理쒖냼 1珥덈뒗 ?④릿??
+            // 당기는 시간은 0.x초라 그대로 띄우면 깜빡이고 끝난다 — 눈에 읽히도록 최소 1초는 남긴다.
             MarkStatus(source, Mathf.Max(1f, duration));
 
             _pullCenter = center;
@@ -624,7 +624,8 @@ namespace OJ.Hunting
         {
             while (_hp > 0 && Clock.GameTime < _poisonUntilTime)
             {
-                int intdamage = Mathf.CeilToInt((_hp * 0.1f) * _poisonDamageMultiplier);
+                // 남은 체력의 1% x 배수. 10% 였다가 1% 로 대폭 낮췄다(체력이 작으면 최소 1).
+                int intdamage = Mathf.CeilToInt((_hp * 0.01f) * _poisonDamageMultiplier);
                 if (intdamage <= 0)
                     intdamage = 1;
 

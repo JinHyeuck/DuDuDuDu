@@ -3,57 +3,59 @@ namespace OJ.Core
     /// <summary>
     /// 통장의 순수 규칙. 엔진을 쓰지 않는다.
     ///
-    /// SP 를 맡기고 <see cref="DurationSeconds"/> 초가 지나면 <b>원금 + 10%</b> 를 돌려받는다(30 → 33).
-    /// 이자가 아니라 <b>통장</b>으로 만든 이유 — 보유 SP 에 비례해 이자가 붙으면 "이자 시스템을 아는 유저"와
-    /// 모르는 유저의 격차가 너무 벌어진다. 맡기는 금액을 정해 두고(30 → 40 → 50) 누르는 인터랙션으로 바꾸면
-    /// 누구나 같은 값을 얻는다.
+    /// SP 를 맡기면 시간이 지난 뒤 <b>원금보다 더 많이</b> 돌려받는다. 맡길 때 <b>셋 중 하나를 고른다</b> —
+    /// 적게 맡고 빨리 받을지, 많이 맡고 오래 기다려 더 크게 받을지다. 고르는 것이 이 시스템의 재미다.
+    /// 보유 SP 에 비례해 이자가 붙는 방식으로 하지 않은 이유는 "이자를 아는 유저" 와 모르는 유저의 격차가 벌어져서다.
     ///
-    /// 맡기는 금액은 <b>몇 번째 맡김이냐</b>로 정해지고 <see cref="MaxDeposit"/> 에서 멈춘다(이후 계속 50).
-    /// 밸런스 값이라 정식 규칙으로 굳으면 SO 로 옮긴다(결정 3번).
+    /// 선택지는 <b>맡길수록, 오래 기다릴수록 비율이 좋아진다</b>(원금 대비 +50% → +62% → +80%).
+    /// 초당 이익도 0.50 → 0.56 → 0.67 SP 로 오른다 — 큰 선택지가 항상 낫다면 고를 이유가 없으니,
+    /// 대신 <b>지금 가진 SP 와 웨이브 압박</b>이 고르는 기준이 된다(큰 것은 SP 를 오래 묶는다).
+    /// 한 번에 하나만 맡긴다. 밸런스 값이라 정식 규칙으로 굳으면 SO 로 옮긴다(결정 3번).
     /// </summary>
     public static class SavingsRules
     {
-        /// <summary>첫 맡김 금액(SP).</summary>
-        public const int FirstDeposit = 30;
+        /// <summary>선택지 수.</summary>
+        public const int OptionCount = 3;
 
-        /// <summary>맡길 때마다 다음 금액이 오르는 양(SP).</summary>
-        public const int DepositStep = 10;
+        // [선택지] = 맡기는 SP / 돌려받는 SP / 걸리는 시간(초, 게임 시간).
+        private static readonly int[] deposits = { 30, 40, 50 };
+        private static readonly int[] payouts = { 45, 65, 90 };
+        private static readonly float[] durations = { 30f, 45f, 60f };
 
-        /// <summary>맡기는 금액의 상한(SP). 이 금액에 닿은 뒤에는 계속 이 금액이다.</summary>
-        public const int MaxDeposit = 50;
-
-        /// <summary>맡긴 뒤 돌려받기까지 걸리는 시간(초). 게임 시간이다.</summary>
-        public const float DurationSeconds = 45f;
-
-        /// <summary>원금에 더해 주는 비율(퍼센트).</summary>
-        public const int BonusPercent = 10;
-
-        /// <summary>
-        /// 지금까지 <paramref name="completedCount"/> 번 맡겼을 때 <b>다음</b> 맡김 금액.
-        /// 30 · 40 · 50 · 50 · 50 …
-        /// </summary>
-        public static int DepositFor(int completedCount)
+        /// <summary>범위 밖 번호를 가장 가까운 선택지로 맞춘다.</summary>
+        public static int ClampOption(int option)
         {
-            if (completedCount < 0)
-                completedCount = 0;
-
-            // 곱셈이 아니라 비교로 막는다 — 횟수가 아주 커져도 넘치지 않는다.
-            int steps = (MaxDeposit - FirstDeposit) / DepositStep;
-            if (completedCount >= steps)
-                return MaxDeposit;
-
-            return FirstDeposit + DepositStep * completedCount;
-        }
-
-        /// <summary>
-        /// 돌려받는 총액 = 원금 + 10%. 정수 SP 라 내림한다(30 → 33, 40 → 44, 50 → 55).
-        /// </summary>
-        public static int PayoutFor(int deposit)
-        {
-            if (deposit <= 0)
+            if (option < 0)
                 return 0;
 
-            return deposit + deposit * BonusPercent / 100;
+            return option >= OptionCount ? OptionCount - 1 : option;
         }
+
+        /// <summary>맡기는 금액(SP).</summary>
+        public static int Deposit(int option)
+        {
+            return deposits[ClampOption(option)];
+        }
+
+        /// <summary>돌려받는 총액(SP). 원금을 포함한다.</summary>
+        public static int Payout(int option)
+        {
+            return payouts[ClampOption(option)];
+        }
+
+        /// <summary>순이익(SP) = 돌려받는 총액 - 원금.</summary>
+        public static int Gain(int option)
+        {
+            return Payout(option) - Deposit(option);
+        }
+
+        /// <summary>돌려받기까지 걸리는 시간(초).</summary>
+        public static float Duration(int option)
+        {
+            return durations[ClampOption(option)];
+        }
+
+        /// <summary>가장 싼 선택지의 금액. "통장을 쓸 수 있는가" 의 기준이다.</summary>
+        public static int CheapestDeposit => deposits[0];
     }
 }

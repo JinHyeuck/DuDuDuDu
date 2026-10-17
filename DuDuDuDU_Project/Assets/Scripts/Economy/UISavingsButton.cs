@@ -13,13 +13,15 @@ using OJ.UI;
 namespace OJ.Economy
 {
     /// <summary>
-    /// 통장 아이콘 버튼 — 현상금과 소환 버튼 사이. 누르면 SP 를 맡기고, 45초 뒤 원금 + 10% 가 소환 버튼으로 쏟아진다.
+    /// 통장 아이콘 버튼 — 현상금과 소환 버튼 사이. 누르면 <b>선택 창</b>(<see cref="UISavingsSelectDialog"/>)이 열려
+    /// 얼마를 맡겨 얼마를 받을지 고른다. 고르면 SP 를 맡기고 정한 시간 뒤 더 많이 돌려받는다.
     ///
     /// <list type="bullet">
-    /// <item><b>Ready</b>: 맡길 수 있다. 말풍선에 받을 금액("33 SP"), 이름에 시간, 칩에 맡길 금액. 초록 칩이면 누를 수 있다.
-    ///   SP 가 모자라면 칩이 회색이고 눌러도 아무 일이 없다.</item>
-    /// <item><b>Saving</b>: 맡기는 중. 칩에 남은 시간을 mm:ss 로 센다. 눌러도 아무 일이 없다.</item>
-    /// <item><b>지급</b>: 코인이 아이콘에서 터져 나와 소환 버튼으로 빨려 들어간다. 도착하면 소환 버튼이 한 번 튄다.</item>
+    /// <item><b>Ready</b>: 맡길 수 있다. 말풍선 "이자 받기", 초록 READY 칩. 누르면 선택 창이 열린다.
+    ///   가장 싼 선택지(30 SP)도 못 맡으면 칩이 회색으로 필요한 금액을 보여 주고 눌러도 아무 일이 없다.</item>
+    /// <item><b>Open</b>: 선택 창이 열려 있다. 노란 OPEN 칩.</item>
+    /// <item><b>Saving</b>: 맡기는 중. 칩에 남은 시간을 mm:ss 로 센다. 말풍선에는 돌려받을 SP. 눌러도 아무 일이 없다.</item>
+    /// <item><b>지급</b>: 코인이 아이콘에서 터져 나와 소환 버튼으로 빨려 든다. 도착하면 소환 버튼이 한 번 튄다.</item>
     /// </list>
     ///
     /// <b>여기에 판단을 두지 않는다.</b> 맡기고 돌려주는 일은 <see cref="SavingsManager"/> 가 한다.
@@ -129,7 +131,7 @@ namespace OJ.Economy
             UpdateCoins(Time.unscaledDeltaTime);
         }
 
-        // 0 = Ready(누를 수 있음) · 1 = Ready(SP 부족) · 2 = 맡기는 중
+        // 0 = Ready(누를 수 있음) · 1 = Ready(SP 부족) · 2 = 맡기는 중 · 3 = 선택 창 열림
         private void Refresh()
         {
             SavingsManager savings = Savings;
@@ -139,8 +141,10 @@ namespace OJ.Economy
             int kind;
             if (savings.State == SavingsState.Saving)
                 kind = 2;
+            else if (UISavingsSelectDialog.IsOpen)
+                kind = 3;
             else
-                kind = savings.CanDeposit ? 0 : 1;
+                kind = savings.CanDepositAny ? 0 : 1;
 
             if (kind != shownKind)
             {
@@ -155,21 +159,29 @@ namespace OJ.Economy
             {
                 SetChip(BountyFormula.FormatCooldown(savings.TimeRemaining));
                 SetBubble(savings.PendingPayout + " SP");
-                SetName("통장");
+            }
+            else if (kind == 3)
+            {
+                SetChip("OPEN");
+            }
+            else if (kind == 1)
+            {
+                SetChip(SavingsRules.CheapestDeposit + " SP");
             }
             else
             {
-                SetChip(savings.NextDeposit + " SP");
-                SetBubble(savings.NextPayout + " SP");
-                SetName("통장 " + (int)SavingsRules.DurationSeconds + "초");
+                SetChip("READY");
+                SetBubble("이자 받기");
             }
+
+            SetName("통장");
         }
 
         private void ApplyKind(int kind)
         {
             icon.color = kind == 1 ? DimColor : Color.white;
             button.interactable = kind == 0;
-            bubble.SetActive(kind != 1);
+            bubble.SetActive(kind == 0 || kind == 2);
 
             switch (kind)
             {
@@ -177,6 +189,7 @@ namespace OJ.Economy
                     chipBackground.sprite = readySprite;
                     break;
                 case 2:
+                case 3:
                     chipBackground.sprite = savingSprite;
                     break;
                 default:
@@ -233,7 +246,8 @@ namespace OJ.Economy
 
         private void OnClick()
         {
-            Savings?.TryDeposit();
+            if (Savings != null && Savings.CanDepositAny)
+                GameContainer.UI?.Show<UISavingsSelectDialog>();
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -383,11 +397,11 @@ namespace OJ.Economy
             bubbleBg.color = new Color(1f, 0.97f, 0.85f, 1f);
             bubbleBg.raycastTarget = false;
 
-            dialog.bubbleText = UIBountyUIFactory.CreateText("BubbleText", bubble.transform, "33 SP", 26f,
+            dialog.bubbleText = UIBountyUIFactory.CreateText("BubbleText", bubble.transform, "이자 받기", 24f,
                 TextAlignmentOptions.Center, new Color(0x86 / 255f, 0x57 / 255f, 0x31 / 255f, 1f), font, plainMaterial);
             UIBountyUIFactory.Stretch(dialog.bubbleText.rectTransform);
 
-            dialog.nameText = UIBountyUIFactory.CreateText("Name", view.transform, "통장 45초", 26f,
+            dialog.nameText = UIBountyUIFactory.CreateText("Name", view.transform, "통장", 30f,
                 TextAlignmentOptions.Center, Color.white, font);
             UIBountyUIFactory.SetRect(dialog.nameText.rectTransform, new Vector2(Size.x + 20f, 34f), new Vector2(0f, -30f));
 
@@ -399,7 +413,7 @@ namespace OJ.Economy
                 dialog.readySprite, 3f, new Vector2(106f + 24f, 36f + 24f), new Vector2(0f, -66f), true);
             dialog.chipBackground.raycastTarget = false;
 
-            dialog.chipText = UIBountyUIFactory.CreateText("ChipText", dialog.chipBackground.transform, "30 SP", 26f,
+            dialog.chipText = UIBountyUIFactory.CreateText("ChipText", dialog.chipBackground.transform, "READY", 26f,
                 TextAlignmentOptions.Center, Color.white, font);
             UIBountyUIFactory.SetRect(dialog.chipText.rectTransform, new Vector2(106f, 36f), new Vector2(0f, 2f));
 

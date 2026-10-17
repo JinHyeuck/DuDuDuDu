@@ -21,6 +21,13 @@ namespace OJ.Economy
         [SerializeField] private List<TMP_Text> chanceTexts = new List<TMP_Text>();
         [SerializeField] private TMP_Text footer;
 
+        /// <summary>
+        /// 확률표 판의 영역(바깥 막은 빼고). 튜토리얼이 판만 구멍으로 연다. 프리팹의 "Panel" 자식이며,
+        /// 못 찾으면 null — 그때는 화면 전체가 구멍이 되어 딤드가 안 보일 뿐 진행은 막히지 않는다.
+        /// </summary>
+        public RectTransform PanelRect =>
+            dialogView != null ? dialogView.transform.Find("Panel") as RectTransform : null;
+
         protected override void OnEnter()
         {
             // 현상금 선택창처럼 같은 캔버스의 다른 창 위에 오게 한다.
@@ -33,19 +40,19 @@ namespace OJ.Economy
             for (int i = 0; i < stoneTexts.Count; i++)
             {
                 int stones = LuckyDiceRules.MinStones + i;
-                stoneTexts[i].SetText(stones + "개");
+                stoneTexts[i].SetText("마석 " + stones + "개");
                 chanceTexts[i].SetText(LuckyDiceRules.Chance(stones) + "%");
             }
 
-            footer.SetText(LuckyDiceRules.CostSp + " SP / 평균 " + (LuckyDiceRules.ExpectedStonesTimes100() / 100f).ToString("0.0") + "개");
+            footer.SetText(LuckyDiceRules.CostSp + " SP로 마석 " + LuckyDiceRules.MinStones + "~" + LuckyDiceRules.MaxStones + "개 획득\n평균 마석 " + (LuckyDiceRules.ExpectedStonesTimes100() / 100f).ToString("0.0") + "개");
         }
 
         // ──────────────────────────────────────────────────────────────
         // 에디터 굽기 전용.
         // ──────────────────────────────────────────────────────────────
 
-        private static readonly Vector2 PanelVisible = new Vector2(430f, 640f);
-        private static readonly Vector2 PanelCenter = new Vector2(190f, -380f);
+        private static readonly Vector2 PanelVisible = new Vector2(430f, 700f);
+        private static readonly Vector2 PanelCenter = new Vector2(190f, -350f);
         private const float RowHeight = 46f;
 
         /// <summary>에디터 굽기 전용.</summary>
@@ -85,20 +92,20 @@ namespace OJ.Economy
             {
                 float y = top - 120f - i * RowHeight;
 
-                TMP_Text stone = UIBountyUIFactory.CreateText("Stone" + i, panel, (i + 1) + "개", 30f,
+                TMP_Text stone = UIBountyUIFactory.CreateText("Stone" + i, panel, "마석 " + (i + 1) + "개", 30f,
                     TextAlignmentOptions.Left, Color.white, font);
-                UIBountyUIFactory.SetRect(stone.rectTransform, new Vector2(150f, RowHeight), new Vector2(-100f, y));
+                UIBountyUIFactory.SetRect(stone.rectTransform, new Vector2(200f, RowHeight), new Vector2(-90f, y));
                 dialog.stoneTexts.Add(stone);
 
                 TMP_Text chance = UIBountyUIFactory.CreateText("Chance" + i, panel, LuckyDiceRules.Chance(i + 1) + "%", 30f,
                     TextAlignmentOptions.Right, new Color(1f, 0.92f, 0.4f, 1f), font);
-                UIBountyUIFactory.SetRect(chance.rectTransform, new Vector2(150f, RowHeight), new Vector2(100f, y));
+                UIBountyUIFactory.SetRect(chance.rectTransform, new Vector2(120f, RowHeight), new Vector2(120f, y));
                 dialog.chanceTexts.Add(chance);
             }
 
             dialog.footer = UIBountyUIFactory.CreateText("Footer", panel, "", 26f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UIBountyUIFactory.SetRect(dialog.footer.rectTransform, new Vector2(PanelVisible.x - 40f, 40f), new Vector2(0f, -top + 40f));
+            UIBountyUIFactory.SetRect(dialog.footer.rectTransform, new Vector2(PanelVisible.x - 40f, 76f), new Vector2(0f, -top + 52f));
 
             return dialog;
         }

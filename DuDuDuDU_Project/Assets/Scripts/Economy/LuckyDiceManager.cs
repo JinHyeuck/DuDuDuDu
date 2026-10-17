@@ -24,7 +24,7 @@ namespace OJ.Economy
             this.battle = battle;
         }
 
-        /// <summary>지금 굴릴 수 있는가. 실시간 판의 준비·웨이브 중이고 SP 가 되어야 한다. 튜토리얼·탑에는 없다.</summary>
+        /// <summary>지금 굴릴 수 있는가. 실시간 판의 준비·웨이브 중이고 SP 가 되어야 한다. 탑에는 없다.</summary>
         public bool CanRoll
         {
             get
@@ -32,7 +32,7 @@ namespace OJ.Economy
                 if (battle == null || battle.Game == null || battle.BattlePoints == null)
                     return false;
 
-                if (battle.Tutorial.IsActive || battle.Tower.IsActive || !battle.Game.CanManageBoard)
+                if (battle.Tower.IsActive || !battle.Game.CanManageBoard)
                     return false;
 
                 return battle.BattlePoints.Get(BattlePointType.SummonPoint) >= LuckyDiceRules.CostSp;
