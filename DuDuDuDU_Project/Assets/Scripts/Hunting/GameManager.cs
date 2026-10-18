@@ -570,7 +570,7 @@ namespace OJ.Hunting
             if (!IsContinuousWave || CurrentStageData == null || WaveMonsterCount <= 0)
                 return;
 
-            int total = Mathf.Max(0, CurrentStageData.waveClearSP);
+            int total = Mathf.Max(0, WaveClearSpFor(CurrentWaveIndex));
             int due = Mathf.Min(total, Mathf.FloorToInt(
                 (float)total * Mathf.Min(WaveMonsterDeadCount, WaveMonsterCount) / WaveMonsterCount));
 
@@ -580,6 +580,29 @@ namespace OJ.Hunting
 
             waveSpGranted = due;
             battle.Summon.AddSP(delta);
+        }
+
+        /// <summary>
+        /// 이 웨이브를 막고 받는 SP. 스테이지의 <c>waveClearSP</c> 에 <b>종 모양 곡선</b>(<see cref="WaveSpCurve"/>)을 곱한다 —
+        /// 초반 소환 횟수를 줄이고 중반에 몰아 전략을 생각할 틈을 만든다. 튜토리얼은 "정확히 N회" 로 맞춘 SP 라 곱하지 않는다.
+        /// 처치마다 나눠 주는 쪽과 웨이브가 끝났을 때 남은 몫을 주는 쪽이 <b>같은 값</b>을 봐야 합이 맞는다.
+        /// </summary>
+        public int WaveClearSpFor(int waveIndex)
+        {
+            if (CurrentStageData == null)
+                return 0;
+
+            return WaveSpCurve.WaveClearSp(
+                CurrentStageData.waveClearSP, waveIndex, CurrentStageData.totalWaves, !battle.Tutorial.IsActive);
+        }
+
+        /// <summary>이 웨이브의 곡선 배율(퍼센트). 튜토리얼은 100.</summary>
+        public int WaveSpMultiplierPercent(int waveIndex)
+        {
+            if (CurrentStageData == null || battle.Tutorial.IsActive)
+                return 100;
+
+            return WaveSpCurve.Multiplier(waveIndex, CurrentStageData.totalWaves);
         }
 
         public void RemoveMonsterDeadCount()
@@ -1243,8 +1266,8 @@ namespace OJ.Hunting
             {
                 // 연속 웨이브는 처치마다 나눠 줬으므로 남은 몫(현상금만 남은 끝, 나머지 반올림)만 준다.
                 int waveClearSp = IsContinuousWave
-                    ? Mathf.Max(0, CurrentStageData.waveClearSP - waveSpGranted)
-                    : CurrentStageData.waveClearSP;
+                    ? Mathf.Max(0, WaveClearSpFor(CurrentWaveIndex) - waveSpGranted)
+                    : WaveClearSpFor(CurrentWaveIndex);
                 battle.Summon.AddSP(waveClearSp);
                 waveSpGranted = 0;
 

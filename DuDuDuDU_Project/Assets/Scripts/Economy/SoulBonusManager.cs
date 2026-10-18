@@ -166,7 +166,8 @@ namespace OJ.Economy
                     ? SoulBonusRules.StageSpTotal(stage.initialSP, stage.waveClearSP, stage.totalWaves)
                     : 0;
 
-                Run.SoulOfferSp = SoulBonusRules.RollSp(total, UnityEngine.Random.Range(0, 1000));
+                Run.SoulOfferSp = SoulBonusRules.RollSp(
+                    total, UnityEngine.Random.Range(0, 1000), battle.Game.WaveSpMultiplierPercent(battle.Game.CurrentWaveIndex));
                 Run.SoulOfferStones = SoulBonusRules.RollStones(UnityEngine.Random.Range(0, 1000));
             }
 

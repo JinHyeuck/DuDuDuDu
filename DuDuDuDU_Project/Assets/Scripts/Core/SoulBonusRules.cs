@@ -54,12 +54,17 @@ namespace OJ.Core
             return total > int.MaxValue ? int.MaxValue : (int)total;
         }
 
-        /// <summary>SP 보상. 총량의 3%~5%(정수 내림), 하한 <see cref="MinSp"/>. <paramref name="roll"/> 은 0 이상의 정수.</summary>
-        public static int RollSp(int stageTotal, int roll)
+        /// <summary>
+        /// SP 보상. 총량의 3%~5%(정수 내림)에 <paramref name="curvePercent"/>(웨이브 곡선 배율, 기본 100)을 곱하고 하한 <see cref="MinSp"/> 을 건다.
+        /// 곡선을 곱하는 이유 — 초반에 큰 보상이 한 번에 들어오면 웨이브 SP 곡선(<c>WaveSpCurve</c>)으로 줄여 둔 초반 소환 횟수가 다시 부푼다.
+        /// <paramref name="roll"/> 은 0 이상의 정수.
+        /// </summary>
+        public static int RollSp(int stageTotal, int roll, int curvePercent = 100)
         {
             int permille = SpMinPermille + Wrap(roll, SpMaxPermille - SpMinPermille + 1);
             long raw = (long)Math.Max(0, stageTotal) * permille / 1000;
-            return (int)Math.Max(MinSp, raw);
+            raw = raw * Math.Max(0, curvePercent) / 100;
+            return (int)Math.Max(MinSp, Math.Min(raw, int.MaxValue));
         }
 
         /// <summary>마석 보상. <see cref="MinStones"/>~<see cref="MaxStones"/> 개. <paramref name="roll"/> 은 0 이상의 정수.</summary>
