@@ -13,18 +13,18 @@ using OJ.UI;
 namespace OJ.Economy
 {
     /// <summary>
-    /// 통장 아이콘 버튼 — 현상금과 소환 버튼 사이. 누르면 <b>선택 창</b>(<see cref="UISavingsSelectDialog"/>)이 열려
-    /// 얼마를 맡겨 얼마를 받을지 고른다. 고르면 SP 를 맡기고 정한 시간 뒤 더 많이 돌려받는다.
+    /// 저금통 아이콘 버튼 — 현상금과 소환 버튼 사이. 누르면 <b>선택 창</b>(<see cref="UISavingsSelectDialog"/>)이 열린다.
+    /// 방식이 둘이다(<see cref="SavingsMode"/>): 기본은 "지금 바로 / 45초 뒤" 선택, DEV 치트로 이전 3단 방식을 켤 수 있다.
     ///
     /// <list type="bullet">
-    /// <item><b>Ready</b>: 맡길 수 있다. 말풍선 "이자 받기", 초록 READY 칩. 누르면 선택 창이 열린다.
-    ///   가장 싼 선택지(30 SP)도 못 맡으면 칩이 회색으로 필요한 금액을 보여 주고 눌러도 아무 일이 없다.</item>
+    /// <item><b>Ready</b>: 고를 수 있다. 초록 READY 칩과 말풍선("선택!" / 3단은 "이자 받기"). 3단 방식에서 가장 싼 선택지(30 SP)도
+    ///   못 내면 칩이 회색으로 필요한 금액을 보여 주고 눌러도 아무 일이 없다.</item>
     /// <item><b>Open</b>: 선택 창이 열려 있다. 노란 OPEN 칩.</item>
-    /// <item><b>Saving</b>: 맡기는 중. 칩에 남은 시간을 mm:ss 로 센다. 말풍선에는 돌려받을 SP. 눌러도 아무 일이 없다.</item>
-    /// <item><b>지급</b>: 코인이 아이콘에서 터져 나와 소환 버튼으로 빨려 든다. 도착하면 소환 버튼이 한 번 튄다.</item>
+    /// <item><b>Saving</b>: 다음 선택(또는 지급)을 기다리는 중. 칩에 남은 시간을 mm:ss 로 센다. 받기로 한 SP 가 있으면 말풍선에 보인다.</item>
+    /// <item><b>지급</b>: 코인이 아이콘에서 터져 나와 소환 버튼으로 빨려 든다(즉시 받을 때도 같다). 도착하면 소환 버튼이 한 번 튄다.</item>
     /// </list>
     ///
-    /// <b>여기에 판단을 두지 않는다.</b> 맡기고 돌려주는 일은 <see cref="SavingsManager"/> 가 한다.
+    /// <b>여기에 판단을 두지 않는다.</b> 고르고 지급하는 일은 <see cref="SavingsManager"/> 가 한다.
     /// 되돌리기가 <c>RunState</c> 를 직접 고쳐도 어긋나지 않도록 <b>매 프레임 읽어 그린다</b>(글자가 같으면 쓰지 않는다).
     /// </summary>
     public sealed class UISavingsButton : DialogBase
@@ -144,7 +144,7 @@ namespace OJ.Economy
             else if (UISavingsSelectDialog.IsOpen)
                 kind = 3;
             else
-                kind = savings.CanDepositAny ? 0 : 1;
+                kind = savings.CanStart ? 0 : 1;
 
             if (kind != shownKind)
             {
@@ -158,7 +158,13 @@ namespace OJ.Economy
             if (kind == 2)
             {
                 SetChip(BountyFormula.FormatCooldown(savings.TimeRemaining));
-                SetBubble(savings.PendingPayout + " SP");
+
+                // 받기로 한 SP 가 있을 때만 말풍선을 띄운다(선택 방식에서 "지금 바로" 를 골랐다면 받을 것이 없다).
+                bool hasPending = savings.PendingPayout > 0;
+                if (bubble.activeSelf != hasPending)
+                    bubble.SetActive(hasPending);
+                if (hasPending)
+                    SetBubble(savings.PendingPayout + " SP");
             }
             else if (kind == 3)
             {
@@ -171,10 +177,10 @@ namespace OJ.Economy
             else
             {
                 SetChip("READY");
-                SetBubble("이자 받기");
+                SetBubble(savings.Mode == SavingsMode.Tiered ? "이자 받기" : "선택!");
             }
 
-            SetName("통장");
+            SetName("저금통");
         }
 
         private void ApplyKind(int kind)
@@ -246,7 +252,7 @@ namespace OJ.Economy
 
         private void OnClick()
         {
-            if (Savings != null && Savings.CanDepositAny)
+            if (Savings != null && Savings.CanStart)
                 GameContainer.UI?.Show<UISavingsSelectDialog>();
         }
 
@@ -427,7 +433,7 @@ namespace OJ.Economy
                 TextAlignmentOptions.Center, new Color(0x86 / 255f, 0x57 / 255f, 0x31 / 255f, 1f), font, plainMaterial);
             UIBountyUIFactory.Stretch(dialog.bubbleText.rectTransform);
 
-            dialog.nameText = UIBountyUIFactory.CreateText("Name", view.transform, "통장", 30f,
+            dialog.nameText = UIBountyUIFactory.CreateText("Name", view.transform, "저금통", 28f,
                 TextAlignmentOptions.Center, Color.white, font);
             UIBountyUIFactory.SetRect(dialog.nameText.rectTransform, new Vector2(Size.x + 20f, 34f), new Vector2(0f, -30f));
 

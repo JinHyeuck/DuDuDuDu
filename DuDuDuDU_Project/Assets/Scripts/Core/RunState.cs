@@ -104,19 +104,28 @@ namespace OJ.Core
         public float BountyCooldown { get; set; }
 
         /// <summary>
-        /// 지금 맡겨 둔 통장 선택지 번호(<see cref="SavingsRules"/>). 돌려줄 금액이 여기서 나온다.
+        /// 지금 맡겨 둔 저금통 선택지 번호(3단 방식)(<see cref="SavingsRules"/>). 돌려줄 금액이 여기서 나온다.
         /// 맡긴 것이 없으면(<see cref="SavingsTimer"/> 가 0) 뜻이 없다.
         /// </summary>
         public int SavingsOption { get; set; }
 
-        /// <summary>지금 통장에 맡겨 둔 금액(SP). 0 이면 맡긴 것이 없다.</summary>
+        /// <summary>지금 저금통에 맡겨 둔 금액(SP, 3단 방식). 0 이면 맡긴 것이 없다.</summary>
         public int SavingsDeposit { get; set; }
 
         /// <summary>
-        /// 통장이 돌려주기까지 남은 시간(초). 0 이면 맡긴 것이 없다(Ready).
+        /// 저금통이 다음 선택/지급까지 남은 시간(초). 0 이면 Ready. 3단·선택 두 방식이 같이 쓴다.
         /// 되돌리기 스냅샷에 들어간다 — SP 와 같이 돌아가야 "맡긴 SP 가 사라지는" 일이 없다.
         /// </summary>
         public float SavingsTimer { get; set; }
+
+        /// <summary>선택 방식: 지금 떠 있는 "지금 바로" 값(SP). 0 이면 아직 안 굴렸다. 고르기 전까지 고정이다.</summary>
+        public int SavingsInstant { get; set; }
+
+        /// <summary>선택 방식: 지금 떠 있는 "45초 뒤" 값(SP). 0 이면 아직 안 굴렸다.</summary>
+        public int SavingsDelayed { get; set; }
+
+        /// <summary>선택 방식: 45초 뒤에 받기로 한 SP. 0 이면 받을 것이 없다.</summary>
+        public int SavingsPending { get; set; }
 
         /// <summary>
         /// 판을 시작한다. <b>모든 런 범위 필드를 여기서 한 번에</b> 세운다 —
@@ -143,6 +152,9 @@ namespace OJ.Core
             SavingsOption = 0;
             SavingsDeposit = 0;
             SavingsTimer = 0f;
+            SavingsInstant = 0;
+            SavingsDelayed = 0;
+            SavingsPending = 0;
         }
 
         /// <summary>
@@ -173,6 +185,9 @@ namespace OJ.Core
             public int SavingsOption;
             public int SavingsDeposit;
             public float SavingsTimer;
+            public int SavingsInstant;
+            public int SavingsDelayed;
+            public int SavingsPending;
         }
 
         /// <summary>
@@ -205,6 +220,9 @@ namespace OJ.Core
                 SavingsOption = SavingsOption,
                 SavingsDeposit = SavingsDeposit,
                 SavingsTimer = SavingsTimer,
+                SavingsInstant = SavingsInstant,
+                SavingsDelayed = SavingsDelayed,
+                SavingsPending = SavingsPending,
             };
         }
 
@@ -229,6 +247,9 @@ namespace OJ.Core
             SavingsOption = snapshot.SavingsOption;
             SavingsDeposit = snapshot.SavingsDeposit;
             SavingsTimer = snapshot.SavingsTimer;
+            SavingsInstant = snapshot.SavingsInstant;
+            SavingsDelayed = snapshot.SavingsDelayed;
+            SavingsPending = snapshot.SavingsPending;
         }
     }
 }

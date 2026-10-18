@@ -54,7 +54,7 @@ namespace OJ.Hunting
         /// </summary>
         public static bool LegacySetupFlow;
 
-        /// <summary>통장(SP 를 맡기고 45초 뒤 +10%). 실시간 판에서만 쓰인다.</summary>
+        /// <summary>저금통(지금 바로 받거나 45초 뒤 더 받기). 실시간 판에서만 쓰인다.</summary>
         public OJ.Economy.SavingsManager Savings { get; private set; }
 
         /// <summary>행운 주사위(SP → 마석 1~10개). 실시간 판에서만 쓰인다.</summary>
@@ -212,7 +212,7 @@ namespace OJ.Hunting
             {
                 // 튜토리얼 판에서는 유물 선제 배치를 하지 않는다. 대본이 첫 소환 여섯 칸을
                 // 정해 두었는데, 유물이 먼저 그 칸을 채우면 머지 단계의 구멍이 엉뚱한 다이스를 연다.
-                // 삭제 영역은 실시간 판과 같이 걷는다. 확률업·통장·행운 주사위·현상금 버튼은
+                // 삭제 영역은 실시간 판과 같이 걷는다. 확률업·저금통·행운 주사위·현상금 버튼은
                 // 디렉터가 가르칠 차례에 하나씩 연다(처음부터 다 보이면 무엇부터 눌러야 할지 모른다).
                 HideDeleteArea();
                 new TutorialDirector(battle).RunAsync(this.GetCancellationTokenOnDestroy()).Forget();

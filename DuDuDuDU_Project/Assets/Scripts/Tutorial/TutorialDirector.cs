@@ -127,7 +127,7 @@ namespace OJ.Tutorial
             // 몬스터가 내려오는 것이 보이도록 잠깐 둔다. 가르치는 동안에는 게임을 세워 둔다.
             await DelaySeconds(2f);
 
-            // 1웨이브: 자리 구매 · 확률업 · 통장 ───────────────────────
+            // 1웨이브: 자리 구매 · 확률업 · 저금통 ───────────────────────
             await RunSlotUnlockAsync();
             await RunProbabilityAsync(game, summon);
             await RunSavingsAsync(game);
@@ -250,8 +250,9 @@ namespace OJ.Tutorial
         }
 
         /// <summary>
-        /// 통장 — 버튼을 눌러 선택 창을 열고, 가장 싼 선택지를 고른다. 돌아오는 연출은 가르치는 동안이 아니라
-        /// 웨이브 중에 본다.
+        /// 저금통 — 버튼을 눌러 선택 창을 연다. <b>현재 방식</b>(<see cref="SavingsMode"/>)을 따른다:
+        /// 선택 방식은 비용이 없으니 "지금 바로 / 45초 뒤" 둘을 같이 짚고, 3단 방식은 SP 를 채워 주고 첫 카드를 짚는다.
+        /// 돌아오는 연출은 가르치는 동안이 아니라 웨이브 중에 본다.
         /// </summary>
         private async UniTask RunSavingsAsync(GameManager game)
         {
@@ -259,18 +260,39 @@ namespace OJ.Tutorial
             GameContainer.UI?.Show<UISavingsButton>();
             UISavingsButton button = GameContainer.UI?.Get<UISavingsButton>();
             SavingsManager savings = game.Savings;
+            bool tiered = savings.Mode == SavingsMode.Tiered;
 
-            EnsureSp(SavingsRules.Deposit(0));
+            if (tiered)
+                EnsureSp(SavingsRules.Deposit(0));
+
             FreezeGame();
 
-            Guide(RectOf(button), "통장에 SP를 맡기면 시간이 지난 뒤\n더 많이 돌려받아요!", dim: true);
+            Guide(RectOf(button),
+                tiered
+                    ? "저금통에 SP를 맡기면 시간이 지난 뒤\n더 많이 돌려받아요!"
+                    : "저금통에서 SP를 받을 수 있어요!\n눌러서 열어 봐요.",
+                dim: true);
             await Until(() => UISavingsSelectDialog.IsOpen);
 
             Enter(TutorialStep.SavingsSelect);
             UISavingsSelectDialog dialog = GameContainer.UI?.Get<UISavingsSelectDialog>();
-            Guide(dialog != null ? dialog.GetCardRect(0) : null,
-                "맡길 만큼 골라요.\n많이 맡길수록, 오래 기다릴수록 이득이 커져요!",
-                dim: true);
+            if (tiered)
+            {
+                Guide(dialog != null ? dialog.GetCardRect(0) : null,
+                    "맡길 만큼 골라요.\n많이 맡길수록, 오래 기다릴수록 이득이 커져요!",
+                    dim: true);
+            }
+            else
+            {
+                // 두 버튼을 모두 구멍으로 연다(합집합). 어느 쪽을 골라도 된다 — 45초 뒤에 다시 고른다.
+                overlay.SetFinger(null);
+                overlay.SetDim(dialog != null ? dialog.GetChoiceRect(true) : null,
+                               dialog != null ? dialog.GetChoiceRect(false) : null);
+                overlay.SetTalk("지금 바로 받을지, " + (int)SavingsRules.ChoiceCooldownSeconds + "초 뒤에 더 받을지 골라요!\n"
+                                + "어느 쪽이든 " + (int)SavingsRules.ChoiceCooldownSeconds + "초 뒤에 다시 고를 수 있어요.",
+                    where: UITutorialOverlay.TalkPlacement.Top);
+            }
+
             await Until(() => savings.State == SavingsState.Saving);
 
             overlay.ClearAll();
