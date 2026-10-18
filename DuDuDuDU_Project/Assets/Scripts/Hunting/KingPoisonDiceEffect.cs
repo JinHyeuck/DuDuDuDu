@@ -29,7 +29,7 @@ namespace OJ.Hunting
                 return;
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            target.ApplyPoison(DiceMetaDataProvider.GetPoisonDuration(DiceType), 1f);
+            target.ApplyPoison(DiceMetaDataProvider.GetPoisonDuration(DiceType), 1f, DiceType);
             target.ApplySlow(DiceMetaDataProvider.GetSlowDuration(DiceType, level));
             if (level >= 9 && UnityEngine.Random.value <= 0.3f && attackContent != null)
             {
@@ -41,7 +41,7 @@ namespace OJ.Hunting
                     null);
 
                 if (nearby.Count > 0 && nearby[0] != null && nearby[0] != target)
-                    nearby[0].ApplyPoison(DiceMetaDataProvider.GetPoisonDuration(DiceType), 1f);
+                    nearby[0].ApplyPoison(DiceMetaDataProvider.GetPoisonDuration(DiceType), 1f, DiceType);
             }
         }
     }

@@ -247,7 +247,7 @@ namespace OJ.Dev
         {
             for (int i = 0; i < 24; i++)
             {
-                if (battle.Board.GetDice(i) == null)
+                if (battle.Board.GetDice(i) == null && battle.Board.IsSlotUnlocked(i))
                     return i;
             }
 
@@ -539,6 +539,24 @@ namespace OJ.Dev
 
         private static void BuildMode(DevCheatPanel panel, Transform root)
         {
+            // 셋은 독립이다. 어떤 조합으로 켜도 각자의 규칙만 걸린다.
+            // 값은 PlayerPrefs 에 남아 다음 판(과 도메인 리로드)에도 그대로다.
+            DevCheatUI.CreateSectionTitle(root, "테스트 모드 (다음 판부터 적용)");
+            AddModeToggle(panel, root, "ContinuousWave", "연속 웨이브",
+                TestModeFlags.ContinuousWave, v => TestModeFlags.ContinuousWave = v);
+            AddModeToggle(panel, root, "SlotUnlock", "자리 해금",
+                TestModeFlags.SlotUnlock, v => TestModeFlags.SlotUnlock = v);
+            AddModeToggle(panel, root, "FireRateUp", "공속 UP 버튼",
+                TestModeFlags.FireRateUp, v => TestModeFlags.FireRateUp = v);
+            AddModeToggle(panel, root, "CardMode", "조합식 카드",
+                TestModeFlags.CardMode, v => TestModeFlags.CardMode = v);
+            DevCheatUI.CreateHelpText(root,
+                "연속 웨이브: 웨이브가 끝나면 바로 다음 웨이브, 웨이브 중에도 소환·머지·진화·강화.\n" +
+                "자리 해금: 첫 줄만 열리고 나머지는 SP 로 해금(50, 55, 60 ...).\n" +
+                "공속 UP: 삭제 버튼 자리에 버튼(200 / 400 / 600 SP, 0.6→0.4→0.2→0.1).\n" +
+                "조합식 카드: 소환 버튼 대신 카드 3장(지급 2SP · 머지 4SP · 레어 마석10 · 신화 마석20), 리롤 1SP, 잠금.\n" +
+                "튜토리얼·탑에는 걸리지 않는다. 자리 해금·공속 UP·조합식 카드는 전투에 들어갈 때 읽는다.");
+
             DevCheatUI.CreateSectionTitle(root, "씬 이동");
 
             RectTransform sceneRow = DevCheatUI.CreateRow(root);
@@ -549,14 +567,52 @@ namespace OJ.Dev
             DevCheatUI.CreateButton("Battle", sceneRow, "전투로", DevCheatUI.ButtonColor,
                 () => SceneFlowManager.LoadBattle());
 
+            // 타이틀이 하는 것과 같은 경로(예약 → 전투)를 탄다. 완료 플래그는 건드리지 않는다 —
+            // 마친 세이브에서도 다시 보기만 한다. 단축키 Shift+F3 과 같다.
+            DevCheatUI.CreateSectionTitle(root, "튜토리얼");
+            OJ.Tutorial.TutorialProgressManager tutorial = OJ.Tutorial.TutorialProgressManager.Instance;
+            DevCheatUI.CreateHelpText(root,
+                tutorial == null ? "TutorialProgressManager 가 없다."
+                    : "인게임 첫 튜토리얼 " + (tutorial.IsInGameCompleted ? "마침" : "안 함"));
+            DevCheatUI.CreateButton("Tutorial", root, "인게임 튜토리얼 시작", DevCheatUI.AccentColor, () =>
+            {
+                OJ.Tutorial.TutorialProgressManager.Instance?.RequestInGameRun();
+                SceneFlowManager.LoadBattle();
+            });
+
+            // 열린 것들의 해금 연출·가이드를 다음 로비 진입에 다시 본다(Docs/ContentUnlock.md).
+            DevCheatUI.CreateSectionTitle(root, "컨텐츠 해금");
+            OJ.ContentUnlock.ContentUnlockManager unlocks = OJ.ContentUnlock.ContentUnlockManager.Instance;
+            DevCheatUI.CreateHelpText(root,
+                unlocks == null ? "ContentUnlockManager 가 없다."
+                    : "마지막 클리어 " + unlocks.LastClearedStage + " · 남은 연출 " + unlocks.GetVisitQueue().Count + "개(이번 진입분)");
+            DevCheatUI.CreateButton("ResetUnlockAnnouncements", root, "해금 연출 기록 초기화 → 로비", DevCheatUI.AccentColor, () =>
+            {
+                OJ.ContentUnlock.ContentUnlockManager.Instance?.ResetAnnouncements();
+                SceneFlowManager.LoadLobby();
+            });
+
             DevCheatUI.CreateSectionTitle(root, "세이브");
             DevCheatUI.CreateButton("Save", root, "즉시 저장", DevCheatUI.ButtonColor,
                 () => GameContainer.SaveService?.SaveAll());
 
             DevCheatUI.CreateHelpText(root,
-                "아래는 되돌릴 수 없다. 지운 뒤에는 매니저가 들고 있는 값이 다시 저장되지 않도록 바로 타이틀로 갈 것.");
+                "아래는 되돌릴 수 없다. 지우면 이 세션의 저장을 막고 처음부터 다시 시작한다 " +
+                "(에디터: 타이틀부터 다시 플레이, 기기: 앱 종료 후 다시 켤 것).");
             DevCheatUI.CreateButton("WipeSave", root, "세이브 전부 지우기", DevCheatUI.DangerColor,
                 () => SaveResetCheat.WipeAll());
+        }
+
+        private static void AddModeToggle(
+            DevCheatPanel panel, Transform root, string name, string title, bool on, Action<bool> set)
+        {
+            DevCheatUI.CreateToggleButton(
+                name, root, title + (on ? " : 켬" : " : 끔"), on,
+                () =>
+                {
+                    set(!on);
+                    panel.Rebuild();
+                });
         }
 
         // ── 공통 ───────────────────────────────────────────────────────

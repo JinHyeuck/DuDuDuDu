@@ -1,9 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using TMPro;
 using VContainer;
 using VContainer.Unity;
+using OJ.Core;
 using OJ.DI;
+using OJ.Dev;
 using OJ.Relic;
 
 namespace OJ.Dice
@@ -33,9 +36,30 @@ namespace OJ.Dice
 
         public int ShotIndex = 0;
 
+        // ── 자리 해금 테스트 모드 ───────────────────────────────────
+        // 꺼져 있으면 아래 값은 전부 쓰이지 않고 IsSlotUnlocked 는 언제나 true 다.
+        private bool slotLockActive;
+        private int freeSlotCount;
+        private int purchasedSlotCount;
+        private bool[] slotUnlocked;
+        private GameObject[] slotLockOverlays;
+        private TMP_Text[] slotLockLabels;
+
+        /// <summary>자리 해금 모드가 이 판에 걸려 있는가.</summary>
+        public bool IsSlotLockActive => slotLockActive;
+
+        /// <summary>다음 자리를 열 때 드는 SP.</summary>
+        public int NextSlotUnlockCost => TestModeRules.SlotUnlockCost(purchasedSlotCount);
+
         private void Start()
         {
             CreateBoard();
+        }
+
+        private void OnDestroy()
+        {
+            if (battle != null && battle.BattlePoints != null)
+                battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
         }
 
         private void CreateBoard()
@@ -52,6 +76,8 @@ namespace OJ.Dice
                 slots.Add(slot);
             }
 
+            SetUpSlotLocks(total);
+
             // 시작 주사위(유물 '선제 배치')는 여기서 놓지 않는다.
             //
             // 놓으려면 두 가지가 이미 끝나 있어야 한다 — 보드가 만들어졌을 것,
@@ -65,9 +91,23 @@ namespace OJ.Dice
             // <c>GameManager.CoApplyStageStartRelics</c> 한 곳으로 모았다.
         }
 
-        public void SpawnDice(DiceType type, int star, int slotIndex)
+        /// <summary>
+        /// 칸에 다이스를 놓는다.
+        ///
+        /// <paramref name="playSummonFx"/> 는 <b>"방금 생겼다" 와 "원래 있던 것을 다시
+        /// 놓는다" 를 가른다.</b> 되돌리기(<c>WaveRewindManager.RestoreBoard</c>)와 탑 편성
+        /// 배치는 보드를 통째로 다시 깔기 때문에, 켜 두면 스물네 칸이 한꺼번에 튀어올라
+        /// 소환으로 보인다. 소환·선물·쌍둥이·선제배치는 전부 기본값으로 둔다.
+        /// </summary>
+        public void SpawnDice(DiceType type, int star, int slotIndex, bool playSummonFx = true)
         {
             if (diceMap[slotIndex] != null) return;
+
+            if (!IsSlotUnlocked(slotIndex))
+            {
+                Debug.LogWarning("[보드] 잠긴 칸에는 다이스를 놓을 수 없다: " + slotIndex);
+                return;
+            }
 
             // 이 한 줄이 이 트랜치의 핵심이다. UIDice 는 창구를 스물 몇 곳 쓰는데
             // 전부 런타임에 찍혀 나오므로, 여기서 리졸버를 안 태우면 그 필드들이
@@ -75,6 +115,9 @@ namespace OJ.Dice
             var dice = resolver.Instantiate(dicePrefab, slots[slotIndex].transform);
             dice.Init(type, star, slotIndex);
             diceMap[slotIndex] = dice;
+
+            if (playSummonFx)
+                DiceFx.PlaySummon(dice.transform);
         }
 
         public void ClearDice(int slotIndex)
@@ -136,6 +179,15 @@ namespace OJ.Dice
 
         public UIDice GetDice(int slotIndex) => diceMap[slotIndex];
 
+        /// <summary>칸의 사각형. 범위 밖이거나 아직 칸을 안 만들었으면 null. 튜토리얼이 그 칸만 열어 둔다.</summary>
+        public RectTransform GetSlotRect(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= slots.Count || slots[slotIndex] == null)
+                return null;
+
+            return slots[slotIndex].transform as RectTransform;
+        }
+
         public int GetSlotIndexFromObject(GameObject hitObj)
         {
             if (hitObj == null)
@@ -170,6 +222,9 @@ namespace OJ.Dice
             if (diceMap[fromSlotIndex] != dice)
                 return false;
 
+            if (!IsSlotUnlocked(toSlotIndex))
+                return false;
+
             if (fromSlotIndex == toSlotIndex)
             {
                 dice.transform.SetParent(slots[toSlotIndex].transform);
@@ -189,6 +244,214 @@ namespace OJ.Dice
             dice.transform.localPosition = Vector3.zero;
             dice.transform.localScale = Vector3.one;
             return true;
+        }
+
+        // ── 카드 상점이 쓰는 조회 ────────────────────────────────────
+
+        /// <summary>보드에 (type, star) 다이스가 몇 개 있는가.</summary>
+        public int CountDice(DiceType type, int star)
+        {
+            if (diceMap == null)
+                return 0;
+
+            int count = 0;
+            for (int i = 0; i < diceMap.Length; i++)
+            {
+                UIDice dice = diceMap[i];
+                if (dice != null && dice.Type == type && dice.Star == star)
+                    count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>(type, star) 다이스 하나. <paramref name="exclude"/> 는 건너뛴다. 없으면 null.</summary>
+        public UIDice FindDice(DiceType type, int star, UIDice exclude = null)
+        {
+            if (diceMap == null)
+                return null;
+
+            for (int i = 0; i < diceMap.Length; i++)
+            {
+                UIDice dice = diceMap[i];
+                if (dice != null && dice != exclude && dice.Type == type && dice.Star == star)
+                    return dice;
+            }
+
+            return null;
+        }
+
+        /// <summary>열려 있는 빈 칸이 하나라도 있는가. 카드가 지금 살 수 있는지 매 프레임 묻는 용도다.</summary>
+        public bool HasEmptyUnlockedSlot()
+        {
+            if (diceMap == null)
+                return false;
+
+            for (int i = 0; i < diceMap.Length; i++)
+            {
+                if (diceMap[i] == null && IsSlotUnlocked(i))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>열려 있는 빈 칸 중 아무 칸. 없으면 -1.</summary>
+        public int GetRandomEmptyUnlockedSlot()
+        {
+            if (diceMap == null)
+                return -1;
+
+            var empty = new List<int>();
+            for (int i = 0; i < diceMap.Length; i++)
+            {
+                if (diceMap[i] == null && IsSlotUnlocked(i))
+                    empty.Add(i);
+            }
+
+            return empty.Count > 0 ? empty[Random.Range(0, empty.Count)] : -1;
+        }
+
+        // ── 자리 해금 ──────────────────────────────────────────────
+
+        /// <summary>
+        /// 칸이 열려 있는가. <b>모드가 꺼져 있으면 언제나 true</b> 라서, 소환·유물·치트가
+        /// 모드를 따로 알 필요 없이 이 함수만 거치면 된다.
+        /// </summary>
+        public bool IsSlotUnlocked(int slotIndex)
+        {
+            if (!slotLockActive)
+                return true;
+
+            if (slotIndex < 0 || slotIndex >= slotUnlocked.Length)
+                return false;
+
+            return slotIndex < freeSlotCount || slotUnlocked[slotIndex];
+        }
+
+        /// <summary>
+        /// 잠긴 칸을 SP 로 연다. 비용은 어느 칸이냐가 아니라 <b>몇 번째 구매냐</b>로 정해진다
+        /// (50, 55, 60 ...). 관리 단계(연속 웨이브 중에는 웨이브에서도)에서만 된다.
+        /// </summary>
+        public bool TryUnlockSlot(int slotIndex)
+        {
+            if (!slotLockActive || IsSlotUnlocked(slotIndex))
+                return false;
+
+            if (battle.Game == null || !battle.Game.CanManageBoard)
+                return false;
+
+            int cost = NextSlotUnlockCost;
+            if (battle.BattlePoints == null
+                || !battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, cost))
+            {
+                Debug.Log("SP 부족! 자리 해금에 " + cost + " 필요");
+                return false;
+            }
+
+            slotUnlocked[slotIndex] = true;
+            purchasedSlotCount++;
+
+            if (slotLockOverlays[slotIndex] != null)
+                Destroy(slotLockOverlays[slotIndex]);
+            slotLockOverlays[slotIndex] = null;
+            slotLockLabels[slotIndex] = null;
+
+            RefreshSlotLockLabels();
+            return true;
+        }
+
+        private void SetUpSlotLocks(int total)
+        {
+            slotLockActive = TestModeFlags.SlotUnlock
+                && !battle.Tutorial.IsActive
+                && !battle.Tower.IsActive;
+
+            purchasedSlotCount = 0;
+            if (!slotLockActive)
+                return;
+
+            // 첫 줄은 열려 있다. 한 줄의 칸 수는 그리드 설정(고정 열 수)이 정본이다.
+            freeSlotCount = grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount
+                ? grid.constraintCount
+                : cols;
+
+            slotUnlocked = new bool[total];
+            slotLockOverlays = new GameObject[total];
+            slotLockLabels = new TMP_Text[total];
+
+            TMP_FontAsset font = battle.Summon != null && battle.Summon.spText != null
+                ? battle.Summon.spText.font
+                : null;
+
+            for (int i = freeSlotCount; i < total; i++)
+                CreateLockOverlay(i, font);
+
+            RefreshSlotLockLabels();
+
+            battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
+            battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
+        }
+
+        private void CreateLockOverlay(int slotIndex, TMP_FontAsset font)
+        {
+            var overlay = new GameObject("SlotLock", typeof(RectTransform), typeof(Image), typeof(Button));
+            var rect = (RectTransform)overlay.transform;
+            rect.SetParent(slots[slotIndex].transform, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var image = overlay.GetComponent<Image>();
+            image.color = new Color(0f, 0f, 0f, 0.72f);
+
+            var labelObject = new GameObject("Cost", typeof(RectTransform), typeof(TextMeshProUGUI));
+            var labelRect = (RectTransform)labelObject.transform;
+            labelRect.SetParent(rect, false);
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            var label = labelObject.GetComponent<TextMeshProUGUI>();
+            if (font != null)
+                label.font = font;
+            label.alignment = TextAlignmentOptions.Center;
+            label.fontSize = 30f;
+            label.raycastTarget = false;
+
+            int captured = slotIndex;
+            overlay.GetComponent<Button>().onClick.AddListener(() => TryUnlockSlot(captured));
+
+            slotLockOverlays[slotIndex] = overlay;
+            slotLockLabels[slotIndex] = label;
+        }
+
+        private void OnBattlePointChanged(BattlePointType type, int value)
+        {
+            if (type == BattlePointType.SummonPoint)
+                RefreshSlotLockLabels();
+        }
+
+        /// <summary>잠긴 칸마다 다음 해금 비용을 적는다. SP 가 모자라면 붉게 보인다.</summary>
+        private void RefreshSlotLockLabels()
+        {
+            if (!slotLockActive)
+                return;
+
+            int cost = NextSlotUnlockCost;
+            int sp = battle.BattlePoints != null ? battle.BattlePoints.Get(BattlePointType.SummonPoint) : 0;
+            Color color = sp >= cost ? Color.white : new Color(1f, 0.35f, 0.35f);
+
+            for (int i = 0; i < slotLockLabels.Length; i++)
+            {
+                if (slotLockLabels[i] == null)
+                    continue;
+
+                slotLockLabels[i].text = cost + "\nSP";
+                slotLockLabels[i].color = color;
+            }
         }
 
         public bool TrySwapDice(UIDice a, UIDice b)

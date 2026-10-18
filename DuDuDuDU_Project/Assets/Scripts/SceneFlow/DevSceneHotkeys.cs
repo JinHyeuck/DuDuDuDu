@@ -14,6 +14,7 @@ using OJ.Relic;
 using OJ.Save;
 using OJ.Stage;
 using OJ.StageReward;
+using OJ.Tutorial;
 using OJ.Utils;
 
 namespace OJ.SceneFlow
@@ -26,7 +27,7 @@ namespace OJ.SceneFlow
     /// 돌아갈 방법이 없어</b> 플레이를 멈췄다 다시 켜야 한다. 리팩토링 중에는 그 왕복이
     /// 잦으므로 씬 전환을 상태와 무관하게 뚫어 둔다.
     ///
-    ///   F1 / F2 / F3   Title / Lobby / Battle
+    ///   F1 / F2 / F3   Title / Lobby / Battle. Shift+F3 은 인게임 튜토리얼 판(마친 세이브에서도)
     ///   F4             시간 2시간 당기기 (고기 1세트 · 자동전투 2회). Shift 면 24시간
     ///   F5             현재 씬 다시 로드
     ///   F6             배선 진단 덤프 (StaticResource 와 데이터베이스 6종)
@@ -57,7 +58,13 @@ namespace OJ.SceneFlow
             else if (Input.GetKeyDown(KeyCode.F2))
                 SceneFlowManager.LoadLobby();
             else if (Input.GetKeyDown(KeyCode.F3))
+            {
+                // Shift 면 튜토리얼 판으로 연다. 완료 플래그는 건드리지 않는다 — 다시 보기만 한다.
+                if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                    TutorialProgressManager.Instance?.RequestInGameRun();
+
                 SceneFlowManager.LoadBattle();
+            }
             else if (Input.GetKeyDown(KeyCode.F4))
                 AdvanceIdleTime();
             else if (Input.GetKeyDown(KeyCode.F5))

@@ -24,8 +24,21 @@ namespace OJ.Hunting
         [SerializeField] private Transform failSprite;
         private readonly List<UIRewardElement> rewardElements = new List<UIRewardElement>();
 
+        /// <summary>지금 보이는 보상 칸 수. <see cref="AppendItemReward"/> 가 그 다음 칸에 붙인다.</summary>
+        private int shownRewardCount;
+
         protected override void OnLoad()
         {
+            // 큰 숫자 칸은 원래 한두 자리 숫자 크기다. "15/20" 처럼 길어지면 줄이 깨지므로
+            // 칸을 넘을 때만 글자를 줄인다. 상한은 프리팹에 정해 둔 크기 그대로다.
+            if (mainValueText != null)
+            {
+                mainValueText.textWrappingMode = TextWrappingModes.NoWrap;
+                mainValueText.fontSizeMax = mainValueText.fontSize;
+                mainValueText.fontSizeMin = mainValueText.fontSize * 0.4f;
+                mainValueText.enableAutoSizing = true;
+            }
+
             if (rewardRoot == null && rewardElementTemplate != null)
                 rewardRoot = rewardElementTemplate.transform.parent as RectTransform;
 
@@ -54,7 +67,17 @@ namespace OJ.Hunting
             callback?.Invoke();
         }
 
-        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int bestStageIndex, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
+        /// <summary>
+        /// 결과를 채우고 연다.
+        ///
+        /// <b>아래 칸은 "그 스테이지의 최고 웨이브" 다.</b> 예전에는 "Best Stage" 로 지금까지 열린
+        /// 가장 높은 스테이지를 보였는데, 방금 한 판과 상관없는 숫자라 무엇을 뜻하는지 애매했다.
+        /// 이번 판의 웨이브(큰 숫자)와 나란히 놓여야 "이번에 얼마나 갔고, 이 스테이지 최고는 얼마인가" 로 읽힌다.
+        /// </summary>
+        /// <param name="reachedWaveCount">이번 판에 깬 웨이브 수.</param>
+        /// <param name="totalWaves">이 스테이지의 전체 웨이브 수. 큰 숫자 칸에 "깬 수/전체" 로 나온다.</param>
+        /// <param name="bestWave">이 스테이지에서 가장 멀리 간 웨이브. 이번 판을 포함한다.</param>
+        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int totalWaves, int bestWave, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
         {
             closeAction = onClose;
 
@@ -73,13 +96,14 @@ namespace OJ.Hunting
             }
 
             if (mainValueText != null)
-                mainValueText.SetText("{0}", Mathf.Max(0, reachedWaveCount));
+                // 이번 판 웨이브가 주인공이다. "/전체" 는 작고 회색으로 붙여 기준만 알린다.
+                mainValueText.SetText("{0}<size=55%><color=#A6A6A6>/{1}</color></size>", Mathf.Max(0, reachedWaveCount), Mathf.Max(1, totalWaves));
 
             if (bestStageLabelText != null)
-                bestStageLabelText.SetText("Best Stage");
+                bestStageLabelText.SetText("최고 기록");
 
             if (bestStageValueText != null)
-                bestStageValueText.SetText("{0}", Mathf.Max(1, bestStageIndex));
+                bestStageValueText.SetText("Wave {0}", Mathf.Max(Mathf.Max(0, reachedWaveCount), bestWave));
 
             BindRewards(rewards);
             Enter();
@@ -89,6 +113,7 @@ namespace OJ.Hunting
         private void BindRewards(IReadOnlyList<PointRewardEntry> rewards)
         {
             List<PointRewardEntry> mergedRewards = PointRewardUtility.MergeRewards(rewards);
+            shownRewardCount = mergedRewards.Count;
 
             Debug.Log(BuildRewardLog(mergedRewards));
 
@@ -108,6 +133,43 @@ namespace OJ.Hunting
                 PointRewardEntry reward = mergedRewards[i];
                 rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.PointType), reward.Amount);
             }
+        }
+
+        /// <summary>
+        /// 스테이지 이름 칸("Stage N")을 다른 글자로 바꾼다. <see cref="Open"/> 뒤에 부른다.
+        /// 스테이지가 아닌 판(튜토리얼)이 같은 결과창을 쓸 때 쓴다.
+        /// </summary>
+        public void SetStageLabel(string label)
+        {
+            if (stageLabelText == null)
+                return;
+
+            foreach (var text in stageLabelText)
+            {
+                if (text != null)
+                    text.SetText(label);
+            }
+        }
+
+        /// <summary>
+        /// 재화가 아닌 보상(다이스 등)을 한 칸 더 그린다. <see cref="Open"/> 뒤에 부른다.
+        ///
+        /// <b>왜 따로인가.</b> 재화 보상은 <c>PointRewardEntry</c> 로 오고 아이콘도 재화 표에서 찾는다.
+        /// 다이스는 그 표에 없어서 같은 목록에 넣을 수 없다. 칸 모양은 같은 것을 쓴다.
+        /// </summary>
+        public void AppendItemReward(Sprite icon, int amount)
+        {
+            EnsureRewardElements(shownRewardCount + 1);
+            if (shownRewardCount >= rewardElements.Count)
+                return;
+
+            UIRewardElement element = rewardElements[shownRewardCount];
+            if (element == null)
+                return;
+
+            element.gameObject.SetActive(true);
+            element.Bind(icon, amount);
+            shownRewardCount++;
         }
 
         private string BuildRewardLog(IReadOnlyList<PointRewardEntry> rewards)

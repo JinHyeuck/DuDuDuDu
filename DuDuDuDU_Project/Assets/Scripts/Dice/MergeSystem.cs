@@ -40,7 +40,7 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return false;
 
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
                 return false;
 
             if (from == null || to == null)
@@ -60,13 +60,21 @@ namespace OJ.Dice
             int fromStar = from.Star;
             DiceType toType = to.Type;
             int toStar = to.Star;
-            DiceType mergedType = GetRandomMergedType(fromType);
+            // 튜토리얼 대본이 정해 둔 결과가 있으면 그것이다(노멀 둘 → 번개). 한 번 쓰면 사라진다.
+            DiceType mergedType = battle.Tutorial.TryTakeForcedMergeType(out DiceType forced)
+                ? forced
+                : GetRandomMergedType(fromType);
             battle.DiceStars.OnDiceRemove(fromType, fromStar);
             battle.DiceStars.OnDiceRemove(toType, toStar);
 
             int newStar = Mathf.Min(MaxStar, to.Star + 1);
 
             to.Init(mergedType, newStar, to.SlotIndex);
+
+            // 결과물 속성 색의 먼지가 터진다. 색을 <b>결과</b>에서 가져오는 것이 요점이다 —
+            // 노말 둘이 불이 되는 판이 있으므로(GetRandomMergedType) 재료 색으로 뿌리면
+            // 무엇이 나왔는지를 가리는 연출이 된다.
+            DiceFx.PlayMerge(to.transform as RectTransform, DiceMetaDataProvider.GetColor(mergedType));
 
             battle.DiceStars.OnDiceSpawn(mergedType, newStar);
             // RunHistoryManager 는 루트에 사는 별개 서비스라 ?. 를 그대로 둔다.
@@ -82,7 +90,9 @@ namespace OJ.Dice
                 battle.Game.CurrentWaveIndex);
 
             Destroy(from.gameObject);
-            RelicManager.Instance?.ApplyMergeInsurance();
+            // 튜토리얼 판에서는 유물이 끼지 않는다(UIDiceSummonSystem 의 같은 판단).
+            if (!battle.Tutorial.IsActive)
+                RelicManager.Instance?.ApplyMergeInsurance();
 
             // 머지만 센다. 진화(TryEvolve)·교환(TryExchange)은 같은 파일에 있지만
             // 기획의 "다이스 머지 n회" 가 가리키는 행동이 아니다.
@@ -122,6 +132,119 @@ namespace OJ.Dice
             return candidates[Random.Range(0, candidates.Count)];
         }
 
+        // ── 카드 구매 ────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// 상점 카드를 산다. <b>재료·빈 칸을 전부 확인한 뒤에야 재화를 깎는다</b> —
+        /// <see cref="TryEvolve"/> 와 같은 순서 규칙이다. 내고 나서 "놓을 곳이 없다" 가 되는 경로는 없다.
+        ///
+        /// 카드는 뽑힌 뒤 보드가 바뀌었을 수 있어(재료를 옮기거나 다른 카드로 썼다) 여기서 다시 센다.
+        /// </summary>
+        public bool TryBuyShopCard(ShopCard card)
+        {
+            if (card.IsEmpty)
+                return false;
+
+            // 탑에는 소환도 머지도 없다. 카드는 그 둘을 합친 것이라 같은 규칙을 지킨다.
+            if (battle.Tower.IsActive)
+                return false;
+
+            if (battle.Game.IsBoardLockedByWave)
+                return false;
+
+            UIBoard board = battle.Board;
+            if (board == null || battle.BattlePoints == null)
+                return false;
+
+            BattlePointType currency = card.UsesStone ? BattlePointType.EnhanceStone : BattlePointType.SummonPoint;
+            if (battle.BattlePoints.Get(currency) < card.Cost)
+                return false;
+
+            UIDice main = null;
+            UIDice sub = null;
+            int slot = -1;
+
+            switch (card.Kind)
+            {
+                case ShopCardKind.GrantDice:
+                    slot = board.GetRandomEmptyUnlockedSlot();
+                    if (slot < 0)
+                        return false;
+                    break;
+
+                case ShopCardKind.MergeDice:
+                    main = board.FindDice(card.MainType, card.MainStar);
+                    sub = main != null ? board.FindDice(card.MainType, card.MainStar, main) : null;
+                    if (main == null || sub == null)
+                        return false;
+                    break;
+
+                case ShopCardKind.CraftRare:
+                case ShopCardKind.CraftMythic:
+                    main = board.FindDice(card.MainType, card.MainStar);
+                    sub = board.FindDice(card.SubType, card.SubStar, main);
+                    if (main == null || sub == null)
+                        return false;
+
+                    // 미보유 신화·레어는 만들지 않는다 — 카드가 뽑힌 뒤에 해금이 바뀌는 일은 없지만
+                    // 규칙은 우연에 맡기지 않는다.
+                    if (!ownership.IsOwned(card.Result))
+                        return false;
+                    break;
+
+                default:
+                    return false;
+            }
+
+            if (!battle.BattlePoints.TrySpend(currency, card.Cost))
+                return false;
+
+            int wave = battle.Game.CurrentWaveIndex;
+
+            switch (card.Kind)
+            {
+                case ShopCardKind.GrantDice:
+                    battle.DiceStars.OnDiceSpawn(card.Result, card.ResultStar);
+                    board.SpawnDice(card.Result, card.ResultStar, slot);
+                    RunHistoryManager.Instance?.RecordSummon(
+                        card.Result, card.ResultStar, wave, card.Cost, battle.Summon.currentSP);
+                    break;
+
+                case ShopCardKind.MergeDice:
+                {
+                    // 보조(두 번째)를 치우고 주재료 자리에서 2성으로 올린다 — TryMerge 의 to 와 같다.
+                    DiceType type = card.MainType;
+                    battle.DiceStars.OnDiceRemove(sub.Type, sub.Star);
+                    board.ClearDice(sub.SlotIndex);
+
+                    ReplaceInPlace(main, card.Result, card.ResultStar);
+                    DiceFx.PlayMerge(main.transform as RectTransform, DiceMetaDataProvider.GetColor(card.Result));
+                    RunHistoryManager.Instance?.RecordMerge(
+                        type, card.MainStar, type, card.MainStar, card.Result, card.ResultStar, wave);
+                    MissionManager.Instance?.Notify(MissionAction.DiceMerge);
+                    break;
+                }
+
+                default:
+                {
+                    // 보조 재료를 치우고 주재료 자리에서 결과로 바꾼다 — 진화와 같은 모양이다.
+                    battle.DiceStars.OnDiceRemove(sub.Type, sub.Star);
+                    board.ClearDice(sub.SlotIndex);
+
+                    ReplaceInPlace(main, card.Result, card.ResultStar);
+                    DiceFx.PlayEvolve(main.transform as RectTransform, DiceMetaDataProvider.GetColor(card.Result));
+
+                    if (DiceEvolution.GetTier(card.Result) == DiceTier.King)
+                        RelicManager.Instance?.OnMythicCrafted(card.Result);
+
+                    RunHistoryManager.Instance?.RecordCraft(card.Result, wave);
+                    break;
+                }
+            }
+
+            return true;
+        }
+
         // ── 진화 · 교환 ──────────────────────────────────────────────────────────────
         //
         // 조합식을 대신하는 두 동작이다. 규칙(배선·비용·후보)은 DiceEvolution 이 들고,
@@ -146,7 +269,7 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return false;
 
-            if (dice == null || battle.Game.inGameState == InGameState.Wave)
+            if (dice == null || battle.Game.IsBoardLockedByWave)
                 return false;
 
             // 보는 것은 <b>대상</b>의 보유다 — Normal 을 4성까지 올려도 Tornado 가 없으면 못 간다.
@@ -167,6 +290,10 @@ namespace OJ.Dice
             const int evolvedStar = 1;
             ReplaceInPlace(dice, target, evolvedStar);
 
+            // 진화한 자리에 속성 색 번개가 내리친다. ReplaceInPlace 는 같은 오브젝트를
+            // 그대로 두므로(새로 찍지 않는다) 연출 대상이 도중에 사라지지 않는다.
+            DiceFx.PlayEvolve(dice.transform as RectTransform, DiceMetaDataProvider.GetColor(target));
+
             if (DiceEvolution.GetTier(target) == DiceTier.King)
                 RelicManager.Instance?.OnMythicCrafted(target);
 
@@ -185,7 +312,7 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return false;
 
-            if (dice == null || battle.Game.inGameState == InGameState.Wave)
+            if (dice == null || battle.Game.IsBoardLockedByWave)
                 return false;
 
             if (!DiceEvolution.CanExchange(dice.Type))

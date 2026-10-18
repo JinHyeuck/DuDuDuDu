@@ -29,6 +29,67 @@ namespace OJ.Lobby
         private bool _isCurrentStateInitialized;
         private bool _isSelected;
 
+        /// <summary>해금 가이드가 "눌렀는가" 를 듣는다(<c>LobbyContentGate.ButtonOf</c>).</summary>
+        public Button Button => _button;
+
+        /// <summary>잠금 그림. 처음 잠글 때 코드로 만든다 — 프리팹·씬을 고치지 않는다.</summary>
+        private GameObject _lockIcon;
+
+        private const string LockSpritePath = "Art/Upgrade/Icon_lock";
+        private const float LockedAlpha = 0.4f;
+
+        /// <summary>
+        /// 컨텐츠가 아직 안 열린 탭. <b>숨기지 않는다</b> — 탭이 빠지면 나머지 너비가 바뀌어 하단 바가 출렁인다.
+        /// 그림을 흐리게 하고 자물쇠를 얹는다. 누르면 무엇이 일어나는지는 <c>LobbyLayoutController.ShowTab</c> 이 정한다.
+        /// </summary>
+        public void SetLocked(bool locked)
+        {
+            SetGroupAlpha(_minWidthObj, locked ? LockedAlpha : 1f);
+            SetGroupAlpha(_maxWidthObj, locked ? LockedAlpha : 1f);
+
+            if (locked && _lockIcon == null)
+                _lockIcon = CreateLockIcon();
+
+            if (_lockIcon != null)
+                _lockIcon.SetActive(locked);
+        }
+
+        private static void SetGroupAlpha(Transform target, float alpha)
+        {
+            if (target == null)
+                return;
+
+            var group = target.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                if (Mathf.Approximately(alpha, 1f))
+                    return;
+
+                group = target.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            group.alpha = alpha;
+        }
+
+        private GameObject CreateLockIcon()
+        {
+            var go = new GameObject("Lock", typeof(RectTransform), typeof(Image));
+            var rect = (RectTransform)go.transform;
+            rect.SetParent(transform, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(72f, 72f);
+            rect.anchoredPosition = new Vector2(0f, 8f);
+
+            var image = go.GetComponent<Image>();
+            image.sprite = Resources.Load<Sprite>(LockSpritePath);
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            if (image.sprite == null)
+                Debug.LogWarning("[해금] 자물쇠 그림을 못 찾았다: Resources/" + LockSpritePath);
+
+            return go;
+        }
+
         public void Init(Action<LobbyTab> onClick)
         {
             _onClick = onClick;

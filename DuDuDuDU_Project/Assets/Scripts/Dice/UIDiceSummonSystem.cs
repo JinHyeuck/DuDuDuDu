@@ -9,6 +9,7 @@ using OJ.Core;
 using OJ.DI;
 using OJ.Hunting;
 using OJ.Relic;
+using OJ.Tutorial;
 
 namespace OJ.Dice
 {
@@ -30,6 +31,9 @@ namespace OJ.Dice
 
         [Header("SP Settings")]
         [SerializeField] private int summonsPerCostIncrease = 2;
+
+        /// <summary>몇 번 소환하면 비용이 오르는가. 튜토리얼이 SP 를 정확히 맞추는 데 쓴다.</summary>
+        public int SummonsPerCostIncrease => summonsPerCostIncrease;
 
         /// <summary>
         /// 이 판의 SP. <b>값은 <c>RunState</c> 가 들고 여기는 창문이다.</b>
@@ -123,6 +127,25 @@ namespace OJ.Dice
             int sp = currentSP;
             int cost = summonCost;
 
+            // 카드 모드에서는 소환 버튼이 SP 표시판일 뿐이다. 비용이 없으니 "n / 비용" 대신 SP 만 보인다.
+            bool cardMode = battle != null && battle.Game != null && battle.Game.CardModeActive;
+            if (cardMode)
+            {
+                spText.text = sp.ToString();
+                spText.color = Color.white;
+                if (summonButton != null)
+                {
+                    summonButton.enabled = false;
+
+                    // 버튼 글자 "뽑기" 는 더는 뽑지 않으니 거짓말이다. 보유 SP 표시판으로 바꾼다.
+                    Transform caption = summonButton.transform.Find("SummoText");
+                    TMP_Text captionText = caption != null ? caption.GetComponent<TMP_Text>() : null;
+                    if (captionText != null)
+                        captionText.text = "보유 SP";
+                }
+                return;
+            }
+
             spText.text = $"{sp} / {cost}";
             spText.color = sp >= cost ? Color.white : Color.red;
         }
@@ -151,7 +174,11 @@ namespace OJ.Dice
             if (battle.Tower.IsActive)
                 return;
 
-            if (battle.Game.inGameState == InGameState.Wave)
+            if (battle.Game.IsBoardLockedByWave)
+                return;
+
+            // 카드 모드에서는 다이스를 카드로만 얻는다.
+            if (battle.Game.CardModeActive)
                 return;
 
             if (currentSP < summonCost)
@@ -160,7 +187,13 @@ namespace OJ.Dice
                 return;
             }
 
-            int slotIndex = GetRandomEmptySlot();
+            // 튜토리얼 대본이 남아 있으면 그 칸·그 종류로 놓는다. 머지 단계의 딤드 구멍이
+            // 칸 좌표를 미리 알아야 해서 랜덤에 맡길 수 없다. 대본이 없으면 평소대로다.
+            bool scripted = battle.Tutorial.TryTakeScriptedSummon(out TutorialRunManager.ScriptedSummon script);
+
+            int slotIndex = scripted && board.GetDice(script.SlotIndex) == null
+                ? script.SlotIndex
+                : GetRandomEmptySlot();
             if (slotIndex == -1)
             {
                 Debug.Log("보드가 꽉 찼음!");
@@ -187,7 +220,12 @@ namespace OJ.Dice
             int spentCost = summonCost;
             battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, spentCost);
 
-            bool skipCostIncrease = RelicManager.Instance != null && RelicManager.Instance.ShouldSkipSummonCostIncrease();
+            // 튜토리얼 판에서는 유물이 소환에 끼지 않는다. 시작 SP 가 "정확히 여섯 번" 으로
+            // 계산돼 있어서(TutorialStage.Build) 비용 상승을 건너뛰거나 쌍둥이가 나오면
+            // "SP 를 다 쓰면 다음" 이 어긋난다.
+            bool relicsApply = RelicManager.Instance != null && !battle.Tutorial.IsActive;
+
+            bool skipCostIncrease = relicsApply && RelicManager.Instance.ShouldSkipSummonCostIncrease();
             if (!skipCostIncrease)
             {
                 RunState run = battle.Game.Run;
@@ -200,11 +238,12 @@ namespace OJ.Dice
             }
             UpdateSPUI();
 
-            DiceType type = summonable[Random.Range(0, summonable.Count)];
-            int star = RelicManager.Instance != null ? RelicManager.Instance.RollSummonStar() : 1;
+            DiceType type = scripted ? script.Type : summonable[Random.Range(0, summonable.Count)];
+            int star = relicsApply ? RelicManager.Instance.RollSummonStar() : 1;
             battle.DiceStars.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
-            RelicManager.Instance?.TrySpawnTwinDice(type);
+            if (relicsApply)
+                RelicManager.Instance.TrySpawnTwinDice(type);
             // GameManager 의 null 검사를 지운다. 소환 버튼은 BattleScene 에서만 눌리고
             // 그 안에서 battle.Game 이 null 이면 그것은 사고다 — 0 웨이브로 조용히
             // 기록해서 덮으면 안 된다. RelicManager·RunHistoryManager 는 루트 서비스라
@@ -219,7 +258,7 @@ namespace OJ.Dice
 
             for (int i = 0; i < total; i++)
             {
-                if (board.GetDice(i) == null)
+                if (board.GetDice(i) == null && board.IsSlotUnlocked(i))
                     emptySlots.Add(i);
             }
 

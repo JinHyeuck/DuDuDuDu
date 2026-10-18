@@ -266,8 +266,8 @@ namespace OJ.SceneFlow
                 sb.AppendLine($"dice[{diceType}].description = {OneLine(meta.description)}");
                 sb.AppendLine($"dice[{diceType}].elementType = {DescribeElements(meta.elementType)}");
                 sb.AppendLine($"dice[{diceType}].showStarUI = {meta.showStarUI}");
-                sb.AppendLine($"dice[{diceType}].baseAttack = {meta.baseAttack}");
-                sb.AppendLine($"dice[{diceType}].levelUpAttackIncrease = {meta.levelUpAttackIncrease}");
+                sb.AppendLine($"dice[{diceType}].baseAttackPercent = {Num(meta.baseAttackPercent)}");
+                sb.AppendLine($"dice[{diceType}].attackPercentPerLevel = {Num(meta.attackPercentPerLevel)}");
                 sb.AppendLine($"dice[{diceType}].milestones = {DescribeMilestones(meta.milestones)}");
 
                 for (int l = 0; l < DumpLevels.Length; l++)
@@ -538,15 +538,34 @@ namespace OJ.SceneFlow
             sb.AppendLine("## core.damage  (합성 입력 — 세이브와 무관해서 stable 이다)");
 
             // 싱글톤이 null 이던 경로를 중립값으로 재현한 것이 맞는지 여기서 잠근다.
-            DumpDamageCase(sb, "neutral", 12, 3, 1, 1);
-            DumpDamageCase(sb, "pip6lv12", 12, 3, 6, 12);
-            DumpDamageCase(sb, "king", 104, 20, 3, 9, isKing: true, levelMul: 1.3f, kingSynergy: 1.2f);
-            DumpDamageCase(sb, "equipped", 10, 4, 4, 6,
+            // 퍼센트 개편으로 앞 두 인자의 뜻이 바뀌었다 — 정수 공격력 두 개가 아니라
+            // (레벨1 비율, 레벨당 비율) 이고, 장비 공격력이 그 비율을 받는 피승수다.
+            // 그래서 equipmentAttack 이 0 인 케이스는 데미지가 하한 1 로 떨어진다(zeroAttack).
+            //
+            // neutral / halfBoundary / clampedInputs 는 개편 전과 <b>같은 값이 나오도록</b>
+            // 골랐다(비율 1f, 증가 0f, 장비 15 → 개편 전 12 + 1*3 = 15 와 같은 attackBase).
+            // 이름이 가리키는 경계를 그대로 유지하려는 것이다.
+            DumpDamageCase(sb, "neutral", 1f, 0f, 1, 1, equipmentAttack: 15);
+            DumpDamageCase(sb, "pip6lv12", 1f, 0.1f, 6, 12, equipmentAttack: 15);
+            DumpDamageCase(sb, "king", 5f, 0.5f, 3, 9, equipmentAttack: 104,
+                isKing: true, levelMul: 1.3f, kingSynergy: 1.2f);
+            DumpDamageCase(sb, "equipped", 0.5f, 0.05f, 4, 6,
                 equipmentAttack: 37, attackPercent: 0.25f, attackFlat: 12,
                 earlyWaveFlat: 5, finalPercent: 0.1f, elementMul: 1.4f, relicMul: 1.15f);
-            DumpDamageCase(sb, "halfBoundary", 15, 0, 1, 6, levelMul: 1.1f);
-            DumpDamageCase(sb, "zeroAttack", 0, 0, 1, 1);
-            DumpDamageCase(sb, "clampedInputs", 12, 3, -5, -5);
+            DumpDamageCase(sb, "halfBoundary", 1f, 0f, 1, 6, equipmentAttack: 15, levelMul: 1.1f);
+            DumpDamageCase(sb, "zeroAttack", 1f, 0.1f, 1, 1);
+            DumpDamageCase(sb, "clampedInputs", 1f, 0.1f, -5, -5, equipmentAttack: 15);
+
+            // 개편으로 새로 생긴 두 경로. 위 7줄은 둘 다 안 밟는다.
+            //   negativePercent : AttackPercent 의 OJMath.Max(0f, ·) 하한. 에셋에 음수가
+            //                     들어오면 곱셈 연쇄의 부호가 뒤집히는데 그 하한이 막는다.
+            //                     이 줄을 빼면 하한을 지우는 변이가 전부 통과한다.
+            //   percentPerLevel : base 0 / perLevel 만으로 비율이 만들어지는 경우.
+            //                     (레벨-1) 칸수를 (레벨) 로 바꾸는 변이를 잡는다 —
+            //                     위 pip6lv12 는 base 가 1f 라 칸수가 하나 밀려도 값이
+            //                     그럴듯하게 남는 반면 여기는 20 → 25 로 갈린다.
+            DumpDamageCase(sb, "negativePercent", -2f, 0.5f, 2, 1, equipmentAttack: 40);
+            DumpDamageCase(sb, "percentPerLevel", 0f, 0.25f, 1, 5, equipmentAttack: 40);
 
             DumpDamageMultiplierChain(sb);
             DumpIncomingDamage(sb);
@@ -579,12 +598,12 @@ namespace OJ.SceneFlow
         /// 기존 7줄은 배수가 대부분 1f 라 이 변이를 통과시킨다.
         ///
         /// <b>실측해서 고른 격자다.</b> 처음에는 "배수를 1f 가 아닌 값으로 채우고 표본을 넓히면
-        /// 하나쯤 걸리겠지"라는 밀도 논리로 baseAttack 을 {7, 15, 33, 104, 255} 로 잡았는데,
+        /// 하나쯤 걸리겠지"라는 밀도 논리로 첫 축을 {7, 15, 33, 104, 255} 로 잡았는데,
         /// float32 로 270개를 차분 대조해 보니 <b>접기 변이를 잡는 케이스가 0개였다.</b>
         /// (반올림 <i>전</i> float 비트가 갈린 것은 67개인데, 그 중 정수 경계를 넘는 것이
         /// 하나도 없었다. 비트가 갈리는 것과 회귀가 보이는 것은 다르다.)
         ///
-        /// 그래서 반대로 <b>갈리는 입력을 먼저 찾아서</b> 넣었다. baseAttack = 125 는
+        /// 그래서 반대로 <b>갈리는 입력을 먼저 찾아서</b> 넣었다. 첫 축 = 125 는
         /// pip=3, levelMul=1.3, elementMul=1.4, relicMul=1.2 에서
         /// <c>scaled *= em; scaled *= rm</c> 를 <c>scaled *= (em * rm)</c> 로 합치면
         /// 409 → 410 으로 갈린다. 이 한 줄이 이 구획의 존재 이유다 — 나머지 323개는 밀도다.
@@ -600,29 +619,42 @@ namespace OJ.SceneFlow
         ///    KingSynergy 축을 {1f, 1.2f} 로 늘려 648줄까지 키워 봤지만 그래도 0개였다 —
         ///    줄만 두 배가 되고 검출은 안 늘어서 넣지 않았다. 아래 '못 잠그는 축' 9번에 남긴다.
         ///
-        /// 인자 외의 필드는 전부 중립이다 — LevelUpAttackIncrease=0, BulletLevel=1,
-        /// EquipmentAttackTotal=0, KingSynergyMultiplier=1f, IsKingDice=false,
-        /// AttackPercentBonus=0f, AttackFlatBonus=0, EarlyWaveFlatBonus=0,
-        /// FinalDamagePercentBonus=0f. 미래의 픽스처는 이 목록대로 채워야 재현된다.
+        /// 인자 외의 필드는 전부 중립이다 — DiceAttackPercentPerLevel=0f, BulletLevel=1,
+        /// KingSynergyMultiplier=1f, IsKingDice=false, AttackPercentBonus=0f,
+        /// AttackFlatBonus=0, EarlyWaveFlatBonus=0, FinalDamagePercentBonus=0f.
+        /// 미래의 픽스처는 이 목록대로 채워야 재현된다.
+        ///
+        /// <b>퍼센트 개편으로 첫 축의 이름만 바뀌었고 값은 한 줄도 안 바뀐다.</b>
+        /// 예전에는 <c>BaseAttack = 축값, EquipmentAttackTotal = 0</c> 이라
+        /// <c>attackBase = 축값 + (1 * 0) + 0</c> 이었다. 지금은
+        /// <c>EquipmentAttackTotal = 축값, DiceBaseAttackPercent = 1f</c> 이라
+        /// <c>attackBase = 축값 * 1f</c> 다. IEEE754 에서 <c>x * 1f</c> 는 비트를 보존하므로
+        /// 324개의 반올림 전 float 가 전부 같은 비트이고, 따라서 골든 324줄이 그대로 산다.
+        /// 즉 이 구획이 잡아 온 변이 목록(아래 표)도 그대로 유효하다.
+        /// 키에는 축의 <i>값</i>만 박히므로 키 문자열도 바뀌지 않는다.
         /// </summary>
         private static void DumpDamageMultiplierChain(StringBuilder sb)
         {
             sb.AppendLine();
-            sb.AppendLine("## core.dmgChain  (합성 입력 — 배수 곱셈 연쇄. 키 = [baseAttack][pip][levelMul][elementMul][relicMul])");
+            sb.AppendLine("## core.dmgChain  (합성 입력 — 배수 곱셈 연쇄. 키 = [equipAttack][pip][levelMul][elementMul][relicMul])");
 
-            // 홀수를 섞는다. pip=1 이면 반올림 직전 값이 baseAttack * 0.5f 라 정확히 .5 로
+            // 홀수를 섞는다. pip=1 이면 반올림 직전 값이 equipAttack * 0.5f 라 정확히 .5 로
             // 시작하고, 거기에 배수를 곱하면 경계 근처에 떨어질 확률이 올라간다.
             //
             // 125 는 밀도로 고른 것이 아니라 <b>접기 변이를 잡는다고 실측한 값</b>이다.
             // 이 값을 빼면 이 구획은 접기 변이를 하나도 못 잡는 상태로 되돌아간다.
             // 격자를 줄일 일이 있어도 125 만은 남길 것 — 윗줄 주석에 근거가 있다.
-            int[] baseAttacks = { 7, 15, 33, 104, 125, 255 };
+            //
+            // 개편 전 이 축의 이름은 baseAttacks 였다(다이스의 정수 공격력). 지금은 장비
+            // 공격력이고 다이스는 비율 1f 로 고정했다. 같은 attackBase 를 만드는 두 표현이라
+            // 골든 값은 그대로다 — 윗 주석에 근거가 있다.
+            int[] equipAttacks = { 7, 15, 33, 104, 125, 255 };
             int[] pips = { 1, 3 };
             float[] levelMuls = { 1f, 1.1f, 1.3f };
             float[] elementMuls = { 1f, 1.15f, 1.4f };
             float[] relicMuls = { 1f, 1.05f, 1.2f };
 
-            for (int b = 0; b < baseAttacks.Length; b++)
+            for (int b = 0; b < equipAttacks.Length; b++)
             {
                 for (int p = 0; p < pips.Length; p++)
                 {
@@ -634,11 +666,11 @@ namespace OJ.SceneFlow
                             {
                                 int damage = DamageFormula.Calculate(new DamageInputs
                                 {
-                                    BaseAttack = baseAttacks[b],
-                                    LevelUpAttackIncrease = 0,
+                                    DiceBaseAttackPercent = 1f,
+                                    DiceAttackPercentPerLevel = 0f,
                                     DicePip = pips[p],
                                     BulletLevel = 1,
-                                    EquipmentAttackTotal = 0,
+                                    EquipmentAttackTotal = equipAttacks[b],
                                     LevelDamageMultiplier = levelMuls[l],
                                     KingSynergyMultiplier = 1f,
                                     IsKingDice = false,
@@ -651,7 +683,7 @@ namespace OJ.SceneFlow
                                 });
 
                                 sb.AppendLine(
-                                    $"core.dmgChain[{baseAttacks[b]}][{pips[p]}][{Num(levelMuls[l])}]" +
+                                    $"core.dmgChain[{equipAttacks[b]}][{pips[p]}][{Num(levelMuls[l])}]" +
                                     $"[{Num(elementMuls[e])}][{Num(relicMuls[r])}] = {damage}");
                             }
                         }
@@ -1332,8 +1364,8 @@ namespace OJ.SceneFlow
         private static void DumpDamageCase(
             StringBuilder sb,
             string name,
-            int baseAttack,
-            int levelUpAttackIncrease,
+            float baseAttackPercent,
+            float attackPercentPerLevel,
             int dicePip,
             int bulletLevel,
             int equipmentAttack = 0,
@@ -1349,8 +1381,8 @@ namespace OJ.SceneFlow
         {
             int damage = DamageFormula.Calculate(new DamageInputs
             {
-                BaseAttack = baseAttack,
-                LevelUpAttackIncrease = levelUpAttackIncrease,
+                DiceBaseAttackPercent = baseAttackPercent,
+                DiceAttackPercentPerLevel = attackPercentPerLevel,
                 DicePip = dicePip,
                 BulletLevel = bulletLevel,
                 EquipmentAttackTotal = equipmentAttack,

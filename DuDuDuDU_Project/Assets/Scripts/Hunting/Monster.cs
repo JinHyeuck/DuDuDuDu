@@ -38,8 +38,17 @@ namespace OJ.Hunting
         public int MonsterID = -1;
         public int _hp = 3;
         public int defense = 0;
+        /// <summary>
+        /// 벽을 통과했을 때 벽에 주는 피해의 <b>기준값</b>. 실제 피해는
+        /// <c>OJ.Core.WallLeakFormula.LeakDamage</c> 가 여기에 배수를 걸어 낸다.
+        ///
+        /// <c>attackInterval</c> 이 옆에 있었다. 통과한 몬스터가 벽 앞에 남아
+        /// 그 간격마다 때리던 시절의 값인데, 지금은 한 대 때리고 사라지므로
+        /// <b>읽는 곳이 없다</b> — 인스펙터에 남겨 두면 "조절되는 값" 으로 보여서 지웠다.
+        /// 프리팹 YAML 에 남은 키는 Unity 가 다음 저장 때 떨군다.
+        /// </summary>
         public int attackDamage = 1;
-        public float attackInterval = 0.5f;
+
         public float moveSpeed = 2f;
         public float ApplyMoveSpeed = 2f;
         private bool isAttacking = false;
@@ -59,6 +68,16 @@ namespace OJ.Hunting
         /// 통째로 무용지물이 된다.
         /// </summary>
         public bool IsBounty { get; private set; }
+
+        /// <summary>
+        /// 이 개체가 그 웨이브의 보스인가. <c>MonsterSpawner.SpawnBossMonster</c> 가 켠다.
+        ///
+        /// 쓰는 곳은 지금 <see cref="WallLeakFormula"/> 하나다 — 보스가 통과하면 일반
+        /// 몬스터보다 아프다. <b>스포너의 보스 풀 집합으로 판정하지 않는 이유</b>는 그
+        /// 집합이 "이 몸이 보스 프리팹에서 나왔는가" 이고, 현상금이 보스 프리팹을 빌려
+        /// 쓰기 때문이다. 필요한 것은 몸이 아니라 역할이다.
+        /// </summary>
+        public bool IsStageBoss { get; private set; }
 
         /// <summary>
         /// 이 개체가 화면에 나온 자리. <b>되돌리기 연출이 여기로 되감는다.</b>
@@ -92,6 +111,8 @@ namespace OJ.Hunting
         private float _slowUntilTime;
         private float _poisonUntilTime;
         private float _poisonDamageMultiplier = 1f;
+        // 중독 틱을 딜미터기에 올릴 다이스. 마지막으로 중독을 건 쪽이다.
+        private DiceType _poisonSource = DiceType.Poison;
         private int _poisonDamageTakenBonusPercent;
         private int _stunDamageTakenBonusPercent;
         private float _stunDamageTakenBonusUntil;
@@ -191,7 +212,8 @@ namespace OJ.Hunting
             RecalculateDefense();
 
             IsBounty = false;
-            _bountyWallHitDone = false;
+            IsStageBoss = false;
+            _wallHitDone = false;
             ClearTowerTraits();
 
             battle.Monsters.RegisterMonster(this);
@@ -245,7 +267,8 @@ namespace OJ.Hunting
             // 가 <c>countAsKill == false</c> 하나로 부모·자식을 가리지 않고 처리한다 —
             // 목표가 자식까지 세는 지금은 자식이 사라져도 한 칸이 비기 때문이다.
             IsBounty = false;
-            _bountyWallHitDone = false;
+            IsStageBoss = false;
+            _wallHitDone = false;
             ClearTowerTraits();
 
             // 여기 ?. 는 새로 넣은 것이 아니라 원래 MonsterManager.Instance 뒤에 붙어 있던
@@ -431,10 +454,12 @@ namespace OJ.Hunting
             ApplyMoveSpeed = Mathf.Max(moveSpeed * 0.2f, ApplyMoveSpeed * Mathf.Clamp(multiplier, 0.1f, 1f));
         }
 
-        public void ApplyPoison(float duration = 4f, float damageMultiplier = 1f)
+        public void ApplyPoison(float duration = 4f, float damageMultiplier = 1f, DiceType source = DiceType.Poison)
         {
             if (!IsAlive)
                 return;
+
+            _poisonSource = source;
 
             _poisonUntilTime = Mathf.Max(_poisonUntilTime, Clock.GameTime + Mathf.Max(0.1f, duration));
             _poisonDamageMultiplier = Mathf.Max(_poisonDamageMultiplier, Mathf.Max(0.1f, damageMultiplier));
@@ -580,6 +605,9 @@ namespace OJ.Hunting
                 Color typeColor = DiceMetaDataProvider.GetColor(DiceType.Poison);
 
                 int appliedDamage = TakeDamage(intdamage);
+                // 중독 틱도 딜미터기에 올린다. 직접 타격(AttackContent.HitMonster)만 세면
+                // 독 다이스의 몫이 대부분 빠진다.
+                battle.Contribution?.Record(_poisonSource, appliedDamage);
                 if (appliedDamage > 0)
                     dtObj.GetComponent<DamageText>().SetText(appliedDamage, typeColor);
                 else
@@ -593,39 +621,21 @@ namespace OJ.Hunting
             _poisonRoutine = null;
         }
 
+        /// <summary>
+        /// 벽에 닿았다. <b>한 대 때리고 사라진다 — 종류와 무관하게 전부.</b>
+        ///
+        /// 예전에는 일반 몬스터만 <c>attackInterval</c> 마다 계속 때리는 루프였다. 왜 바꿨는지는
+        /// <see cref="WallLeakFormula"/> 에 적어 두었다(난이도 응답이 절벽이었다). 현상금은
+        /// 처음부터 이 모양이었고 자기 피해식을 그대로 쓴다.
+        ///
+        /// <b>코루틴 모양을 남겨 둔 이유.</b> <c>StartAttack</c> 이 <c>_attackRoutine</c> 을
+        /// 들고 <c>StopAttack</c> 이 그것을 멈추는 배선이 스턴·풀 반환·씬 정리 네 곳에서
+        /// 쓰인다. 한 프레임짜리가 됐다고 그 배선을 걷어내면 그 네 곳을 같이 고쳐야 한다.
+        /// </summary>
         IEnumerator AttackWall(Wall wall)
         {
-            if (IsBounty)
-            {
-                HitWallOnceAndLeave(wall);
-                yield break;
-            }
-
-            while (wall != null && wall.CurrentHp > 0)
-            {
-                if (!IsTouchingWall(wall))
-                {
-                    StopAttack();
-                    yield break;
-                }
-
-                if (IsStunned())
-                {
-                    yield return null;
-                    continue;
-                }
-
-                wall.TakeDamage(attackDamage);
-
-                GameObject dtObj = battle.DamageTexts.GetDamageText();
-                dtObj.transform.position = transform.position;
-                dtObj.transform.ResetLocalZ();
-                dtObj.GetComponent<DamageText>().SetText(attackDamage * -1, Color.red);
-
-                yield return new WaitForSeconds(attackInterval);
-            }
-
-            StopAttack();
+            HitWallOnceAndLeave(wall);
+            yield break;
         }
 
         IEnumerator CoApplyDefenseDown(float duration)
@@ -804,26 +814,39 @@ namespace OJ.Hunting
         }
 
         /// <summary>
-        /// 현상금이 벽에 닿았을 때. <b>한 대 때리고 그대로 사라진다.</b>
+        /// 벽에 닿은 몬스터가 <b>한 대 때리고 그대로 사라진다.</b>
         ///
-        /// 피해는 <see cref="BountyFormula.WallDamage"/> — 남은 벽 체력의 1/3 이다.
-        /// 그 식은 벽을 0 으로 만들지 못하므로 현상금 때문에 판이 끝나는 일은 없고,
-        /// 대가는 <b>클리어 등급</b>으로만 치른다(<c>StageRewardFormula.ClearGradeTier</c>
-        /// 가 벽 체력 비율을 그대로 읽는다).
+        /// 피해식이 둘로 갈린다:
+        ///   현상금 : <see cref="BountyFormula.WallDamage"/> — 남은 벽 체력의 1/3.
+        ///            벽을 0 으로 만들지 못하는 식이라 현상금 때문에 판이 끝나지 않는다.
+        ///   그 외   : <see cref="WallLeakFormula.LeakDamage"/> — 공격력 × 10(보스 ×5).
+        ///            <b>마리 수에 비례</b>하므로 "몇 마리까지 허용" 을 벽 체력이 정한다.
+        /// 둘 다 대가는 <b>클리어 등급</b>이다(<c>StageRewardFormula.ClearGradeTier</c> 가
+        /// 벽 체력 비율을 그대로 읽는다).
         ///
-        /// 사라지는 것은 풀로 돌아가는 것이고, 그 <c>OnDisable</c> 이 웨이브에게
-        /// "정리됐다"를 알린다 — 그래야 웨이브가 끝날 수 있다.
+        /// <b>웨이브 처치 수에 넣는 것이 일반 몬스터의 핵심이다.</b> 웨이브 종료 판정이
+        /// "처치 수 ≥ 목표"(<c>GameManager.TryCompleteWave</c>)이고 목표는 마리 수에서
+        /// 나오므로, 통과한 개체를 세지 않으면 <b>그 웨이브는 영원히 끝나지 않는다.</b>
+        /// 현상금은 목표에 안 들어가므로(<c>GetWaveTargetCount</c>) 세지 않는다 —
+        /// 세면 목표를 초과해 한 마리 일찍 끝난다.
+        ///
+        /// <c>UnregisterMonster(this, true)</c> 가 목록에서 빼면서 세고, 이어지는
+        /// 풀 반환의 <c>OnDisable</c> 은 이미 빠진 개체라 두 번 세지 않는다
+        /// (사망 경로가 쓰는 것과 같은 순서다).
         /// </summary>
         private void HitWallOnceAndLeave(Wall wall)
         {
-            if (_bountyWallHitDone)
+            if (_wallHitDone)
                 return;
 
-            _bountyWallHitDone = true;
+            _wallHitDone = true;
 
             if (wall != null)
             {
-                int damage = BountyFormula.WallDamage(wall.CurrentHp);
+                int damage = IsBounty
+                    ? BountyFormula.WallDamage(wall.CurrentHp)
+                    : WallLeakFormula.LeakDamage(attackDamage, IsStageBoss);
+
                 if (damage > 0)
                 {
                     wall.TakeDamage(damage);
@@ -836,10 +859,14 @@ namespace OJ.Hunting
             }
 
             StopAttack();
+
+            if (!IsBounty)
+                battle.Monsters.UnregisterMonster(this, true);
+
             battle.Spawner.PoolMonster(this);
         }
 
-        private bool _bountyWallHitDone;
+        private bool _wallHitDone;
 
         private void StopAttack()
         {
@@ -851,20 +878,6 @@ namespace OJ.Hunting
 
             _attackWall = null;
             isAttacking = false;
-        }
-
-        private bool IsTouchingWall(Wall wall)
-        {
-            if (wall == null)
-                return false;
-
-            Collider2D myCollider = GetComponent<Collider2D>();
-            Collider2D wallCollider = wall.GetComponent<Collider2D>();
-            if (myCollider != null && wallCollider != null)
-                return myCollider.IsTouching(wallCollider);
-
-            // Fallback when colliders are missing.
-            return Vector2.Distance(transform.position, wall.transform.position) <= 1.0f;
         }
 
         public void SetHp(int hp)
@@ -880,12 +893,25 @@ namespace OJ.Hunting
         public void ConfigureAsBounty(float moveSpeedMultiplier)
         {
             IsBounty = true;
-            _bountyWallHitDone = false;
+            _wallHitDone = false;
 
             // moveSpeed 자체는 건드리지 않는다. 그것은 프리팹 값이고, 풀에서 재사용될 때
             // OnSpawn 이 ApplyMoveSpeed 를 여기로 되돌리는 기준점이다 — 깎아 두면
             // 같은 인스턴스가 일반 보스로 나왔을 때 느려진 채로 나온다.
             ApplyMoveSpeed = Mathf.Max(0.05f, moveSpeed * Mathf.Max(0.05f, moveSpeedMultiplier));
+        }
+
+        /// <summary>
+        /// 이 개체를 그 웨이브의 보스로 표시한다. <b><c>OnSpawn</c> 뒤에 불러야 한다</b> —
+        /// <c>OnSpawn</c> 이 이 표시를 끈다(<see cref="ConfigureAsBounty"/> 와 같은 제약).
+        ///
+        /// 속도·체력·크기는 건드리지 않는다. 그것들은 스포너가
+        /// <c>SetCombatStats</c> · <c>ConfigureStageSpeed</c> 로 이미 세웠고, 여기서
+        /// 또 만지면 "보스 스탯을 세우는 곳" 이 둘이 된다.
+        /// </summary>
+        public void ConfigureAsStageBoss()
+        {
+            IsStageBoss = true;
         }
 
         /// <summary>
@@ -906,6 +932,17 @@ namespace OJ.Hunting
             // moveSpeed 자체는 건드리지 않는다. 그것은 프리팹 값이고, 풀에서 재사용될 때
             // OnSpawn 이 ApplyMoveSpeed 를 여기로 되돌리는 기준점이다 — 깎아 두면
             // 같은 인스턴스가 본편 몬스터로 나왔을 때 느려진 채로 나온다.
+            ApplyMoveSpeed = moveSpeed * _towerSpeedMultiplier;
+        }
+
+        /// <summary>
+        /// 본편 스테이지의 속도 배수. <b><c>OnSpawn</c> 뒤에 불러야 한다.</b>
+        /// 탑의 속도 배수와 같은 칸을 쓴다 — 둘 다 "슬로우가 아니라 기본 속도" 라서,
+        /// 슬로우가 풀릴 때 되돌아갈 기준이 이 값이어야 한다(<c>UpdateTimedStates</c>).
+        /// </summary>
+        public void ConfigureStageSpeed(float speedMultiplier)
+        {
+            _towerSpeedMultiplier = Mathf.Max(0.05f, speedMultiplier);
             ApplyMoveSpeed = moveSpeed * _towerSpeedMultiplier;
         }
 

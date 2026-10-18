@@ -24,7 +24,7 @@ namespace OJ.Dice
     [CreateAssetMenu(fileName = "DiceUnlockDatabase", menuName = "OJ/Dice Unlock Database")]
     public sealed class DiceUnlockDatabase : ScriptableObject
     {
-        [Tooltip("기본 5종을 뺀 10종. 가격은 필수, 컨텐츠 보상처는 0 이면 없음.")]
+        [Tooltip("킹 5종. 가격은 필수, 컨텐츠 보상처는 0 이면 없음.")]
         [SerializeField] private List<DiceUnlockDefinition> definitions = new List<DiceUnlockDefinition>();
 
         private readonly Dictionary<DiceType, DiceUnlockDefinition> map =
@@ -200,8 +200,11 @@ namespace OJ.Dice
 
                 DiceType diceType = definition.diceType;
 
-                if (DiceEvolution.GetTier(diceType) == DiceTier.Base)
-                    problems.Add("기본 다이스는 처음부터 쓸 수 있어 언락 대상이 아니다: " + diceType);
+                // 기본 5종과 특수(레어) 5종은 규칙으로 보유한다. 목록에 들어오면
+                // 가격·보상처가 생기는데 보유 판정은 그것을 안 보므로, 유저가 이미 가진
+                // 것을 파는 화면이 만들어진다. (DiceEvolution.IsOwnedFromStart 참조)
+                if (DiceEvolution.IsOwnedFromStart(diceType))
+                    problems.Add("이 다이스는 처음부터 보유라 언락 대상이 아니다: " + diceType);
 
                 if (!seenDice.Add(diceType))
                     problems.Add("같은 다이스가 두 번 있다: " + diceType);
@@ -245,9 +248,9 @@ namespace OJ.Dice
                 }
             }
 
-            // 특수 5 + 킹 5 가 빠짐없이 있어야 한다. 빠진 다이스는 영영 못 얻는다 —
+            // 킹 5종이 빠짐없이 있어야 한다. 빠진 다이스는 영영 못 얻는다 —
             // 가격도 보상처도 없는 상태가 되기 때문이다.
-            AppendMissing(problems, seenDice, DiceEvolution.SpecialTypes);
+            // (특수 5종은 처음부터 보유라 여기서 요구하지 않는다.)
             AppendMissing(problems, seenDice, DiceEvolution.KingTypes);
 
             return problems;
@@ -267,22 +270,17 @@ namespace OJ.Dice
         /// <summary>
         /// 코드가 아는 기본 표. 에셋이 비었을 때 한 번 찍히고, 그 뒤로는 에셋이 정본이다.
         ///
-        /// <b>가격의 근거.</b> <c>SpecialDiceCore</c> 는 스테이지 클리어마다 5~10개
-        /// (<c>StageRewardCalculator</c>) — 반복 수급이라 꾸준하다. 특수 5종 합계 1400 은
-        /// 약 187회 클리어분으로, 전부 재화로 사는 것은 길다. 그게 의도다 —
-        /// <b>컨텐츠가 주 경로고 재화는 "먼저 갖고 싶은 하나" 를 당기는 수단이다.</b>
-        /// 첫 하나(120)는 16회분이라 초반에 손이 닿는다.
+        /// <b>킹 5종만 있다(2026-10-14).</b> 특수(레어) 5종이 여기 있었는데, 그것들은
+        /// <b>판 안에서 만드는 전술 선택</b>이 되었으므로 처음부터 보유로 바꿨다 —
+        /// 근거는 <c>DiceEvolution.IsOwnedFromStart</c> 에 적어 두었다. 그래서 별 15/36,
+        /// 스테이지 8/22, 튜토리얼에 걸려 있던 네 자리가 비었고, <b>그 자리를 다시 채우지
+        /// 않았다</b>. 거기 킹을 옮겨 붙이면 탑의 해금 사다리와 정본이 겹친다.
         ///
-        /// <c>MythicScroll</c> 은 Half 15 + Perfect 10 으로 <b>스테이지당 1회성</b>이라
-        /// 30스테이지를 전부 퍼펙트해도 상한이 750 이다. 킹 5종 합계 1850 은 그보다 크므로
-        /// 전부 재화로 사는 것은 구조적으로 불가능하다. 가장 싼 KingFire(200)만
-        /// 8스테이지쯤 전 웨이브를 깨면 닿아서 "탑 30층 전에 하나 당겨오기" 가 성립한다.
-        ///
-        /// <b>탑 사다리에서 특수 5종을 뺐다.</b> 옛 사다리는 10·20층에 Tornado·ArmorBreak 를
-        /// 두고 "30층에서 7슬롯이 처음 다 찬다" 는 서사를 만들었는데, <b>그 전제가 바뀐다</b> —
-        /// 탑 편성은 이제 "탑에서 연 것" 이 아니라 "보유한 것" 으로 채워진다. 별 15개와
-        /// 스테이지 8 전 웨이브 클리어는 탑 30층보다 <b>먼저</b> 닿으므로
-        /// 슬롯 충족은 오히려 빨라진다.
+        /// <b>가격의 근거.</b> <c>MythicScroll</c> 은 Half 15 + Perfect 10 으로
+        /// <b>스테이지당 1회성</b>이라 30스테이지를 전부 퍼펙트해도 상한이 750 이다.
+        /// 킹 5종 합계 1850 은 그보다 크므로 전부 재화로 사는 것은 구조적으로 불가능하다.
+        /// 가장 싼 KingFire(200)만 8스테이지쯤 전 웨이브를 깨면 닿아서
+        /// "탑 30층 전에 하나 당겨오기" 가 성립한다.
         ///
         /// <b>KingFire 30층은 고정이다.</b> 기획서에 박혀 있는 값이다(5.2 목표 배너,
         /// 5.6 해금 진행도). 옮기면 그 두 화면의 문구가 같이 틀어진다.
@@ -290,29 +288,23 @@ namespace OJ.Dice
         /// <b>요구 별은 3의 배수여야 한다.</b> 별 보상이 3별 간격으로만 존재하기 때문이고,
         /// 어긋나면 그 다이스는 그 경로로 영영 안 열린다. <see cref="Validate"/> 가 잡는다.
         ///
-        /// <b>진화 재료 순서는 검사하지 않는다.</b> KingFire(탑 30층)의 재료는
-        /// ArmorBreak(별 36)인데, 세 컨텐츠의 난이도를 비교할 공통 축이 없어 코드로 판정할 수 없다.
-        /// 어긋나도 치명적이지 않다 — 진화만 못 하고 편성에는 쓴다.
+        /// <b>스테이지 14 는 KingThunder 다.</b> 진화 재료가 Time 인데 그 Time 은 이제
+        /// 처음부터 보유라, "4성 썬더 → 타임 → 킹썬더" 가 첫 판부터 열려 있는 길이 된다.
         /// </summary>
         public static List<DiceUnlockDefinition> BuildDefaults()
         {
             return new List<DiceUnlockDefinition>
             {
-                Make(DiceType.Tornado, price: 120, stars: 15),
-                Make(DiceType.ArmorBreak, price: 180, stars: 36),
-                Make(DiceType.Wind, price: 260, stage: 8),
-                Make(DiceType.Time, price: 360, stage: 14),
-                Make(DiceType.Stun, price: 480, stage: 22),
-
                 Make(DiceType.KingFire, price: 200, floor: 30),
                 Make(DiceType.KingIce, price: 280, floor: 100),
-                Make(DiceType.KingThunder, price: 360, floor: 140),
+                Make(DiceType.KingThunder, price: 360, stage: 14),
                 Make(DiceType.KingNormal, price: 450, floor: 190),
                 Make(DiceType.KingPoison, price: 560, floor: 250),
             };
         }
 
-        private static DiceUnlockDefinition Make(DiceType diceType, int price, int stars = 0, int stage = 0, int floor = 0)
+        private static DiceUnlockDefinition Make(
+            DiceType diceType, int price, int stars = 0, int stage = 0, int floor = 0)
         {
             return new DiceUnlockDefinition
             {

@@ -31,7 +31,8 @@ namespace OJ.Hunting
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             target.ApplyPoison(
                 DiceMetaDataProvider.GetPoisonDuration(DiceType),
-                DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level));
+                DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level),
+                DiceType);
             if (level >= 12)
                 target.ApplyPoisonDamageTakenBonus(10);
 
@@ -54,7 +55,8 @@ namespace OJ.Hunting
                 attackContent.HitMonster(splashTarget, DiceType, attackContent.CurrentDamage);
                 splashTarget.ApplyPoison(
                     DiceMetaDataProvider.GetPoisonDuration(DiceType),
-                    DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level));
+                    DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level),
+                    DiceType);
                 if (level >= 12)
                     splashTarget.ApplyPoisonDamageTakenBonus(10);
             }

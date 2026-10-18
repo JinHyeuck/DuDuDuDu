@@ -40,6 +40,8 @@ python Tools/ui/unity/run.py <스크립트> [인자...] [--project <Unity 프로
 | `render_prefab` | 프리팹 경로, 출력 PNG, [켤 이름 · `-`끌 이름 ...] | 빈 씬 1080x1920 캔버스에 띄워 PNG. **열린 씬을 빈 씬으로 바꾼다**. `-` 인자는 `run.py ... render_prefab -- <인자들>` 로 | 에디터 |
 | `render_scene` | 출력 PNG | BattleScene 을 열어 UI 캔버스를 1080x1920 으로 찍는다(저장 안 함). 플레이 없이 HUD 를 볼 때 | 에디터 |
 | `screen_check` | (출력 PNG) | 맨 위 창의 사라진 글자 · 가려진 버튼 + 스크린샷 | 플레이 |
+| `shot_canvas` | 출력 PNG | **플레이 중 화면을 1080x1920 으로 정확히** 찍는다. Overlay 캔버스를 잠시 전용 카메라로 돌려 그린다 | 플레이 |
+| `scroll_to` | 0~1 | 상점 페이지의 세로 스크롤 위치를 옮긴다(1=맨 위). 긴 페이지를 구간별로 찍을 때 | 플레이 |
 | `click` | 오브젝트 이름 (`press`) | 이름으로 찾아 클릭(레이캐스트 우회) | 플레이 |
 | `back_key` | — | `AOSBackBtnManager` 의 Esc 처리와 같은 동작 1회 | 플레이 |
 
@@ -48,3 +50,4 @@ python Tools/ui/unity/run.py <스크립트> [인자...] [--project <Unity 프로
 - 에디터 모드 스크립트에서 Provider·`StaticResource` 를 깨우지 말 것 — 에러 로그가 한 번만 나오고 잠긴다.
 - PSD 가 있으면 글자는 PSD 가 정본이다 — `psd-tools` 로 글자 레이어의 폰트·크기·색·외곽선(효과 켜짐 여부까지)을 읽는다. 시안 PNG 주석과 다른 곳이 실제로 있었다(`Docs/WantedUIArtPort.md`).
 - 스크린샷은 프레임 끝에 저장된다. 같은 호출 안에서 그 파일을 읽지 말 것. ScrollRect 위치 변경도 다음 프레임에 반영된다.
+- **`capture_game_view` 로 세로 화면을 찍지 말 것.** 게임 뷰 창 크기에 끌려다녀서 `--width 1080 --height 1920` 을 줘도 레이아웃이 어긋난 그림이 나온다(상점 이식에서 반나절을 먹었다). `shot_canvas` 를 쓴다 — 캔버스를 내 카메라로만 그리므로 창 크기와 무관하다.

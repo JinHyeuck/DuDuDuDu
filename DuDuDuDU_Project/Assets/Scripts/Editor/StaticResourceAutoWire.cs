@@ -74,6 +74,7 @@ namespace OJ.EditorTools
             changed |= TryFill<DailyMissionDatabase>(resource, "DailyMissionDatabase", quiet);
             changed |= TryFill<AchievementDatabase>(resource, "AchievementDatabase", quiet);
             changed |= TryFill<SeasonPassDatabase>(resource, "SeasonPassDatabase", quiet);
+            changed |= TryFill<OJ.ContentUnlock.ContentUnlockDatabase>(resource, "ContentUnlockDatabase", quiet);
 
             if (!changed)
             {

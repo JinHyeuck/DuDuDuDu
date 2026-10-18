@@ -24,15 +24,24 @@ namespace OJ.Shop
     /// </summary>
     public sealed class UIShopPage : DialogBase
     {
-        /// <summary>섹션 순서. 기획서 7.1 표 그대로다.</summary>
+        /// <summary>
+        /// 섹션 순서와 머리글. 기획서 7.1 의 순서를 지키되 <b>이름은 시안을 따른다</b> —
+        /// 시안이 재화를 그림으로 부르기 때문에("깃털", "다이아") 글자도 같아야 한다.
+        /// 어느 재화인지는 <c>PointMetadataDatabase</c> 의 아이콘과 짝이 맞는다:
+        /// 깃털 = 유료젬, 다이아 = 무료젬, 강화석 = 다이스석.
+        ///
+        /// <b>빈 문자열은 머리글 바를 만들지 않는다는 뜻이다.</b> 시안에서 패키지와
+        /// 광고 칸은 바 없이 바로 내용이 온다.
+        /// </summary>
         internal static readonly string[] SectionOrder =
         {
-            "성장 패키지",
-            "보석뽑기",
-            "유료젬 상점",
-            "무료젬 상점",
-            "다이스석 상점",
-            "골드 상점",
+            "",               // 0 패키지 (8.1 성장 패키지)
+            "보석 보물상자",  // 1 (8.2 보석뽑기)
+            "",               // 2 광고 상점 — 시안에 새로 생겼다
+            "깃털 상점",      // 3 (8.4 유료젬 상점)
+            "다이아",         // 4 (8.5 무료젬 상점)
+            "강화석",         // 5 (8.6 다이스석 상점)
+            "골드",           // 6 (8.7 골드 상점)
         };
 
         [Header("섹션 본체")]
@@ -43,7 +52,11 @@ namespace OJ.Shop
         [SerializeField] private RectTransform stoneBody;
         [SerializeField] private RectTransform goldBody;
 
+        /// <summary>교환비 안내. 시안에 자리가 없어 굽지 않는다 — 비어 있어도 된다.</summary>
         [SerializeField] private TMP_Text freeGemRateText;
+
+        /// <summary>광고 보상 칸과 원터치 토글. 겉모습만이고 동작은 아직 안 붙었다.</summary>
+        [SerializeField] private UIShopAdSection adSection;
 
 
         [Header("템플릿 (프리팹 안에 꺼진 채로 들어 있다)")]
@@ -131,11 +144,40 @@ namespace OJ.Shop
 
             RefreshGrowth(db);
             RefreshGemDraw(db);
+            RefreshAdShop();
             RefreshPaidGem(db);
             RefreshFreeGem(db);
             RefreshStone(db);
             RefreshGold(db);
         }
+
+        // ── 광고 상점 (시안에 새로 생긴 칸) ──────────────────────────
+
+        /// <summary>
+        /// 광고 칸을 채운다. <b>아직 데이터가 없다</b> — 하루 한도와 지급은 세이브에 자리가
+        /// 없어서, 지금은 시안의 숫자를 그대로 두고 누르면 준비 중을 알린다.
+        /// 연결할 때는 여기 두 콜백과 <c>ShopPurchaseManager</c> 만 고치면 된다.
+        /// </summary>
+        private void RefreshAdShop()
+        {
+            if (adSection == null)
+                return;
+
+            adSection.Bind(
+                adRemaining: AdShopDailyCount, adTotal: AdShopDailyCount,
+                goldAmount: AdShopGoldAmount,
+                goldRemaining: AdShopDailyCount, goldTotal: AdShopDailyCount,
+                oneTouch: false,
+                watchAd: () => Debug.Log("[상점] 광고 보상은 아직 연결되지 않았다(MIGRATION_BASELINE 알려진 미동작)."),
+                claimGold: () => Debug.Log("[상점] 광고 골드 지급은 아직 연결되지 않았다."),
+                oneTouchChanged: on => Debug.Log("[상점] 원터치 구매 설정은 아직 저장되지 않는다: " + on));
+        }
+
+        /// <summary>시안에 적힌 하루 한도. 데이터가 생기면 <c>ShopDatabase</c> 로 올린다.</summary>
+        private const int AdShopDailyCount = 2;
+
+        /// <summary>시안에 적힌 광고 보상 골드.</summary>
+        private const int AdShopGoldAmount = 10000;
 
         // ── 8.1 성장 패키지 ────────────────────────────────────────────
 
@@ -175,24 +217,27 @@ namespace OJ.Shop
                 ShopDatabase.GemBox box = boxes[i];
                 int index = i;
 
+                // 등급 구간과 확률을 한 줄로 합친다. 카드가 시안 크기라 줄을 둘 둘 자리가 없다.
                 string caption = UIEquipmentText.GetRarityName(box.minRarity) + " ~ " +
-                                 UIEquipmentText.GetRarityName(box.maxRarity);
+                                 UIEquipmentText.GetRarityName(box.maxRarity) + " · 확률 미정";
                 string costName = PointRewardUtility.GetPointName(box.costType);
 
                 gemBoxCards[i].SetRarityIcons(BuildRarityIcons(box.minRarity, box.maxRarity));
 
                 gemBoxCards[i].Bind(
                     box.title,
-                    UIEquipmentSpriteResolver.GetGemIconSprite(box.maxRarity),
+                    // 시안은 상자 그림이 곧 상품이다. 등급 보석 아이콘을 쓰면 상자가 사라진다.
+                    ShopTierArt.GemBoxArt(i),
                     caption,
-                    // 확률은 카드 안에 상시 노출한다(8.2-4). 표가 미정이라 지금은 자리만 잡는다.
-                    "확률 미정",
+                    // 확률은 caption 에 합쳐 적는다(8.2-4). 카드에 둘째 줄 자리가 없다.
+                    string.Empty,
                     costName + " " + ShopText.FormatAmount(box.costSingle) + " · 1회",
                     Affordable(box.costType, box.costSingle),
                     () => Report(ShopPurchaseManager.Instance?.TryDrawGemBox(index, 1)),
                     costName + " " + ShopText.FormatAmount(box.costTen) + " · 10회",
                     Affordable(box.costType, box.costTen),
-                    () => Report(ShopPurchaseManager.Instance?.TryDrawGemBox(index, 10)));
+                    () => Report(ShopPurchaseManager.Instance?.TryDrawGemBox(index, 10)),
+                    ShopTierArt.GemBoxCard(i));
             }
         }
 
@@ -292,7 +337,8 @@ namespace OJ.Shop
                 paidGemCards[i].Bind(
                     PointType.PaidGem, offer.gemAmount,
                     PointType.Max, ShopText.FormatWon(offer.priceWon), true,
-                    () => Report(ShopPurchaseManager.Instance?.TryBuyPaidGem(index)));
+                    () => Report(ShopPurchaseManager.Instance?.TryBuyPaidGem(index)),
+                    ShopTierArt.Feather(i + 1));
             }
         }
 
@@ -319,7 +365,8 @@ namespace OJ.Shop
                     PointType.FreeGem, gained,
                     PointType.PaidGem, ShopText.FormatAmount(paid),
                     Affordable(PointType.PaidGem, paid),
-                    () => ConfirmExchange(paid, gained));
+                    () => ConfirmExchange(paid, gained),
+                    ShopTierArt.Diamond(i + 1));
             }
 
             if (freeGemRateText != null)
@@ -371,7 +418,8 @@ namespace OJ.Shop
                     offer.stoneType, offer.amountPerPurchase,
                     PointType.FreeGem, ShopText.FormatAmount(offer.costFreeGem),
                     Affordable(PointType.FreeGem, offer.costFreeGem),
-                    () => Report(ShopPurchaseManager.Instance?.TryBuyStone(index)));
+                    () => Report(ShopPurchaseManager.Instance?.TryBuyStone(index)),
+                    ShopTierArt.Stone(offer.stoneType, i + 1));
             }
         }
 
@@ -404,7 +452,8 @@ namespace OJ.Shop
                     PointType.Gold, offer.goldAmount,
                     PointType.FreeGem, ShopText.FormatAmount(cost),
                     Affordable(PointType.FreeGem, cost),
-                    () => Report(purchases?.TryBuyGold(index)));
+                    () => Report(purchases?.TryBuyGold(index)),
+                    ShopTierArt.Gold(i + 1));
             }
         }
 
@@ -469,7 +518,14 @@ namespace OJ.Shop
         // 아래는 에디터 굽기 전용. 런타임에 부르지 않는다.
         // ──────────────────────────────────────────────────────────────
 
-        /// <summary>에디터 굽기 전용.</summary>
+        /// <summary>
+        /// 에디터 굽기 전용. 시안 <c>Art/Layout/Shop_*.png</c> 다섯 장이 한 화면의
+        /// 스크롤 구간들이라, <b>배너는 고정 머리글이고 그 아래만 스크롤</b>한다 —
+        /// 다섯 장 모두 같은 배너를 달고 있고, 각 장의 내용이 전부 뷰포트 1142 안에 든다.
+        ///
+        /// 좌표는 PSD(1080x1920)에서 잰 절대값이다. 로비 <c>Content</c> 가 화면 전체라
+        /// PSD 좌표가 그대로 캔버스 좌표가 된다 — <see cref="Page"/> 가 그 변환이다.
+        /// </summary>
         public static UIShopPage Create(Transform parent, TMP_FontAsset font)
         {
             GameObject root = UIShopUIFactory.CreateRect("UIShopPage", parent);
@@ -485,21 +541,22 @@ namespace OJ.Shop
             // 그 판단은 LobbyLayoutController 가 BackKeyOverride 로 넣는다.
             page.UseBackBtn = true;
 
+            BuildBanner(view.transform, font);
             RectTransform content = CreateScrollBody(view.transform);
 
-            // 성장 패키지는 <b>가로 스와이프가 아니라 세로 나열</b>이다. 기획서 8.1 목업은
-            // 페이저(인디케이터 * o)지만, 동시 노출 상한이 2개이고 배너 하나가 440 이라
-            // 둘을 세로로 쌓아도 접히지 않는다(로비 내용물 높이 약 1300). 페이저는 두 번째
-            // 배너의 존재를 점 하나로만 알리는데, 나열은 그냥 보인다.
-            // <b>상한이 3개 이상으로 바뀌면 이 판단이 뒤집힌다.</b>
-            page.growthBody = BuildSection(content, 0, font, out _, SectionBody.Vertical);
-            page.gemDrawBody = BuildSection(content, 1, font, out _, SectionBody.Horizontal);
+            // 섹션은 SectionOrder 순서 그대로 쌓인다. 머리글이 빈 섹션은 바 없이 내용만 온다.
+            page.growthBody = BuildSection(content, 0, font, SectionBody.Vertical);
+            page.gemDrawBody = BuildSection(content, 1, font, SectionBody.Horizontal);
 
-            // 재화 상점 셋은 레퍼런스 스샷대로 3열 카드다(수량 티어가 나란히 비교돼야 한다).
-            page.paidGemBody = BuildSection(content, 2, font, out _, SectionBody.Grid);
-            page.freeGemBody = BuildSection(content, 3, font, out page.freeGemRateText, SectionBody.Grid);
-            page.stoneBody = BuildSection(content, 4, font, out _, SectionBody.Grid);
-            page.goldBody = BuildSection(content, 5, font, out _, SectionBody.Grid);
+            RectTransform adBody = BuildSection(content, 2, font, SectionBody.Free);
+            page.adSection = UIShopAdSection.Create(adBody, font);
+
+            page.paidGemBody = BuildSection(content, 3, font, SectionBody.Grid);
+            page.freeGemBody = BuildSection(content, 4, font, SectionBody.Grid);
+            page.stoneBody = BuildSection(content, 5, font, SectionBody.Grid);
+            page.goldBody = BuildSection(content, 6, font, SectionBody.Grid);
+
+            BuildFooter(content, font);
 
             // 템플릿은 꺼진 채로 프리팹에 들어간다. 복제될 때 부모가 바뀌므로 어디에
             // 두어도 되지만, 각자 쓰이는 섹션 밑에 두면 프리팹을 열었을 때 눈에 띈다.
@@ -510,18 +567,126 @@ namespace OJ.Shop
             return page;
         }
 
+        /// <summary>PSD 절대 좌표 → 캔버스 좌표(1080x1920, 가운데 원점).</summary>
+        private static Vector2 Page(float psdX, float psdY)
+        {
+            return new Vector2(psdX - 540f, 960f - psdY);
+        }
+
+        /// <summary>
+        /// 고정 머리글. 스크롤을 타지 않는다 — 시안 다섯 장이 모두 같은 배너를 달고 있다.
+        ///
+        /// <b>로비 상단 HUD(프로필·재화)가 이 위에 겹친다.</b> 시안은 좌상단에 "상점" 제목을
+        /// 두어 둘이 같은 자리를 쓴다. 상점 탭에서 HUD 를 끄는 것은
+        /// <c>LobbyLayoutController</c> 의 일이라 여기서는 시안대로만 그린다.
+        /// </summary>
+        private static void BuildBanner(Transform parent, TMP_FontAsset font)
+        {
+            GameObject banner = UIShopUIFactory.CreateRect("Banner", parent);
+            RectTransform rect = banner.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.sizeDelta = new Vector2(0f, UIShopUIFactory.BannerHeight);
+            rect.anchoredPosition = Vector2.zero;
+
+            // 배너 안쪽 좌표는 배너 중심 기준이다. 아래 Local 이 PSD 좌표를 그리로 옮긴다.
+            Vector2 Local(float psdX, float psdY) =>
+                new Vector2(psdX - 540f, UIShopUIFactory.BannerHeight * 0.5f - psdY);
+
+            // 그림은 Shop_Benner 한 장이다. 세로 x2 가 시안과 맞고(실측), 가로만 1080 에
+            // 맞춰 늘린다 — x2 로 두면 좌우에 13px 씩 빈다(PSD 는 광선 레이어가 따로 있었다).
+            Image art = UIShopUIFactory.CreateSprite(
+                "Art", banner.transform, UIShopUIFactory.Art("Shop/Shop_Benner"), 2f,
+                new Vector2(1080f, 1024f), Local(540f, 239f));
+            art.transform.SetAsFirstSibling();
+
+            TMP_Text title = UIShopUIFactory.CreateText("Title", banner.transform, "상점", 95f,
+                TextAlignmentOptions.Left, UIShopUIFactory.BannerTitleColor, font);
+            UIShopUIFactory.SetRect(title.rectTransform, new Vector2(520f, 120f), Local(291f, 86.5f));
+
+            TMP_Text subtitle = UIShopUIFactory.CreateText("Subtitle", banner.transform,
+                "모험에 필요한 모든 것!", 50f, TextAlignmentOptions.Left, Color.white, font);
+            UIShopUIFactory.SetRect(subtitle.rectTransform, new Vector2(620f, 64f), Local(350f, 169.5f));
+
+            // 배너와 목록을 가르는 띠. 시안 (481)-(567) 이다.
+            // <b>첫 결제 띠보다 먼저 만든다</b> — 둘이 481~534 에서 겹치는데, 나중에 만들면
+            // 띠가 첫 결제 버튼의 아래 절반을 덮는다.
+            UIShopUIFactory.CreateDivider("Divider", banner.transform, 1080f, Local(540f, 524f));
+
+            // 첫 결제 띠. Pass_premium_Btn 은 가로만 9슬라이스라(테두리 56,0,19,0)
+            // 세로 여백은 보이는 높이에 비례한다(텍스처 128 에 보이는 것이 34).
+            float strip = 102f;
+            UIShopUIFactory.CreateKit("FirstPay", banner.transform,
+                UIShopUIFactory.Art("Pass/Pass_premium_Btn"), 3f,
+                new Vector2(701f, strip), Local(545.5f, 483f),
+                new Vector4(36f, strip * 47f / 34f, 36f, strip * 47f / 34f));
+
+            TMP_Text promo = UIShopUIFactory.CreateText("Promo", banner.transform,
+                "첫 결제 보너스! <color=#FF5A00>킹 다이스</color> 증정!", 45f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIShopUIFactory.SetRect(promo.rectTransform, new Vector2(680f, 60f), Local(545f, 483f));
+
+        }
+
+        /// <summary>
+        /// 맨 아래 구매 복원과 청약 철회 안내. 섹션이 아니라 목록 꼬리라 따로 만든다 —
+        /// <b>법에서 요구하는 문구</b>라 상품이 하나도 없어도 사라지면 안 된다.
+        /// </summary>
+        private static void BuildFooter(RectTransform content, TMP_FontAsset font)
+        {
+            GameObject footer = UIShopUIFactory.CreateRect("Footer", content);
+            UIShopUIFactory.SetPreferredHeight(footer, FooterHeight);
+
+            // 꼬리 안쪽 좌표. 시안에서 이 묶음은 1211 부터 1620 까지이고,
+            // 앞 섹션과의 사이에 섹션 간격(38)보다 조금 더 벌어져 있다.
+            Vector2 Local(float psdX, float psdY) =>
+                new Vector2(psdX - 540f, FooterHeight * 0.5f - (psdY - 1211f));
+
+            UIShopUIFactory.CreateKitButton(
+                "Restore", footer.transform, "InfinityMode/Btn_PurpleGray",
+                new Vector2(292f, 189f), Local(547f, 1345.5f),
+                "구매 복원", 40f, Color.white, font, scale: 4f);
+
+            TMP_Text first = UIShopUIFactory.CreateText("Notice1", footer.transform,
+                "청약 철회는 구매일로부터 7일 이내 가능합니다.", 40f,
+                TextAlignmentOptions.Center, UIShopUIFactory.NoticeColor, font);
+            UIShopUIFactory.SetRect(first.rectTransform, new Vector2(1000f, 52f), Local(540f, 1537.5f));
+
+            TMP_Text second = UIShopUIFactory.CreateText("Notice2", footer.transform,
+                "(단, 즉시 적용 및 일부 사용 시 청약 철회 불가)", 40f,
+                TextAlignmentOptions.Center, UIShopUIFactory.NoticeColor, font);
+            UIShopUIFactory.SetRect(second.rectTransform, new Vector2(1000f, 52f), Local(540f, 1601.5f));
+        }
+
+        /// <summary>꼬리 높이. 시안 1211 ~ 1620 에 아래 숨통을 조금 더 준 값이다.</summary>
+        private const float FooterHeight = 449f;
+
         private static RectTransform CreateScrollBody(Transform parent)
         {
             GameObject viewport = UIShopUIFactory.CreateRect("Scroll", parent);
             RectTransform viewportRect = viewport.GetComponent<RectTransform>();
-            UIShopUIFactory.Stretch(viewportRect);
+
+            // 배너 아래부터 하단 탭 바 위까지. 탭 바 밑으로 내려보내지 않으므로
+            // 예전처럼 목록 끝에 빈 여백(BottomInset)을 둘 필요가 없다.
+            //
+            // <b>높이를 1920 에서 빼서 계산하면 안 된다.</b> 캔버스가 폭 기준으로 맞춰져
+            // (match=0) 화면 비율이 다르면 캔버스 높이가 1920 이 아니다 — 에디터 게임 뷰가
+            // 가로이기만 해도 607 이 된다. 그때 고정 크기로 둔 뷰포트는 화면 밖으로 나간다.
+            // 위아래를 앵커로 물려 두면 어느 비율에서도 배너 아래 ~ 탭 바 위에 붙는다.
+            viewportRect.anchorMin = new Vector2(0f, 0f);
+            viewportRect.anchorMax = new Vector2(1f, 1f);
+            viewportRect.pivot = new Vector2(0.5f, 0.5f);
+            viewportRect.offsetMin = new Vector2(0f, UIShopUIFactory.TabBarHeight);
+            viewportRect.offsetMax = new Vector2(0f, -UIShopUIFactory.BannerHeight);
 
             // <b>배경을 뷰포트 자체에 붙인다.</b> 형제로 따로 두면 배경 위를 끌어도
             // 스크롤이 안 된다 — ScrollRect 는 드래그를 <c>Graphic</c> 으로 받는데
             // 뷰포트에 그래픽이 없으면 <b>카드와 버튼 위에서만</b> 끌리고 빈 곳은 안 먹는다.
-            // 섹션 사이 여백과 머리글이 전부 그 "빈 곳" 이라 체감이 크다.
             Image background = viewport.AddComponent<Image>();
-            background.color = UIShopUIFactory.PageBg;
+            background.color = UIShopUIFactory.PageBackground;
             background.raycastTarget = true;
 
             // 마스크가 없으면 목록이 로비 화면 전체를 덮는다. 그 상태에서도 스크롤은
@@ -546,11 +711,9 @@ namespace OJ.Shop
             contentRect.offsetMax = Vector2.zero;
             contentRect.sizeDelta = Vector2.zero;
 
-            // 아래 여백이 크다. 이 페이지는 로비 <c>Content</c> 를 꽉 채우는데 그 아래에
-            // <b>하단 탭 바가 겹쳐 있어</b>, 여백이 없으면 마지막 섹션(골드)이 탭 바에
-            // 가려 끝까지 못 내려간다. 탭 바 높이보다 넉넉히 준다.
-            UIShopUIFactory.AddVertical(content, spacing: 32f, padding: 0f)
-                .padding = new RectOffset(0, 0, 24, BottomInset);
+            // 시안 실측: 첫 머리글이 뷰포트 위에서 30, 섹션 사이가 38 이다.
+            UIShopUIFactory.AddVertical(content, spacing: SectionSpacing, padding: 0f)
+                .padding = new RectOffset(0, 0, 30, 40);
             UIShopUIFactory.AddVerticalFitter(content);
 
             scroll.viewport = viewportRect;
@@ -559,67 +722,98 @@ namespace OJ.Shop
             return contentRect;
         }
 
-        /// <summary>
-        /// 목록 맨 아래 여백. 로비 하단 탭 바가 이 페이지 위에 겹치므로 그만큼 비워 둔다.
-        /// 1080x1920 기준 탭 바가 약 200 이고, 스크롤이 끝났다는 것이 보이도록 조금 더 준다.
-        /// </summary>
-        private const int BottomInset = 260;
+        /// <summary>섹션 사이 간격. 시안에서 카드 아래와 다음 머리글 위가 38 이다.</summary>
+        private const float SectionSpacing = 38f;
+
+        /// <summary>머리글 바와 내용 사이. 시안에서 바 아래와 카드 위가 20 이다.</summary>
+        private const float HeaderGap = 20f;
 
         /// <summary>섹션 본체의 배치 방식. 굽기 전용.</summary>
         private enum SectionBody
         {
-            /// <summary>세로 나열. 항목 수가 데이터에 따라 변하는 섹션.</summary>
+            /// <summary>세로 나열. 항목 수가 데이터에 따라 변하는 섹션(패키지).</summary>
             Vertical,
 
-            /// <summary>가로 2열 카드. 높이가 카드 하나로 고정된다.</summary>
+            /// <summary>가로 2열. 보석 보물상자가 쓴다.</summary>
             Horizontal,
 
-            /// <summary>3열 그리드. 일일상점 6칸이 유일하다.</summary>
+            /// <summary>3열 그리드. 재화 상점 넷이 쓴다.</summary>
             Grid,
+
+            /// <summary>자식이 제 높이를 직접 정한다. 광고 칸처럼 좌표로 짠 덩어리.</summary>
+            Free,
         }
 
-        /// <summary>세로 본체 안에 3열 그리드를 한 겹 더 넣는다. 일일상점만 쓴다.</summary>
-        private static RectTransform BuildGridChild(RectTransform body, float cellHeight)
-        {
-            GameObject grid = UIShopUIFactory.CreateRect("Grid", body);
-            UIShopUIFactory.AddGrid(grid, columns: 3, spacing: 16f, cellHeight: cellHeight);
-
-            // 바깥 본체가 이미 좌우 여백을 줬다. 그리드가 또 주면 두 배가 된다.
-            grid.GetComponent<GridLayoutGroup>().padding = new RectOffset(0, 0, 0, 0);
-            return grid.GetComponent<RectTransform>();
-        }
-
+        /// <summary>
+        /// 섹션 한 칸을 만들고 <b>내용을 붙일 Body</b> 를 돌려준다.
+        /// <see cref="SectionOrder"/> 의 제목이 비어 있으면 머리글 바를 만들지 않는다.
+        /// </summary>
         private static RectTransform BuildSection(
-            RectTransform content, int orderIndex, TMP_FontAsset font,
-            out TMP_Text sideLabel, SectionBody kind)
+            RectTransform content, int orderIndex, TMP_FontAsset font, SectionBody kind)
         {
             string title = SectionOrder[orderIndex];
 
-            RectTransform body = UIShopUIFactory.CreateSection(
-                "Section" + orderIndex + "_" + title, content, title, string.Empty, font, out sideLabel);
+            GameObject section = UIShopUIFactory.CreateRect("Section" + orderIndex + "_" + SafeName(title, kind), content);
+            UIShopUIFactory.AddVertical(section, spacing: HeaderGap, padding: 0);
+            UIShopUIFactory.AddVerticalFitter(section);
+
+            if (!string.IsNullOrEmpty(title))
+            {
+                GameObject header = UIShopUIFactory.CreateRect("Header", section.transform);
+                UIShopUIFactory.SetPreferredHeight(header, UIShopUIFactory.SectionBarSize.y + 9f);
+
+                UIShopUIFactory.CreateSectionBar("Bar", header.transform,
+                    new Vector2(UIShopUIFactory.SectionBarSize.x, UIShopUIFactory.SectionBarSize.y + 9f), Vector2.zero);
+
+                TMP_Text label = UIShopUIFactory.CreateText("Title", header.transform, title, 45f,
+                    TextAlignmentOptions.Center, Color.white, font);
+                UIShopUIFactory.SetRect(label.rectTransform, new Vector2(420f, 56f), new Vector2(0f, 1f));
+            }
+
+            GameObject body = UIShopUIFactory.CreateRect("Body", section.transform);
 
             switch (kind)
             {
                 case SectionBody.Grid:
-                    UIShopUIFactory.AddGrid(body.gameObject, columns: 3, spacing: 16f,
-                        cellHeight: UIShopGridCard.CardHeight);
+                    // 시안 실측: 카드 폭 327, 왼쪽 여백 30 · 오른쪽 20, 가로 간격 24.5, 세로 37.
+                    var grid = body.AddComponent<GridLayoutGroup>();
+                    grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+                    grid.constraintCount = 3;
+                    grid.cellSize = UIShopGridCard.CardSize;
+                    grid.spacing = new Vector2(24.5f, 37f);
+                    grid.padding = new RectOffset(30, 20, 0, 0);
+                    UIShopUIFactory.AddVerticalFitter(body);
                     break;
 
                 case SectionBody.Horizontal:
-                    UIShopUIFactory.AddHorizontal(body.gameObject, spacing: 20f,
-                        padding: UIShopUIFactory.SidePadding);
-                    UIShopUIFactory.SetPreferredHeight(body.gameObject, UIShopOfferCard.CardHeight);
+                    // 보석 보물상자 두 장. 시안 (30,1208)-(521,·) 과 (551,·)-(1042,·) 이다.
+                    var row = UIShopUIFactory.AddHorizontal(body, spacing: 30f, padding: 0f);
+                    row.padding = new RectOffset(30, 38, 0, 0);
+                    row.childForceExpandHeight = false;
+                    UIShopUIFactory.SetPreferredHeight(body, UIShopOfferCard.CardHeight);
+                    break;
+
+                case SectionBody.Free:
+                    UIShopUIFactory.AddVertical(body, spacing: 0f, padding: 0f);
+                    UIShopUIFactory.AddVerticalFitter(body);
                     break;
 
                 default:
-                    // 좌우 여백만 준다. 위아래는 섹션 사이 간격이 이미 벌려 준다.
-                    UIShopUIFactory.AddVertical(body.gameObject, spacing: 12f, padding: 0f).padding =
-                        new RectOffset((int)UIShopUIFactory.SidePadding, (int)UIShopUIFactory.SidePadding, 0, 0);
-                    UIShopUIFactory.AddVerticalFitter(body.gameObject);
+                    UIShopUIFactory.AddVertical(body, spacing: 12f, padding: 0f);
+                    UIShopUIFactory.AddVerticalFitter(body);
                     break;
             }
 
-            return body;
+            return body.GetComponent<RectTransform>();
+        }
+
+        /// <summary>
+        /// 머리글이 없는 섹션에도 이름이 있어야 한다. 하이어라키에서 "Section2_" 가
+        /// 둘이면 어느 쪽을 보고 있는지 알 수 없다.
+        /// </summary>
+        private static string SafeName(string title, SectionBody kind)
+        {
+            return string.IsNullOrEmpty(title) ? kind.ToString() : title;
         }
     }
 }

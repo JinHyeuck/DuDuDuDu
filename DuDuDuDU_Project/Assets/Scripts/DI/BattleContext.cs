@@ -6,6 +6,7 @@ using OJ.Element;
 using OJ.Hunting;
 using OJ.Rewind;
 using OJ.Tower;
+using OJ.Tutorial;
 
 namespace OJ.DI
 {
@@ -44,6 +45,7 @@ namespace OJ.DI
         public TowerRunManager Tower { get; private set; }
         public DamageContributionTracker Contribution { get; private set; }
         public WaveRewindManager Rewind { get; private set; }
+        public TutorialRunManager Tutorial { get; private set; }
 
         /// <summary>
         /// 배틀 스코프가 빌드된 직후 한 번 부른다.
@@ -70,7 +72,8 @@ namespace OJ.DI
             BattlePointManager battlePoints,
             TowerRunManager tower,
             DamageContributionTracker contribution,
-            WaveRewindManager rewind)
+            WaveRewindManager rewind,
+            TutorialRunManager tutorial)
         {
             Game = game;
             Player = player;
@@ -90,6 +93,7 @@ namespace OJ.DI
             Tower = tower;
             Contribution = contribution;
             Rewind = rewind;
+            Tutorial = tutorial;
 
             IsActive = true;
         }
@@ -121,6 +125,10 @@ namespace OJ.DI
             Tower = null;
             Contribution = null;
             Rewind = null;
+
+            // 탑과 같은 이유로 비운다 — 남으면 다음 본편이 대본을 물고 시작한다.
+            Tutorial?.Clear();
+            Tutorial = null;
         }
     }
 }

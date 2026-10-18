@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using VContainer;
 using OJ.Core;
 using OJ.DI;
+using OJ.Hunting;
+using OJ.Stage;
 using OJ.UI;
 
 namespace OJ.Bounty
@@ -32,8 +34,15 @@ namespace OJ.Bounty
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text detailText;
         [SerializeField] private Button changeButton;
+        // 다음 웨이브 미리보기 한 줄. 스테이지 콘셉트(물량/정예)가 생기면서 마리 수와
+        // 체력이 스테이지마다 크게 달라져, 시작 버튼을 누르기 전에 알려 줄 자리가 필요해졌다.
+        [SerializeField] private GameObject waveInfoRoot;
+        [SerializeField] private TMP_Text waveInfoText;
 
         private BountyManager subscribed;
+
+        /// <summary>선택 창을 여는 버튼. 튜토리얼이 그 자리만 열어 둔다.</summary>
+        public RectTransform ChangeButtonRect => changeButton != null ? changeButton.transform as RectTransform : null;
 
         protected override void OnEnter()
         {
@@ -91,6 +100,8 @@ namespace OJ.Bounty
             if (bounty == null)
                 return;
 
+            RefreshWaveInfo();
+
             int grade = bounty.SelectedGrade;
             BountyDefinition definition = bounty.GetDefinition(grade);
 
@@ -128,6 +139,35 @@ namespace OJ.Bounty
                 icon.sprite = definition.icon;
                 icon.color = definition.tint;
             }
+        }
+
+        private void RefreshWaveInfo()
+        {
+            if (waveInfoText == null)
+                return;
+
+            GameManager game = battle != null ? battle.Game : null;
+            StageData stage = game != null ? game.CurrentStageData : null;
+            bool visible = stage != null && (battle.Tower == null || !battle.Tower.IsActive);
+            if (waveInfoRoot != null)
+                waveInfoRoot.SetActive(visible);
+            if (!visible)
+                return;
+
+            // 관리 단계의 WaveIndex 는 방금 끝난 웨이브다. 시작 버튼이 올리는 다음 값을 본다.
+            int nextWave = game.CurrentWaveIndex + 1;
+            string text = StageData.GetConceptName(stage.concept)
+                          + " · " + stage.monstersPerWave + "마리 · HP "
+                          + ShortNumberFormat.Format(stage.GetMonsterHpForWave(nextWave));
+
+            int defense = stage.GetMonsterDefenseForWave(nextWave);
+            if (defense > 0)
+                text += " · 방어 " + defense;
+
+            if (nextWave >= stage.totalWaves)
+                text += " · 보스 HP " + ShortNumberFormat.Format(stage.GetBossHpForWave(nextWave));
+
+            waveInfoText.SetText(text);
         }
 
         private void OnClickChange()
@@ -224,6 +264,20 @@ namespace OJ.Bounty
             TMP_Text changeLabel = UIBountyUIFactory.CreateText("Label", change.transform, "선택하기", 25f,
                 TextAlignmentOptions.Center, Color.white, font);
             UIBountyUIFactory.SetRect(changeLabel.rectTransform, buttonSize, Vector2.zero);
+
+            // 다음 웨이브 미리보기 — 띠 바로 위에 붙은 짧은 한 줄.
+            const float InfoHeight = 50f;
+            float infoY = BannerCenter.y - BannerVisibleHeight * 0.5f - InfoHeight * 0.5f - 6f;
+            Image infoBg = UIBountyUIFactory.CreateImage("WaveInfo", view.transform, new Color(0f, 0f, 0f, 0.55f));
+            UIBountyUIFactory.SetRect(infoBg.rectTransform, new Vector2(BannerVisibleWidth - 40f, InfoHeight),
+                UIBountyUIFactory.Local(BannerCenter.x, infoY, BannerCenter));
+            infoBg.raycastTarget = false;
+            banner.waveInfoRoot = infoBg.gameObject;
+
+            banner.waveInfoText = UIBountyUIFactory.CreateText("Label", infoBg.transform,
+                "기본 · 20마리 · HP 21", 26f, TextAlignmentOptions.Center, Color.white, font);
+            UIBountyUIFactory.SetRect(banner.waveInfoText.rectTransform,
+                new Vector2(BannerVisibleWidth - 60f, InfoHeight), Vector2.zero);
 
             return banner;
         }

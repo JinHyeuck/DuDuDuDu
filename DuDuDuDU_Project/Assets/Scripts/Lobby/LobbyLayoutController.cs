@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
+using OJ.ContentUnlock;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
@@ -75,6 +76,11 @@ namespace OJ.Lobby
             if (OJ.Save.EntitlementManager.Instance != null)
                 OJ.Save.EntitlementManager.Instance.OnChanged += RefreshStageUI;
 
+            // 고기(스태미나)가 들어오면 입장 버튼을 다시 살린다. 예전에는 로비를 다시 열기 전까지
+            // 꺼진 채로 남아, 고기를 받고도 들어갈 수 없는 것처럼 보였다(방치 보상·상점·우편 등).
+            if (OJ.Point.PointManager.Instance != null)
+                OJ.Point.PointManager.Instance.OnPointChanged += OnPointChanged;
+
             selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetHighestUnlockedStageIndex() : 1;
             ShowTab(defaultTab);
             RefreshStageUI();
@@ -84,6 +90,16 @@ namespace OJ.Lobby
         {
             if (OJ.Save.EntitlementManager.Instance != null)
                 OJ.Save.EntitlementManager.Instance.OnChanged -= RefreshStageUI;
+
+            if (OJ.Point.PointManager.Instance != null)
+                OJ.Point.PointManager.Instance.OnPointChanged -= OnPointChanged;
+        }
+
+        private void OnPointChanged(PointType pointType, int value)
+        {
+            // 다른 재화가 바뀔 때마다 스테이지 칸 전체를 다시 그릴 이유는 없다.
+            if (pointType == PointType.Stamina)
+                RefreshStageUI();
         }
 
         /// <summary>
@@ -156,6 +172,10 @@ namespace OJ.Lobby
         /// </summary>
         public void ShowTab(LobbyTab tab)
         {
+            // 아직 안 열린 탭은 넘어가지 않고 언제 열리는지만 알린다(Docs/ContentUnlock.md).
+            if (TryExplainLockedTab(tab))
+                return;
+
             SetPageActive<UIShopPage>(tab == LobbyTab.Shop);
             SetPageActive<UIEquipmentPage>(tab == LobbyTab.Equipment);
             SetPageActive<UIDiceGrowthPage>(tab == LobbyTab.Bullet);
@@ -170,6 +190,28 @@ namespace OJ.Lobby
                     button.SetState(button._tab == tab);
                 }
             }
+        }
+
+        /// <summary>
+        /// 잠긴 탭이면 안내 창을 띄우고 true. 로비 밖(문지기 없음)이나 표에 없는 탭은 열린 것으로 본다.
+        /// </summary>
+        private static bool TryExplainLockedTab(LobbyTab tab)
+        {
+            LobbyContentGate gate = LobbyContentGate.Current;
+            if (gate == null || !LobbyContentGate.TryGetContentOfTab(tab, out OJ.Core.ContentId id) || gate.IsAccessible(id))
+                return false;
+
+            OJ.Core.ContentUnlockDefinition definition = ContentUnlockManager.Instance?.GetDefinition(id);
+            string name = definition != null ? definition.displayName : tab.ToString();
+            string message = definition != null && definition.requiredClear > 0
+                ? definition.requiredClear + "스테이지를 클리어하면 열려요."
+                : "곧 열려요.";
+
+            UIConfirmDialog dialog = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (dialog != null)
+                dialog.Open(name, message, "확인", null, null);
+
+            return true;
         }
 
         private void RefreshStageUI()

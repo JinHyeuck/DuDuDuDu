@@ -46,35 +46,32 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 특수 5 + 킹 5 가 빠짐없이 있고 기본 5종은 없다.
+        /// 킹 5종이 빠짐없이 있고 <b>그 다섯뿐</b>이다.
         ///
-        /// 빠진 다이스는 가격도 보상처도 없어 <b>영영 못 얻는다</b>. 기본 다이스가 들어 있으면
-        /// 처음부터 보유인 것을 다시 팔게 된다.
+        /// 빠진 다이스는 가격도 보상처도 없어 <b>영영 못 얻는다</b>. 반대로 처음부터 보유인
+        /// 것(기본 5종·특수 5종)이 들어 있으면 이미 가진 것을 파는 화면이 만들어진다.
         /// </summary>
         [Test]
-        public void 기본표가_특수와_킹_열_종을_덮는다()
+        public void 기본표가_킹_다섯_종만_덮는다()
         {
             List<DiceUnlockDefinition> defaults = DiceUnlockDatabase.BuildDefaults();
 
-            Assert.That(defaults, Has.Count.EqualTo(10));
+            Assert.That(defaults, Has.Count.EqualTo(5));
 
             var covered = new HashSet<DiceType>();
             foreach (DiceUnlockDefinition definition in defaults)
             {
-                Assert.That(DiceEvolution.GetTier(definition.diceType), Is.Not.EqualTo(DiceTier.Base),
-                    definition.diceType + " 는 기본 다이스라 언락 대상이 아니다");
+                Assert.That(DiceEvolution.IsOwnedFromStart(definition.diceType), Is.False,
+                    definition.diceType + " 는 처음부터 보유라 언락 대상이 아니다");
                 covered.Add(definition.diceType);
             }
-
-            foreach (DiceType special in DiceEvolution.SpecialTypes)
-                Assert.That(covered, Contains.Item(special));
 
             foreach (DiceType king in DiceEvolution.KingTypes)
                 Assert.That(covered, Contains.Item(king));
         }
 
         /// <summary>
-        /// 열 종 전부 가격을 갖는다.
+        /// 킹 5종 전부 가격을 갖는다.
         ///
         /// <b>환급 규칙이 이것을 강제한다.</b> 컨텐츠가 이미 보유한 다이스를 줬을 때
         /// 돌려줄 금액이 곧 가격이라, 가격 없는 줄이 하나라도 있으면 그 다이스는
@@ -88,7 +85,7 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 열 종 전부 컨텐츠 보상처를 하나씩 갖는다.
+        /// 킹 5종 전부 컨텐츠 보상처를 하나씩 갖는다.
         ///
         /// 기획의 "다이스 잠금 시 보상처를 보여 줘 컨텐츠 플레이를 유도한다"가 성립하려면
         /// 보여 줄 것이 있어야 한다. 재화만 있는 다이스는 그 화면이 빈칸이 된다.
@@ -151,8 +148,8 @@ namespace OJ.Game.Tests
         public void 해금_층이_겹치면_문제로_잡는다()
         {
             List<DiceUnlockDefinition> definitions = DiceUnlockDatabase.BuildDefaults();
-            definitions[5].towerFloor = 100;
-            definitions[6].towerFloor = 100;
+            definitions[0].towerFloor = 100;
+            definitions[1].towerFloor = 100;
 
             Assert.That(
                 DiceUnlockDatabase.Validate(definitions, StageCount, MaxStarCount, StarsPerReward),
@@ -169,6 +166,64 @@ namespace OJ.Game.Tests
             Assert.That(
                 DiceUnlockDatabase.Validate(definitions, StageCount, MaxStarCount, StarsPerReward),
                 Is.Not.Empty);
+        }
+
+        // ── 처음부터 보유하는 열 종 ─────────────────────────────────────
+
+        /// <summary>
+        /// 특수(레어) 5종은 언락 표에 없다. 판 안에서 <b>진화로 만드는</b> 전술 선택이라
+        /// 처음부터 보유이고(<c>DiceEvolution.IsOwnedFromStart</c>), 표에 넣으면
+        /// 이미 가진 것을 파는 화면이 생긴다.
+        /// </summary>
+        [Test]
+        public void 특수_다이스는_언락_표에_없다()
+        {
+            var covered = new HashSet<DiceType>();
+            foreach (DiceUnlockDefinition definition in DiceUnlockDatabase.BuildDefaults())
+                covered.Add(definition.diceType);
+
+            foreach (DiceType special in DiceEvolution.SpecialTypes)
+            {
+                Assert.That(covered.Contains(special), Is.False, special.ToString());
+                Assert.That(DiceEvolution.IsOwnedFromStart(special), Is.True, special.ToString());
+            }
+        }
+
+        /// <summary>처음부터 보유인 다이스를 표에 넣으면 검사가 잡는다.</summary>
+        [Test]
+        public void 처음부터_보유인_다이스가_표에_있으면_문제로_잡는다()
+        {
+            List<DiceUnlockDefinition> definitions = DiceUnlockDatabase.BuildDefaults();
+            definitions.Add(new DiceUnlockDefinition
+            {
+                diceType = DiceType.Tornado,
+                price = 120,
+                starRequirement = 15,
+            });
+
+            Assert.That(
+                DiceUnlockDatabase.Validate(definitions, StageCount, MaxStarCount, StarsPerReward),
+                Is.Not.Empty);
+        }
+
+        /// <summary>
+        /// 스테이지 14 는 KingThunder 다 — 그 진화 재료인 Time 이 처음부터 보유라
+        /// "4성 썬더 → 타임 → 킹썬더" 가 첫 판부터 이어지는 길이 된다.
+        /// </summary>
+        [Test]
+        public void 스테이지_14_는_Time_의_진화_대상_KingThunder_다()
+        {
+            Assert.That(DiceEvolution.TryGetEvolveTarget(DiceType.Time, out DiceType king), Is.True);
+
+            DiceUnlockDefinition atStage14 = null;
+            foreach (DiceUnlockDefinition definition in DiceUnlockDatabase.BuildDefaults())
+            {
+                if (definition.stageRequirement == 14)
+                    atStage14 = definition;
+            }
+
+            Assert.That(atStage14, Is.Not.Null);
+            Assert.That(atStage14.diceType, Is.EqualTo(king));
         }
 
         /// <summary>바깥 수치를 0 으로 넘기면 그 검사만 건너뛴다 — 나머지는 그대로 돈다.</summary>
@@ -195,10 +250,12 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 기본 5종은 상태 없이 보유다. 세이브가 비어도 참이라 게임이 시작 불가로 떨어지지 않는다.
+        /// 기본 5종과 특수(레어) 5종은 상태 없이 보유다. 세이브가 비어도 참이라
+        /// 게임이 시작 불가로 떨어지지 않고, <b>첫 판부터 다섯 계통의 진화가 다 열려 있다</b>.
+        /// 킹 5종만 해금 대상이다.
         /// </summary>
         [Test]
-        public void 기본_다이스는_처음부터_보유다()
+        public void 기본과_특수는_처음부터_보유다()
         {
             DiceOwnershipManager ownership = MakeOwnership();
 
@@ -206,7 +263,7 @@ namespace OJ.Game.Tests
                 Assert.That(ownership.IsOwned(baseType), Is.True, baseType.ToString());
 
             foreach (DiceType special in DiceEvolution.SpecialTypes)
-                Assert.That(ownership.IsOwned(special), Is.False, special.ToString());
+                Assert.That(ownership.IsOwned(special), Is.True, special.ToString());
 
             foreach (DiceType king in DiceEvolution.KingTypes)
                 Assert.That(ownership.IsOwned(king), Is.False, king.ToString());
@@ -227,17 +284,17 @@ namespace OJ.Game.Tests
         {
             var rewards = new List<PointRewardEntry>();
 
-            bool first = DiceOwnershipManager.ShouldGrant(DiceType.Tornado, alreadyOwned: false, price: 120, rewards);
+            bool first = DiceOwnershipManager.ShouldGrant(DiceType.KingIce, alreadyOwned: false, price: 280, rewards);
 
             Assert.That(first, Is.True, "미보유면 지급한다");
             Assert.That(rewards, Is.Empty, "새로 얻었으면 환급할 것이 없다");
 
-            bool second = DiceOwnershipManager.ShouldGrant(DiceType.Tornado, alreadyOwned: true, price: 120, rewards);
+            bool second = DiceOwnershipManager.ShouldGrant(DiceType.KingIce, alreadyOwned: true, price: 280, rewards);
 
             Assert.That(second, Is.False, "이미 보유면 새로 얻은 것이 아니다");
             Assert.That(rewards, Has.Count.EqualTo(1));
-            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.RareStone));
-            Assert.That(rewards[0].Amount, Is.EqualTo(120));
+            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.MythicStone));
+            Assert.That(rewards[0].Amount, Is.EqualTo(280));
         }
 
         /// <summary>킹은 신화 재화로 환급된다 — 강화에 쓰는 재화와 같은 것이다.</summary>
@@ -253,13 +310,20 @@ namespace OJ.Game.Tests
             Assert.That(rewards[0].Amount, Is.EqualTo(200));
         }
 
-        /// <summary>기본 다이스와 Max 는 컨텐츠가 줄 것이 없다. 환급도 없다.</summary>
+        /// <summary>
+        /// 처음부터 보유인 열 종과 Max 는 컨텐츠가 줄 것이 없다. 환급도 없다.
+        ///
+        /// <b>가격 0 으로 들어와도 조용해야 한다.</b> 그 열 종은 언락 표에 없어 가격이 0 인데,
+        /// "보유인데 가격이 없다" 분기는 LogError 를 내므로 그 앞에서 걸러져야 한다 —
+        /// 안 그러면 정상 동작이 에러 로그가 된다.
+        /// </summary>
         [Test]
-        public void 기본_다이스는_컨텐츠_지급_대상이_아니다()
+        public void 처음부터_보유인_다이스는_컨텐츠_지급_대상이_아니다()
         {
             var rewards = new List<PointRewardEntry>();
 
-            Assert.That(DiceOwnershipManager.ShouldGrant(DiceType.Normal, alreadyOwned: true, price: 100, rewards), Is.False);
+            Assert.That(DiceOwnershipManager.ShouldGrant(DiceType.Normal, alreadyOwned: true, price: 0, rewards), Is.False);
+            Assert.That(DiceOwnershipManager.ShouldGrant(DiceType.Time, alreadyOwned: true, price: 0, rewards), Is.False);
             Assert.That(DiceOwnershipManager.ShouldGrant(DiceType.Max, alreadyOwned: false, price: 100, rewards), Is.False);
             Assert.That(rewards, Is.Empty);
         }
@@ -267,7 +331,9 @@ namespace OJ.Game.Tests
         // ── 진화·교환 게이팅 ────────────────────────────────────────────
 
         /// <summary>
-        /// 진화는 <b>대상</b>의 보유를 본다. Normal 을 4성까지 올려도 Tornado 가 없으면 못 간다.
+        /// 진화는 <b>대상</b>의 보유를 본다. 지금은 특수 5종이 처음부터 보유라 기본→특수
+        /// 경로에서 이 게이트가 실제로 걸리는 일은 없지만, 규칙은 살아 있어야 한다 —
+        /// 특수→킹 경로가 그것으로 막혀 있다. 여기서는 판정을 인자로 넘겨 규칙만 본다.
         ///
         /// 자기 자신의 보유를 보면 안 된다 — 기본 다이스는 늘 보유라 그 판정은 언제나 참이고,
         /// 게이팅이 통째로 무력해진다.
@@ -353,8 +419,9 @@ namespace OJ.Game.Tests
         public void 보유가_세이브를_왕복한다()
         {
             var seed = new SaveState();
-            seed.OwnedDice["Tornado"] = 1;
+            seed.OwnedDice["KingNormal"] = 1;
             seed.OwnedDice["KingIce"] = 1;
+            seed.OwnedDice["Tornado"] = 1;      // 특수가 해금 대상이던 시절의 옛 세이브 줄
 
             DiceOwnershipManager written = MakeOwnership();
             written.ReadFrom(seed);
@@ -362,46 +429,52 @@ namespace OJ.Game.Tests
             var state = new SaveState();
             written.WriteTo(state);
 
-            Assert.That(state.OwnedDice, Has.Count.EqualTo(2), "기본 다이스는 파일에 나가지 않는다");
-            Assert.That(state.OwnedDice.ContainsKey("Tornado"), Is.True);
+            Assert.That(state.OwnedDice, Has.Count.EqualTo(2),
+                "처음부터 보유인 것(기본·특수)은 파일에 나가지 않는다");
+            Assert.That(state.OwnedDice.ContainsKey("KingNormal"), Is.True);
             Assert.That(state.OwnedDice.ContainsKey("KingIce"), Is.True);
+            Assert.That(state.OwnedDice.ContainsKey("Tornado"), Is.False);
 
             DiceOwnershipManager read = MakeOwnership();
             read.ReadFrom(state);
 
-            Assert.That(read.IsOwned(DiceType.Tornado), Is.True);
+            Assert.That(read.IsOwned(DiceType.KingNormal), Is.True);
             Assert.That(read.IsOwned(DiceType.KingIce), Is.True);
             Assert.That(read.IsOwned(DiceType.KingFire), Is.False);
+
+            // 줄이 빠져도 보유는 유지된다 — 규칙이 답하기 때문이다.
+            Assert.That(read.IsOwned(DiceType.Tornado), Is.True);
         }
 
         /// <summary>
         /// 세이브의 쓰레기 줄이 멀쩡한 보유를 같이 죽이지 않는다.
         ///
-        /// enum 에서 사라진 이름, 정수 문자열, 기본 다이스, 값 0 — 넷 다 조용히 버린다.
-        /// 특히 <b>기본 다이스를 버리는 것이 중요하다</b>: 담으면 <c>WriteTo</c> 가 그것을 다시
-        /// 뱉어 "정본이 셋" 인 상태가 파일에 굳는다.
+        /// enum 에서 사라진 이름, 정수 문자열, 처음부터 보유인 다이스, 값 0 — 넷 다 조용히 버린다.
+        /// 특히 <b>처음부터 보유인 것을 버리는 것이 중요하다</b>: 담으면 <c>WriteTo</c> 가
+        /// 그것을 다시 뱉어 "정본이 셋" 인 상태가 파일에 굳는다.
         /// </summary>
         [Test]
         public void 손상된_세이브_줄을_조용히_버린다()
         {
             var state = new SaveState();
-            state.OwnedDice["Tornado"] = 1;
+            state.OwnedDice["KingThunder"] = 1;
             state.OwnedDice["없어진다이스"] = 1;
             state.OwnedDice["999"] = 1;
             state.OwnedDice["Normal"] = 1;      // 기본 다이스
+            state.OwnedDice["Tornado"] = 1;     // 특수 — 규칙으로 보유
             state.OwnedDice["KingFire"] = 0;    // 값이 0
 
             DiceOwnershipManager ownership = MakeOwnership();
             ownership.ReadFrom(state);
 
-            Assert.That(ownership.IsOwned(DiceType.Tornado), Is.True);
+            Assert.That(ownership.IsOwned(DiceType.KingThunder), Is.True);
             Assert.That(ownership.IsOwned(DiceType.KingFire), Is.False);
 
             var rewritten = new SaveState();
             ownership.WriteTo(rewritten);
 
             Assert.That(rewritten.OwnedDice, Has.Count.EqualTo(1));
-            Assert.That(rewritten.OwnedDice.ContainsKey("Tornado"), Is.True);
+            Assert.That(rewritten.OwnedDice.ContainsKey("KingThunder"), Is.True);
         }
     }
 }

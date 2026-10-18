@@ -94,6 +94,9 @@ namespace OJ.Utils
         /// <summary>다이스 언락 10줄(가격·컨텐츠 보상처)의 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public DiceUnlockDatabase DiceUnlockDatabase;
 
+        /// <summary>컨텐츠 해금 순서(무엇이 몇 클리어에, 어떻게 알리나)의 정본. 비면 Provider 가 코드 기본표로 내려가며 크게 운다.</summary>
+        public OJ.ContentUnlock.ContentUnlockDatabase ContentUnlockDatabase;
+
         /// <summary>상점 7개 섹션의 가격표 정본. 비면 Provider 가 코드 기본값으로 내려가며 크게 운다.</summary>
         public ShopDatabase ShopDatabase;
 

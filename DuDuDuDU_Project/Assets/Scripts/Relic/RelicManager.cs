@@ -786,7 +786,7 @@ namespace OJ.Relic
             List<int> emptySlots = new List<int>();
             for (int i = 0; i < board.diceMap.Length; i++)
             {
-                if (board.diceMap[i] == null)
+                if (board.diceMap[i] == null && board.IsSlotUnlocked(i))
                     emptySlots.Add(i);
             }
 

@@ -34,8 +34,8 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    baseAttack: 12
-    levelUpAttackIncrease: 3
+    baseAttackPercent: 1
+    attackPercentPerLevel: 0.1
     baseCooldown: 2.4
     baseGoldCost: 130
     goldCostPerLevel: 55
@@ -72,8 +72,8 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    baseAttack: 10
-    levelUpAttackIncrease: 4
+    baseAttackPercent: 0.5
+    attackPercentPerLevel: 0.05
     baseCooldown: 3.1
     baseGoldCost: 130
     goldCostPerLevel: 55
@@ -110,8 +110,8 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    baseAttack: 9
-    levelUpAttackIncrease: 3
+    baseAttackPercent: 0.7
+    attackPercentPerLevel: 0.07
     baseCooldown: 3.8
     baseGoldCost: 130
     goldCostPerLevel: 55
@@ -148,8 +148,8 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    baseAttack: 11
-    levelUpAttackIncrease: 3
+    baseAttackPercent: 0.4
+    attackPercentPerLevel: 0.04
     baseCooldown: 2.7
     baseGoldCost: 130
     goldCostPerLevel: 55
@@ -187,8 +187,8 @@ MonoBehaviour:
     summonable: 1
     canMerge: 1
     showStarUI: 1
-    baseAttack: 8
-    levelUpAttackIncrease: 2
+    baseAttackPercent: 0.6
+    attackPercentPerLevel: 0.06
     baseCooldown: 3.4
     baseGoldCost: 130
     goldCostPerLevel: 55
@@ -225,8 +225,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 80
-    levelUpAttackIncrease: 10
+    baseAttackPercent: 8
+    attackPercentPerLevel: 0.8
     baseCooldown: 3
     baseGoldCost: 150
     goldCostPerLevel: 62
@@ -261,8 +261,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 87
-    levelUpAttackIncrease: 11
+    baseAttackPercent: 6.4
+    attackPercentPerLevel: 0.64
     baseCooldown: 3.5
     baseGoldCost: 150
     goldCostPerLevel: 62
@@ -297,8 +297,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 78
-    levelUpAttackIncrease: 10
+    baseAttackPercent: 6
+    attackPercentPerLevel: 0.6
     baseCooldown: 3.2
     baseGoldCost: 150
     goldCostPerLevel: 62
@@ -333,8 +333,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 40
-    levelUpAttackIncrease: 5
+    baseAttackPercent: 6.8
+    attackPercentPerLevel: 0.68
     baseCooldown: 2.9
     baseGoldCost: 150
     goldCostPerLevel: 62
@@ -368,8 +368,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 85
-    levelUpAttackIncrease: 11
+    baseAttackPercent: 5.6
+    attackPercentPerLevel: 0.56
     baseCooldown: 4
     baseGoldCost: 150
     goldCostPerLevel: 62
@@ -402,8 +402,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 140
-    levelUpAttackIncrease: 27
+    baseAttackPercent: 12
+    attackPercentPerLevel: 1.2
     baseCooldown: 3
     baseGoldCost: 265
     goldCostPerLevel: 90
@@ -439,8 +439,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 148
-    levelUpAttackIncrease: 30
+    baseAttackPercent: 9
+    attackPercentPerLevel: 0.9
     baseCooldown: 3.3
     baseGoldCost: 265
     goldCostPerLevel: 90
@@ -474,8 +474,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 135
-    levelUpAttackIncrease: 27
+    baseAttackPercent: 10.2
+    attackPercentPerLevel: 1.02
     baseCooldown: 3.5
     baseGoldCost: 265
     goldCostPerLevel: 90
@@ -510,8 +510,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 156
-    levelUpAttackIncrease: 32
+    baseAttackPercent: 8.4
+    attackPercentPerLevel: 0.84
     baseCooldown: 3
     baseGoldCost: 265
     goldCostPerLevel: 90
@@ -545,8 +545,8 @@ MonoBehaviour:
     summonable: 0
     canMerge: 0
     showStarUI: 0
-    baseAttack: 132
-    levelUpAttackIncrease: 27
+    baseAttackPercent: 9.6
+    attackPercentPerLevel: 0.96
     baseCooldown: 3.3
     baseGoldCost: 265
     goldCostPerLevel: 90

@@ -123,6 +123,28 @@ namespace OJ.Dice
         public static IReadOnlyList<DiceType> SpecialTypes => specialTypes;
         public static IReadOnlyList<DiceType> KingTypes => kingTypes;
 
+        /// <summary>
+        /// 이 다이스를 <b>처음부터 보유</b>하는가. 기본 5종과 특수(레어) 5종이 그렇고,
+        /// 킹 5종만 해금 대상이다.
+        ///
+        /// <b>특수 5종을 처음부터 주는 이유(2026-10-14).</b> 레어는 <b>판 안에서</b> 만드는
+        /// 것이다 — 기본 다이스를 4성까지 머지하고 강화석 10개를 내면 짝이 되는 레어로
+        /// 진화한다. 그런데 진화는 <c>대상의 보유</c>를 보므로(<see cref="CanEvolve"/>),
+        /// 보유가 잠겨 있으면 <b>그 판에서 고를 수 있는 레어가 한 종류뿐</b>이 된다
+        /// (튜토리얼이 주는 타임). 그러면 "이 스테이지는 물량이니 방깎 대신 불을 남기자"
+        /// 같은 판단이 성립하지 않는다 — 고를 것이 없으면 전략이 아니라 대본이다.
+        ///
+        /// 그래서 레어는 <b>전술</b>(판마다 다시 고른다), 킹은 <b>성장</b>(계정에 쌓인다)으로
+        /// 역할을 갈랐다. 이 판단 때문에 <c>DiceUnlockDatabase</c> 에서 특수 5종이 빠졌다.
+        ///
+        /// <b>규칙이지 세이브가 아니다.</b> 보유 목록에 적지 않는다 — 적으면 정본이 둘이
+        /// 되고, 옛 세이브와 새 세이브가 다른 답을 낸다.
+        /// </summary>
+        public static bool IsOwnedFromStart(DiceType diceType)
+        {
+            return diceType != DiceType.Max && GetTier(diceType) != DiceTier.King;
+        }
+
         public static DiceTier GetTier(DiceType diceType)
         {
             // 숫자 구간으로 판정한다. Define.cs 의 DiceType 이 0/100/200 으로 끊어 놓은 것이
