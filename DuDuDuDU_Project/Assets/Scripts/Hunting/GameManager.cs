@@ -558,8 +558,7 @@ namespace OJ.Hunting
             if (inGameState == InGameState.Wave)
                 battle.Bounty.Tick(Time.deltaTime);
 
-            // 영혼 보너스 팝업은 목표를 채웠을 때 저절로 뜬다. 시간이 멈춘 동안에도 불려야(팝업이 떠 있는 동안 상태 확인) 해서 Wave 밖에 둔다.
-            SoulBonus?.Tick();
+
         }
 
         /// <summary>
@@ -639,7 +638,6 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<UISummonRateStrip>();
             GameContainer.UI?.Hide<OJ.Economy.UISoulBonusButton>();
             GameContainer.UI?.Hide<OJ.Economy.UISoulBonusDialog>();
-            SoulBonus?.ReleasePause();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceButton>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceOddsTooltip>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceResultPopup>();

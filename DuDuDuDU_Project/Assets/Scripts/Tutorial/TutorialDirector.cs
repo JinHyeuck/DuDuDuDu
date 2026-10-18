@@ -267,7 +267,12 @@ namespace OJ.Tutorial
             overlay.ClearAll();
             ThawGame();
 
-            // 목표(첫 10마리)를 채워 팝업이 뜰 때까지 기다린다. 그 사이 몬스터가 내려오는 대로 평소처럼 진행된다.
+            // 목표(첫 10마리)를 채울 때까지 기다린다. 그 사이 몬스터가 내려오는 대로 평소처럼 진행된다.
+            await Until(() => game.SoulBonus.IsReady);
+
+            // 채웠다 — 저금통을 눌러 받게 한다(게임은 멈추지 않으니 잠깐 세운다).
+            FreezeGame();
+            Guide(RectOf(button), "영혼이 가득 찼어요!\n저금통을 눌러 보상을 받아요.", dim: true);
             await Until(() => UISoulBonusDialog.IsOpen);
 
             Enter(TutorialStep.SoulBonusReward);
@@ -280,6 +285,7 @@ namespace OJ.Tutorial
 
             await Until(() => !UISoulBonusDialog.IsOpen);
             overlay.ClearAll();
+            ThawGame();
         }
 
         /// <summary>현상금 — 아이콘을 눌러 1단계를 고르면 그 자리에서 나온다. 쿨타임이 있다는 것까지 알린다.</summary>

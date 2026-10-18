@@ -10,9 +10,9 @@ using OJ.UI;
 namespace OJ.Economy
 {
     /// <summary>
-    /// 영혼 보너스 저금통. <b>원래 되돌리기 버튼이 있던 자리</b>(오른쪽 가운데)에 떠서, 적이 죽을 때마다
-    /// <b>영혼이 구불구불 날아와 쌓이는 것</b>과 <b>n/n(도착한 영혼 / 목표)</b>을 보여 준다. 누르는 버튼이 아니라 상태 표시다 —
-    /// 목표를 채우면 팝업(<see cref="UISoulBonusDialog"/>)이 저절로 뜬다.
+    /// 영혼 보너스 저금통. <b>원래 저금통 자리</b>(하단 줄, 현상금과 소환 버튼 사이)에 떠서, 적이 죽을 때마다
+    /// <b>영혼이 구불구불 날아와 쌓이는 것</b>과 <b>n/n(도착한 영혼 / 목표)</b>을 보여 준다.
+    /// 목표를 채우면 "받기!" 로 바뀌고 <b>유저가 눌러</b> 팝업(<see cref="UISoulBonusDialog"/>)을 연다. 게임은 멈추지 않는다.
     ///
     /// <b>영혼 비행.</b> 죽은 자리(월드)를 화면 좌표로 바꿔 이 창 안의 좌표로 옮기고, 저금통 아이콘까지 날린다.
     /// 시작·끝을 잇는 직선 위에 수직 방향 사인(S자) 흔들림을 얹어 <b>직선이 아닌 구불구불한 길</b>을 그린다
@@ -26,6 +26,7 @@ namespace OJ.Economy
     {
         [Inject] private IBattleRefs battle;
 
+        [SerializeField] private Button button;
         [SerializeField] private RectTransform bobTarget;
         [SerializeField] private Image icon;
         [SerializeField] private TMP_Text nameText;
@@ -36,6 +37,7 @@ namespace OJ.Economy
         private static readonly Color FullColor = new Color(1f, 0.9f, 0.35f, 1f);
 
         private const float PopTime = 0.22f;
+        private const float BobBase = 40f;
         private const int MaxSouls = 48;
         private const float FlightMin = 0.8f;
         private const float FlightMax = 1.05f;
@@ -58,13 +60,26 @@ namespace OJ.Economy
 
         private SoulBonusManager manager;
         private string lastCount;
+        private string lastName;
+        private bool readyBob;
         private float shownFill;
         private float popElapsed = PopTime;
         private float time;
 
+        protected override void OnLoad()
+        {
+            button.onClick.AddListener(OnClick);
+        }
+
+        private void OnClick()
+        {
+            manager?.TryOpen();
+        }
+
         protected override void OnEnter()
         {
             lastCount = null;
+            lastName = null;
             popElapsed = PopTime;
 
             Unlisten();
@@ -140,6 +155,18 @@ namespace OJ.Economy
                 color = Color.Lerp(FullColor, Color.white, 0.5f + 0.5f * Mathf.Sin(time * 14f));
 
             gaugeFill.color = color;
+
+            // 받을 수 있으면 이름 자리가 "받기!" 로 바뀌고 돼지가 들썩인다.
+            bool ready = manager.IsReady;
+            string label = ready ? "받기!" : "영혼 보너스";
+            if (label != lastName)
+            {
+                nameText.SetText(label);
+                nameText.color = ready ? FullColor : Color.white;
+                lastName = label;
+            }
+
+            readyBob = ready;
         }
 
         private void OnArrived()
@@ -161,6 +188,7 @@ namespace OJ.Economy
             }
 
             bobTarget.localScale = Vector3.one * scale;
+            bobTarget.anchoredPosition = new Vector2(0f, BobBase + (readyBob ? Mathf.Sin(time * 6f) * 8f : 0f));
         }
 
         // ── 영혼 비행 ─────────────────────────────────────────────
@@ -291,18 +319,18 @@ namespace OJ.Economy
         // 에디터 굽기 전용.
         // ──────────────────────────────────────────────────────────────
 
-        // 되돌리기 버튼이 있던 자리(UIWaveRewindButton): 오른쪽 가운데, 오른쪽 여백 16, 세로 중심 +430.
-        private static readonly Vector2 Size = new Vector2(200f, 220f);
-        private static readonly Vector2 Position = new Vector2(-16f, 430f);
+        // 원래 저금통 자리: 하단 줄에서 현상금과 소환 버튼 사이(왼쪽 아래 기준).
+        private static readonly Vector2 Size = new Vector2(130f, 190f);
+        private static readonly Vector2 Position = new Vector2(285f, 100f);
 
         /// <summary>에디터 굽기 전용.</summary>
         public static UISoulBonusButton Create(Transform parent, TMP_FontAsset font, Material plainMaterial)
         {
             GameObject root = UIBountyUIFactory.CreateRect("UISoulBonusButton", parent);
             RectTransform rootRect = root.GetComponent<RectTransform>();
-            rootRect.anchorMin = new Vector2(1f, 0.5f);
-            rootRect.anchorMax = new Vector2(1f, 0.5f);
-            rootRect.pivot = new Vector2(1f, 0.5f);
+            rootRect.anchorMin = new Vector2(0f, 0f);
+            rootRect.anchorMax = new Vector2(0f, 0f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
             rootRect.sizeDelta = Size;
             rootRect.anchoredPosition = Position;
 
@@ -316,43 +344,50 @@ namespace OJ.Economy
             dialog.UseBackBtn = false;
             dialog.BakeOpenStyle(DialogOpenStyle.None);
 
+            // 눌림 면적은 버튼 전체. 투명 판이 받는다.
+            Image hit = UIBountyUIFactory.CreateImage("Hit", view.transform, new Color(1f, 1f, 1f, 0f));
+            UIBountyUIFactory.Stretch(hit.rectTransform);
+            dialog.button = hit.gameObject.AddComponent<Button>();
+            dialog.button.targetGraphic = hit;
+            dialog.button.transition = Selectable.Transition.None;
+
             // 돼지 — 튀는 덩어리.
             GameObject bob = UIBountyUIFactory.CreateRect("Bob", view.transform);
-            UIBountyUIFactory.SetRect(bob.GetComponent<RectTransform>(), new Vector2(150f, 150f), new Vector2(0f, 30f));
+            UIBountyUIFactory.SetRect(bob.GetComponent<RectTransform>(), new Vector2(110f, 110f), new Vector2(0f, BobBase));
             dialog.bobTarget = bob.GetComponent<RectTransform>();
 
             dialog.icon = UIBountyUIFactory.CreateImage("Icon", bob.transform, Color.white);
-            UIBountyUIFactory.SetRect(dialog.icon.rectTransform, new Vector2(136f, 136f), Vector2.zero);
+            UIBountyUIFactory.SetRect(dialog.icon.rectTransform, new Vector2(104f, 104f), Vector2.zero);
             dialog.icon.sprite = UIBountyUIFactory.LoadSprite("Main/Icon_Reward_Pig");
             dialog.icon.preserveAspect = true;
             dialog.icon.raycastTarget = false;
 
             // 우측 상단 n/n 배지.
             Image badge = UIBountyUIFactory.CreateSprite("Badge", view.transform,
-                UIBountyUIFactory.LoadSprite("Upgrade/Ui_Popup_SmallBox"), 3f, new Vector2(104f + 26f, 44f + 26f), new Vector2(44f, 98f), true);
+                UIBountyUIFactory.LoadSprite("Upgrade/Ui_Popup_SmallBox"), 3f, new Vector2(92f + 26f, 38f + 26f), new Vector2(26f, 88f), true);
             badge.color = new Color(0.12f, 0.1f, 0.2f, 0.95f);
             badge.raycastTarget = false;
 
-            dialog.countText = UIBountyUIFactory.CreateText("Count", view.transform, "0/10", 30f,
+            dialog.countText = UIBountyUIFactory.CreateText("Count", view.transform, "0/10", 26f,
                 TextAlignmentOptions.Center, new Color(1f, 0.92f, 0.4f, 1f), font);
-            UIBountyUIFactory.SetRect(dialog.countText.rectTransform, new Vector2(104f, 44f), new Vector2(44f, 98f));
+            UIBountyUIFactory.SetRect(dialog.countText.rectTransform, new Vector2(92f, 38f), new Vector2(26f, 88f));
 
             // 채움 게이지.
             Image gaugeBack = UIBountyUIFactory.CreateImage("GaugeBack", view.transform, new Color(0.05f, 0.05f, 0.1f, 0.9f));
-            UIBountyUIFactory.SetRect(gaugeBack.rectTransform, new Vector2(160f, 26f), new Vector2(0f, -62f));
+            UIBountyUIFactory.SetRect(gaugeBack.rectTransform, new Vector2(114f, 24f), new Vector2(0f, -30f));
             gaugeBack.raycastTarget = false;
 
             dialog.gaugeFill = UIBountyUIFactory.CreateImage("GaugeFill", gaugeBack.transform, new Color(0.45f, 0.9f, 1f, 1f));
-            UIBountyUIFactory.SetRect(dialog.gaugeFill.rectTransform, new Vector2(152f, 18f), Vector2.zero);
+            UIBountyUIFactory.SetRect(dialog.gaugeFill.rectTransform, new Vector2(106f, 16f), Vector2.zero);
             dialog.gaugeFill.type = Image.Type.Filled;
             dialog.gaugeFill.fillMethod = Image.FillMethod.Horizontal;
             dialog.gaugeFill.fillOrigin = 0;
             dialog.gaugeFill.fillAmount = 0f;
             dialog.gaugeFill.raycastTarget = false;
 
-            dialog.nameText = UIBountyUIFactory.CreateText("Name", view.transform, "영혼 보너스", 28f,
+            dialog.nameText = UIBountyUIFactory.CreateText("Name", view.transform, "영혼 보너스", 24f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UIBountyUIFactory.SetRect(dialog.nameText.rectTransform, new Vector2(Size.x + 20f, 38f), new Vector2(0f, -92f));
+            UIBountyUIFactory.SetRect(dialog.nameText.rectTransform, new Vector2(Size.x + 30f, 34f), new Vector2(0f, -62f));
 
             return dialog;
         }

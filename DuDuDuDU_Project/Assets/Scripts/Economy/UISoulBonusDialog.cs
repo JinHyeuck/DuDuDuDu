@@ -12,8 +12,8 @@ using OJ.UI;
 namespace OJ.Economy
 {
     /// <summary>
-    /// 영혼 보너스 보상 선택 창. 목표를 채우면 <b>저절로 뜨고</b>, <b>SP 와 마석 중 하나를 꼭 골라야 닫힌다</b> —
-    /// 바깥을 눌러도 백키를 눌러도 닫히지 않는다. 떠 있는 동안 밖의 게임은 멈춰 있다(<see cref="SoulBonusManager"/> 가 멈춘다).
+    /// 영혼 보너스 보상 선택 창. 목표를 채운 저금통을 <b>유저가 눌러</b> 연다. SP 와 마석 중 하나를 고르면 닫힌다.
+    /// <b>게임은 멈추지 않는다</b> — 바깥을 누르거나 백키로 닫고 나중에 다시 받아도 된다(값은 고정이다).
     ///
     /// 큰 버튼 둘이 판을 꽉 채운다. 왼쪽은 <b>SP</b>, 오른쪽은 <b>마석</b>이고 글자를 아주 크게 해 한눈에 읽힌다.
     /// 값은 팝업이 뜰 때 한 번 굴려 <c>RunState</c> 에 고정되어 있다(<see cref="SoulBonusManager.OfferSp"/>).
@@ -61,6 +61,7 @@ namespace OJ.Economy
         protected override void OnExit()
         {
             IsOpen = false;
+            Manager?.NotifyDialogClosed();
         }
 
         protected override void OnUnload()
@@ -121,14 +122,18 @@ namespace OJ.Economy
             var dialog = root.AddComponent<UISoulBonusDialog>();
             dialog.dialogView = view;
 
-            // 반드시 골라야 나갈 수 있다 — 백키로도, 바깥 탭으로도 닫지 않는다.
-            dialog.UseBackBtn = false;
+            // 게임이 멈추지 않으니 닫을 수 있다 — 백키·바깥 탭으로 닫고 나중에 다시 받아도 된다.
+            dialog.UseBackBtn = true;
             dialog.BakeOpenStyle(DialogOpenStyle.None);
 
-            // 화면 전체를 덮는 어두운 막. 누르는 곳이 없고 입력만 막는다.
-            Image blocker = UIBountyUIFactory.CreateImage("Blocker", view.transform, new Color(0f, 0f, 0f, 0.7f));
+            // 화면 전체를 덮는 어두운 막. 바깥을 누르면 닫힌다.
+            Image blocker = UIBountyUIFactory.CreateImage("Blocker", view.transform, new Color(0f, 0f, 0f, 0.6f));
             UIBountyUIFactory.Stretch(blocker.rectTransform);
             blocker.raycastTarget = true;
+            Button outside = blocker.gameObject.AddComponent<Button>();
+            outside.targetGraphic = blocker;
+            outside.transition = Selectable.Transition.None;
+            dialog.AddExitButton(outside);
 
             // 판. 클릭을 먹어야 한다.
             Image panelImage = UIBountyUIFactory.CreateSprite("Panel", view.transform,
@@ -153,7 +158,7 @@ namespace OJ.Economy
             dialog.stoneChoice = CreateChoice(panel, "StoneChoice", new Vector2(choiceX, choiceY),
                 UIBountyUIFactory.LoadSprite("Ingame/Big_Btn_Yellow"), "마석", "개", font);
 
-            TMP_Text hint = UIBountyUIFactory.CreateText("Hint", panel, "하나를 꼭 골라야 계속할 수 있어요!", 30f,
+            TMP_Text hint = UIBountyUIFactory.CreateText("Hint", panel, "하나를 골라요! (바깥을 누르면 나중에 받을 수 있어요)", 30f,
                 TextAlignmentOptions.Center, Color.white, font);
             UIBountyUIFactory.SetRect(hint.rectTransform, new Vector2(860f, 44f), new Vector2(0f, -top + 50f));
 
