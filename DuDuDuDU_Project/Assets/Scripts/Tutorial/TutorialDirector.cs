@@ -127,10 +127,10 @@ namespace OJ.Tutorial
             // 몬스터가 내려오는 것이 보이도록 잠깐 둔다. 가르치는 동안에는 게임을 세워 둔다.
             await DelaySeconds(2f);
 
-            // 1웨이브: 자리 구매 · 확률업 · 저금통 ───────────────────────
+            // 1웨이브: 자리 구매 · 확률업 · 영혼 보너스 ───────────────────────
             await RunSlotUnlockAsync();
             await RunProbabilityAsync(game, summon);
-            await RunSavingsAsync(game);
+            await RunSoulBonusAsync(game);
 
             // 2웨이브: 현상금 · 행운 주사위 · 속성강화 ─────────────────
             await Until(() => game.CurrentWaveIndex >= TutorialStage.BountyWave);
@@ -250,53 +250,36 @@ namespace OJ.Tutorial
         }
 
         /// <summary>
-        /// 저금통 — 버튼을 눌러 선택 창을 연다. <b>현재 방식</b>(<see cref="SavingsMode"/>)을 따른다:
-        /// 선택 방식은 비용이 없으니 "지금 바로 / 45초 뒤" 둘을 같이 짚고, 3단 방식은 SP 를 채워 주고 첫 카드를 짚는다.
-        /// 돌아오는 연출은 가르치는 동안이 아니라 웨이브 중에 본다.
+        /// 영혼 보너스 — 버튼을 짚어 "적을 잡으면 영혼이 모인다" 를 알리고, 목표를 채워 <b>팝업이 저절로 뜰 때까지</b>
+        /// 게임을 돌려 두었다가(몬스터를 잡는 동안 영혼이 날아오는 것이 보인다), 팝업이 뜨면 두 버튼을 짚고 고르게 한다.
+        /// 팝업은 게임을 스스로 멈추므로 이 단계는 <see cref="FreezeGame"/> 을 쓰지 않는다.
         /// </summary>
-        private async UniTask RunSavingsAsync(GameManager game)
+        private async UniTask RunSoulBonusAsync(GameManager game)
         {
-            Enter(TutorialStep.Savings);
-            GameContainer.UI?.Show<UISavingsButton>();
-            UISavingsButton button = GameContainer.UI?.Get<UISavingsButton>();
-            SavingsManager savings = game.Savings;
-            bool tiered = savings.Mode == SavingsMode.Tiered;
-
-            if (tiered)
-                EnsureSp(SavingsRules.Deposit(0));
+            Enter(TutorialStep.SoulBonus);
+            GameContainer.UI?.Show<UISoulBonusButton>();
+            UISoulBonusButton button = GameContainer.UI?.Get<UISoulBonusButton>();
 
             FreezeGame();
-
-            Guide(RectOf(button),
-                tiered
-                    ? "저금통에 SP를 맡기면 시간이 지난 뒤\n더 많이 돌려받아요!"
-                    : "저금통에서 SP를 받을 수 있어요!\n눌러서 열어 봐요.",
-                dim: true);
-            await Until(() => UISavingsSelectDialog.IsOpen);
-
-            Enter(TutorialStep.SavingsSelect);
-            UISavingsSelectDialog dialog = GameContainer.UI?.Get<UISavingsSelectDialog>();
-            if (tiered)
-            {
-                Guide(dialog != null ? dialog.GetCardRect(0) : null,
-                    "맡길 만큼 골라요.\n많이 맡길수록, 오래 기다릴수록 이득이 커져요!",
-                    dim: true);
-            }
-            else
-            {
-                // 두 버튼을 모두 구멍으로 연다(합집합). 어느 쪽을 골라도 된다 — 45초 뒤에 다시 고른다.
-                overlay.SetFinger(null);
-                overlay.SetDim(dialog != null ? dialog.GetChoiceRect(true) : null,
-                               dialog != null ? dialog.GetChoiceRect(false) : null);
-                overlay.SetTalk("지금 바로 받을지, " + (int)SavingsRules.ChoiceCooldownSeconds + "초 뒤에 더 받을지 골라요!\n"
-                                + "어느 쪽이든 " + (int)SavingsRules.ChoiceCooldownSeconds + "초 뒤에 다시 고를 수 있어요.",
-                    where: UITutorialOverlay.TalkPlacement.Top);
-            }
-
-            await Until(() => savings.State == SavingsState.Saving);
-
+            overlay.SetDim(RectOf(button));
+            overlay.SetFinger(null);
+            await TalkAsync("적을 잡으면 영혼이 저금통에 모여요!\n다 모으면 보상을 골라요.");
             overlay.ClearAll();
             ThawGame();
+
+            // 목표(첫 10마리)를 채워 팝업이 뜰 때까지 기다린다. 그 사이 몬스터가 내려오는 대로 평소처럼 진행된다.
+            await Until(() => UISoulBonusDialog.IsOpen);
+
+            Enter(TutorialStep.SoulBonusReward);
+            UISoulBonusDialog dialog = GameContainer.UI?.Get<UISoulBonusDialog>();
+            overlay.SetFinger(null);
+            overlay.SetDim(dialog != null ? dialog.GetChoiceRect(true) : null,
+                           dialog != null ? dialog.GetChoiceRect(false) : null);
+            overlay.SetTalk("SP와 마석 중 하나를 골라요!\n마석은 속성 강화와 진화에 쓰여요.",
+                where: UITutorialOverlay.TalkPlacement.Top);
+
+            await Until(() => !UISoulBonusDialog.IsOpen);
+            overlay.ClearAll();
         }
 
         /// <summary>현상금 — 아이콘을 눌러 1단계를 고르면 그 자리에서 나온다. 쿨타임이 있다는 것까지 알린다.</summary>

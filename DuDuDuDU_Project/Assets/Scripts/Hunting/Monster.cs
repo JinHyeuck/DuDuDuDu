@@ -409,6 +409,9 @@ namespace OJ.Hunting
                     else
                     {
                         battle.Monsters.UnregisterMonster(this, true);
+
+                        // 영혼 보너스: 죽은 자리에서 영혼이 날아간다. 현상금은 따로 보상이 있어 세지 않는다.
+                        battle.Game.SoulBonus?.OnMonsterKilled(deathPosition);
                     }
 
                     // <b>분기 밖이어야 한다.</b> 위 UnregisterMonster 의 countAsKill 은

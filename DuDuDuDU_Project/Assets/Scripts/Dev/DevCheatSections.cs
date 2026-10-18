@@ -309,18 +309,6 @@ namespace OJ.Dev
                     panel.Rebuild();
                 });
 
-            DevCheatUI.CreateSectionTitle(root, "저금통");
-            DevCheatUI.CreateToggleButton(
-                "SavingsTiered", root,
-                DevCheatFlags.SavingsTiered ? "저금통 : 3단 선택" : "저금통 : 지금/45초 뒤 선택",
-                DevCheatFlags.SavingsTiered,
-                () =>
-                {
-                    DevCheatFlags.SavingsTiered = !DevCheatFlags.SavingsTiered;
-                    panel.Rebuild();
-                });
-            DevCheatUI.CreateHelpText(root, "저금통 방식은 다음 판부터 적용된다(판이 시작될 때 한 번 읽는다).");
-
             // 무적 토글은 전투 밖에서 미리 켜 둘 수 있다 — 값이 static 이라 전투가 시작되면
             // 그대로 적용된다. 그래서 여기는 MarkBattleOnly 를 걸지 않는다.
             DevCheatUI.CreateHelpText(root, "무적은 전투 밖에서 미리 켜 둘 수 있다. 다음 판에 그대로 적용된다.");

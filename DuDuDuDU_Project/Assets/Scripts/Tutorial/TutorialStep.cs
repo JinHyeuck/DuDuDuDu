@@ -16,13 +16,13 @@ namespace OJ.Tutorial
         Merge,
         StartWaves,
 
-        // ── 1웨이브: 자리 구매 · 확률업 · 저금통 ──
+        // ── 1웨이브: 자리 구매 · 확률업 · 영혼 보너스 ──
         SlotUnlock,
         SlotUnlocked,
         ProbUp,
         ProbRates,
-        Savings,
-        SavingsSelect,
+        SoulBonus,
+        SoulBonusReward,
 
         // ── 2웨이브: 현상금 · 행운 주사위 · 속성강화 ──
         BountyOpen,

@@ -104,28 +104,19 @@ namespace OJ.Core
         public float BountyCooldown { get; set; }
 
         /// <summary>
-        /// 지금 맡겨 둔 저금통 선택지 번호(3단 방식)(<see cref="SavingsRules"/>). 돌려줄 금액이 여기서 나온다.
-        /// 맡긴 것이 없으면(<see cref="SavingsTimer"/> 가 0) 뜻이 없다.
+        /// 영혼 보너스: 지금 목표를 향해 처치한 마릿수(데이터). 목표를 채워 보상을 받으면 목표만큼 빠지고 남은 것은 이월된다.
+        /// 화면에 보이는 "도착한 영혼 수" 는 <c>SoulBonusManager</c> 가 따로 센다(날아오는 중인 영혼은 아직 안 센다).
         /// </summary>
-        public int SavingsOption { get; set; }
+        public int SoulKills { get; set; }
 
-        /// <summary>지금 저금통에 맡겨 둔 금액(SP, 3단 방식). 0 이면 맡긴 것이 없다.</summary>
-        public int SavingsDeposit { get; set; }
+        /// <summary>영혼 보너스: 지금까지 보상을 받은 횟수. 지금 목표 마릿수가 여기서 나온다(<see cref="SoulBonusRules.GoalFor"/>).</summary>
+        public int SoulGoalIndex { get; set; }
 
-        /// <summary>
-        /// 저금통이 다음 선택/지급까지 남은 시간(초). 0 이면 Ready. 3단·선택 두 방식이 같이 쓴다.
-        /// 되돌리기 스냅샷에 들어간다 — SP 와 같이 돌아가야 "맡긴 SP 가 사라지는" 일이 없다.
-        /// </summary>
-        public float SavingsTimer { get; set; }
+        /// <summary>영혼 보너스: 지금 팝업에 떠 있는 SP 보상. 0 이면 아직 안 굴렸다. 고를 때까지 고정이다.</summary>
+        public int SoulOfferSp { get; set; }
 
-        /// <summary>선택 방식: 지금 떠 있는 "지금 바로" 값(SP). 0 이면 아직 안 굴렸다. 고르기 전까지 고정이다.</summary>
-        public int SavingsInstant { get; set; }
-
-        /// <summary>선택 방식: 지금 떠 있는 "45초 뒤" 값(SP). 0 이면 아직 안 굴렸다.</summary>
-        public int SavingsDelayed { get; set; }
-
-        /// <summary>선택 방식: 45초 뒤에 받기로 한 SP. 0 이면 받을 것이 없다.</summary>
-        public int SavingsPending { get; set; }
+        /// <summary>영혼 보너스: 지금 팝업에 떠 있는 마석 보상(개). 0 이면 아직 안 굴렸다.</summary>
+        public int SoulOfferStones { get; set; }
 
         /// <summary>
         /// 판을 시작한다. <b>모든 런 범위 필드를 여기서 한 번에</b> 세운다 —
@@ -149,12 +140,10 @@ namespace OJ.Core
             IsGameOver = false;
             HighestDefeatedBountyGrade = 0;
             BountyCooldown = 0f;
-            SavingsOption = 0;
-            SavingsDeposit = 0;
-            SavingsTimer = 0f;
-            SavingsInstant = 0;
-            SavingsDelayed = 0;
-            SavingsPending = 0;
+            SoulKills = 0;
+            SoulGoalIndex = 0;
+            SoulOfferSp = 0;
+            SoulOfferStones = 0;
         }
 
         /// <summary>
@@ -182,12 +171,10 @@ namespace OJ.Core
             public bool IsGameOver;
             public int HighestDefeatedBountyGrade;
             public float BountyCooldown;
-            public int SavingsOption;
-            public int SavingsDeposit;
-            public float SavingsTimer;
-            public int SavingsInstant;
-            public int SavingsDelayed;
-            public int SavingsPending;
+            public int SoulKills;
+            public int SoulGoalIndex;
+            public int SoulOfferSp;
+            public int SoulOfferStones;
         }
 
         /// <summary>
@@ -217,12 +204,10 @@ namespace OJ.Core
                 IsGameOver = IsGameOver,
                 HighestDefeatedBountyGrade = HighestDefeatedBountyGrade,
                 BountyCooldown = BountyCooldown,
-                SavingsOption = SavingsOption,
-                SavingsDeposit = SavingsDeposit,
-                SavingsTimer = SavingsTimer,
-                SavingsInstant = SavingsInstant,
-                SavingsDelayed = SavingsDelayed,
-                SavingsPending = SavingsPending,
+                SoulKills = SoulKills,
+                SoulGoalIndex = SoulGoalIndex,
+                SoulOfferSp = SoulOfferSp,
+                SoulOfferStones = SoulOfferStones,
             };
         }
 
@@ -244,12 +229,10 @@ namespace OJ.Core
             IsGameOver = snapshot.IsGameOver;
             HighestDefeatedBountyGrade = snapshot.HighestDefeatedBountyGrade;
             BountyCooldown = snapshot.BountyCooldown;
-            SavingsOption = snapshot.SavingsOption;
-            SavingsDeposit = snapshot.SavingsDeposit;
-            SavingsTimer = snapshot.SavingsTimer;
-            SavingsInstant = snapshot.SavingsInstant;
-            SavingsDelayed = snapshot.SavingsDelayed;
-            SavingsPending = snapshot.SavingsPending;
+            SoulKills = snapshot.SoulKills;
+            SoulGoalIndex = snapshot.SoulGoalIndex;
+            SoulOfferSp = snapshot.SoulOfferSp;
+            SoulOfferStones = snapshot.SoulOfferStones;
         }
     }
 }

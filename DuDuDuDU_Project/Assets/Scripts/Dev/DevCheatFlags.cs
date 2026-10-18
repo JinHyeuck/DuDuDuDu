@@ -16,11 +16,6 @@ namespace OJ.Dev
         /// <summary>벽이 피해를 받지 않는다. 전투 밖에서 미리 켜 둘 수 있다.</summary>
         internal static bool WallInvincible { get; set; }
 
-        /// <summary>
-        /// 저금통을 이전 3단 방식으로 쓴다. 꺼져 있으면(기본) "지금 바로 / 45초 뒤" 선택 방식이다.
-        /// <b>판이 시작될 때 한 번 읽는다</b>(<c>SavingsManager</c> 생성자) — 전투 밖에서 미리 바꿔 두면 다음 판부터 적용된다.
-        /// </summary>
-        internal static bool SavingsTiered { get; set; }
     }
 }
 #endif

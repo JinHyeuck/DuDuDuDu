@@ -54,8 +54,8 @@ namespace OJ.Hunting
         /// </summary>
         public static bool LegacySetupFlow;
 
-        /// <summary>저금통(지금 바로 받거나 45초 뒤 더 받기). 실시간 판에서만 쓰인다.</summary>
-        public OJ.Economy.SavingsManager Savings { get; private set; }
+        /// <summary>영혼 보너스(적을 잡을수록 영혼이 쌓이고, 목표를 채우면 SP/마석 중 하나를 고른다). 실시간 판에서만 쓰인다.</summary>
+        public OJ.Economy.SoulBonusManager SoulBonus { get; private set; }
 
         /// <summary>행운 주사위(SP → 마석 1~10개). 실시간 판에서만 쓰인다.</summary>
         public OJ.Economy.LuckyDiceManager LuckyDice { get; private set; }
@@ -183,7 +183,7 @@ namespace OJ.Hunting
             battle.Bounty.OnSpawned += OnBountySpawned;
             battle.Spawner.OnBossSpawned += OnBossSpawned;
 
-            Savings = new OJ.Economy.SavingsManager(battle);
+            SoulBonus = new OJ.Economy.SoulBonusManager(battle);
             LuckyDice = new OJ.Economy.LuckyDiceManager(battle);
 
             InitializeStage();
@@ -212,7 +212,7 @@ namespace OJ.Hunting
             {
                 // 튜토리얼 판에서는 유물 선제 배치를 하지 않는다. 대본이 첫 소환 여섯 칸을
                 // 정해 두었는데, 유물이 먼저 그 칸을 채우면 머지 단계의 구멍이 엉뚱한 다이스를 연다.
-                // 삭제 영역은 실시간 판과 같이 걷는다. 확률업·저금통·행운 주사위·현상금 버튼은
+                // 삭제 영역은 실시간 판과 같이 걷는다. 확률업·영혼 보너스·행운 주사위·현상금 버튼은
                 // 디렉터가 가르칠 차례에 하나씩 연다(처음부터 다 보이면 무엇부터 눌러야 할지 모른다).
                 HideDeleteArea();
                 new TutorialDirector(battle).RunAsync(this.GetCancellationTokenOnDestroy()).Forget();
@@ -227,7 +227,7 @@ namespace OJ.Hunting
                 // 삭제 버튼 자리의 확률업 버튼과, 소환 버튼 위의 확률 띠.
                 GameContainer.UI?.Show<UIProbabilityUpButton>();
                 GameContainer.UI?.Show<UISummonRateStrip>();
-                GameContainer.UI?.Show<OJ.Economy.UISavingsButton>();
+                GameContainer.UI?.Show<OJ.Economy.UISoulBonusButton>();
                 GameContainer.UI?.Show<OJ.Economy.UILuckyDiceButton>();
 
                 StartCoroutine(CoRealtimeStart());
@@ -556,10 +556,10 @@ namespace OJ.Hunting
 
             // 현상금 쿨타임은 웨이브 중에만 흐른다. 게임 시간이라 일시정지에서는 멈추고 배속에서는 빨리 흐른다.
             if (inGameState == InGameState.Wave)
-            {
                 battle.Bounty.Tick(Time.deltaTime);
-                Savings.Tick(Time.deltaTime);
-            }
+
+            // 영혼 보너스 팝업은 목표를 채웠을 때 저절로 뜬다. 시간이 멈춘 동안에도 불려야(팝업이 떠 있는 동안 상태 확인) 해서 Wave 밖에 둔다.
+            SoulBonus?.Tick();
         }
 
         /// <summary>
@@ -637,8 +637,9 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<UIBattleWarning>();
             GameContainer.UI?.Hide<UIProbabilityUpButton>();
             GameContainer.UI?.Hide<UISummonRateStrip>();
-            GameContainer.UI?.Hide<OJ.Economy.UISavingsButton>();
-            GameContainer.UI?.Hide<OJ.Economy.UISavingsSelectDialog>();
+            GameContainer.UI?.Hide<OJ.Economy.UISoulBonusButton>();
+            GameContainer.UI?.Hide<OJ.Economy.UISoulBonusDialog>();
+            SoulBonus?.ReleasePause();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceButton>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceOddsTooltip>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceResultPopup>();
