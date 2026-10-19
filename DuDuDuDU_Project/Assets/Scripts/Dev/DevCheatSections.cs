@@ -374,6 +374,14 @@ namespace OJ.Dev
             });
             DevCheatUI.CreateHelpText(root, "다이스 해금은 층 번호의 함수라 따로 켤 것이 없다 - 같이 열린다.");
 
+            DevCheatUI.CreateButton("ResetSealStory", root, "봉인 이야기 다시 보기 (스테이지 4 까지 클리어·탑 0층)", DevCheatUI.DangerColor, () =>
+            {
+                TowerSealStoryCheat.Reset();
+                panel.Rebuild();
+            });
+            DevCheatUI.CreateHelpText(root,
+                "스테이지 5 를 깨면 아랫줄 봉인 → 로비 탑 해금 가이드 → 탑 1층(봉인) → 해제 연출이 처음부터 나온다. 다른 진행은 그대로.");
+
             DevCheatUI.CreateSectionTitle(root, "시즌 패스");
             DevCheatUI.CreateHelpText(root,
                 "포인트는 쓴 고기다. 여기서는 고기를 쓰지 않고 바로 넣는다.");
