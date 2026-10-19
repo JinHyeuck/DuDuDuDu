@@ -1219,6 +1219,27 @@ namespace OJ.Hunting
                 area.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// 이 웨이브에 나오는 일반 몬스터 수. 스테이지 값에 <b>초반 3웨이브 완화</b>(<see cref="EarlyWaveRelief"/>)를 적용한다 —
+        /// 초반에는 다이스가 한두 개뿐이라 다 못 막는다. 튜토리얼은 대본이 정한 마릿수라 완화하지 않는다.
+        /// 처치 목표(<see cref="GetWaveTargetCount"/>)와 스포너가 <b>같은 함수</b>를 읽어야 웨이브가 제때 끝난다.
+        /// </summary>
+        public int RegularMonstersFor(int waveIndex)
+        {
+            if (CurrentStageData == null)
+                return 1;
+
+            return battle.Tutorial.IsActive
+                ? Mathf.Max(1, CurrentStageData.monstersPerWave)
+                : EarlyWaveRelief.MonstersFor(CurrentStageData.monstersPerWave, waveIndex);
+        }
+
+        /// <summary>이 웨이브의 몬스터 등장 간격 배율(1 = 그대로). 초반 3웨이브는 느리다. 튜토리얼은 1.</summary>
+        public float SpawnIntervalScaleFor(int waveIndex)
+        {
+            return battle.Tutorial.IsActive ? 1f : EarlyWaveRelief.IntervalPercent(waveIndex) / 100f;
+        }
+
         private int GetWaveTargetCount()
         {
             // 탑은 목표가 <c>monstersPerWave</c> 와 다르다. 분열형 적이 죽으면서 자식을
@@ -1231,7 +1252,7 @@ namespace OJ.Hunting
             if (CurrentStageData == null)
                 return WaveMonsterCount;
 
-            int targetCount = CurrentStageData.monstersPerWave;
+            int targetCount = RegularMonstersFor(CurrentWaveIndex);
             if (IsBossWave())
                 targetCount += 1;
 
