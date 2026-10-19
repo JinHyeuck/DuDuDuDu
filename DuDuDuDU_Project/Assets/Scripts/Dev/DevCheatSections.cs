@@ -351,6 +351,15 @@ namespace OJ.Dev
 
         private static void BuildProgress(DevCheatPanel panel, Transform root)
         {
+            DevCheatUI.CreateSectionTitle(root, "컨텐츠");
+            DevCheatUI.CreateHelpText(root,
+                "모든 스테이지·로비 입구·다이스를 한 번에 연다. 이미 깬 스테이지의 등급은 내리지 않고, 해금 연출은 전부 본 것으로 적는다. 로비로 돌아가면 입구가 보인다.");
+            DevCheatUI.CreateButton("UnlockAll", root, "모든 컨텐츠 언락 (입장·사용 가능)", DevCheatUI.AccentColor, () =>
+            {
+                ContentUnlockCheat.UnlockAll();
+                panel.Rebuild();
+            });
+
             DevCheatUI.CreateSectionTitle(root, "무한의 탑");
 
             RectTransform floorRow = DevCheatUI.CreateRow(root);

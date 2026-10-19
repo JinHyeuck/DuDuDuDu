@@ -595,7 +595,10 @@ namespace OJ.Hunting
         private float GetStageSpawnInterval()
         {
             StageData stage = battle.Game.CurrentStageData;
-            return stage != null ? spawnInterval * stage.spawnIntervalMultiplier : spawnInterval;
+            float baseInterval = stage != null ? spawnInterval * stage.spawnIntervalMultiplier : spawnInterval;
+
+            // 초반 3웨이브는 몬스터가 덜 나오고 더 느리게 나온다(EarlyWaveRelief).
+            return baseInterval * battle.Game.SpawnIntervalScaleFor(battle.Game.CurrentWaveIndex);
         }
 
         private int GetRegularSpawnTarget()
@@ -604,7 +607,8 @@ namespace OJ.Hunting
             if (battle.Game.CurrentStageData == null)
                 return 0;
 
-            return Mathf.Max(1, battle.Game.CurrentStageData.monstersPerWave);
+            // 스테이지 값에 초반 3웨이브 완화를 적용한 수. 처치 목표(GameManager.GetWaveTargetCount)와 같은 함수다.
+            return Mathf.Max(1, battle.Game.RegularMonstersFor(battle.Game.CurrentWaveIndex));
         }
 
         private Vector2 GetSpawnPosition()
