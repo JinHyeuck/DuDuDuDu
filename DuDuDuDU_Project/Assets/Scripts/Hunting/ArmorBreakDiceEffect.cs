@@ -33,7 +33,7 @@ namespace OJ.Hunting
                 percent += RelicManager.Instance.GetArmorBreakPercentBonus();
                 duration += RelicManager.Instance.GetArmorBreakDurationBonus();
             }
-            target.ApplyDefenseDown(duration, percent);
+            target.ApplyDefenseDown(duration, percent, DiceType);
             if (level >= 12)
                 target.ApplyArmorBreakDamageTakenBonus(10, duration);
             PlayEffectAt(DiceType, target.transform.position);

@@ -6,7 +6,6 @@ using VContainer;
 using VContainer.Unity;
 using OJ.Core;
 using OJ.DI;
-using OJ.Dev;
 using OJ.Relic;
 
 namespace OJ.Dice
@@ -49,7 +48,7 @@ namespace OJ.Dice
         public bool IsSlotLockActive => slotLockActive;
 
         /// <summary>다음 자리를 열 때 드는 SP.</summary>
-        public int NextSlotUnlockCost => TestModeRules.SlotUnlockCost(purchasedSlotCount);
+        public int NextSlotUnlockCost => SlotUnlockRules.Cost(purchasedSlotCount);
 
         private void Start()
         {
@@ -246,72 +245,6 @@ namespace OJ.Dice
             return true;
         }
 
-        // ── 카드 상점이 쓰는 조회 ────────────────────────────────────
-
-        /// <summary>보드에 (type, star) 다이스가 몇 개 있는가.</summary>
-        public int CountDice(DiceType type, int star)
-        {
-            if (diceMap == null)
-                return 0;
-
-            int count = 0;
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                UIDice dice = diceMap[i];
-                if (dice != null && dice.Type == type && dice.Star == star)
-                    count++;
-            }
-
-            return count;
-        }
-
-        /// <summary>(type, star) 다이스 하나. <paramref name="exclude"/> 는 건너뛴다. 없으면 null.</summary>
-        public UIDice FindDice(DiceType type, int star, UIDice exclude = null)
-        {
-            if (diceMap == null)
-                return null;
-
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                UIDice dice = diceMap[i];
-                if (dice != null && dice != exclude && dice.Type == type && dice.Star == star)
-                    return dice;
-            }
-
-            return null;
-        }
-
-        /// <summary>열려 있는 빈 칸이 하나라도 있는가. 카드가 지금 살 수 있는지 매 프레임 묻는 용도다.</summary>
-        public bool HasEmptyUnlockedSlot()
-        {
-            if (diceMap == null)
-                return false;
-
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                if (diceMap[i] == null && IsSlotUnlocked(i))
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>열려 있는 빈 칸 중 아무 칸. 없으면 -1.</summary>
-        public int GetRandomEmptyUnlockedSlot()
-        {
-            if (diceMap == null)
-                return -1;
-
-            var empty = new List<int>();
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                if (diceMap[i] == null && IsSlotUnlocked(i))
-                    empty.Add(i);
-            }
-
-            return empty.Count > 0 ? empty[Random.Range(0, empty.Count)] : -1;
-        }
-
         // ── 자리 해금 ──────────────────────────────────────────────
 
         /// <summary>
@@ -363,9 +296,9 @@ namespace OJ.Dice
 
         private void SetUpSlotLocks(int total)
         {
-            slotLockActive = TestModeFlags.SlotUnlock
-                && !battle.Tutorial.IsActive
-                && !battle.Tower.IsActive;
+            // 자리구매는 정식 규칙이다. 탑(편성이 곧 배치다)만 뺀다.
+            // 튜토리얼도 켜 둔다 — 자리 구매를 가르친다. 대본 소환은 무료인 첫 줄에만 놓는다(TutorialStage).
+            slotLockActive = !battle.Tower.IsActive;
 
             purchasedSlotCount = 0;
             if (!slotLockActive)

@@ -25,6 +25,40 @@ namespace OJ.Core
         /// <summary>"현상금 몬스터를 부르지 않는다" 를 뜻하는 등급 값.</summary>
         public const int NoneGrade = 0;
 
+        /// <summary>현상금을 한 번 소환한 뒤 다음 소환까지 기다리는 시간(초). 게임 시간(배속에 비례)이다. 30초였다가 1분으로 늘렸다.</summary>
+        public const float CooldownSeconds = 60f;
+
+        /// <summary>
+        /// 쿨타임을 <paramref name="deltaTime"/> 만큼 흘린다. 0 아래로 내려가지 않는다.
+        /// 음수 시간은 무시한다 — 시계가 거꾸로 가는 일은 없어야 하고, 있다면 쿨타임이 늘어나는 것보다 멈추는 편이 낫다.
+        /// </summary>
+        public static float Tick(float cooldown, float deltaTime)
+        {
+            if (cooldown <= 0f || deltaTime <= 0f)
+                return cooldown < 0f ? 0f : cooldown;
+
+            float left = cooldown - deltaTime;
+            return left > 0f ? left : 0f;
+        }
+
+        /// <summary>쿨타임이 끝나 새로 소환할 수 있는가.</summary>
+        public static bool IsReady(float cooldown)
+        {
+            return cooldown <= 0f;
+        }
+
+        /// <summary>
+        /// 화면에 적을 남은 시간 "mm:ss". 올림으로 센다 — 0.4초 남았을 때 "00:00" 이 뜨면 이미 준비된 것처럼 보이는데
+        /// 아직 눌리지 않는다.
+        /// </summary>
+        public static string FormatCooldown(float cooldown)
+        {
+            int total = cooldown <= 0f ? 0 : OJMath.CeilToInt(cooldown);
+            int minutes = total / 60;
+            int seconds = total % 60;
+            return (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+        }
+
         /// <summary>
         /// 체력 기준이 되는 웨이브 번호. <paramref name="waveRatio"/> 는 0~1 이다.
         ///

@@ -125,6 +125,7 @@ namespace OJ.Hunting
         private int _relicDamageTakenBonusPercent;
         private float _relicDamageTakenBonusUntil;
         private Coroutine _defenseDownRoutine;
+        private MonsterStatusIcons _statusIcons;
         private Coroutine _poisonRoutine;
         private Coroutine _attackRoutine;
         private Wall _attackWall;
@@ -194,6 +195,7 @@ namespace OJ.Hunting
 
             _baseDefense = defense;
             _defenseDownAmount = 0;
+            _statusIcons?.Clear();
             _stunnedUntilTime = -1f;
             _slowUntilTime = -1f;
             _poisonUntilTime = -1f;
@@ -229,6 +231,7 @@ namespace OJ.Hunting
 
             _defenseDownRoutine = null;
             _defenseDownAmount = 0;
+            _statusIcons?.Clear();
             _stunnedUntilTime = -1f;
             _slowUntilTime = -1f;
             _poisonUntilTime = -1f;
@@ -362,6 +365,7 @@ namespace OJ.Hunting
                     bool wasPoisoned = IsPoisoned();
                     Vector3 deathPosition = transform.position;
                     CharacterState = CharacterState.Dead;
+                    _statusIcons?.Clear();
                     StopAllCoroutines();
                     // 벽을 여기서 넘긴다. 예전에는 EquipmentManager 가 안에서
                     // GameManager.Instance.wall 을 직접 붙잡았는데, 영구 메타 서비스가
@@ -405,6 +409,9 @@ namespace OJ.Hunting
                     else
                     {
                         battle.Monsters.UnregisterMonster(this, true);
+
+                        // 영혼 보너스: 죽은 자리에서 영혼이 날아간다. 현상금은 따로 보상이 있어 세지 않는다.
+                        battle.Game.SoulBonus?.OnMonsterKilled(deathPosition);
                     }
 
                     // <b>분기 밖이어야 한다.</b> 위 UnregisterMonster 의 countAsKill 은
@@ -438,10 +445,27 @@ namespace OJ.Hunting
                 StopAttack();
         }
 
-        public void ApplySlow(float duration = 2f, float multiplier = 0.8f)
+        /// <summary>
+        /// 이 다이스가 상태이상을 걸고 있음을 머리 위 아이콘으로 알린다. <b>표시만 한다</b> — 효과는 아래 Apply* 가 한다.
+        /// <paramref name="source"/> 가 <c>DiceType.Max</c>(출처 모름)이면 아무것도 띄우지 않는다.
+        /// </summary>
+        private void MarkStatus(DiceType source, float duration)
+        {
+            if (source == DiceType.Max)
+                return;
+
+            if (_statusIcons == null)
+                _statusIcons = MonsterStatusIcons.Attach(this);
+
+            _statusIcons.Add(source, Clock.GameTime + Mathf.Max(0.1f, duration));
+        }
+
+        public void ApplySlow(float duration = 2f, float multiplier = 0.8f, DiceType source = DiceType.Max)
         {
             if (!IsAlive)
                 return;
+
+            MarkStatus(source, duration);
 
             // <b>상태는 걸고 속도만 안 깎는다.</b> 둘을 함께 막으면 IsSlowed() 가 false 로
             // 남아 킹아이스의 피해증가(TakeDamage 의 stateBonusPercent)까지 같이 죽는다 —
@@ -460,6 +484,7 @@ namespace OJ.Hunting
                 return;
 
             _poisonSource = source;
+            MarkStatus(source, duration);
 
             _poisonUntilTime = Mathf.Max(_poisonUntilTime, Clock.GameTime + Mathf.Max(0.1f, duration));
             _poisonDamageMultiplier = Mathf.Max(_poisonDamageMultiplier, Mathf.Max(0.1f, damageMultiplier));
@@ -468,7 +493,7 @@ namespace OJ.Hunting
                 _poisonRoutine = StartCoroutine(PlayPoison());
         }
 
-        public void ApplyStun(float duration)
+        public void ApplyStun(float duration, DiceType source = DiceType.Max)
         {
             if (!IsAlive)
                 return;
@@ -481,6 +506,7 @@ namespace OJ.Hunting
 
             float validDuration = Mathf.Max(0.1f, duration);
             _stunnedUntilTime = Mathf.Max(_stunnedUntilTime, Clock.GameTime + validDuration);
+            MarkStatus(source, validDuration);
         }
 
         public void ApplyPoisonDamageTakenBonus(int percent)
@@ -501,14 +527,16 @@ namespace OJ.Hunting
             _armorBreakDamageTakenBonusUntil = Mathf.Max(_armorBreakDamageTakenBonusUntil, Clock.GameTime + Mathf.Max(0.1f, duration));
         }
 
-        public void ApplyThunderDamageTakenBonus(int percent, float duration)
+        public void ApplyThunderDamageTakenBonus(int percent, float duration, DiceType source = DiceType.Max)
         {
+            MarkStatus(source, duration);
             _thunderDamageTakenBonusPercent = Mathf.Max(_thunderDamageTakenBonusPercent, Mathf.Max(0, percent));
             _thunderDamageTakenBonusUntil = Mathf.Max(_thunderDamageTakenBonusUntil, Clock.GameTime + Mathf.Max(0.1f, duration));
         }
 
-        public void ApplyWindDamageTakenBonus(int percent, float duration)
+        public void ApplyWindDamageTakenBonus(int percent, float duration, DiceType source = DiceType.Max)
         {
+            MarkStatus(source, duration);
             _windDamageTakenBonusPercent = Mathf.Max(_windDamageTakenBonusPercent, Mathf.Max(0, percent));
             _windDamageTakenBonusUntil = Mathf.Max(_windDamageTakenBonusUntil, Clock.GameTime + Mathf.Max(0.1f, duration));
         }
@@ -519,7 +547,7 @@ namespace OJ.Hunting
             _relicDamageTakenBonusUntil = Mathf.Max(_relicDamageTakenBonusUntil, Clock.GameTime + Mathf.Max(0.1f, duration));
         }
 
-        public void ApplyDefenseDown(float duration, int percent)
+        public void ApplyDefenseDown(float duration, int percent, DiceType source = DiceType.Max)
         {
             if (!IsAlive)
                 return;
@@ -531,6 +559,7 @@ namespace OJ.Hunting
 
             _defenseDownAmount = Mathf.Max(_defenseDownAmount, validAmount);
             RecalculateDefense();
+            MarkStatus(source, duration);
 
             if (_defenseDownRoutine != null)
                 StopCoroutine(_defenseDownRoutine);
@@ -569,7 +598,7 @@ namespace OJ.Hunting
             transform.position += (Vector3)(direction.normalized * Mathf.Max(0f, distance));
         }
 
-        public void AddSmoothPull(Vector2 center, float distance, float duration)
+        public void AddSmoothPull(Vector2 center, float distance, float duration, DiceType source = DiceType.Max)
         {
             if (!IsAlive)
                 return;
@@ -583,6 +612,9 @@ namespace OJ.Hunting
             if (addDistance <= 0.0001f)
                 return;
 
+            // 당기는 시간은 0.x초라 그대로 띄우면 깜빡이고 끝난다 — 눈에 읽히도록 최소 1초는 남긴다.
+            MarkStatus(source, Mathf.Max(1f, duration));
+
             _pullCenter = center;
             _pendingPullDistance += addDistance;
             _pullUntilTime = Mathf.Max(_pullUntilTime, Clock.GameTime + Mathf.Max(0.01f, duration));
@@ -595,7 +627,8 @@ namespace OJ.Hunting
         {
             while (_hp > 0 && Clock.GameTime < _poisonUntilTime)
             {
-                int intdamage = Mathf.CeilToInt((_hp * 0.1f) * _poisonDamageMultiplier);
+                // 남은 체력의 1% x 배수. 10% 였다가 1% 로 대폭 낮췄다(체력이 작으면 최소 1).
+                int intdamage = Mathf.CeilToInt((_hp * 0.01f) * _poisonDamageMultiplier);
                 if (intdamage <= 0)
                     intdamage = 1;
 

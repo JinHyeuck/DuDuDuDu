@@ -142,11 +142,9 @@ namespace OJ.EditorTools
             if (error != null)
                 return error;
 
-            // 연속 웨이브 테스트 규칙이 켜져 있으면 관리 단계가 오지 않아 측정이 정식 규칙과
-            // 달라진다. 도는 동안만 끄고 Stop 에서 되돌린다.
-            if (!running)
-                savedContinuousWave = GameManager.TestContinuousWave;
-            GameManager.TestContinuousWave = false;
+            // 이 도구는 준비 단계에서 소환·머지하고 시작 버튼으로 웨이브를 여는 흐름을 전제로 측정한다.
+            // 실시간이 정식 규칙이 되었으므로 도는 동안만 레거시 흐름으로 돌리고 Stop 에서 끈다.
+            GameManager.LegacySetupFlow = true;
 
             running = true;
             waitingForLobby = false;
@@ -194,12 +192,9 @@ namespace OJ.EditorTools
             return null;
         }
 
-        private static bool savedContinuousWave;
-
         public static void Stop()
         {
-            if (running)
-                GameManager.TestContinuousWave = savedContinuousWave;
+            GameManager.LegacySetupFlow = false;
             running = false;
             EditorApplication.update -= Update;
         }
@@ -303,6 +298,7 @@ namespace OJ.EditorTools
 
             GameManager game = battle.Game;
             WatchStall();
+            OpenAllSlots(battle);
 
             if (game.inGameState == InGameState.None)
             {
@@ -370,6 +366,22 @@ namespace OJ.EditorTools
             game.OnClick_PlayUI();
         }
 
+        /// <summary>
+        /// 자리 구매(첫 줄만 무료)를 꺼서 보드 전체를 쓴다. 봇은 자리를 사지 않으므로 그대로 두면 첫 줄 7칸으로만
+        /// 측정되고, 그것은 사람이 SP 로 자리를 열어 쓰는 실제 플레이보다 훨씬 가혹한 하한이다.
+        /// 보드 판 단위 설정이라 판마다 다시 켜진다 — 매 프레임 확인한다. 측정 준비일 뿐 플레이 조작이 아니다.
+        /// </summary>
+        private static void OpenAllSlots(IBattleRefs battle)
+        {
+            UIBoard board = battle.Board;
+            if (board == null || !board.IsSlotLockActive)
+                return;
+
+            FieldInfo field = typeof(UIBoard).GetField("slotLockActive", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field != null)
+                field.SetValue(board, false);
+        }
+
         /// <summary>큐에 남은 스테이지가 있으면 <b>게임이 로비로 돌아오기를 기다린다.</b></summary>
         private static void NextStageOrStop()
         {
@@ -426,7 +438,7 @@ namespace OJ.EditorTools
             {
                 if (board.diceMap[i] != null)
                     alive++;
-                else
+                else if (board.IsSlotUnlocked(i))
                     emptySlots++;
             }
 

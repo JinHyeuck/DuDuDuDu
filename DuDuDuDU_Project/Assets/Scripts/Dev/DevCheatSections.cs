@@ -539,24 +539,6 @@ namespace OJ.Dev
 
         private static void BuildMode(DevCheatPanel panel, Transform root)
         {
-            // 셋은 독립이다. 어떤 조합으로 켜도 각자의 규칙만 걸린다.
-            // 값은 PlayerPrefs 에 남아 다음 판(과 도메인 리로드)에도 그대로다.
-            DevCheatUI.CreateSectionTitle(root, "테스트 모드 (다음 판부터 적용)");
-            AddModeToggle(panel, root, "ContinuousWave", "연속 웨이브",
-                TestModeFlags.ContinuousWave, v => TestModeFlags.ContinuousWave = v);
-            AddModeToggle(panel, root, "SlotUnlock", "자리 해금",
-                TestModeFlags.SlotUnlock, v => TestModeFlags.SlotUnlock = v);
-            AddModeToggle(panel, root, "FireRateUp", "공속 UP 버튼",
-                TestModeFlags.FireRateUp, v => TestModeFlags.FireRateUp = v);
-            AddModeToggle(panel, root, "CardMode", "조합식 카드",
-                TestModeFlags.CardMode, v => TestModeFlags.CardMode = v);
-            DevCheatUI.CreateHelpText(root,
-                "연속 웨이브: 웨이브가 끝나면 바로 다음 웨이브, 웨이브 중에도 소환·머지·진화·강화.\n" +
-                "자리 해금: 첫 줄만 열리고 나머지는 SP 로 해금(50, 55, 60 ...).\n" +
-                "공속 UP: 삭제 버튼 자리에 버튼(200 / 400 / 600 SP, 0.6→0.4→0.2→0.1).\n" +
-                "조합식 카드: 소환 버튼 대신 카드 3장(지급 2SP · 머지 4SP · 레어 마석10 · 신화 마석20), 리롤 1SP, 잠금.\n" +
-                "튜토리얼·탑에는 걸리지 않는다. 자리 해금·공속 UP·조합식 카드는 전투에 들어갈 때 읽는다.");
-
             DevCheatUI.CreateSectionTitle(root, "씬 이동");
 
             RectTransform sceneRow = DevCheatUI.CreateRow(root);
@@ -601,18 +583,6 @@ namespace OJ.Dev
                 "(에디터: 타이틀부터 다시 플레이, 기기: 앱 종료 후 다시 켤 것).");
             DevCheatUI.CreateButton("WipeSave", root, "세이브 전부 지우기", DevCheatUI.DangerColor,
                 () => SaveResetCheat.WipeAll());
-        }
-
-        private static void AddModeToggle(
-            DevCheatPanel panel, Transform root, string name, string title, bool on, Action<bool> set)
-        {
-            DevCheatUI.CreateToggleButton(
-                name, root, title + (on ? " : 켬" : " : 끔"), on,
-                () =>
-                {
-                    set(!on);
-                    panel.Rebuild();
-                });
         }
 
         // ── 공통 ───────────────────────────────────────────────────────

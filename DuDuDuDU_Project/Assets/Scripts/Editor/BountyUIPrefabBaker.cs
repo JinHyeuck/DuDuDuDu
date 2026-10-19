@@ -7,7 +7,7 @@ using OJ.Hunting;
 namespace OJ.EditorTools
 {
     /// <summary>
-    /// 현상금 UI 둘(<see cref="UIBountyBanner"/>·<see cref="UIBountySelectDialog"/>)과
+    /// 현상금 UI 둘(<c>UIBountyButton</c>·<see cref="UIBountySelectDialog"/>)과
     /// 보스·현상금 경고 띠(<see cref="UIBattleWarning"/>)를 프리팹으로 굽는다.
     /// 시안은 <c>Art/Layout/Wanted_Layout*.png</c> · <c>Warning_Layout*.png</c>, 수치는
     /// <c>Docs/WantedUIArtPort.md</c>.
@@ -22,8 +22,8 @@ namespace OJ.EditorTools
     /// </summary>
     public static class BountyUIPrefabBaker
     {
-        private const string BannerPath =
-            "Assets/Prefab/Refactory/BattleScene/UIBountyBanner.prefab";
+        private const string ButtonPath =
+            "Assets/Prefab/Refactory/BattleScene/UIBountyButton.prefab";
 
         private const string SelectPath =
             "Assets/Prefab/Refactory/BattleScene/UIBountySelectDialog.prefab";
@@ -54,8 +54,8 @@ namespace OJ.EditorTools
             if (plain == null)
                 Debug.LogWarning("[굽기] '" + hanna.name + " Material_NoneOutLine' 을 못 찾았다. 색 글자에도 외곽선이 붙는다.");
 
-            BakeOne("__BountyBannerBakeRoot", BannerPath, hanna,
-                (parent, f) => UIBountyBanner.Create(parent, f, plain).gameObject);
+            BakeOne("__BountyButtonBakeRoot", ButtonPath, hanna,
+                (parent, f) => UIBountyButton.Create(parent, f, plain).gameObject);
 
             BakeOne("__BountySelectBakeRoot", SelectPath, hanna,
                 (parent, f) => UIBountySelectDialog.Create(parent, f, plain).gameObject);

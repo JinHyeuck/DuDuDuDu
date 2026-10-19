@@ -30,7 +30,7 @@ namespace OJ.Hunting
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             target.ApplyPoison(DiceMetaDataProvider.GetPoisonDuration(DiceType), 1f, DiceType);
-            target.ApplySlow(DiceMetaDataProvider.GetSlowDuration(DiceType, level));
+            target.ApplySlow(DiceMetaDataProvider.GetSlowDuration(DiceType, level), 0.8f, DiceType);
             if (level >= 9 && UnityEngine.Random.value <= 0.3f && attackContent != null)
             {
                 List<Monster> nearby = attackContent.GetRedHitTarget(

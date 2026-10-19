@@ -64,14 +64,6 @@ namespace OJ.Hunting
         public int RegularSpawnCount => regularSpawnCount;
         private bool bossSpawnedInWave = false;
 
-        /// <summary>
-        /// 현상금이 나오기 전에 먼저 내보낼 일반 몬스터 수.
-        ///
-        /// 웨이브가 열리자마자 현상금이 나오면 화면이 "이걸 잡으라는 건가" 로만 읽히고,
-        /// 보스처럼 절반 지점(<c>GetBossSpawnThreshold</c>)까지 미루면 느린 걸음으로
-        /// 벽까지 가는 시간이 웨이브를 넘어간다. 둘 사이의 값이다.
-        /// </summary>
-        [SerializeField, Min(0)] private int bountySpawnAfterRegularCount = 2;
         private List<Monster> defaultMonsterPrefabs;
         private List<Monster> defaultBossMonsterPrefabs;
         private bool poolsInitialized;
@@ -353,15 +345,6 @@ namespace OJ.Hunting
 
         private void SpawnNext()
         {
-            // 현상금을 보스보다 먼저 본다. 보스 웨이브에는 현상금이 아예 나오지 않으므로
-            // (BountyFormula.CanSpawnOnWave) 둘이 같은 웨이브에서 겨루는 일은 없고,
-            // 순서를 이렇게 두면 그 사실이 코드에서도 한눈에 보인다.
-            if (ShouldSpawnBountyNow())
-            {
-                SpawnBountyMonster();
-                return;
-            }
-
             if (ShouldSpawnBossNow())
             {
                 SpawnBossMonster();
@@ -372,42 +355,30 @@ namespace OJ.Hunting
                 SpawnRegularMonster();
         }
 
-        private bool ShouldSpawnBountyNow()
-        {
-            BountyManager bounty = battle.Bounty;
-            if (bounty == null || !bounty.ShouldSpawn)
-                return false;
-
-            // 기준선을 그 웨이브의 일반 몬스터 수로 눌러 준다. 안 그러면 몬스터가
-            // 기준보다 적은 웨이브에서 조건이 영영 참이 되지 않아, 나오지도 않은 현상금을
-            // 기다리며 웨이브가 멈춘다 — BountyFormula.SpawnThreshold 주석 참조.
-            int threshold = BountyFormula.SpawnThreshold(
-                bountySpawnAfterRegularCount, GetRegularSpawnTarget());
-
-            return regularSpawnCount >= threshold;
-        }
-
         /// <summary>
-        /// 현상금을 내보낸다. <b>일반·보스와 달리 웨이브 목표 수를 늘리지 않는다</b> —
-        /// <c>regularSpawnCount</c> 를 건드리지 않는 것이 그 뜻이다.
+        /// 현상금을 <b>지금 바로</b> 내보낸다(<c>BountyManager.TrySummon</c> 이 부른다). 소환된 개체를 돌려주고,
+        /// 정의가 없거나 풀이 비어 못 냈으면 null.
+        ///
+        /// <b>일반·보스와 달리 웨이브 목표 수를 늘리지 않는다</b> — <c>regularSpawnCount</c> 를 건드리지 않는
+        /// 것이 그 뜻이다. 현상금은 웨이브와 분리되어 있다.
         ///
         /// 프리팹은 정의에 따로 꽂아 두지 않았으면 그 테마의 보스를 빌려 쓴다.
         /// 전용 아트가 붙기 전까지 크기로만 구분되는데, 아무것도 안 나오는 것보다는 낫고
         /// 정의에 <c>prefabOverride</c> 를 꽂는 순간 이 경로는 지나가지 않는다.
         /// </summary>
-        private void SpawnBountyMonster()
+        public Monster SpawnBountyNow(int grade)
         {
             BountyManager bounty = battle.Bounty;
-            BountyDefinition definition = bounty.GetDefinition(bounty.ActiveGrade);
+            BountyDefinition definition = bounty.GetDefinition(grade);
             if (definition == null)
             {
-                Debug.LogError("[현상금] 등급 " + bounty.ActiveGrade + " 의 정의가 없어 소환하지 않는다.");
-                return;
+                Debug.LogError("[현상금] 등급 " + grade + " 의 정의가 없어 소환하지 않는다.");
+                return null;
             }
 
             Monster monster = GetBountyMonster(definition);
             if (monster == null)
-                return;
+                return null;
 
             monster.OnSpawn();
             Vector2 spawnPos = GetSpawnPosition();
@@ -417,12 +388,11 @@ namespace OJ.Hunting
 
             // 방어력은 0 이다. 값을 주면 아머브레이크 계통이 사실상 강제 채용이 되어
             // "무엇을 잡을까" 가 "무엇을 뽑았나" 로 바뀐다.
-            monster.SetCombatStats(bounty.GetHp(bounty.ActiveGrade), 0, definition.scaleMultiplier);
+            monster.SetCombatStats(bounty.GetHp(grade), 0, definition.scaleMultiplier);
 
             // OnSpawn 이 ApplyMoveSpeed 를 되돌려 놓으므로 반드시 그 뒤다.
             monster.ConfigureAsBounty(definition.moveSpeedMultiplier);
-
-            bounty.NotifySpawned(monster);
+            return monster;
         }
 
         private Monster GetBountyMonster(BountyDefinition definition)
@@ -598,13 +568,6 @@ namespace OJ.Hunting
 
         private bool IsWaveSpawnCompleted()
         {
-            // 현상금을 아직 안 내보냈으면 완료가 아니다. 이 항을 빠뜨리면 일반 몬스터가
-            // 목표 수를 먼저 채운 웨이브에서 현상금이 <b>영영 안 나오고</b>, 그러면
-            // 나오지 않은 것을 기다리다 웨이브도 끝나지 않는다.
-            BountyManager bounty = battle.Bounty;
-            if (bounty != null && bounty.ShouldSpawn)
-                return false;
-
             int regularTarget = GetRegularSpawnTarget();
             return regularSpawnCount >= regularTarget && (!IsBossWave() || bossSpawnedInWave);
         }

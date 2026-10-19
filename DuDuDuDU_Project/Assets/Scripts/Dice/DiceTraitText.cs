@@ -146,7 +146,7 @@ namespace OJ.Dice
                     if (verbose)
                     {
                         builder.AppendFormat(
-                            "중독: 0.5초마다 남은 체력의 10% x {0:0.##} 피해 ({1:0.#}초)",
+                            "중독: 0.5초마다 남은 체력의 1% x {0:0.##} 피해 ({1:0.#}초)",
                             DiceMetaDataProvider.GetPoisonDamageMultiplier(diceType, level),
                             DiceMetaDataProvider.GetPoisonDuration(diceType));
                         builder.AppendLine();
@@ -205,13 +205,13 @@ namespace OJ.Dice
                     break;
 
                 case DiceType.Poison:
-                    // 중독은 '남은 체력의 10%'라 절대 수치를 여기서 말할 수 없다.
+                    // 중독은 '남은 체력의 1%'라 절대 수치를 여기서 말할 수 없다.
                     // 지속 시간과 배수만 말하고, 실제 틱 피해는 전투 화면이 몬스터를
                     // 알고 있을 때만 계산할 수 있다.
                     if (verbose)
                     {
                         builder.AppendFormat(
-                            "중독: 0.5초마다 남은 체력의 10% x {0:0.##} 피해 ({1:0.#}초)",
+                            "중독: 0.5초마다 남은 체력의 1% x {0:0.##} 피해 ({1:0.#}초)",
                             DiceMetaDataProvider.GetPoisonDamageMultiplier(diceType, level),
                             DiceMetaDataProvider.GetPoisonDuration(diceType));
                     }

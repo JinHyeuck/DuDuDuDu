@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using VContainer;
-using OJ.Core;
 using OJ.Dice;
 using OJ.DI;
 using OJ.Utils;
@@ -19,25 +18,6 @@ namespace OJ.Hunting
         public Transform firePoint;
         public float fireRate = 0.5f;
 
-        // 공속 UP 테스트 모드. 0 단계의 딜레이는 씬이 정한 처음 값이다.
-        private float baseFireRate = -1f;
-
-        /// <summary>공속 UP 단계(0 = 처음). 모드가 꺼져 있으면 언제나 0 이다.</summary>
-        public int FireRateLevel { get; private set; }
-
-        /// <summary>0 단계의 발사 딜레이(씬이 정한 값).</summary>
-        public float BaseFireRate => baseFireRate >= 0f ? baseFireRate : fireRate;
-
-        /// <summary>공속 단계를 정하고 <see cref="fireRate"/> 를 그 단계의 딜레이로 바꾼다.</summary>
-        public void SetFireRateLevel(int level)
-        {
-            if (baseFireRate < 0f)
-                baseFireRate = fireRate;
-
-            FireRateLevel = Mathf.Clamp(level, 0, TestModeRules.FireRateUpgradeCount);
-            fireRate = TestModeRules.FireRateDelay(FireRateLevel, baseFireRate);
-        }
-
         private float timer = 0f;
         private int shotindex = -1;
 
@@ -52,8 +32,6 @@ namespace OJ.Hunting
 
         private void Start()
         {
-            baseFireRate = fireRate;
-
             characterAnimation.PlayAnimation(CharacterState.Idle);
             bowAnimation.PlayAnimation(CharacterState.Idle);
         }

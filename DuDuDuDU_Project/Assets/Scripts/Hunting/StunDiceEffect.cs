@@ -33,7 +33,7 @@ namespace OJ.Hunting
                 return;
 
             float duration = StunDuration;
-            target.ApplyStun(duration);
+            target.ApplyStun(duration, DiceType);
             if (level >= 12)
                 target.ApplyStunDamageTakenBonus(20, duration);
             if (RelicManager.Instance != null)

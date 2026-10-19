@@ -70,8 +70,12 @@ namespace OJ.Dice
         /// <summary>
         /// 진화가 열리는 성급. 기본 다이스는 <b>여기까지 머지해야</b> 진화할 수 있다.
         /// 특수 다이스는 성급 개념이 없어(<c>showStarUI = false</c>, 항상 1) 이 조건을 안 본다.
+        ///
+        /// <b>3성이다(실시간 전환, 2026-10-17).</b> 예전에는 머지 최대 성급(4성)과 같았는데, 4성까지 가는
+        /// 시행 횟수가 너무 많아 플레이한 팀원 둘 모두 진화에 닿지 못했다. 머지 최대 성급은 그대로 4성이고
+        /// 이 값만 따로 내렸다 — 그래서 <see cref="MergeSystem.MaxStar"/> 와 연동하지 않는다.
         /// </summary>
-        public const int EvolveRequiredStar = MergeSystem.MaxStar;
+        public const int EvolveRequiredStar = 3;
 
         private static readonly DiceType[] baseTypes =
         {
