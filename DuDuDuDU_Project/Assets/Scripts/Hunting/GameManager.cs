@@ -413,12 +413,12 @@ namespace OJ.Hunting
 
         public void OnClick_Speed()
         {
-            if (timeSpeed == 1)
-                timeSpeed = 2;
-            else if (timeSpeed == 2)
-                timeSpeed = 3;
+            if (timeSpeed == 1f)
+                timeSpeed = 1.5f;
+            else if (timeSpeed == 1.5f)
+                timeSpeed = 2f;
             else
-                timeSpeed = 1;
+                timeSpeed = 1f;
 
             Time.timeScale = timeSpeed;
 
