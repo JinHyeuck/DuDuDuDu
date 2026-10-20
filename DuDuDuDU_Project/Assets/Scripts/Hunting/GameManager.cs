@@ -19,6 +19,7 @@ using OJ.Relic;
 using OJ.Rewind;
 using OJ.SceneFlow;
 using OJ.Stage;
+using OJ.StageReward;
 using OJ.Tower;
 using OJ.Tutorial;
 using OJ.UI;
@@ -1575,6 +1576,9 @@ namespace OJ.Hunting
             List<PointRewardEntry> normalRewards = StageRewardCalculator.BuildNormalClearRewards(stageIndex);
             if (RelicManager.Instance != null)
                 normalRewards = RelicManager.Instance.ApplyStageClearRewardBonus(normalRewards);
+
+            // 이 스테이지가 여는 다이스(3스테이지 = 킹 썬더)는 클리어 즉시 준다. 이미 보유면 환급이 보상에 붙는다.
+            StageRewardManager.Instance?.GrantStageClearDice(stageIndex, normalRewards);
             PointRewardUtility.GrantRewards(normalRewards);
 
             StageProgressManager.Instance?.RecordStageClear(stageIndex, clearGrade);
