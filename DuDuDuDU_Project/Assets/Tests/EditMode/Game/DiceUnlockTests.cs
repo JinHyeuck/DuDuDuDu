@@ -207,23 +207,23 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 스테이지 14 는 KingThunder 다 — 그 진화 재료인 Time 이 처음부터 보유라
-        /// "4성 썬더 → 타임 → 킹썬더" 가 첫 판부터 이어지는 길이 된다.
+        /// 스테이지 3 은 KingThunder 다(2026-10-20 개정, 전엔 14) — 그 진화 재료인 Time 이 처음부터 보유라
+        /// "3성 썬더 → 타임 → 킹썬더" 가 첫 판부터 이어지는 길이 된다. 3스테이지를 깨면 신화 다이스를 바로 체감시키려는 흐름이다.
         /// </summary>
         [Test]
-        public void 스테이지_14_는_Time_의_진화_대상_KingThunder_다()
+        public void 스테이지_3_은_Time_의_진화_대상_KingThunder_다()
         {
             Assert.That(DiceEvolution.TryGetEvolveTarget(DiceType.Time, out DiceType king), Is.True);
 
-            DiceUnlockDefinition atStage14 = null;
+            DiceUnlockDefinition atStage3 = null;
             foreach (DiceUnlockDefinition definition in DiceUnlockDatabase.BuildDefaults())
             {
-                if (definition.stageRequirement == 14)
-                    atStage14 = definition;
+                if (definition.stageRequirement == 3)
+                    atStage3 = definition;
             }
 
-            Assert.That(atStage14, Is.Not.Null);
-            Assert.That(atStage14.diceType, Is.EqualTo(king));
+            Assert.That(atStage3, Is.Not.Null);
+            Assert.That(atStage3.diceType, Is.EqualTo(king));
         }
 
         /// <summary>바깥 수치를 0 으로 넘기면 그 검사만 건너뛴다 — 나머지는 그대로 돈다.</summary>

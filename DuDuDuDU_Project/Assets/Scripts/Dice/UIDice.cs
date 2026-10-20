@@ -512,6 +512,16 @@ namespace OJ.Dice
                 return;
             }
 
+            // 최고 성급은 더블탭 자동 머지의 대상이 아니다(TryAutoMergeSameDice 가 바로 돌아간다).
+            // 기다릴 이유가 없으니 첫 클릭에 바로 상세를 연다.
+            if (Star >= MergeSystem.MaxStar)
+            {
+                clickSequence++;
+                if (game != null && game.CanManageBoard)
+                    battle.Board?.OpenBattleDiceDetail(this);
+                return;
+            }
+
             bool isDoubleClick = eventData.clickCount >= 2;
             bool isDoubleTap = Time.unscaledTime - lastPointerClickTime <= DoubleTapThreshold;
 

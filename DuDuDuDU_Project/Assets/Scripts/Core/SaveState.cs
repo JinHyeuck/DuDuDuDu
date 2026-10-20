@@ -306,6 +306,9 @@ namespace OJ.Core
         /// <b>버전을 올리지 않았다</b> — 필드를 더하는 것이라 옛 세이브는 "아직" 과 같다.
         /// </summary>
         public int SealStory { get; set; }
+
+        /// <summary>탑 1층을 깬 뒤 "킹 썬더를 신화석으로 강화해 보라" 는 로비 안내를 봤는가. 필드 추가라 버전은 그대로다.</summary>
+        public bool KingUpgradeGuideDone { get; set; }
     }
 
     /// <summary>층 하나의 기록.</summary>

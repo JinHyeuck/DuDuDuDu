@@ -5,14 +5,14 @@ namespace OJ.Core
     ///
     /// <b>탑이 스테이지를 <see cref="StageOffset"/> 칸 뒤에서 따라온다.</b> 스테이지 S 에서 자리를 다 쓰려면
     /// 탑을 <c>S - StageOffset</c> 층까지 깨 둬야 하고, 못 깼으면 보드 맨 아래 줄 전체의 자리 구매가 막힌다.
-    /// 예: 스테이지 6 → 탑 1층, 10 → 5층, 23 → 18층. 스테이지 5 를 깨면 6 이 탑 1층을 요구하므로
-    /// 튜토리얼(탑 1층 클리어로 봉인 해제)이 예외 없이 이 규칙과 맞는다.
+    /// 예: 스테이지 4 → 탑 1층, 10 → 7층, 23 → 20층. 스테이지 3 을 깨면(킹 썬더가 열리는 스테이지) 4 가 탑 1층을
+    /// 요구하므로 "3 클리어 → 아랫줄 봉인 → 탑 1층에서 킹 썬더를 장착해 깬다" 흐름이 이 규칙과 맞는다.
     /// 밸런스 값이라 정식 규칙으로 굳으면 SO 로 옮긴다(결정 3번).
     /// </summary>
     public static class TowerGateRules
     {
         /// <summary>탑이 스테이지보다 몇 칸 뒤에 있어도 되는가. 이 수만큼은 탑 없이 갈 수 있다.</summary>
-        public const int StageOffset = 5;
+        public const int StageOffset = 3;
 
         /// <summary>스테이지 <paramref name="stageIndex"/> 에서 자리를 다 쓰려면 탑에서 깨 둬야 하는 층.</summary>
         public static int RequiredTowerFloor(int stageIndex)

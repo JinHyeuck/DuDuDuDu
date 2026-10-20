@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OJ.Core;
 
 namespace OJ.Tutorial
 {
@@ -33,6 +34,8 @@ namespace OJ.Tutorial
 
         private readonly Queue<ScriptedSummon> scriptedSummons = new Queue<ScriptedSummon>();
 
+        private int guideSummonsLeft;
+
         private bool hasForcedMergeType;
         private DiceType forcedMergeType;
 
@@ -65,6 +68,29 @@ namespace OJ.Tutorial
             bountyUnlocked = true;
         }
 
+        /// <summary>
+        /// 4스테이지 첫 진입의 킹 썬더 유도가 걸린 판인가(<see cref="KingThunderGuide"/>). <b>튜토리얼(<see cref="IsActive"/>)과 별개다</b> —
+        /// 튜토리얼 판의 부수 효과(유물 끄기·버튼 감추기)를 이 판에 끌어오지 않으려고 따로 둔다.
+        /// </summary>
+        public bool IsKingThunderGuideActive { get; private set; }
+
+        /// <summary>유도를 걸거나 푼다. 판을 세울 때마다 부른다 — 이전 판의 남은 대본이 따라오지 않게 늘 먼저 지운다.</summary>
+        public void SetKingThunderGuide(bool active)
+        {
+            IsKingThunderGuideActive = active;
+            guideSummonsLeft = active ? KingThunderGuide.ScriptedSummons : 0;
+        }
+
+        /// <summary>유도 소환을 하나 꺼낸다. 남지 않았으면 거짓 — 평소처럼 굴린다.</summary>
+        public bool TryTakeGuideSummon()
+        {
+            if (!IsKingThunderGuideActive || guideSummonsLeft <= 0)
+                return false;
+
+            guideSummonsLeft--;
+            return true;
+        }
+
         /// <summary>아직 쓰지 않은 대본 소환 수.</summary>
         public int PendingScriptedSummons => scriptedSummons.Count;
 
@@ -80,6 +106,7 @@ namespace OJ.Tutorial
             IsCleared = false;
             IsFailed = false;
             bountyUnlocked = false;
+            SetKingThunderGuide(false);
             scriptedSummons.Clear();
             hasForcedMergeType = false;
         }

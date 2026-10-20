@@ -177,8 +177,16 @@ namespace OJ.Pinball
 
         protected override void OnLoad()
         {
+            // 발사는 onClick 이 아니라 꾹 누르기로 받는다 — 누르는 순간 한 발, 누르고 있으면 0.2초마다 한 발.
+            // onClick 을 같이 걸면 뗄 때 한 발이 더 나간다(UIHoldRepeat 참고).
             if (launchButton != null)
-                launchButton.onClick.AddListener(OnLaunchClicked);
+            {
+                launchHold = launchButton.GetComponent<UIHoldRepeat>();
+                if (launchHold == null)
+                    launchHold = launchButton.gameObject.AddComponent<UIHoldRepeat>();
+                launchHold.Interval = LaunchRepeatInterval;
+                launchHold.OnFire += OnLaunchClicked;
+            }
 
             for (int i = 0; i < multiplierOptions.Count; i++)
             {
@@ -219,8 +227,8 @@ namespace OJ.Pinball
 
         protected override void OnUnload()
         {
-            if (launchButton != null)
-                launchButton.onClick.RemoveListener(OnLaunchClicked);
+            if (launchHold != null)
+                launchHold.OnFire -= OnLaunchClicked;
 
             // 배율 버튼은 람다로 달았으므로 개별 제거가 안 된다. 이 페이지 전용 버튼이라
             // 통째로 지워도 남의 리스너를 지울 일이 없다.
@@ -348,6 +356,11 @@ namespace OJ.Pinball
         }
 
         // ──────────────────────────────────────────────── 발사
+
+        /// <summary>발사 버튼을 꾹 누르고 있을 때 연속 발사 간격(초).</summary>
+        private const float LaunchRepeatInterval = 0.2f;
+
+        private UIHoldRepeat launchHold;
 
         private void OnLaunchClicked()
         {

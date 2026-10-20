@@ -253,6 +253,9 @@ namespace OJ.Core
             return 10 + (BandOf(floor) - 1) * 2;
         }
 
+        /// <summary>1층 첫 클리어로 주는 신화석. 킹 썬더를 처음 키워 보게 하는 재료다(2026-10-20).</summary>
+        public const int FirstFloorMythicStone = 10;
+
         /// <summary>
         /// 구간 마지막 층이 주는 <b>다이스 재료</b>의 양. 어떤 재화로 낼지는 여기서 정하지 않는다
         /// (<c>TowerRunManager.BuildClearRewards</c> 가 정한다) — 이 함수는 곡선일 뿐이다.

@@ -403,6 +403,11 @@ namespace OJ.Tower
 
             rewards.Add(new PointRewardEntry(PointType.Gold, TowerFormula.FirstClearGold(floor)));
 
+            // 1층 첫 클리어는 신화석을 얹는다. 3스테이지에서 킹 썬더를 받고 탑 1층에서 처음 써 본 직후,
+            // 그 킹을 키울 재료를 바로 쥐여 줘 "강화해 본다" 안내가 빈손이 되지 않게 한다.
+            if (floor == 1)
+                rewards.Add(new PointRewardEntry(PointType.MythicStone, TowerFormula.FirstFloorMythicStone));
+
             if (TowerFormula.IsBandLastFloor(floor))
             {
                 rewards.Add(new PointRewardEntry(PointType.FreeGem, TowerFormula.BandRewardDia(floor)));

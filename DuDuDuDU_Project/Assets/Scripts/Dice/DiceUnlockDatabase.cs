@@ -288,8 +288,8 @@ namespace OJ.Dice
         /// <b>요구 별은 3의 배수여야 한다.</b> 별 보상이 3별 간격으로만 존재하기 때문이고,
         /// 어긋나면 그 다이스는 그 경로로 영영 안 열린다. <see cref="Validate"/> 가 잡는다.
         ///
-        /// <b>스테이지 14 는 KingThunder 다.</b> 진화 재료가 Time 인데 그 Time 은 이제
-        /// 처음부터 보유라, "4성 썬더 → 타임 → 킹썬더" 가 첫 판부터 열려 있는 길이 된다.
+        /// <b>스테이지 3 은 KingThunder 다</b>(2026-10-20 개정, 전엔 14). 진화 재료가 Time 인데 그 Time 은 이제
+        /// 처음부터 보유라, "3성 썬더 → 타임 → 킹썬더" 가 첫 판부터 열려 있는 길이 된다.
         /// </summary>
         public static List<DiceUnlockDefinition> BuildDefaults()
         {
@@ -297,7 +297,7 @@ namespace OJ.Dice
             {
                 Make(DiceType.KingFire, price: 200, floor: 30),
                 Make(DiceType.KingIce, price: 280, floor: 100),
-                Make(DiceType.KingThunder, price: 360, stage: 14),
+                Make(DiceType.KingThunder, price: 360, stage: 3),
                 Make(DiceType.KingNormal, price: 450, floor: 190),
                 Make(DiceType.KingPoison, price: 560, floor: 250),
             };

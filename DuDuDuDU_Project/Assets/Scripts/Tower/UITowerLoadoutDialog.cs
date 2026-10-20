@@ -187,6 +187,48 @@ namespace OJ.Tower
             newlyUnlocked.Clear();
         }
 
+        // ── 로비 가이드 ─────────────────────────────────────────────────
+
+        public Button StartButton => startButton;
+
+        private UITowerDiceCell CellOf(DiceType diceType)
+        {
+            for (int i = 0; i < cells.Count; i++)
+            {
+                if (cells[i] != null && cells[i].DiceType == diceType)
+                    return cells[i];
+            }
+
+            return null;
+        }
+
+        /// <summary>가이드가 가리키는 칸의 사각형. 없으면 null.</summary>
+        public RectTransform GuideCellRect(DiceType diceType)
+        {
+            UITowerDiceCell cell = CellOf(diceType);
+            return cell != null ? cell.transform as RectTransform : null;
+        }
+
+        /// <summary>그 다이스가 지금 편성에 들어 있는가.</summary>
+        public bool IsEquipped(DiceType diceType)
+        {
+            UITowerDiceCell cell = CellOf(diceType);
+            return cell != null && loadout.Contains(diceType, cell.Star);
+        }
+
+        /// <summary>
+        /// 가이드용: 추천 편성이 이미 킹 썬더를 끼워 놓았으면 빼 둔다 — 유저가 직접 눌러 장착하게 하려는 것이다.
+        /// </summary>
+        public void ClearForGuide(DiceType diceType)
+        {
+            UITowerDiceCell cell = CellOf(diceType);
+            if (cell == null || !loadout.Contains(diceType, cell.Star))
+                return;
+
+            loadout.Toggle(diceType, cell.Star);
+            Refresh();
+        }
+
         /// <summary>새로 해금된 다이스를 알려 준다. 결과 화면이 이 창을 열기 전에 부른다.</summary>
         public void MarkNewlyUnlocked(DiceType diceType)
         {

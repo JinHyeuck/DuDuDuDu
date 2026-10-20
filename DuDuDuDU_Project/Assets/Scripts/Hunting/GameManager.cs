@@ -19,6 +19,7 @@ using OJ.Relic;
 using OJ.Rewind;
 using OJ.SceneFlow;
 using OJ.Stage;
+using OJ.StageReward;
 using OJ.Tower;
 using OJ.Tutorial;
 using OJ.UI;
@@ -873,7 +874,7 @@ namespace OJ.Hunting
             if (CurrentStageData == null)
                 return 1;
 
-            return CurrentStageData.GetMonsterHpForWave(CurrentWaveIndex);
+            return LateHp(CurrentStageData.GetMonsterHpForWave(CurrentWaveIndex));
         }
 
         public int GetCurrentWaveMonsterDefense()
@@ -889,7 +890,18 @@ namespace OJ.Hunting
             if (CurrentStageData == null)
                 return 1;
 
-            return CurrentStageData.GetBossHpForWave(CurrentWaveIndex);
+            return LateHp(CurrentStageData.GetBossHpForWave(CurrentWaveIndex));
+        }
+
+        /// <summary>
+        /// 후반 웨이브 체력 가산(<see cref="LateWaveSurge"/>). 중반까지는 그대로이고 그 뒤부터 오른다.
+        /// 튜토리얼은 대본이 정한 체력이라 곱하지 않는다. 탑은 1웨이브라 저절로 걸리지 않는다.
+        /// </summary>
+        private int LateHp(int hp)
+        {
+            return battle.Tutorial.IsActive
+                ? hp
+                : LateWaveSurge.ApplyHp(hp, CurrentWaveIndex, CurrentStageData.totalWaves);
         }
 
         public int GetCurrentWaveBossDefense()
@@ -959,6 +971,13 @@ namespace OJ.Hunting
                 monstersPerWave: CurrentStageData.monstersPerWave,
                 initialSummonPoint: 0,
                 initialSummonCost: 0);
+
+            // 4스테이지 첫 진입이면 킹 썬더 유도를 건다. 매 판 정해서(끄는 쪽도) 지난 판의 대본이 남지 않게 한다.
+            int guideBestGrade = StageProgressManager.Instance != null
+                ? (int)StageProgressManager.Instance.GetBestClearGrade(CurrentStageData.stageIndex)
+                : 0;
+            battle.Tutorial.SetKingThunderGuide(
+                KingThunderGuide.Applies(false, false, CurrentStageData.stageIndex, guideBestGrade));
 
             battle.ElementUpgrade.ResetRunState();
             // 웨이브 범위 상태는 Run.BeginRun 이 못 지운다 — 매니저 안에 있기 때문이다.
@@ -1564,6 +1583,9 @@ namespace OJ.Hunting
             List<PointRewardEntry> normalRewards = StageRewardCalculator.BuildNormalClearRewards(stageIndex);
             if (RelicManager.Instance != null)
                 normalRewards = RelicManager.Instance.ApplyStageClearRewardBonus(normalRewards);
+
+            // 이 스테이지가 여는 다이스(3스테이지 = 킹 썬더)는 클리어 즉시 준다. 이미 보유면 환급이 보상에 붙는다.
+            StageRewardManager.Instance?.GrantStageClearDice(stageIndex, normalRewards);
             PointRewardUtility.GrantRewards(normalRewards);
 
             StageProgressManager.Instance?.RecordStageClear(stageIndex, clearGrade);
