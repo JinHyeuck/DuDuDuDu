@@ -3,6 +3,11 @@ namespace OJ.Core
     /// <summary>
     /// 몬스터가 벽까지 <b>통과했을 때</b> 벽이 받는 피해. (2026-10-14)
     ///
+    /// <b>2026-10-20 에 되돌렸다(사용자 지시).</b> 일반·보스 몬스터는 다시 <b>벽 앞에 남아
+    /// <see cref="ContactDamagePerSecond"/> 씩 매초</b> 때린다(<c>Monster.AttackWall</c>). 아래 설명은
+    /// 한 대-사라짐을 택했던 이유이고, 그때의 우려(벽 앞에 쌓이면 피해가 늘어나는 양의 피드백)는
+    /// 이 구조에서 다시 성립한다. <see cref="LeakDamage"/> 는 지금 게임이 읽지 않는다.
+    ///
     /// <b>왜 생겼는가 — 난이도가 계단이 아니라 절벽이었다.</b>
     ///
     /// 예전에는 벽에 닿은 몬스터가 <b>사라지지 않고 0.5초마다 계속 때렸다</b>(죽을 때까지).
@@ -40,6 +45,9 @@ namespace OJ.Core
     /// </summary>
     public static class WallLeakFormula
     {
+        /// <summary>벽에 붙은 일반·보스 몬스터 한 마리가 1초마다 벽에 주는 피해.</summary>
+        public const int ContactDamagePerSecond = 2;
+
         /// <summary>
         /// 프리팹 <c>attackDamage</c> 1점당 벽 피해.
         ///
