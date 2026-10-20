@@ -215,11 +215,16 @@ namespace OJ.Dice
             }
             UpdateSPUI();
 
-            DiceType type = scripted ? script.Type : summonable[Random.Range(0, summonable.Count)];
+            // 4스테이지 첫 진입은 처음 두 소환이 3성 썬더다(KingThunderGuide). 튜토리얼 대본과 겹치지 않는다.
+            bool guided = !scripted && battle.Tutorial.TryTakeGuideSummon();
+
+            DiceType type = scripted ? script.Type : guided ? DiceType.Thunder : summonable[Random.Range(0, summonable.Count)];
             // 성급: 확률업 레벨이 굴린 값과 유물이 정한 값 중 큰 쪽. 유물 효과를 덮어쓰지 않는다.
             int rolledStar = SummonStarRules.RollStar(ProbLevel, Random.Range(0, 100));
             int relicStar = relicsApply ? RelicManager.Instance.RollSummonStar() : 1;
             int star = Mathf.Max(rolledStar, relicStar);
+            if (guided)
+                star = Mathf.Max(star, KingThunderGuide.ScriptedStar);
             battle.DiceStars.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
             if (relicsApply)

@@ -1,0 +1,56 @@
+namespace OJ.Core
+{
+    /// <summary>
+    /// 4스테이지 첫 진입의 킹 썬더 유도. 엔진을 쓰지 않는다.
+    ///
+    /// 킹 썬더는 3스테이지에서 열리고(<c>DiceUnlockDatabase</c>) 4스테이지부터 후반 가산이 붙는다. 그 힘을 체감시키려면
+    /// 유저가 <b>진화 사슬(3성 썬더 → 타임 10 → 킹 썬더 20 = 마석 30)</b>을 한 번 끝까지 밟아 봐야 한다.
+    /// 그래서 이 판에서만 <b>① 처음 두 소환을 3성 썬더로 고정</b>하고 <b>② 영혼 보너스 마석을 사슬 한 줄(30)이 넘게</b> 준다.
+    ///
+    /// <b>걸리는 조건은 좁다.</b> 본편 4스테이지이고, 그 스테이지를 아직 한 번도 깬 적이 없을 때뿐이다 — 깨면(등급이 생기면)
+    /// 영영 꺼진다. 세이브에 새 필드를 두지 않고 이미 있는 클리어 기록을 정본으로 쓴다. 튜토리얼·탑·다른 스테이지는 건드리지 않는다.
+    /// 지는 판은 기록이 안 남으므로 재도전에도 걸린다(유도가 필요한 유저가 막힌 것이므로 의도다).
+    /// 밸런스 값이라 정식 규칙으로 굳으면 SO 로 옮긴다(결정 3번).
+    /// </summary>
+    public static class KingThunderGuide
+    {
+        /// <summary>유도가 걸리는 스테이지.</summary>
+        public const int Stage = 4;
+
+        /// <summary>3성으로 고정하는 앞쪽 소환 수.</summary>
+        public const int ScriptedSummons = 2;
+
+        /// <summary>고정 소환의 성급. 진화 조건(<c>DiceEvolution.EvolveRequiredStar</c>)과 같아야 한다 — 테스트가 지킨다.</summary>
+        public const int ScriptedStar = 3;
+
+        /// <summary>마석을 부풀려 주는 영혼 보상 횟수(앞에서부터). 하나는 킹 하나를 만든다.</summary>
+        public const int BoostedClaims = 2;
+
+        /// <summary>진화 사슬 한 줄의 마석: 썬더→타임 10 + 타임→킹 썬더 20. <c>DiceEvolution</c> 비용과 같아야 한다 — 테스트가 지킨다.</summary>
+        public const int ChainStones = 30;
+
+        /// <summary>부풀린 보상의 범위. 하한이 사슬 한 줄이라 "한 번 받으면 킹 하나" 다. 평소(4~13)의 두 배 반 이상이다.</summary>
+        public const int MinBoostedStones = ChainStones;
+        public const int MaxBoostedStones = ChainStones + 5;
+
+        /// <summary>이 판에 유도를 거는가. <paramref name="stageBestGrade"/> 는 이 스테이지의 최고 등급(0 = 클리어 기록 없음).</summary>
+        public static bool Applies(bool isTutorial, bool isTower, int stageIndex, int stageBestGrade)
+        {
+            return !isTutorial && !isTower && stageIndex == Stage && stageBestGrade <= 0;
+        }
+
+        /// <summary>마석을 부풀리는 영혼 보상인가. <paramref name="claimIndex"/> 는 지금까지 받은 횟수(0부터).</summary>
+        public static bool BoostsClaim(int claimIndex)
+        {
+            return claimIndex >= 0 && claimIndex < BoostedClaims;
+        }
+
+        /// <summary>부풀린 마석. <paramref name="roll"/> 은 0 이상의 정수.</summary>
+        public static int RollStones(int roll)
+        {
+            int count = MaxBoostedStones - MinBoostedStones + 1;
+            int r = roll % count;
+            return MinBoostedStones + (r < 0 ? r + count : r);
+        }
+    }
+}
