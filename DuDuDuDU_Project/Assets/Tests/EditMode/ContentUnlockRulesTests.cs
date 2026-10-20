@@ -33,22 +33,22 @@ namespace OJ.Core.Tests
             CollectionAssert.IsEmpty(ContentUnlockRules.Validate(Defaults, 30));
         }
 
-        /// <summary>합의한 순서표(2026-10-13). 숫자를 바꾸려면 이 테스트와 Docs 를 같이 고친다.</summary>
+        /// <summary>합의한 순서표(2026-10-20 개정 — 킹 썬더 3스테이지 해금 흐름). 숫자를 바꾸려면 이 테스트와 Docs 를 같이 고친다.</summary>
         [TestCase(ContentId.Dice, 0, UnlockPresentation.Guide)]
-        [TestCase(ContentId.StageReward, 1, UnlockPresentation.Quiet)]
+        [TestCase(ContentId.StageReward, 0, UnlockPresentation.Quiet)]
+        [TestCase(ContentId.StageStar, 0, UnlockPresentation.Quiet)]
+        [TestCase(ContentId.MeatFestival, 0, UnlockPresentation.Guide)]
         [TestCase(ContentId.Equipment, 1, UnlockPresentation.Guide)]
-        [TestCase(ContentId.StageStar, 2, UnlockPresentation.Quiet)]
-        [TestCase(ContentId.IdleReward, 2, UnlockPresentation.Announce)]
-        [TestCase(ContentId.MeatFestival, 3, UnlockPresentation.Announce)]
-        [TestCase(ContentId.Sweep, 3, UnlockPresentation.Guide)]
-        [TestCase(ContentId.SpecialSevenDays, 3, UnlockPresentation.Announce)]
-        [TestCase(ContentId.Quest, 4, UnlockPresentation.Announce)]
-        [TestCase(ContentId.Pinball, 4, UnlockPresentation.Guide)]
-        [TestCase(ContentId.Membership, 5, UnlockPresentation.Quiet)]
-        [TestCase(ContentId.Tower, 5, UnlockPresentation.Guide)]
+        [TestCase(ContentId.IdleReward, 1, UnlockPresentation.Announce)]
+        [TestCase(ContentId.Pinball, 2, UnlockPresentation.Guide)]
+        [TestCase(ContentId.Tower, 3, UnlockPresentation.Guide)]
+        [TestCase(ContentId.Quest, 3, UnlockPresentation.Announce)]
+        [TestCase(ContentId.Sweep, 4, UnlockPresentation.Guide)]
+        [TestCase(ContentId.Membership, 4, UnlockPresentation.Quiet)]
+        [TestCase(ContentId.SpecialSevenDays, 4, UnlockPresentation.Quiet)]
         [TestCase(ContentId.Shop, 5, UnlockPresentation.Guide)]
-        [TestCase(ContentId.SeasonPass, 5, UnlockPresentation.Announce)]
-        [TestCase(ContentId.Relic, 7, UnlockPresentation.Guide)]
+        [TestCase(ContentId.SeasonPass, 5, UnlockPresentation.Quiet)]
+        [TestCase(ContentId.Relic, 6, UnlockPresentation.Guide)]
         public void DefaultsMatchAgreedOrder(ContentId id, int requiredClear, UnlockPresentation presentation)
         {
             ContentUnlockDefinition d = Get(id);
@@ -57,48 +57,60 @@ namespace OJ.Core.Tests
             Assert.AreEqual(presentation, d.presentation, id + " 알리는 방법");
         }
 
-        /// <summary>튜토리얼만 마친 신규 유저: 다이스 가이드 하나.</summary>
+        /// <summary>튜토리얼만 마친 신규 유저: 다이스 가이드 하나. 고기 축제 가이드는 다음 진입.</summary>
         [Test]
-        public void FreshPlayerGetsDiceGuide()
+        public void FreshPlayerGetsDiceGuideThenMeatNextVisit()
         {
-            var queue = ContentUnlockRules.VisitQueue(Defaults, 0, new HashSet<ContentId>());
-            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(queue));
+            var seen = new HashSet<ContentId>();
+            var first = ContentUnlockRules.VisitQueue(Defaults, 0, seen);
+            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(first));
+
+            seen.Add(ContentId.Dice);
+            var second = ContentUnlockRules.VisitQueue(Defaults, 0, seen);
+            CollectionAssert.AreEqual(new[] { ContentId.MeatFestival }, Ids(second));
         }
 
-        /// <summary>3클리어: 고기 연출 → 소탕 가이드에서 끊고, 7일은 다음 진입으로.</summary>
+        /// <summary>1클리어: 방치 보상 연출 → 장비 가이드가 한 진입에 나온다.</summary>
         [Test]
-        public void ThirdClearDefersSevenDaysPastSweepGuide()
+        public void FirstClearShowsIdleThenEquipment()
         {
-            var seen = new HashSet<ContentId> { ContentId.Dice, ContentId.Equipment, ContentId.IdleReward };
-
-            var first = ContentUnlockRules.VisitQueue(Defaults, 3, seen);
-            CollectionAssert.AreEqual(new[] { ContentId.MeatFestival, ContentId.Sweep }, Ids(first));
-
-            seen.Add(ContentId.MeatFestival);
-            seen.Add(ContentId.Sweep);
-            var second = ContentUnlockRules.VisitQueue(Defaults, 3, seen);
-            CollectionAssert.AreEqual(new[] { ContentId.SpecialSevenDays }, Ids(second));
+            var seen = new HashSet<ContentId> { ContentId.Dice, ContentId.MeatFestival };
+            var queue = ContentUnlockRules.VisitQueue(Defaults, 1, seen);
+            CollectionAssert.AreEqual(new[] { ContentId.IdleReward, ContentId.Equipment }, Ids(queue));
         }
 
-        /// <summary>4클리어: 퀘스트 연출과 핀볼 가이드가 한 진입에 나온다.</summary>
+        /// <summary>3클리어: 퀘스트 연출 → 탑 가이드. 탑 가이드가 봉인 연출로 이어지는 이야기다.</summary>
         [Test]
-        public void FourthClearShowsQuestThenPinball()
+        public void ThirdClearShowsQuestThenTowerGuide()
         {
             var seen = new HashSet<ContentId>
             {
-                ContentId.Dice, ContentId.Equipment, ContentId.IdleReward,
-                ContentId.MeatFestival, ContentId.Sweep, ContentId.SpecialSevenDays,
+                ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward, ContentId.Equipment, ContentId.Pinball,
+            };
+
+            var queue = ContentUnlockRules.VisitQueue(Defaults, 3, seen);
+            CollectionAssert.AreEqual(new[] { ContentId.Quest, ContentId.Tower }, Ids(queue));
+        }
+
+        /// <summary>4클리어: 소탕 가이드 하나(멤버십·특별한 7일은 조용히 나타난다).</summary>
+        [Test]
+        public void FourthClearShowsSweepOnly()
+        {
+            var seen = new HashSet<ContentId>
+            {
+                ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward, ContentId.Equipment,
+                ContentId.Pinball, ContentId.Quest, ContentId.Tower,
             };
 
             var queue = ContentUnlockRules.VisitQueue(Defaults, 4, seen);
-            CollectionAssert.AreEqual(new[] { ContentId.Quest, ContentId.Pinball }, Ids(queue));
+            CollectionAssert.AreEqual(new[] { ContentId.Sweep }, Ids(queue));
         }
 
         /// <summary>가이드를 끝까지 안 보고 나가면 다음 진입에 그대로 다시 나온다.</summary>
         [Test]
         public void UnfinishedGuideRepeats()
         {
-            var seen = new HashSet<ContentId> { ContentId.Dice };
+            var seen = new HashSet<ContentId> { ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward };
             var queue = ContentUnlockRules.VisitQueue(Defaults, 1, seen);
             CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(queue));
         }
@@ -107,8 +119,9 @@ namespace OJ.Core.Tests
         public void QuietIsVisibleAsSoonAsOpen()
         {
             var none = new HashSet<ContentId>();
-            Assert.IsFalse(ContentUnlockRules.IsVisible(Get(ContentId.StageReward), 0, none));
-            Assert.IsTrue(ContentUnlockRules.IsVisible(Get(ContentId.StageReward), 1, none));
+            Assert.IsTrue(ContentUnlockRules.IsVisible(Get(ContentId.StageReward), 0, none));
+            Assert.IsFalse(ContentUnlockRules.IsVisible(Get(ContentId.Membership), 3, none));
+            Assert.IsTrue(ContentUnlockRules.IsVisible(Get(ContentId.Membership), 4, none));
         }
 
         /// <summary>열렸어도 연출 전에는 숨는다 — 연출이 입구를 튀어나오게 한다.</summary>
@@ -116,9 +129,9 @@ namespace OJ.Core.Tests
         public void AnnouncedContentHidesUntilShown()
         {
             ContentUnlockDefinition quest = Get(ContentId.Quest);
-            Assert.IsFalse(ContentUnlockRules.IsVisible(quest, 4, new HashSet<ContentId>()));
-            Assert.IsTrue(ContentUnlockRules.IsVisible(quest, 4, new HashSet<ContentId> { ContentId.Quest }));
-            Assert.IsFalse(ContentUnlockRules.IsVisible(quest, 3, new HashSet<ContentId> { ContentId.Quest }));
+            Assert.IsFalse(ContentUnlockRules.IsVisible(quest, 3, new HashSet<ContentId>()));
+            Assert.IsTrue(ContentUnlockRules.IsVisible(quest, 3, new HashSet<ContentId> { ContentId.Quest }));
+            Assert.IsFalse(ContentUnlockRules.IsVisible(quest, 2, new HashSet<ContentId> { ContentId.Quest }));
         }
 
         [TestCase(false, 0, false)]
