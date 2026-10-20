@@ -63,8 +63,8 @@ namespace OJ.Hunting
         // 에디터 굽기 전용.
         // ──────────────────────────────────────────────────────────────
 
-        internal const float IconSize = 34f;
-        internal const float GaugeHeight = 16f;
+        internal const float IconSize = 56f;
+        internal const float GaugeHeight = 28f;
 
         private static readonly Color TrackColor = new Color(0.20f, 0.23f, 0.38f, 1f);
 
