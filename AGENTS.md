@@ -230,6 +230,7 @@ Toolserify-all.cmd --quick    # 테스트는 빼고 (몇 초)
 | 도구 | 잡는 것 |
 |---|---|
 | `verify_encoding.py` | `.cs`가 UTF-8이 아니거나 U+FFFD로 글자가 파괴된 경우. **복구 가능/불가를 구분해 알려준다** |
+| `verify_meta_tracked.py` | 추적되는 에셋인데 `.meta` 가 추적되지 않는 경우. 작성자 디스크엔 있어 멀쩡해 보이고 **새 체크아웃마다 GUID 가 재발급된다**. git 인덱스만 본다 |
 | `verify_missing_scripts.py` | 씬·프리팹·SO의 Missing script. `--baseline N`으로 기준선 대비 증가를 판정 (현재 기준선 **0**) |
 | `verify_namespaces.py` | 폴더와 `namespace` 불일치. 그리고 **폴더명이 타입명과 겹쳐 그 타입을 가리는 경우**(CS0118) — 위 "네임스페이스" 절의 규칙을 검사로 못박은 것이다 |
 | `diff_prefab.py` | 프리팹 두 판을 **fileID 를 무시하고** 비교. 굽기 도구가 멱등인지 판정할 때 쓴다. `git diff` 로는 못 한다 — Unity 가 저장마다 fileID 를 새로 발급해 전부 바뀐 것으로 보인다 |
