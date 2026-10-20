@@ -14,6 +14,28 @@ namespace OJ.Game.Tests
             Assert.AreEqual(DiceEvolution.EvolveRequiredStar, KingThunderGuide.ScriptedStar);
         }
 
+        /// <summary>3성이 나오는 처음 두 머지만 고정한다. 2성 머지는 세지 않고, 셋째 3성부터는 평소처럼 굴린다.</summary>
+        [Test]
+        public void GuideMerges_AreTheFirstTwoThreeStarResultsOnly()
+        {
+            var run = new OJ.Tutorial.TutorialRunManager();
+            run.SetKingThunderGuide(true);
+
+            Assert.IsFalse(run.TryTakeGuideMerge(2), "1→2성 머지는 평소대로");
+            Assert.IsTrue(run.TryTakeGuideMerge(KingThunderGuide.ScriptedStar));
+            Assert.IsFalse(run.TryTakeGuideMerge(2));
+            Assert.IsTrue(run.TryTakeGuideMerge(KingThunderGuide.ScriptedStar));
+            Assert.IsFalse(run.TryTakeGuideMerge(KingThunderGuide.ScriptedStar), "셋째 3성부터는 평소대로");
+        }
+
+        [Test]
+        public void GuideMerges_DoNothingWhenGuideIsOff()
+        {
+            var run = new OJ.Tutorial.TutorialRunManager();
+            run.SetKingThunderGuide(false);
+            Assert.IsFalse(run.TryTakeGuideMerge(KingThunderGuide.ScriptedStar));
+        }
+
         [Test]
         public void ChainStones_IsThunderToTimeToKing()
         {

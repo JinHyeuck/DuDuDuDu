@@ -65,13 +65,16 @@ namespace OJ.Dice
             DiceType toType = to.Type;
             int toStar = to.Star;
             // 튜토리얼 대본이 정해 둔 결과가 있으면 그것이다(노멀 둘 → 번개). 한 번 쓰면 사라진다.
+            int newStar = Mathf.Min(MaxStar, to.Star + 1);
+
+            // 4스테이지 첫 진입은 3성이 나오는 처음 두 머지가 썬더다(KingThunderGuide) — 킹 썬더 사슬의 첫 재료.
             DiceType mergedType = battle.Tutorial.TryTakeForcedMergeType(out DiceType forced)
                 ? forced
-                : GetRandomMergedType(fromType);
+                : battle.Tutorial.TryTakeGuideMerge(newStar)
+                    ? DiceType.Thunder
+                    : GetRandomMergedType(fromType);
             battle.DiceStars.OnDiceRemove(fromType, fromStar);
             battle.DiceStars.OnDiceRemove(toType, toStar);
-
-            int newStar = Mathf.Min(MaxStar, to.Star + 1);
 
             to.Init(mergedType, newStar, to.SlotIndex);
 
