@@ -1525,7 +1525,7 @@ core.secondsUntilNextMeatSet[1000000000] = 800
 ## core.damage  (합성 입력 — 세이브와 무관해서 stable 이다)
 core.damage[neutral] = 11
 core.damage[pip6lv12] = 142
-core.damage[king] = 6571
+core.damage[king] = 5257
 core.damage[equipped] = 214
 core.damage[halfBoundary] = 12
 core.damage[zeroAttack] = 1
@@ -2962,7 +2962,7 @@ hit.kingNormal.multiHitInterval = 0.1
 hit.kingNormal.splashRadius = 1.3
 hit.kingNormal.additionalTargetCount = 3
 hit.damageBalanceMultiplier = 0.75
-hit.kingDiceDamageMultiplier = 2
+hit.kingDiceDamageMultiplier = 1.6
 hit.poisonDuration[Poison] = 4
 hit.poisonDuration[KingPoison] = 4
 

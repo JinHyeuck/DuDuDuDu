@@ -78,7 +78,8 @@ namespace OJ.Core
         // 컴파일러 설정에 따라 결과가 흔들릴 여지가 생긴다.
         // 0.5 → 0.75 (2026-10-14, 다이스 딜 1.5배). 0.75 도 2진 유한소수라 오차가 없다.
         public const float GlobalDamageBalanceMultiplier = 0.75f;
-        public const float KingDiceDamageMultiplier = 2f;
+        // 2 → 1.6 (2026-10-20, 사용자 지시: 킹 다이스 데미지 20% 너프. "너무 쎈 느낌").
+        public const float KingDiceDamageMultiplier = 1.6f;
 
         /// <summary>
         /// 다이스가 장비 공격력에 곱하는 비율. <b>레벨 1 이 그대로 <paramref name="basePercent"/> 다.</b>
