@@ -51,7 +51,7 @@ namespace OJ.Dice
         private int gateRequiredFloor;
         private int gateClearedFloor;
         private TMP_Text gateNoticeText;
-        private bool towerSealTutorial;
+        private bool towerRunSealed;
         private readonly List<GameObject> sealFx = new();
         private float gateNoticeUntil;
 
@@ -326,10 +326,10 @@ namespace OJ.Dice
             // 자리구매는 정식 규칙이다. 탑(편성이 곧 배치다)만 뺀다.
             // 튜토리얼도 켜 둔다 — 자리 구매를 가르친다. 대본 소환은 무료인 첫 줄에만 놓는다(TutorialStage).
             //
-            // 단, 탑 봉인 이야기의 첫 판(TowerSealDirector)은 맨 아래 줄을 막은 채 시작한다.
-            // 클리어하면 봉인이 풀리는 장면을 그 판에서 보여 주기 위해서다.
-            towerSealTutorial = IsTowerSealTutorial();
-            slotLockActive = !battle.Tower.IsActive || towerSealTutorial;
+            // 단, 탑 판이라도 스테이지에 비해 탑이 뒤처져 봉인된 조건이면(TowerGateRules) 맨 아래 줄을
+            // 막은 채 시작한다. 본편과 같은 규칙이고, 이 판을 깨면 봉인이 풀리는 장면이 나온다(TowerSealDirector).
+            towerRunSealed = IsTowerRunSealed();
+            slotLockActive = !battle.Tower.IsActive || towerRunSealed;
 
             purchasedSlotCount = 0;
             if (!slotLockActive)
@@ -337,7 +337,7 @@ namespace OJ.Dice
 
             // 첫 줄은 열려 있다. 한 줄의 칸 수는 그리드 설정(고정 열 수)이 정본이다.
             int columns = BottomRowColumns();
-            freeSlotCount = towerSealTutorial && total >= columns ? total - columns : columns;
+            freeSlotCount = towerRunSealed && total >= columns ? total - columns : columns;
 
             slotUnlocked = new bool[total];
             slotLockOverlays = new GameObject[total];
@@ -362,9 +362,9 @@ namespace OJ.Dice
         {
             gateStartIndex = int.MaxValue;
 
-            if (towerSealTutorial)
+            if (towerRunSealed)
             {
-                // 탑 첫 판: 맨 아래 줄(freeSlotCount 이후 전부)이 봉인된 채 시작한다.
+                // 봉인된 탑 판: 맨 아래 줄(freeSlotCount 이후 전부)이 봉인된 채 시작한다.
                 gateStartIndex = freeSlotCount;
                 for (int i = gateStartIndex; i < total; i++)
                 {
@@ -418,16 +418,24 @@ namespace OJ.Dice
                 : cols;
         }
 
-        /// <summary>탑 봉인 이야기의 첫 판인가 — 처음 봉인을 본 뒤 탑을 한 층도 못 깬 상태의 탑 판.</summary>
-        private bool IsTowerSealTutorial()
+        /// <summary>
+        /// 이 탑 판의 맨 아래 줄이 봉인된 조건인가. 본편과 같은 규칙이다 — 지금 도전 가능한 최고 스테이지가 요구하는
+        /// 탑 층을 아직 못 깼으면 봉인한다. 탑 판에서도 풀어야 하는 이유(이 층을 깨야 풀린다)를 그대로 보여 준다.
+        /// </summary>
+        private bool IsTowerRunSealed()
         {
             if (!battle.Tower.IsActive)
                 return false;
 
             OJ.Tower.TowerProgressManager tower = OJ.Tower.TowerProgressManager.Instance;
-            return tower != null
-                && tower.SealStory == 1
-                && tower.HighestClearedFloor < TowerGateRules.RequiredTowerFloor(TowerGateRules.StageOffset + 1);
+            OJ.Stage.StageProgressManager stage = OJ.Stage.StageProgressManager.Instance;
+            if (tower == null || stage == null)
+                return false;
+
+            int frontierStage = stage.GetHighestUnlockedStageIndex();
+            gateClearedFloor = tower.HighestClearedFloor;
+            gateRequiredFloor = TowerGateRules.RequiredTowerFloor(frontierStage);
+            return TowerGateRules.IsBottomRowLocked(frontierStage, gateClearedFloor);
         }
 
         // ── 봉인 연출(TowerSealDirector 가 부른다) ─────────────────────
@@ -507,7 +515,7 @@ namespace OJ.Dice
                 }
 
                 gateStartIndex = int.MaxValue;
-                towerSealTutorial = false;
+                towerRunSealed = false;
             }
 
             if (sealFx.Count > 0)
@@ -630,7 +638,9 @@ namespace OJ.Dice
                 gateNoticeText.raycastTarget = false;
             }
 
-            gateNoticeText.text = towerSealTutorial
+            // 탑 판에서는 이 층을 깨는 것으로 요구가 채워질 때만 "이 층을 클리어하면" 이라고 말한다.
+            bool thisFloorReleases = towerRunSealed && gateClearedFloor + 1 >= gateRequiredFloor;
+            gateNoticeText.text = thisFloorReleases
                 ? "이 층을 클리어하면 봉인이 풀려요!"
                 : "무한의 탑 " + gateRequiredFloor + "층을 클리어하면 열려요 (현재 " + gateClearedFloor + "층)";
             gateNoticeText.gameObject.SetActive(true);

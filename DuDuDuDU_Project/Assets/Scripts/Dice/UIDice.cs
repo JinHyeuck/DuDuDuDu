@@ -26,6 +26,12 @@ namespace OJ.Dice
         // null 이면 그것은 사고이니 ?. 를 새로 붙이지 않는다.
         [Inject] private IBattleRefs battle;
 
+        /// <summary>
+        /// 진화 가능 표시가 보는 보유 판정. MergeSystem 의 진화 검사와 같은 것이다.
+        /// 생성 경로가 resolver.Instantiate 라 Awake 이전에 채워진다(위 battle 주석).
+        /// </summary>
+        [Inject] private DiceOwnershipManager ownership;
+
         private const float DoubleTapThreshold = 0.35f;
 
         public Image BGImage;
@@ -63,11 +69,13 @@ namespace OJ.Dice
         {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
             canvas = GetComponentInParent<Canvas>();
+            SetUpCooldownGauge();
         }
 
         private void Update()
         {
             UpdateCooldownFill();
+            AnimateEvolveBadge();
         }
 
         private void OnDestroy()
@@ -118,6 +126,7 @@ namespace OJ.Dice
                 animator.SetBool("MaxStar", false);
 
             UpdateCooldownFill();
+            RefreshEvolveBadge();
         }
 
         public void SetStar(int star)
@@ -163,13 +172,250 @@ namespace OJ.Dice
                 ShootEffectTrans.gameObject.SetActive(false);
         }
 
+        // ── 쿨타임 게이지(테두리) · 진화 가능 표시 ─────────────────────────
+
+        /// <summary>
+        /// 진화 가능 화살표의 크기와, 우상단 모서리에서 안쪽으로 들어온 거리. 다이스 루트 사각형은 보이는 틀보다 크다 -
+        /// 모서리에 붙이면 틀 밖으로 나가 옆 다이스에 가려지므로 틀 안쪽까지 들인다.
+        /// </summary>
+        private const float EvolveBadgeSize = 52f;
+        private const float EvolveBadgeInset = 26f;
+
+        /// <summary>
+        /// 링을 다이스 틀에 맞추려 루트 사각형에서 들이는 거리. 루트 사각형(170)은 눈에 보이는 틀(칸 크기 120)보다 커서
+        /// 가장자리에 그리면 링이 틀 밖으로 나간다. 틀은 가운데에 있으므로 양쪽으로 (170 - 120) / 2 만큼 들인다.
+        /// </summary>
+        private const float CooldownRingInset = 25f;
+
+        private static Sprite cooldownRingSprite;
+        private static Sprite evolveArrowSprite;
+        private GameObject evolveBadge;
+        private RectTransform evolveBadgeRect;
+
+        /// <summary>
+        /// 쿨타임 표시를 테두리 게이지로 바꾼다. 예전에는 칸 전체를 반투명 검정으로 덮고 숫자까지 올려 어떤 다이스인지
+        /// 가렸다. 이제 숫자는 없고, 다이스는 그대로 보이며, 테두리만 시계 방향으로 차오른다.
+        /// 프리팹은 건드리지 않고 코드로 바꾼다 - 이미 Filled/Radial360 이라 그림과 색만 갈아 끼우면 된다.
+        /// </summary>
+        private void SetUpCooldownGauge()
+        {
+            if (CooldownText != null)
+                CooldownText.gameObject.SetActive(false);
+
+            if (CooldownFill == null)
+                return;
+
+            CooldownFill.sprite = GetCooldownRingSprite();
+            CooldownFill.type = Image.Type.Filled;
+            CooldownFill.fillMethod = Image.FillMethod.Radial360;
+            CooldownFill.fillOrigin = (int)Image.Origin360.Top;
+            // 밝은 금색 호가 쿨타임이 찰수록 시계 방향으로 늘어난다. 어두운 색은 검은 배경에서 안 보이고
+            // 흰색은 연한 노멀 다이스 틀에서 안 보인다. 발사 가능해지면(다 차면) 사라진다.
+            CooldownFill.color = new Color(1f, 0.9f, 0.3f, 0.95f);
+            CooldownFill.raycastTarget = false;
+
+            // 링을 눈에 보이는 틀에 맞춘다(CooldownRingInset 주석).
+            var rect = (RectTransform)CooldownFill.transform;
+            rect.offsetMin = new Vector2(CooldownRingInset, CooldownRingInset);
+            rect.offsetMax = new Vector2(-CooldownRingInset, -CooldownRingInset);
+        }
+
+        /// <summary>둥근 사각 테두리(속이 빈 틀) 한 장. 프로세스에서 한 번만 만든다.</summary>
+        private static Sprite GetCooldownRingSprite()
+        {
+            if (cooldownRingSprite != null)
+                return cooldownRingSprite;
+
+            const int size = 128;
+            const float outerRadius = 14f;
+            const float thickness = 8f;
+
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                name = "DiceCooldownRing",
+            };
+
+            float half = size * 0.5f;
+            float innerRadius = Mathf.Max(2f, outerRadius - thickness);
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float px = x + 0.5f - half;
+                    float py = y + 0.5f - half;
+
+                    float outer = RoundedBoxDistance(px, py, half, outerRadius);
+                    float inner = RoundedBoxDistance(px, py, half - thickness, innerRadius);
+
+                    // 안쪽은 양수(구멍), 바깥은 음수. 가장자리를 한 픽셀 폭으로 부드럽게 한다.
+                    float alpha = Mathf.Clamp01(0.5f - outer) * Mathf.Clamp01(inner + 0.5f);
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(alpha * 255f));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            // FullRect 가 중요하다. 기본값(Tight)은 투명한 가운데를 도려낸 모양으로 메시를 만들어,
+            // Image 가 그 모양의 경계 상자를 기준으로 그리면서 링이 다이스 밖으로 밀려난다.
+            cooldownRingSprite = Sprite.Create(
+                texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            return cooldownRingSprite;
+        }
+
+        /// <summary>중심이 원점인 둥근 사각형까지의 부호 있는 거리(안쪽이 음수).</summary>
+        private static float RoundedBoxDistance(float x, float y, float halfExtent, float radius)
+        {
+            float qx = Mathf.Abs(x) - (halfExtent - radius);
+            float qy = Mathf.Abs(y) - (halfExtent - radius);
+            float ox = Mathf.Max(qx, 0f);
+            float oy = Mathf.Max(qy, 0f);
+            return Mathf.Sqrt(ox * ox + oy * oy) + Mathf.Min(Mathf.Max(qx, qy), 0f) - radius;
+        }
+
+        /// <summary>
+        /// 진화할 수 있는 다이스의 우상단에 위로 향한 화살표를 띄운다. 글자 대신 그림이라 칸을 가리지 않는다.
+        /// 기본 다이스는 3성이 되고 대상(특수) 다이스를 갖고 있을 때, 레어(특수) 다이스는 대상(킹)을 갖고 있을 때다 -
+        /// 실제로 진화할 수 있을 때만 보인다(<see cref="MergeSystem"/> 과 같은 판정). 탑에는 진화가 없어 끈다.
+        /// </summary>
+        private void RefreshEvolveBadge()
+        {
+            bool show = battle != null
+                && !battle.Tower.IsActive
+                && DiceEvolution.CanEvolve(Type, Star, ownership != null ? ownership.IsOwned : null);
+
+            if (!show)
+            {
+                if (evolveBadge != null)
+                    evolveBadge.SetActive(false);
+
+                return;
+            }
+
+            if (evolveBadge == null)
+            {
+                evolveBadge = CreateEvolveBadge();
+                evolveBadgeRect = (RectTransform)evolveBadge.transform;
+            }
+
+            evolveBadge.SetActive(true);
+        }
+
+        /// <summary>화살표가 위아래로 살짝 떠다니며 눈에 띄게 한다. 보일 때만 돈다.</summary>
+        private void AnimateEvolveBadge()
+        {
+            if (evolveBadge == null || !evolveBadge.activeSelf)
+                return;
+
+            float bob = Mathf.Sin(Time.unscaledTime * 5f) * 4f;
+            evolveBadgeRect.anchoredPosition = new Vector2(-EvolveBadgeInset, -EvolveBadgeInset + bob);
+        }
+
+        private GameObject CreateEvolveBadge()
+        {
+            var badge = new GameObject("EvolveBadge", typeof(RectTransform), typeof(Image));
+            var rect = (RectTransform)badge.transform;
+            rect.SetParent(transform, false);
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-EvolveBadgeInset, -EvolveBadgeInset);
+            rect.sizeDelta = new Vector2(EvolveBadgeSize, EvolveBadgeSize);
+
+            var image = badge.GetComponent<Image>();
+            image.sprite = GetEvolveArrowSprite();
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            return badge;
+        }
+
+        /// <summary>
+        /// 위로 향한 화살표(금색 + 검은 외곽선) 한 장. 프로세스에서 한 번만 만든다.
+        /// 외곽선은 화살표 모양을 한 번 부풀린 것이라 어떤 다이스 배경 위에서도 읽힌다.
+        /// </summary>
+        private static Sprite GetEvolveArrowSprite()
+        {
+            if (evolveArrowSprite != null)
+                return evolveArrowSprite;
+
+            const int size = 96;
+            const float outline = 6f;
+
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                name = "DiceEvolveArrow",
+            };
+
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float d = ArrowDistance(x + 0.5f, y + 0.5f, size);
+
+                    float fill = Mathf.Clamp01(0.5f - d);
+                    float edge = Mathf.Clamp01(0.5f - (d - outline));
+
+                    // 위쪽이 밝은 금색이라 입체감이 생긴다.
+                    float t = y / (float)(size - 1);
+                    var gold = Color.Lerp(new Color(1f, 0.66f, 0.1f), new Color(1f, 0.95f, 0.45f), t);
+
+                    float alpha = Mathf.Max(fill, edge);
+                    Color c = Color.Lerp(new Color(0.08f, 0.04f, 0f), gold, fill);
+                    pixels[y * size + x] = new Color32(
+                        (byte)Mathf.RoundToInt(c.r * 255f),
+                        (byte)Mathf.RoundToInt(c.g * 255f),
+                        (byte)Mathf.RoundToInt(c.b * 255f),
+                        (byte)Mathf.RoundToInt(alpha * 255f));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            evolveArrowSprite = Sprite.Create(
+                texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            return evolveArrowSprite;
+        }
+
+        /// <summary>
+        /// 위로 향한 화살표(삼각형 머리 + 몸통)까지의 부호 있는 거리 근사(안쪽이 음수). 좌표는 픽셀, y 가 위쪽이다.
+        /// </summary>
+        private static float ArrowDistance(float px, float py, int size)
+        {
+            float cx = size * 0.5f;
+            float x = px - cx;
+
+            // 머리: 꼭짓점 위(0.84), 밑변 아래(0.46) 의 이등변삼각형. 몸통: 폭 0.30, 아래 0.14 ~ 머리 밑변.
+            float headTop = size * 0.84f;
+            float headBottom = size * 0.46f;
+            float headHalfWidth = size * 0.36f;
+            float stemHalfWidth = size * 0.15f;
+            float stemBottom = size * 0.14f;
+
+            // 삼각형: 높이에 따라 반폭이 줄어드는 선 사이의 거리.
+            float headSpan = headTop - headBottom;
+            float headHalfAtY = headHalfWidth * Mathf.Clamp01((headTop - py) / headSpan);
+            float headSide = Mathf.Abs(x) - headHalfAtY;
+            float headVertical = Mathf.Max(headBottom - py, py - headTop);
+            float head = Mathf.Max(headSide * 0.8f, headVertical);
+
+            float stemSide = Mathf.Abs(x) - stemHalfWidth;
+            float stemVertical = Mathf.Max(stemBottom - py, py - (headBottom + 2f));
+            float stem = Mathf.Max(stemSide, stemVertical);
+
+            return Mathf.Min(head, stem);
+        }
+
         private void UpdateCooldownFill()
         {
             if (CooldownFill == null)
                 return;
 
             float fill = 0f;
-            float remain = 0f;
 
             // Update 마다 도는 자리다. 원래 있던 null 검사는 유지한다 — Init 이 부르는
             // Refresh 경로와 씬 종료 프레임이 이 검사에 기대고 있다.
@@ -177,19 +423,11 @@ namespace OJ.Dice
             if (player != null)
             {
                 fill = player.GetDiceCooldownFill(this);
-                remain = player.GetDiceCooldownRemaining(this);
             }
 
-            CooldownFill.fillAmount = fill;
+            // fill 은 <b>남은</b> 비율이다. 게이지는 찬 비율로 보여 준다 - 발사 직후 비어 있다가 차오르고, 다 차면 꺼진다.
+            CooldownFill.fillAmount = 1f - fill;
             CooldownFill.enabled = fill > 0.001f;
-
-            if (CooldownText != null)
-            {
-                bool visible = remain > 0.01f;
-                CooldownText.gameObject.SetActive(visible);
-                if (visible)
-                    CooldownText.SetText("{0:0.0}", remain);
-            }
         }
 
         #region Drag Handlers
