@@ -34,7 +34,7 @@ namespace OJ.Tutorial
 
         private readonly Queue<ScriptedSummon> scriptedSummons = new Queue<ScriptedSummon>();
 
-        private int guideSummonsLeft;
+        private int guideMergesLeft;
 
         private bool hasForcedMergeType;
         private DiceType forcedMergeType;
@@ -78,16 +78,19 @@ namespace OJ.Tutorial
         public void SetKingThunderGuide(bool active)
         {
             IsKingThunderGuideActive = active;
-            guideSummonsLeft = active ? KingThunderGuide.ScriptedSummons : 0;
+            guideMergesLeft = active ? KingThunderGuide.ScriptedThreeStarMerges : 0;
         }
 
-        /// <summary>유도 소환을 하나 꺼낸다. 남지 않았으면 거짓 — 평소처럼 굴린다.</summary>
-        public bool TryTakeGuideSummon()
+        /// <summary>
+        /// 이번 머지 결과를 썬더로 고정해야 하는가. <paramref name="resultStar"/> 가 유도 성급(3성)일 때만 한 번씩 센다 —
+        /// 1→2성 머지는 평소처럼 굴린다. 남지 않았으면 거짓.
+        /// </summary>
+        public bool TryTakeGuideMerge(int resultStar)
         {
-            if (!IsKingThunderGuideActive || guideSummonsLeft <= 0)
+            if (!IsKingThunderGuideActive || guideMergesLeft <= 0 || resultStar != KingThunderGuide.ScriptedStar)
                 return false;
 
-            guideSummonsLeft--;
+            guideMergesLeft--;
             return true;
         }
 
