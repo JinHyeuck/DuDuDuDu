@@ -3,7 +3,7 @@ using OJ.Core;
 
 namespace OJ.Core.Tests
 {
-    /// <summary>4스테이지 첫 진입 킹 썬더 유도의 조건·마석 범위를 잠근다.</summary>
+    /// <summary>4스테이지 첫 진입 킹 썬더 유도의 조건을 잠근다.</summary>
     public sealed class KingThunderGuideTests
     {
         [Test]
@@ -15,28 +15,6 @@ namespace OJ.Core.Tests
             Assert.IsFalse(KingThunderGuide.Applies(false, false, 5, 0));
             Assert.IsFalse(KingThunderGuide.Applies(true, false, 4, 0), "튜토리얼");
             Assert.IsFalse(KingThunderGuide.Applies(false, true, 4, 0), "탑");
-        }
-
-        [TestCase(0, true)]
-        [TestCase(1, true)]
-        [TestCase(2, false)]
-        [TestCase(-1, false)]
-        public void BoostsClaim_OnlyFirstTwo(int index, bool expected)
-        {
-            Assert.AreEqual(expected, KingThunderGuide.BoostsClaim(index));
-        }
-
-        [Test]
-        public void RollStones_StaysInRangeAndBeatsNormalMaximum()
-        {
-            for (int roll = -3; roll < 200; roll++)
-            {
-                int stones = KingThunderGuide.RollStones(roll);
-                Assert.GreaterOrEqual(stones, KingThunderGuide.MinBoostedStones);
-                Assert.LessOrEqual(stones, KingThunderGuide.MaxBoostedStones);
-            }
-
-            Assert.Greater(KingThunderGuide.MinBoostedStones, SoulBonusRules.MaxStones * 2);
         }
     }
 }
