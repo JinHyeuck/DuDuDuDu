@@ -46,6 +46,57 @@ namespace OJ.Hunting
         public float wallHp_Width = 1025.0f;
 
 
+        // --- 피격 번쩍임 ------------------------------------------------------------------
+        //
+        // 벽이 깎일 때마다 벽 스프라이트를 빨갛게 했다가 원래 색으로 되돌린다. 몬스터가 벽 앞에 붙어
+        // 매초 때리므로(<c>Monster.AttackWall</c>) "지금 벽이 맞고 있다" 가 숫자 말고도 보여야 한다.
+        // 여러 마리가 연달아 때리면 그때마다 처음부터 다시 번쩍인다. 배속과 무관하게 보이도록 unscaled 시간을 쓴다.
+
+        private static readonly Color HitFlashColor = new Color(1f, 0.25f, 0.25f, 1f);
+        private const float HitFlashDuration = 0.18f;
+
+        private SpriteRenderer[] flashRenderers;
+        private Color[] flashBaseColors;
+        private float flashUntil = -1f;
+
+        private void Awake()
+        {
+            flashRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+            flashBaseColors = new Color[flashRenderers.Length];
+            for (int i = 0; i < flashRenderers.Length; i++)
+                flashBaseColors[i] = flashRenderers[i].color;
+        }
+
+        private void Update()
+        {
+            if (flashUntil < 0f)
+                return;
+
+            float remain = flashUntil - Time.unscaledTime;
+            float t = remain <= 0f ? 0f : remain / HitFlashDuration;
+            for (int i = 0; i < flashRenderers.Length; i++)
+            {
+                if (flashRenderers[i] != null)
+                    flashRenderers[i].color = Color.Lerp(flashBaseColors[i], HitFlashColor, t);
+            }
+
+            if (remain <= 0f)
+                flashUntil = -1f;
+        }
+
+        private void FlashHit()
+        {
+            if (flashRenderers == null || flashRenderers.Length == 0)
+                return;
+
+            flashUntil = Time.unscaledTime + HitFlashDuration;
+            for (int i = 0; i < flashRenderers.Length; i++)
+            {
+                if (flashRenderers[i] != null)
+                    flashRenderers[i].color = HitFlashColor;
+            }
+        }
+
         public void SetInit(int hp)
         {
             TotalHp = hp;
@@ -64,7 +115,10 @@ namespace OJ.Hunting
 #endif
 
             // 벽은 몬스터와 식이 다르다 — 방어력도, 상태 피해증가도, CeilToInt 도 없다.
+            int before = CurrentHp;
             CurrentHp = IncomingDamageFormula.WallHpAfterDamage(CurrentHp, dmg);
+            if (CurrentHp < before)
+                FlashHit();
 
             SetHpLabel(CurrentHp);
 
