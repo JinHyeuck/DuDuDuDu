@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
 using OJ.Dice;
+using OJ.Lobby;
 using OJ.Tower;
 using OJ.DI;
 using OJ.Tutorial;
@@ -36,6 +37,9 @@ namespace OJ.ContentUnlock
         /// <summary>누른 뒤 화면이 열리고 자리를 잡을 때까지. 열리는 연출 위에 말풍선이 겹치면 어색하다.</summary>
         private const float SettleSeconds = 0.35f;
 
+        /// <summary>홈으로 돌아온 뒤 다음 가이드를 걸기까지 잠깐 쉰다. 화면 전환 연출과 겹치지 않게.</summary>
+        private const float ChainRestSeconds = 0.6f;
+
         private readonly LobbyContentGate gate;
         private UITutorialOverlay overlay;
         private CancellationToken token;
@@ -63,6 +67,35 @@ namespace OJ.ContentUnlock
                 return;
             }
 
+            try
+            {
+                while (queue.Count > 0)
+                {
+                    await RunQueueAsync(manager, queue);
+
+                    // 가이드에서 끊긴 뒤에도 남은 연출이 있으면, 유저가 가이드로 연 화면을 닫고 홈으로 돌아왔을 때
+                    // 이어서 보여 준다. 예전에는 다음 로비 진입까지 안 나와서 "다이스를 보고 왔는데 고기 축제 가이드가
+                    // 안 나온다" 로 보였다. 두 가이드가 연달아 뜨지는 않는다 — 홈으로 돌아와야 다음이 나온다.
+                    queue = manager.GetVisitQueue();
+                    if (queue.Count == 0)
+                        break;
+
+                    await UniTask.WaitUntil(() => LobbyLayoutController.CurrentTab == LobbyTab.Home,
+                        PlayerLoopTiming.Update, token);
+
+                    float rest = Time.unscaledTime + ChainRestSeconds;
+                    await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 로비가 내려갔다. 기록하지 않은 것은 다음 진입에 다시 나온다.
+            }
+        }
+
+        /// <summary>대기열 한 판. 화면(오버레이)을 열고 표 순서대로 보여 준 뒤 닫는다.</summary>
+        private async UniTask RunQueueAsync(ContentUnlockManager manager, List<ContentUnlockDefinition> queue)
+        {
             try
             {
                 // 한 프레임 미룬다. 입구들의 Start 와 레이아웃이 자리를 잡은 뒤에 재야 구멍이 맞는다.
@@ -96,10 +129,6 @@ namespace OJ.ContentUnlock
                     overlay.ClearAll();
                     manager.MarkAnnounced(d.contentId);
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                // 로비가 내려갔다. 기록하지 않은 것은 다음 진입에 다시 나온다.
             }
             finally
             {

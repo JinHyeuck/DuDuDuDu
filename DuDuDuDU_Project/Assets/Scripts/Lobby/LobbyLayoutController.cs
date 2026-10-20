@@ -28,6 +28,13 @@ namespace OJ.Lobby
 
     public class LobbyLayoutController : MonoBehaviour
     {
+        /// <summary>
+        /// 지금 열려 있는 하단 탭. 해금 가이드가 "유저가 홈으로 돌아왔는가" 를 보는 데 쓴다
+        /// (<c>LobbyUnlockDirector</c>) — 가이드로 연 화면을 닫고 나와야 다음 가이드를 건다.
+        /// 로비 씬이 새로 뜰 때마다 홈으로 되돌린다.
+        /// </summary>
+        public static LobbyTab CurrentTab { get; private set; } = LobbyTab.Home;
+
         [Header("Top / Middle")]
         [SerializeField] private Button enterStageButton;
         [SerializeField] private TMP_Text selectedStageText;
@@ -59,6 +66,7 @@ namespace OJ.Lobby
 
         private void Awake()
         {
+            CurrentTab = LobbyTab.Home;
 
             if (enterStageButton != null) enterStageButton.onClick.AddListener(OnClickEnterStage);
             if (bottomButtons != null)
@@ -176,6 +184,8 @@ namespace OJ.Lobby
             // 아직 안 열린 탭은 넘어가지 않고 언제 열리는지만 알린다(Docs/ContentUnlock.md).
             if (TryExplainLockedTab(tab))
                 return;
+
+            CurrentTab = tab;
 
             SetPageActive<UIShopPage>(tab == LobbyTab.Shop);
             SetPageActive<UIEquipmentPage>(tab == LobbyTab.Equipment);
