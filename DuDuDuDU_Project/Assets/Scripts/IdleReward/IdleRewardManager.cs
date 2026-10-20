@@ -199,6 +199,23 @@ namespace OJ.IdleReward
             return TimeSpan.FromSeconds(IdleRewardFormula.SecondsUntilNextMeatSet(elapsedSeconds, MeatSetIntervalSeconds));
         }
 
+        /// <summary>
+        /// 고기가 <paramref name="minSets"/> 세트 이상 쌓인 상태로 만든다. 이미 그 이상이면 아무것도 안 한다.
+        /// 고기 축제 해금 가이드가 쓴다 — 갓 해금된 유저는 쌓인 고기가 없어서 "눌러서 받아요" 가 빈말이 된다.
+        /// </summary>
+        public void EnsureMeatSets(int minSets)
+        {
+            long before = meatFestivalStartUtcTicks;
+            meatFestivalStartUtcTicks = IdleRewardFormula.MeatStartTicksForAtLeast(
+                meatFestivalStartUtcTicks, DateTime.UtcNow.Ticks, MeatSetIntervalSeconds, minSets);
+
+            if (meatFestivalStartUtcTicks == before)
+                return;
+
+            Save();
+            OnChanged?.Invoke();
+        }
+
         public bool TryClaimMeat(out int meatAmount, out int setCount)
         {
             DateTime utcNow = DateTime.UtcNow;
