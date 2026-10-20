@@ -168,7 +168,12 @@ namespace OJ.Economy
 
                 Run.SoulOfferSp = SoulBonusRules.RollSp(
                     total, UnityEngine.Random.Range(0, 1000), battle.Game.WaveSpMultiplierPercent(battle.Game.CurrentWaveIndex));
-                Run.SoulOfferStones = SoulBonusRules.RollStones(UnityEngine.Random.Range(0, 1000));
+                int stoneRoll = UnityEngine.Random.Range(0, 1000);
+                // 4스테이지 첫 진입은 처음 두 번의 마석을 킹 썬더 사슬 한 줄(30)이 넘게 준다(KingThunderGuide).
+                Run.SoulOfferStones = battle.Tutorial != null && battle.Tutorial.IsKingThunderGuideActive
+                                      && KingThunderGuide.BoostsClaim(Run.SoulGoalIndex)
+                    ? KingThunderGuide.RollStones(stoneRoll)
+                    : SoulBonusRules.RollStones(stoneRoll);
             }
 
             IsPopupOpen = true;

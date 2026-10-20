@@ -971,6 +971,13 @@ namespace OJ.Hunting
                 initialSummonPoint: 0,
                 initialSummonCost: 0);
 
+            // 4스테이지 첫 진입이면 킹 썬더 유도를 건다. 매 판 정해서(끄는 쪽도) 지난 판의 대본이 남지 않게 한다.
+            int guideBestGrade = StageProgressManager.Instance != null
+                ? (int)StageProgressManager.Instance.GetBestClearGrade(CurrentStageData.stageIndex)
+                : 0;
+            battle.Tutorial.SetKingThunderGuide(
+                KingThunderGuide.Applies(false, false, CurrentStageData.stageIndex, guideBestGrade));
+
             battle.ElementUpgrade.ResetRunState();
             // 웨이브 범위 상태는 Run.BeginRun 이 못 지운다 — 매니저 안에 있기 때문이다.
             // 지금은 배틀 스코프가 씬마다 새로 만들어 줘서 우연히 깨끗하지만,
