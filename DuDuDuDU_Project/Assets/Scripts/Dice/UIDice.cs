@@ -181,6 +181,12 @@ namespace OJ.Dice
         private const float EvolveBadgeSize = 52f;
         private const float EvolveBadgeInset = 26f;
 
+        /// <summary>
+        /// 링을 다이스 틀에 맞추려 루트 사각형에서 들이는 거리. 루트 사각형(170)은 눈에 보이는 틀(칸 크기 120)보다 커서
+        /// 가장자리에 그리면 링이 틀 밖으로 나간다. 틀은 가운데에 있으므로 양쪽으로 (170 - 120) / 2 만큼 들인다.
+        /// </summary>
+        private const float CooldownRingInset = 25f;
+
         private static Sprite cooldownRingSprite;
         private static Sprite evolveArrowSprite;
         private GameObject evolveBadge;
@@ -203,9 +209,15 @@ namespace OJ.Dice
             CooldownFill.type = Image.Type.Filled;
             CooldownFill.fillMethod = Image.FillMethod.Radial360;
             CooldownFill.fillOrigin = (int)Image.Origin360.Top;
-            // 어두운 테두리가 찬다. 흰색은 연한 노멀 다이스 배경에서 안 보이고, 예전 어두운 덮개와 같은 뜻(식는 중)이다.
-            CooldownFill.color = new Color(0f, 0f, 0f, 0.8f);
+            // 밝은 금색 호가 쿨타임이 찰수록 시계 방향으로 늘어난다. 어두운 색은 검은 배경에서 안 보이고
+            // 흰색은 연한 노멀 다이스 틀에서 안 보인다. 발사 가능해지면(다 차면) 사라진다.
+            CooldownFill.color = new Color(1f, 0.9f, 0.3f, 0.95f);
             CooldownFill.raycastTarget = false;
+
+            // 링을 눈에 보이는 틀에 맞춘다(CooldownRingInset 주석).
+            var rect = (RectTransform)CooldownFill.transform;
+            rect.offsetMin = new Vector2(CooldownRingInset, CooldownRingInset);
+            rect.offsetMax = new Vector2(-CooldownRingInset, -CooldownRingInset);
         }
 
         /// <summary>둥근 사각 테두리(속이 빈 틀) 한 장. 프로세스에서 한 번만 만든다.</summary>
@@ -215,8 +227,8 @@ namespace OJ.Dice
                 return cooldownRingSprite;
 
             const int size = 128;
-            const float outerRadius = 16f;
-            const float thickness = 9f;
+            const float outerRadius = 14f;
+            const float thickness = 8f;
 
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
             {
@@ -246,7 +258,10 @@ namespace OJ.Dice
 
             texture.SetPixels32(pixels);
             texture.Apply(false, true);
-            cooldownRingSprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            // FullRect 가 중요하다. 기본값(Tight)은 투명한 가운데를 도려낸 모양으로 메시를 만들어,
+            // Image 가 그 모양의 경계 상자를 기준으로 그리면서 링이 다이스 밖으로 밀려난다.
+            cooldownRingSprite = Sprite.Create(
+                texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
             return cooldownRingSprite;
         }
 
@@ -361,7 +376,8 @@ namespace OJ.Dice
 
             texture.SetPixels32(pixels);
             texture.Apply(false, true);
-            evolveArrowSprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            evolveArrowSprite = Sprite.Create(
+                texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
             return evolveArrowSprite;
         }
 
@@ -409,7 +425,8 @@ namespace OJ.Dice
                 fill = player.GetDiceCooldownFill(this);
             }
 
-            CooldownFill.fillAmount = fill;
+            // fill 은 <b>남은</b> 비율이다. 게이지는 찬 비율로 보여 준다 - 발사 직후 비어 있다가 차오르고, 다 차면 꺼진다.
+            CooldownFill.fillAmount = 1f - fill;
             CooldownFill.enabled = fill > 0.001f;
         }
 
