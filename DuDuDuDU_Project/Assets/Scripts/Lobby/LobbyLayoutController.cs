@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
 using OJ.ContentUnlock;
+using OJ.Core;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
@@ -254,6 +255,17 @@ namespace OJ.Lobby
                 {
                     stageSummaryText.SetText(
                         $"Wave {stageData.totalWaves} / Start SP {stageData.initialSP} / Wave SP {stageData.waveClearSP} / Best {bestGrade}");
+
+                    // 탑이 뒤처지면 들어가기 전에 알린다. 전투에서 갑자기 아래 줄이 막혀 있는 것보다 낫다.
+                    int towerCleared = OJ.Tower.TowerProgressManager.Instance != null
+                        ? OJ.Tower.TowerProgressManager.Instance.HighestClearedFloor
+                        : 0;
+                    if (TowerGateRules.IsBottomRowLocked(selectedStageIndex, towerCleared))
+                    {
+                        int required = TowerGateRules.RequiredTowerFloor(selectedStageIndex);
+                        stageSummaryText.SetText(
+                            stageSummaryText.text + $"\n<color=#FFD24D>탑 {required}층 필요 · 현재 {towerCleared}층 (미달 시 맨 아래 줄 잠김)</color>");
+                    }
                 }
             }
 

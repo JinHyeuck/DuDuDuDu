@@ -45,10 +45,10 @@ namespace OJ.Core.Tests
         [TestCase(ContentId.Quest, 4, UnlockPresentation.Announce)]
         [TestCase(ContentId.Pinball, 4, UnlockPresentation.Guide)]
         [TestCase(ContentId.Membership, 5, UnlockPresentation.Quiet)]
+        [TestCase(ContentId.Tower, 5, UnlockPresentation.Guide)]
         [TestCase(ContentId.Shop, 5, UnlockPresentation.Guide)]
         [TestCase(ContentId.SeasonPass, 5, UnlockPresentation.Announce)]
         [TestCase(ContentId.Relic, 7, UnlockPresentation.Guide)]
-        [TestCase(ContentId.Tower, 10, UnlockPresentation.Guide)]
         public void DefaultsMatchAgreedOrder(ContentId id, int requiredClear, UnlockPresentation presentation)
         {
             ContentUnlockDefinition d = Get(id);

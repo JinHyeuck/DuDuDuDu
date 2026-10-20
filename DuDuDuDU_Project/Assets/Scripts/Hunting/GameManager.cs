@@ -104,6 +104,9 @@ namespace OJ.Hunting
         public int CurrentWaveIndex => Run.WaveIndex;
         public StageData CurrentStageData { get; private set; }
 
+        /// <summary>탑 층을 깨기 직전의 최고 클리어 층. 봉인 해제 연출 판정용(<see cref="OnTowerResultClosed"/>).</summary>
+        private int towerFloorBeforeClear;
+
         [Header("Stage Theme")]
         [SerializeField] private SpriteRenderer stageBackground;
         public Button PlayUI;
@@ -1349,6 +1352,9 @@ namespace OJ.Hunting
             TowerFloorPlan plan = battle.Tower.Plan;
             TowerProgressManager progress = TowerProgressManager.Instance;
 
+            // 기록을 갱신하기 전의 최고 층. 결과창이 닫힐 때 "이번 클리어가 봉인을 풀었는가" 를 가르는 데 쓴다.
+            towerFloorBeforeClear = progress != null ? progress.HighestClearedFloor : 0;
+
             int floor = plan.Floor;
             int elapsedMs = battle.Tower.ElapsedMilliseconds;
             int remainingPercent = battle.Tower.RemainingHpPercent;
@@ -1458,7 +1464,7 @@ namespace OJ.Hunting
             }
 
             GameContainer.UI?.Hide<UIWaveRewardPreviewDialog>();
-            dialog.Open(data, SceneFlowManager.LoadLobby);
+            dialog.Open(data, () => OnTowerResultClosed(data.IsClear));
         }
 
         /// <summary>
@@ -1575,6 +1581,69 @@ namespace OJ.Hunting
             ShowStageResult(true, stageIndex, CurrentWaveIndex, resultRewards);
         }
 
+        /// <summary>
+        /// 스테이지 결과창이 닫혔다. 막 깬 스테이지가 아랫줄을 새로 봉인하는 문턱이면 로비로 가기 전에
+        /// 봉인 장면을 보여 준다(<see cref="TowerSealDirector"/>). 연출이 실패해도 로비로는 간다.
+        /// </summary>
+        private void OnStageResultClosed(bool isWin, int stageIndex)
+        {
+            if (isWin && TowerSealDirector.ShouldPlaySeal(stageIndex))
+            {
+                PlaySealThenLobbyAsync(stageIndex).Forget();
+                return;
+            }
+
+            SceneFlowManager.LoadLobby();
+        }
+
+        private async UniTaskVoid PlaySealThenLobbyAsync(int stageIndex)
+        {
+            try
+            {
+                await TowerSealDirector.PlaySealAsync(battle.Board, stageIndex, this.GetCancellationTokenOnDestroy());
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            SceneFlowManager.LoadLobby();
+        }
+
+        /// <summary>탑 결과창이 닫혔다. 이번 클리어가 아랫줄 봉인을 풀었으면 그 장면을 보여 주고 로비로 간다.</summary>
+        private void OnTowerResultClosed(bool isClear)
+        {
+            if (isClear && TowerSealDirector.ShouldPlayRelease(towerFloorBeforeClear))
+            {
+                PlayReleaseThenLobbyAsync().Forget();
+                return;
+            }
+
+            SceneFlowManager.LoadLobby();
+        }
+
+        private async UniTaskVoid PlayReleaseThenLobbyAsync()
+        {
+            try
+            {
+                await TowerSealDirector.PlayReleaseAsync(battle.Board, this.GetCancellationTokenOnDestroy());
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            SceneFlowManager.LoadLobby();
+        }
+
         private IEnumerator CoReturnToLobby()
         {
             inGameState = InGameState.None;
@@ -1617,7 +1686,7 @@ namespace OJ.Hunting
                 CurrentStageData != null ? CurrentStageData.totalWaves : reachedWaveCount,
                 bestWave,
                 rewards,
-                SceneFlowManager.LoadLobby);
+                () => OnStageResultClosed(isWin, stageIndex));
         }
 
         public void OnApplicationQuit()

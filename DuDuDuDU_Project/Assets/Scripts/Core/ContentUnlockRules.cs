@@ -300,24 +300,25 @@ namespace OJ.Core
                 // 5클리어
                 new ContentUnlockDefinition(ContentId.Membership, 5, UnlockPresentation.Quiet,
                     "멤버십", "멤버십 혜택을 받아요."),
+                new ContentUnlockDefinition(ContentId.SeasonPass, 5, UnlockPresentation.Announce,
+                    "시즌 패스", "고기를 쓰면 패스가 올라\n보상을 받아요."),
+                // 탑은 상점보다 앞에 둔다 — 5클리어 직후 로비 진입의 가이드는 탑이어야 한다.
+                // 봉인 연출(TowerSealDirector)이 "탑을 깨면 아랫줄이 풀린다" 로 이어지는 이야기라서다.
+                // 가이드는 한 진입에 하나라 상점은 그다음 진입에 나온다.
+                new ContentUnlockDefinition(ContentId.Tower, 5, UnlockPresentation.Guide,
+                    "무한의 탑", "층을 올라 킹 다이스를 얻어요.\n봉인된 아랫줄도 탑에서 풀어요.",
+                    "무한의 탑이 열렸어요! 눌러 보세요.",
+                    "1층을 깨면 봉인이 풀려요.\n층을 깰수록 보상이 커지고,\n정해진 층에서 킹 다이스가 열려요."),
                 new ContentUnlockDefinition(ContentId.Shop, 5, UnlockPresentation.Guide,
                     "상점", "보석을 뽑아 장비에 끼워요.",
                     "상점이 열렸어요! 눌러 보세요.",
                     "보석을 뽑아서 장비 칸에 끼우면\n능력치가 올라요."),
-                new ContentUnlockDefinition(ContentId.SeasonPass, 5, UnlockPresentation.Announce,
-                    "시즌 패스", "고기를 쓰면 패스가 올라\n보상을 받아요."),
 
                 // 7클리어
                 new ContentUnlockDefinition(ContentId.Relic, 7, UnlockPresentation.Guide,
                     "유물", "유물을 소환해\n전투를 유리하게 만들어요.",
                     "유물이 열렸어요! 눌러 보세요.",
                     "유물은 전투 내내 효과를 줘요.\n소환하고 레벨을 올려 봐요."),
-
-                // 10클리어
-                new ContentUnlockDefinition(ContentId.Tower, 10, UnlockPresentation.Guide,
-                    "무한의 탑", "층을 올라 킹 다이스를 얻어요.",
-                    "무한의 탑이 열렸어요! 눌러 보세요.",
-                    "층을 깰수록 보상이 커지고,\n정해진 층에서 킹 다이스가 열려요."),
             };
         }
     }

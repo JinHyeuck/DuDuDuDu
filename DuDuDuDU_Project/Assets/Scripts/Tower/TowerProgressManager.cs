@@ -107,6 +107,7 @@ namespace OJ.Tower
 
         private int highestClearedFloor;
         private bool emptySlotNoticeShown;
+        private int sealStory;
 
         /// <summary>
         /// 다음 전투가 탑인가. 전투 씬이 <see cref="ConsumePendingRun"/> 으로 가져간다.
@@ -125,6 +126,19 @@ namespace OJ.Tower
         public bool HasAnyClear => HighestClearedFloor > 0;
 
         public bool EmptySlotNoticeShown => emptySlotNoticeShown;
+
+        /// <summary>탑 봉인 이야기의 진행(0 아직 / 1 처음 봉인을 봄 / 2 처음 해제를 봄).</summary>
+        public int SealStory => sealStory;
+
+        /// <summary>이야기를 앞으로만 진행시킨다. 되감지 않는다.</summary>
+        public void AdvanceSealStory(int stage)
+        {
+            if (stage <= sealStory)
+                return;
+
+            sealStory = stage;
+            Save();
+        }
 
         // "선택한 층" 을 들고 있지 않다. <b>고를 것이 없기 때문이다</b> —
         // 도전 가능한 층은 언제나 HighestUnlockedFloor 하나뿐이다(반복 없음).
@@ -524,6 +538,7 @@ namespace OJ.Tower
         {
             state.Tower.HighestClearedFloor = HighestClearedFloor;
             state.Tower.EmptySlotNoticeShown = emptySlotNoticeShown;
+            state.Tower.SealStory = sealStory;
 
             state.Tower.Records.Clear();
             foreach (KeyValuePair<int, TowerFloorRecord> pair in records)
@@ -550,6 +565,7 @@ namespace OJ.Tower
         {
             highestClearedFloor = Mathf.Clamp(state.Tower.HighestClearedFloor, 0, TowerFormula.TotalFloors);
             emptySlotNoticeShown = state.Tower.EmptySlotNoticeShown;
+            sealStory = state.Tower.SealStory;
 
             records.Clear();
             foreach (KeyValuePair<string, TowerFloorRecordSave> pair in state.Tower.Records)
