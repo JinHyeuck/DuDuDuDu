@@ -46,7 +46,7 @@ namespace OJ.Core
     public static class WallLeakFormula
     {
         /// <summary>벽에 붙은 일반·보스 몬스터 한 마리가 1초마다 벽에 주는 피해.</summary>
-        public const int ContactDamagePerSecond = 2;
+        public const int ContactDamagePerSecond = 1;
 
         /// <summary>
         /// 프리팹 <c>attackDamage</c> 1점당 벽 피해.

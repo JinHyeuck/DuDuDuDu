@@ -40,10 +40,10 @@ namespace OJ.Core.Tests
         }
 
         [Test]
-        public void Fifteen_FirstSurgedWaveIsAlreadyFelt()
+        public void Fifteen_FirstSurgedWaveIsAlreadyAbove100()
         {
-            // 9웨이브부터 체감되게 오른다(+20% 안팎). 너무 완만하면 "중반에서 후반으로 넘어가는" 느낌이 안 난다.
-            Assert.That(LateWaveSurge.HpPercent(9, 15), Is.InRange(115, 130));
+            // 8웨이브까지 100, 9웨이브부터 오른다. 직선이라 첫 칸은 작다(+50% / 7칸).
+            Assert.That(LateWaveSurge.HpPercent(9, 15), Is.InRange(103, 112));
         }
 
         [Test]
