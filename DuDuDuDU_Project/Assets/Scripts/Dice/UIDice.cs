@@ -174,9 +174,12 @@ namespace OJ.Dice
 
         // ── 쿨타임 게이지(테두리) · 진화 가능 표시 ─────────────────────────
 
-        /// <summary>진화 가능 화살표의 크기와, 우상단 모서리에서 안쪽으로 들어온 거리.</summary>
-        private const float EvolveBadgeSize = 56f;
-        private const float EvolveBadgeInset = 4f;
+        /// <summary>
+        /// 진화 가능 화살표의 크기와, 우상단 모서리에서 안쪽으로 들어온 거리. 다이스 루트 사각형은 보이는 틀보다 크다 -
+        /// 모서리에 붙이면 틀 밖으로 나가 옆 다이스에 가려지므로 틀 안쪽까지 들인다.
+        /// </summary>
+        private const float EvolveBadgeSize = 52f;
+        private const float EvolveBadgeInset = 26f;
 
         private static Sprite cooldownRingSprite;
         private static Sprite evolveArrowSprite;
