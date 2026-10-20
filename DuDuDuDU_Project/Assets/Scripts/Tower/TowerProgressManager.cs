@@ -365,7 +365,7 @@ namespace OJ.Tower
             if (plan == null)
                 return loadout;
 
-            // 기본 4칸: 층의 주 콘셉트가 선호하는 속성을 4성부터 채우고, 나머지 성급은
+            // 기본 3칸: 층의 주 콘셉트가 선호하는 속성을 3성부터 채우고, 나머지 성급은
             // 서로 다른 속성으로 흩어 놓는다. 한 속성으로 몰면 상성이 어긋났을 때
             // 통째로 무력해진다.
             DiceType preferred = PreferredBaseFor(plan.Concepts[0]);

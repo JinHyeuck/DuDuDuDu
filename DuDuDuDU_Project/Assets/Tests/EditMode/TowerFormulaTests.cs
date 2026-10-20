@@ -357,9 +357,9 @@ namespace OJ.Core.Tests
             // 이 합이 깨지면 편성 화면의 슬롯 바와 규칙이 갈린다.
             Assert.AreEqual(1, TowerFormula.MythicSlotCount);
             Assert.AreEqual(2, TowerFormula.SpecialSlotCount);
-            Assert.AreEqual(4, TowerFormula.BaseSlotCount);
-            Assert.AreEqual(7, TowerFormula.TotalSlotCount);
-            Assert.AreEqual(4, TowerFormula.MaxBaseStar);
+            Assert.AreEqual(3, TowerFormula.BaseSlotCount);
+            Assert.AreEqual(6, TowerFormula.TotalSlotCount);
+            Assert.AreEqual(3, TowerFormula.MaxBaseStar);
         }
     }
 }

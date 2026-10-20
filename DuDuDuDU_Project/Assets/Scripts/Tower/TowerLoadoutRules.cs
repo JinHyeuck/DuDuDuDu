@@ -50,7 +50,7 @@ namespace OJ.Tower
         }
 
         /// <summary>
-        /// 기본 다이스 5종. 기획서 4.1 의 1~4성 칸 후보이고, <b>언제나 보유 상태</b>다.
+        /// 기본 다이스 5종. 기획서 4.1 의 1~3성 칸 후보이고, <b>언제나 보유 상태</b>다.
         /// <c>DiceEvolution.BaseTypes</c> 를 그대로 쓴다 — 목록을 두 벌 두면
         /// 다이스를 추가할 때 한쪽만 고치게 된다.
         /// </summary>
@@ -67,7 +67,7 @@ namespace OJ.Tower
         ///
         /// 기본은 <b>성급마다 1개</b>라 계층 전체로는 4개다. 여기서 4 를 돌려주지만
         /// 실제 제한은 <see cref="TowerLoadout"/> 가 성급 단위로 건다 —
-        /// 4성 두 개를 넣고 3성을 비우는 편성은 규칙 위반이다(기획서 4.1).
+        /// 3성 두 개를 넣고 2성을 비우는 편성은 규칙 위반이다(기획서 4.1).
         /// </summary>
         public static int CapacityOf(TowerSlotTier tier)
         {

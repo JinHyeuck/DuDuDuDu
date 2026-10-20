@@ -14,7 +14,11 @@ namespace OJ.Dice
 {
     public class MergeSystem : MonoBehaviour
     {
-        public const int MaxStar = 4;
+        /// <summary>
+        /// 머지의 최고 성급. <b>3성이 마지막이다</b> — 3성끼리는 머지되지 않는다(<see cref="TryMerge"/>).
+        /// 4성은 폐지됐다. 진화(<c>DiceEvolution.EvolveRequiredStar</c>)와 탑 편성(<c>TowerFormula.MaxBaseStar</c>)도 3성이 끝이다.
+        /// </summary>
+        public const int MaxStar = 3;
 
         // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
         // 단 스코프는 씬의 모든 Awake 뒤에 빌드되므로 Awake 에서는 아직 null 이다.
@@ -159,7 +163,7 @@ namespace OJ.Dice
             if (dice == null || battle.Game.IsBoardLockedByWave)
                 return false;
 
-            // 보는 것은 <b>대상</b>의 보유다 — Normal 을 4성까지 올려도 Tornado 가 없으면 못 간다.
+            // 보는 것은 <b>대상</b>의 보유다 — Normal 을 3성까지 올려도 Tornado 가 없으면 못 간다.
             if (!DiceEvolution.CanEvolve(dice.Type, dice.Star, ownership.IsOwned))
                 return false;
 
@@ -232,7 +236,7 @@ namespace OJ.Dice
 
         /// <summary>
         /// 같은 단계의 다른 다이스로 바꾼다. 성급은 그대로 간다 —
-        /// 4성 노말을 교환하면 4성 파이어가 되지 1성으로 떨어지지 않는다.
+        /// 3성 노말을 교환하면 3성 파이어가 되지 1성으로 떨어지지 않는다.
         /// </summary>
         public bool TryExchange(UIDice dice)
         {
