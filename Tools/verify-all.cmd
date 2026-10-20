@@ -21,6 +21,10 @@ python Tools\verify_namespaces.py
 if errorlevel 1 set /a FAIL+=1
 
 echo.
+python Tools\verify_meta_tracked.py
+if errorlevel 1 set /a FAIL+=1
+
+echo.
 python Tools\verify_missing_scripts.py --baseline 0
 if errorlevel 1 set /a FAIL+=1
 

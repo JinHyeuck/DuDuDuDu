@@ -7,6 +7,7 @@
 # |----------------------------|----|------------------------------------------------------|
 # | verify_encoding            | O  | 순수 파이썬. .cs 파일만 읽는다                       |
 # | verify_namespaces          | O  | 순수 파이썬. 폴더와 namespace 선언만 본다            |
+# | verify_meta_tracked        | O  | 순수 파이썬. git 인덱스만 본다                       |
 # | verify_missing_scripts     | X  | Library/PackageCache 가 있어야 한다 (gitignore 대상). |
 # |                            |    | 없으면 TMP·uGUI 참조가 전부 Missing 으로 오탐된다     |
 # | headless 테스트 3273개     | X  | 설치된 Unity 의 Mono 와 DLL 을 쓴다                  |
@@ -40,3 +41,8 @@ jobs:
       # 문서에만 적힌 규약은 지켜지지 않는다.
       - name: 네임스페이스 규약
         run: python Tools/verify_namespaces.py
+
+      # .meta 없이 추적된 에셋은 작성자 디스크에서는 멀쩡하고, 새 체크아웃마다
+      # GUID 가 새로 발급된다. git 인덱스만 보므로 러너에서 정확히 잡힌다.
+      - name: .meta 추적
+        run: python Tools/verify_meta_tracked.py
