@@ -40,12 +40,10 @@ namespace OJ.Core.Tests
         }
 
         [Test]
-        public void Steps_GetSteeperTowardTheEnd()
+        public void Fifteen_FirstSurgedWaveIsAlreadyFelt()
         {
-            // 넘어가는 순간은 완만하고 끝으로 갈수록 가파르다(1.5제곱).
-            int first = LateWaveSurge.HpPercent(9, 15) - LateWaveSurge.HpPercent(8, 15);
-            int last = LateWaveSurge.HpPercent(15, 15) - LateWaveSurge.HpPercent(14, 15);
-            Assert.Less(first, last);
+            // 9웨이브부터 체감되게 오른다(+20% 안팎). 너무 완만하면 "중반에서 후반으로 넘어가는" 느낌이 안 난다.
+            Assert.That(LateWaveSurge.HpPercent(9, 15), Is.InRange(115, 130));
         }
 
         [Test]
