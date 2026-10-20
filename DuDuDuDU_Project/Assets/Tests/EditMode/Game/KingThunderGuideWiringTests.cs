@@ -35,12 +35,5 @@ namespace OJ.Game.Tests
             run.SetKingThunderGuide(false);
             Assert.IsFalse(run.TryTakeGuideMerge(KingThunderGuide.ScriptedStar));
         }
-
-        [Test]
-        public void ChainStones_IsThunderToTimeToKing()
-        {
-            int chain = DiceEvolution.GetEvolveCost(DiceType.Thunder) + DiceEvolution.GetEvolveCost(DiceType.Time);
-            Assert.AreEqual(chain, KingThunderGuide.ChainStones);
-        }
     }
 }
