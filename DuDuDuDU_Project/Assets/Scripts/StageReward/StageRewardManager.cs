@@ -256,8 +256,19 @@ namespace OJ.StageReward
                 if (dice != DiceType.Max)
                 {
                     hasDice = true;
-                    if (ownership.GrantFromContent(dice, grantedRewards, out diceView))
+
+                    // 클리어 순간에 이미 지급했다(GrantStageClearDice) — 마지막 칸이 열렸다는 것은
+                    // 그 스테이지를 깼다는 뜻이라 보유는 곧 그 지급의 결과다. 여기서 GrantFromContent 를 또 부르면
+                    // 보유로 읽혀 환급이 한 번 더 나간다. 그래서 보유면 지급·환급 없이 보여 주기만 한다.
+                    // 미보유면 이 기능 이전 세이브(이미 깼는데 못 받은 것)라 여기서 지급한다.
+                    if (ownership.IsOwned(dice))
+                    {
+                        diceView = DiceRewardView.NewlyOwned(dice);
+                    }
+                    else if (ownership.GrantFromContent(dice, grantedRewards, out diceView))
+                    {
                         newlyUnlockedDice = dice;
+                    }
                 }
             }
 
@@ -270,6 +281,23 @@ namespace OJ.StageReward
             Save();
             OnChanged?.Invoke();
             return true;
+        }
+
+        /// <summary>
+        /// 스테이지를 깨는 순간 그 스테이지의 다이스를 지급한다. 보상 창에서 마지막 칸을 받기를 기다리면
+        /// 3스테이지의 킹 썬더가 탑 안내 시점에 아직 없을 수 있다.
+        ///
+        /// 이미 보유면 환급이 refundInto 에 담긴다(호출부가 보상 목록에 합쳐 한 번에 지급).
+        /// 이후 마지막 칸 수령은 보유를 보고 지급·환급을 건너뛰므로 환급은 이 한 번뿐이다.
+        /// </summary>
+        /// <returns>이번에 새로 얻은 다이스. 없으면 DiceType.Max.</returns>
+        public DiceType GrantStageClearDice(int stageIndex, List<PointRewardEntry> refundInto)
+        {
+            DiceType dice = DiceUnlockDatabaseProvider.Database.GetStageUnlock(stageIndex);
+            if (dice == DiceType.Max)
+                return DiceType.Max;
+
+            return ownership.GrantFromContent(dice, refundInto) ? dice : DiceType.Max;
         }
 
         private void HandleStageProgressChanged()

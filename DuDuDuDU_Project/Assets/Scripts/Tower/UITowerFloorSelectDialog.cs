@@ -240,6 +240,9 @@ namespace OJ.Tower
             OpenLoadout(floor);
         }
 
+        /// <summary>로비 가이드가 가리키는 "도전" 버튼.</summary>
+        public Button ChallengeButton => challengeButton;
+
         private void OnClickChallenge()
         {
             TowerProgressManager progress = TowerProgressManager.Instance;
