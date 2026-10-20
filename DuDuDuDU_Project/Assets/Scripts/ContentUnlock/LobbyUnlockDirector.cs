@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
 using OJ.Dice;
+using OJ.IdleReward;
 using OJ.Lobby;
 using OJ.Tower;
 using OJ.DI;
@@ -39,6 +40,9 @@ namespace OJ.ContentUnlock
 
         /// <summary>홈으로 돌아온 뒤 다음 가이드를 걸기까지 잠깐 쉰다. 화면 전환 연출과 겹치지 않게.</summary>
         private const float ChainRestSeconds = 0.6f;
+
+        /// <summary>고기 축제 가이드 때 채워 두는 세트 수. 한 세트가 고기 30개다(<c>IdleRewardManager.MeatPerSet</c>).</summary>
+        private const int GuideMeatSets = 1;
 
         private readonly LobbyContentGate gate;
         private UITutorialOverlay overlay;
@@ -121,6 +125,10 @@ namespace OJ.ContentUnlock
 
                 foreach (ContentUnlockDefinition d in queue)
                 {
+                    // 고기 축제는 "눌러서 받아요" 를 가르치는 가이드라 받을 게 있어야 한다. 한 세트(30개)를 채워 둔다.
+                    if (d.contentId == ContentId.MeatFestival)
+                        IdleRewardManager.Instance?.EnsureMeatSets(GuideMeatSets);
+
                     await AnnounceAsync(d);
 
                     if (d.presentation == UnlockPresentation.Guide)

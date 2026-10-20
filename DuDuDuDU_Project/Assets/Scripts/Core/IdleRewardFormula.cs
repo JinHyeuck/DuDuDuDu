@@ -91,6 +91,21 @@ namespace OJ.Core
         }
 
         /// <summary>
+        /// 고기가 <paramref name="minSets"/> 세트 이상 쌓여 있게 되는 타이머 시작 시각(UTC ticks).
+        /// 이미 그만큼 쌓여 있으면 <paramref name="currentStartUtcTicks"/> 를 그대로 돌려준다 — 가이드가 쌓인 양을 깎지 않는다.
+        /// 1 미만으로 내려가지 않는다(0 이하는 "저장값 없음" 으로 읽힌다 — <see cref="ElapsedSeconds"/>).
+        /// </summary>
+        public static long MeatStartTicksForAtLeast(long currentStartUtcTicks, long nowUtcTicks, double intervalSeconds, int minSets)
+        {
+            if (minSets <= 0 || intervalSeconds <= 0d)
+                return currentStartUtcTicks;
+
+            long needTicks = (long)(intervalSeconds * minSets * TimeSpan.TicksPerSecond);
+            long wantedStart = Math.Max(1L, nowUtcTicks - needTicks);
+            return currentStartUtcTicks > 0 && currentStartUtcTicks <= wantedStart ? currentStartUtcTicks : wantedStart;
+        }
+
+        /// <summary>
         /// 다음 고기 세트가 채워질 때까지 남은 초.
         /// </summary>
         /// <remarks>
