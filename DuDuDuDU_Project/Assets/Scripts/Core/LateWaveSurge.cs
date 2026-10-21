@@ -11,11 +11,11 @@ namespace OJ.Core
     /// 전까지는 정확히 100%</b> 이고 그 뒤부터만 오르는 배율을 따로 곱한다.
     ///
     /// 시작 웨이브는 전체 웨이브의 <see cref="StartFraction"/> 지점(15웨이브면 8웨이브 — SP 정점의 끝)이고,
-    /// 마지막 웨이브에서 <see cref="FinalBonusPercent"/> 만큼 더해진다. 그 사이는 직선이다(15웨이브: 9웨이브 +7% … 15웨이브 +50%).
+    /// 마지막 웨이브에서 <see cref="FinalBonusPercent"/> 만큼 더해진다. 그 사이는 직선이다(15웨이브: 9웨이브 +21% … 15웨이브 +150%).
     /// 다른 웨이브 수(10 · 20 · 30)도 같은 모양이다.
     ///
-    /// <b>값은 봇 실측으로 정했다</b>(<c>Docs/StageBalance.md</c> "후반 웨이브 가산"). 벽 접촉 피해가 초당 1(<c>WallLeakFormula</c>)인 구조에서
-    /// +150% 는 1~10스테이지 중 9판이 패배했고, +50% 는 열 판 모두 클리어·퍼펙트 0 이다.
+    /// <b>값은 봇 실측으로 정했다</b>(<c>Docs/StageBalance.md</c> "후반 웨이브 가산"). +70% 에서는 1~10스테이지 모두 14웨이브까지
+    /// 벽 피해가 0 이었고, +200%(1.5제곱)는 10스테이지가 패배했다. 1.5제곱은 9~11웨이브가 거의 안 올라 전환이 늦게 느껴져 직선으로 바꿨다.
     /// 탑(1웨이브)은 시작 웨이브가 곧 마지막이라 걸리지 않는다. 밸런스 값이라 정식 규칙으로 굳으면 SO 로 옮긴다(결정 3번).
     /// </summary>
     public static class LateWaveSurge
@@ -24,7 +24,7 @@ namespace OJ.Core
         public const double StartFraction = 8.0 / 15.0;
 
         /// <summary>마지막 웨이브에서 더해지는 체력(퍼센트).</summary>
-        public const int FinalBonusPercent = 50;
+        public const int FinalBonusPercent = 150;
 
         /// <summary>가산이 시작되기 직전 웨이브. 이 웨이브까지는 100% 다.</summary>
         public static int StartWave(int totalWaves)
