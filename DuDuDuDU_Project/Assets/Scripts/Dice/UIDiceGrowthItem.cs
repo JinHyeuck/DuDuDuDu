@@ -41,6 +41,9 @@ namespace OJ.Dice
 
         public DiceType DiceType => diceType;
 
+        /// <summary>해금 가이드가 "눌렀는가" 를 듣는다(<c>LobbyUnlockDirector</c> 의 다이스 강화 가이드).</summary>
+        public Button Button => button;
+
         private void Awake()
         {
             if (button != null)

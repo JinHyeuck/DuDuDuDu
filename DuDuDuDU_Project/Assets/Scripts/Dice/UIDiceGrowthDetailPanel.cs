@@ -97,6 +97,9 @@ namespace OJ.Dice
         [Header("Buttons")]
         [SerializeField] private Button upgradeButton;
 
+        /// <summary>해금 가이드가 강화 버튼을 가리킨다(<c>LobbyUnlockDirector</c>).</summary>
+        public Button UpgradeButton => upgradeButton;
+
         private readonly List<UIDiceCraftMaterialStatusItem> recipeItems = new List<UIDiceCraftMaterialStatusItem>();
         private readonly List<UIMilestoneElement> milestoneElements = new List<UIMilestoneElement>();
         private DiceType currentDiceType = DiceType.Normal;
