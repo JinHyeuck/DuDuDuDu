@@ -24,7 +24,7 @@ namespace OJ.Core
         public const double StartFraction = 8.0 / 15.0;
 
         /// <summary>마지막 웨이브에서 더해지는 체력(퍼센트).</summary>
-        public const int FinalBonusPercent = 150;
+        public const int FinalBonusPercent = 100;
 
         /// <summary>가산이 시작되기 직전 웨이브. 이 웨이브까지는 100% 다.</summary>
         public static int StartWave(int totalWaves)
