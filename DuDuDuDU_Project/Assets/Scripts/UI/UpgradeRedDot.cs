@@ -24,7 +24,7 @@ namespace OJ.UI
             rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = new Vector2(size, size);
-            rect.anchoredPosition = offset ?? new Vector2(-size * 0.35f, -size * 0.35f);
+            rect.anchoredPosition = offset ?? new Vector2(-size * 0.6f, -size * 0.6f);
 
             var image = go.GetComponent<Image>();
             image.sprite = GetCircle();
