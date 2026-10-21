@@ -120,6 +120,62 @@ namespace OJ.Equipment
             return GetLevel(equipmentType) >= Define.MaxEquipmentLevel;
         }
 
+        /// <summary>지금 재화로 한 번 올릴 수 있나. 만렙이면 false.</summary>
+        public bool CanLevelUp(EquipmentType equipmentType)
+        {
+            if (IsMaxLevel(equipmentType))
+                return false;
+
+            (int goldCost, int scrollCost) = GetNextUpgradeCost(equipmentType);
+            return points.Get(PointType.Gold) >= goldCost &&
+                   points.Get(PointManager.ToEquipmentScrollType(equipmentType)) >= scrollCost;
+        }
+
+        public bool CanLevelUpAny()
+        {
+            foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
+            {
+                if (CanLevelUp(equipmentType))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 장비 화면의 "일괄 레벨업". 올릴 수 있는 것이 없을 때까지 <b>가장 낮은 레벨부터 한 단계씩</b>
+        /// 올린다 — 골드를 여러 부위가 나눠 쓰므로, 한 부위를 끝까지 올리고 다음으로 가면
+        /// 앞 부위만 높아지고 뒤 부위는 그대로 남는다. 레벨이 같으면 열거 순서(무기 먼저)다.
+        /// 한 단계마다 <see cref="TryLevelUp"/> 을 거치므로 저장·이벤트·미션 집계는 낱개로 올린 것과 같다.
+        /// </summary>
+        /// <returns>올린 횟수</returns>
+        public int LevelUpAll()
+        {
+            int count = 0;
+            while (true)
+            {
+                bool found = false;
+                EquipmentType target = EquipmentType.Weapon;
+                int targetLevel = int.MaxValue;
+
+                foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
+                {
+                    int level = GetLevel(equipmentType);
+                    if (level < targetLevel && CanLevelUp(equipmentType))
+                    {
+                        found = true;
+                        target = equipmentType;
+                        targetLevel = level;
+                    }
+                }
+
+                if (!found || !TryLevelUp(target))
+                    return count;
+
+                count++;
+            }
+        }
+
         public bool TryLevelUp(EquipmentType equipmentType)
         {
             // <b>재화를 쓰기 전에 막는다.</b> TrySpend 뒤에 검사하면 만렙인 장비에

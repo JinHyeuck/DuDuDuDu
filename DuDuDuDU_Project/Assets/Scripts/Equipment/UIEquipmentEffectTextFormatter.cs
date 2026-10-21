@@ -21,6 +21,68 @@ namespace OJ.Equipment
             return sb.ToString();
         }
 
+        /// <summary>
+        /// 첫 효과를 이름과 수치로 나눈다("공격력 +4%" → "공격력", "+4%").
+        /// 강화 팝업의 장착 보석 줄이 둘을 다른 색·자리에 그린다.
+        /// </summary>
+        public static void SplitFirstEffect(GemDefinition definition, out string label, out string value)
+        {
+            if (definition == null || definition.effects == null || definition.effects.Count == 0)
+            {
+                label = "효과 없음";
+                value = string.Empty;
+                return;
+            }
+
+            SplitEffectText(BuildEffectText(definition.effects[0]), out label, out value);
+        }
+
+        /// <summary>모든 효과를 나눠 줄바꿈으로 잇는다. 이름 줄과 수치 줄의 순서가 맞물린다.</summary>
+        public static void SplitEffects(GemDefinition definition, out string labels, out string values)
+        {
+            if (definition == null || definition.effects == null || definition.effects.Count == 0)
+            {
+                labels = "효과 없음";
+                values = string.Empty;
+                return;
+            }
+
+            StringBuilder labelBuilder = new StringBuilder(64);
+            StringBuilder valueBuilder = new StringBuilder(32);
+            for (int i = 0; i < definition.effects.Count; i++)
+            {
+                if (i > 0)
+                {
+                    labelBuilder.Append('\n');
+                    valueBuilder.Append('\n');
+                }
+
+                SplitEffectText(BuildEffectText(definition.effects[i]), out string label, out string value);
+                labelBuilder.Append(label);
+                valueBuilder.Append(value);
+            }
+
+            labels = labelBuilder.ToString();
+            values = valueBuilder.ToString();
+        }
+
+        /// <summary>마지막 " +" / " -" 앞뒤로 자른다. 수치가 없는 문구는 이름만 남는다.</summary>
+        public static void SplitEffectText(string text, out string label, out string value)
+        {
+            text = text ?? string.Empty;
+            int index = System.Math.Max(text.LastIndexOf(" +", System.StringComparison.Ordinal),
+                                        text.LastIndexOf(" -", System.StringComparison.Ordinal));
+            if (index < 0)
+            {
+                label = text;
+                value = string.Empty;
+                return;
+            }
+
+            label = text.Substring(0, index);
+            value = text.Substring(index + 1);
+        }
+
         public static string BuildEffectText(GemEffect effect)
         {
             if (effect == null)

@@ -66,9 +66,9 @@ namespace OJ.EditorTools
             // 가정해 경로를 조합했다. <b>그 규칙은 틀렸다.</b> 원소 스크롤 5종에만
             // 성립하고, 장비 스크롤 6종과 MythicScroll 은 그 폴더에 아예 없다.
             // 그래서 도구가 7건을 "없음"으로 올렸는데 게임은 멀쩡했다 —
-            // <c>UIEquipmentConfirmDialog.GetScrollCostIconSprite</c> 는 이 에셋을
-            // <b>먼저</b> 보고, 거기에 아이콘이 다 들어 있기 때문이다.
-            // Resources 폴백은 그 뒤에 있어서 도달해도 쓰이지 않는다.
+            // 장비 강화 팝업(<c>UIEquipmentConfirmDialog.RefreshCost</c>)은 이 에셋만 보고,
+            // 거기에 아이콘이 다 들어 있기 때문이다. (예전에 있던 Resources 폴백은
+            // 도달해도 쓰이지 않아 2026-10-22 재작성 때 지웠다.)
             //
             // 교훈: 경로를 짐작해 만들지 말고 <b>정본을 검사하라.</b> 여기서 물어야 할
             // 것은 "그 경로에 파일이 있나"가 아니라 "항목마다 아이콘이 채워져 있나"다.
