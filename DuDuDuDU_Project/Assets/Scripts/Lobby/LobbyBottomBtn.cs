@@ -35,6 +35,14 @@ namespace OJ.Lobby
         /// <summary>잠금 그림. 처음 잠글 때 코드로 만든다 — 프리팹·씬을 고치지 않는다.</summary>
         private GameObject _lockIcon;
 
+        /// <summary>"강화할 수 있다" 레드닷. 처음 켤 때 코드로 만든다.</summary>
+        private GameObject _upgradeBadge;
+
+        public void SetUpgradeBadge(bool on)
+        {
+            OJ.UI.UpgradeRedDot.Set(ref _upgradeBadge, transform, on, 54f, new Vector2(-40f, -26f));
+        }
+
         private const string LockSpritePath = "Art/Upgrade/Icon_lock";
         private const float LockedAlpha = 0.4f;
 

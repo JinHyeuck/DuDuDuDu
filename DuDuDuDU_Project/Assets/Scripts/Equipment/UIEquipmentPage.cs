@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Core;
 using OJ.DI;
 using OJ.Point;
 using OJ.UI;
@@ -217,7 +218,23 @@ namespace OJ.Equipment
                 bool selected = selectedEquipmentType == equipmentType;
                 List<EquipmentSlotVisualState> slotStates = BuildSlotStates(equipmentType);
                 equipmentItems[i].Refresh(level, attack, selected, slotStates);
-            }
+                equipmentItems[i].SetUpgradeDot(CanUpgradeEquipment(equipmentType));            }
+        }
+
+        /// <summary>이 장비를 지금 강화할 수 있는가 — 레드닷이 본다(<see cref="UpgradeAffordability"/>).</summary>
+        public static bool CanUpgradeEquipment(EquipmentType equipmentType)
+        {
+            EquipmentManager equipment = EquipmentManager.Instance;
+            PointManager points = PointManager.Instance;
+            if (equipment == null || points == null)
+                return false;
+
+            var cost = equipment.GetNextUpgradeCost(equipmentType);
+            return UpgradeAffordability.CanUpgrade(
+                equipment.IsMaxLevel(equipmentType),
+                points.Get(PointType.Gold),
+                points.Get(PointManager.ToEquipmentScrollType(equipmentType)),
+                cost.goldCost, cost.scrollCost);
         }
 
         private List<EquipmentSlotVisualState> BuildSlotStates(EquipmentType equipmentType)

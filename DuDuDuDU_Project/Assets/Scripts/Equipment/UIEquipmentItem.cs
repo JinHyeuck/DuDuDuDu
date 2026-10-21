@@ -47,6 +47,14 @@ namespace OJ.Equipment
                 clickButton.onClick.RemoveListener(OnClick);
         }
 
+        private GameObject upgradeRedDot;
+
+        /// <summary>"강화할 수 있다" 레드닷(<see cref="OJ.UI.UpgradeRedDot"/>, 코드로 만든다).</summary>
+        public void SetUpgradeDot(bool on)
+        {
+            OJ.UI.UpgradeRedDot.Set(ref upgradeRedDot, transform, on);
+        }
+
         public void Bind(EquipmentType type, System.Action<EquipmentType> onClick)
         {
             equipmentType = type;

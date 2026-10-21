@@ -15,6 +15,9 @@ namespace OJ.Dice
         [SerializeField] private TMP_Text levelText;
         [SerializeField] private GameObject canUpgradeDot;
 
+        /// <summary>코드로 만든 눈에 띄는 레드닷(<see cref="OJ.UI.UpgradeRedDot"/>). 프리팹의 <c>canUpgradeDot</c> 와 별개다.</summary>
+        private GameObject upgradeRedDot;
+
         /// <summary>
         /// 미보유일 때 덮는 것(딤 + 자물쇠 + 언락 안내). <b>비어 있어도 동작은 맞다</b> —
         /// 아래 Refresh 가 강화 정보를 끄는 것으로 이미 구별이 되고, 이 참조는 그 위에
@@ -137,11 +140,16 @@ namespace OJ.Dice
                 scrollCountFillImage.fillAmount = fill;
             }
 
-            if (canUpgradeDot != null)
             {
                 int ownedGold = PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0;
-                bool canUpgrade = ownedGold >= cost.goldCost && ownedScroll >= requiredScroll;
-                canUpgradeDot.SetActive(canUpgrade);
+                bool canUpgrade = OJ.Core.UpgradeAffordability.CanUpgrade(
+                    DiceLevelManager.Instance != null && DiceLevelManager.Instance.IsMaxLevel(diceType),
+                    ownedGold, ownedScroll, cost.goldCost, requiredScroll);
+
+                if (canUpgradeDot != null)
+                    canUpgradeDot.SetActive(canUpgrade);
+
+                OJ.UI.UpgradeRedDot.Set(ref upgradeRedDot, transform, canUpgrade);
             }
         }
 
