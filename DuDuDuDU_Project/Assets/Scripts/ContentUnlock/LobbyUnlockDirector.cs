@@ -323,6 +323,9 @@ namespace OJ.ContentUnlock
             overlay.SetDim();
             overlay.SetTalk("강화했어요! 레벨이 오를수록\n다이스가 더 강해져요.", tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
             await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
+
+            // 상세 창은 닫아 준다 — 열린 채로 두면 아래 하단 탭이 가려져 홈으로 못 돌아가 다음 가이드가 안 나온다.
+            GameContainer.UI?.Hide<UIDiceGrowthDetailPanel>();
         }
 
         // ── 탑 1층: 킹 썬더 장착 ────────────────────────────────────────
