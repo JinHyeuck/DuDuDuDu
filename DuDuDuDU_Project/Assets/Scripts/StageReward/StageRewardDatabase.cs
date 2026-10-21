@@ -102,10 +102,60 @@ namespace OJ.StageReward
                 StageData stageData = StageDatabaseProvider.GetStage(i);
                 int totalWaves = stageData != null ? Mathf.Max(1, stageData.totalWaves) : 10;
 
+                // 1~10스테이지는 사용자가 정한 보상표(StageRewardPlan)를 쓴다.
+                if (StageRewardPlan.Covers(i))
+                {
+                    AddMilestone(i, "minimum", GetRequiredWaveIndex(totalWaves, 1f / 3f), StageRewardPlan.Build(i, 0));
+                    AddMilestone(i, "half", GetRequiredWaveIndex(totalWaves, 2f / 3f), StageRewardPlan.Build(i, 1));
+                    AddMilestone(i, "perfect", totalWaves, StageRewardPlan.Build(i, 2));
+                    continue;
+                }
+
                 AddMilestone(i, "minimum", GetRequiredWaveIndex(totalWaves, 1f / 3f), BuildMinimumRewards(i));
                 AddMilestone(i, "half", GetRequiredWaveIndex(totalWaves, 2f / 3f), BuildHalfRewards(i));
                 AddMilestone(i, "perfect", totalWaves, BuildPerfectRewards(i));
             }
+        }
+
+        /// <summary>
+        /// 이미 만들어진 에셋의 1~10스테이지 마일스톤을 <see cref="StageRewardPlan"/> 으로 덮는다(요구 웨이브 포함).
+        /// 11스테이지 이후와 마일스톤 순서·id 는 건드리지 않는다. 바꾼 칸 수를 돌려준다.
+        /// </summary>
+        public int ApplyPlan()
+        {
+            EnsureValid();
+
+            int changed = 0;
+            for (int i = 0; i < milestones.Count; i++)
+            {
+                StageRewardMilestone m = milestones[i];
+                if (m == null || !StageRewardPlan.Covers(m.stageIndex))
+                    continue;
+
+                int tier = TierOf(m.id);
+                if (tier < 0)
+                    continue;
+
+                StageData stageData = StageDatabaseProvider.GetStage(m.stageIndex);
+                int totalWaves = stageData != null ? Mathf.Max(1, stageData.totalWaves) : 10;
+                float ratio = tier == 0 ? 1f / 3f : tier == 1 ? 2f / 3f : 1f;
+
+                m.requiredWaveIndex = GetRequiredWaveIndex(totalWaves, ratio);
+                m.rewards = StageRewardPlan.Build(m.stageIndex, tier);
+                changed++;
+            }
+
+            return changed;
+        }
+
+        private static int TierOf(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return -1;
+            if (id.EndsWith("_minimum")) return 0;
+            if (id.EndsWith("_half")) return 1;
+            if (id.EndsWith("_perfect")) return 2;
+            return -1;
         }
 
         private void AddMilestone(int stageIndex, string tierId, int requiredWaveIndex, List<StageRewardEntry> rewards)
