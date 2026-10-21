@@ -215,7 +215,6 @@ namespace OJ.Hunting
 
             IsBounty = false;
             IsStageBoss = false;
-            _wallHitDone = false;
             ClearTowerTraits();
 
             battle.Monsters.RegisterMonster(this);
@@ -271,7 +270,6 @@ namespace OJ.Hunting
             // 목표가 자식까지 세는 지금은 자식이 사라져도 한 칸이 비기 때문이다.
             IsBounty = false;
             IsStageBoss = false;
-            _wallHitDone = false;
             ClearTowerTraits();
 
             // 여기 ?. 는 새로 넣은 것이 아니라 원래 MonsterManager.Instance 뒤에 붙어 있던
@@ -655,21 +653,38 @@ namespace OJ.Hunting
         }
 
         /// <summary>
-        /// 벽에 닿았다. <b>한 대 때리고 사라진다 — 종류와 무관하게 전부.</b>
+        /// 벽에 닿았다. <b>종류와 무관하게 벽 앞에 남아 <see cref="WallLeakFormula.ContactDamagePerSecond"/> 씩 매초 때린다</b>
+        /// (2026-10-20 사용자 지시 — 사라지지 않고 초당 2, 현상금도 같다). 잡을 때까지 벽 앞에 머물고, 그동안 다이스의 표적으로 남는다.
+        /// 현상금은 웨이브 목표 수에 들지 않으므로 벽 앞에 남아도 웨이브 종료를 막지 않는다.
         ///
-        /// 예전에는 일반 몬스터만 <c>attackInterval</c> 마다 계속 때리는 루프였다. 왜 바꿨는지는
-        /// <see cref="WallLeakFormula"/> 에 적어 두었다(난이도 응답이 절벽이었다). 현상금은
-        /// 처음부터 이 모양이었고 자기 피해식을 그대로 쓴다.
-        ///
-        /// <b>코루틴 모양을 남겨 둔 이유.</b> <c>StartAttack</c> 이 <c>_attackRoutine</c> 을
-        /// 들고 <c>StopAttack</c> 이 그것을 멈추는 배선이 스턴·풀 반환·씬 정리 네 곳에서
-        /// 쓰인다. 한 프레임짜리가 됐다고 그 배선을 걷어내면 그 네 곳을 같이 고쳐야 한다.
+        /// 기절 중에는 때리지 않는다. 밀려나서 벽에서 떨어지면 <c>OnTriggerExit2D</c> 가 <see cref="StopAttack"/> 을 부르고,
+        /// 다시 걸어와 닿으면 새로 시작한다. 벽이 0 이 되면 멈춘다.
         /// </summary>
         IEnumerator AttackWall(Wall wall)
         {
-            HitWallOnceAndLeave(wall);
-            yield break;
+            while (wall != null && wall.CurrentHp > 0)
+            {
+                if (IsStunned())
+                {
+                    yield return null;
+                    continue;
+                }
+
+                int damage = WallLeakFormula.ContactDamagePerSecond;
+                wall.TakeDamage(damage);
+
+                GameObject dtObj = battle.DamageTexts.GetDamageText();
+                dtObj.transform.position = transform.position;
+                dtObj.transform.ResetLocalZ();
+                dtObj.GetComponent<DamageText>().SetText(damage * -1, Color.red);
+
+                yield return contactTickDelay;
+            }
+
+            StopAttack();
         }
+
+        private static readonly WaitForSeconds contactTickDelay = new WaitForSeconds(1f);
 
         IEnumerator CoApplyDefenseDown(float duration)
         {
@@ -846,61 +861,6 @@ namespace OJ.Hunting
             _attackRoutine = StartCoroutine(AttackWall(wall));
         }
 
-        /// <summary>
-        /// 벽에 닿은 몬스터가 <b>한 대 때리고 그대로 사라진다.</b>
-        ///
-        /// 피해식이 둘로 갈린다:
-        ///   현상금 : <see cref="BountyFormula.WallDamage"/> — 남은 벽 체력의 1/3.
-        ///            벽을 0 으로 만들지 못하는 식이라 현상금 때문에 판이 끝나지 않는다.
-        ///   그 외   : <see cref="WallLeakFormula.LeakDamage"/> — 공격력 × 10(보스 ×5).
-        ///            <b>마리 수에 비례</b>하므로 "몇 마리까지 허용" 을 벽 체력이 정한다.
-        /// 둘 다 대가는 <b>클리어 등급</b>이다(<c>StageRewardFormula.ClearGradeTier</c> 가
-        /// 벽 체력 비율을 그대로 읽는다).
-        ///
-        /// <b>웨이브 처치 수에 넣는 것이 일반 몬스터의 핵심이다.</b> 웨이브 종료 판정이
-        /// "처치 수 ≥ 목표"(<c>GameManager.TryCompleteWave</c>)이고 목표는 마리 수에서
-        /// 나오므로, 통과한 개체를 세지 않으면 <b>그 웨이브는 영원히 끝나지 않는다.</b>
-        /// 현상금은 목표에 안 들어가므로(<c>GetWaveTargetCount</c>) 세지 않는다 —
-        /// 세면 목표를 초과해 한 마리 일찍 끝난다.
-        ///
-        /// <c>UnregisterMonster(this, true)</c> 가 목록에서 빼면서 세고, 이어지는
-        /// 풀 반환의 <c>OnDisable</c> 은 이미 빠진 개체라 두 번 세지 않는다
-        /// (사망 경로가 쓰는 것과 같은 순서다).
-        /// </summary>
-        private void HitWallOnceAndLeave(Wall wall)
-        {
-            if (_wallHitDone)
-                return;
-
-            _wallHitDone = true;
-
-            if (wall != null)
-            {
-                int damage = IsBounty
-                    ? BountyFormula.WallDamage(wall.CurrentHp)
-                    : WallLeakFormula.LeakDamage(attackDamage, IsStageBoss);
-
-                if (damage > 0)
-                {
-                    wall.TakeDamage(damage);
-
-                    GameObject dtObj = battle.DamageTexts.GetDamageText();
-                    dtObj.transform.position = transform.position;
-                    dtObj.transform.ResetLocalZ();
-                    dtObj.GetComponent<DamageText>().SetText(damage * -1, Color.red);
-                }
-            }
-
-            StopAttack();
-
-            if (!IsBounty)
-                battle.Monsters.UnregisterMonster(this, true);
-
-            battle.Spawner.PoolMonster(this);
-        }
-
-        private bool _wallHitDone;
-
         private void StopAttack()
         {
             if (_attackRoutine != null)
@@ -926,7 +886,6 @@ namespace OJ.Hunting
         public void ConfigureAsBounty(float moveSpeedMultiplier)
         {
             IsBounty = true;
-            _wallHitDone = false;
 
             // moveSpeed 자체는 건드리지 않는다. 그것은 프리팹 값이고, 풀에서 재사용될 때
             // OnSpawn 이 ApplyMoveSpeed 를 여기로 되돌리는 기준점이다 — 깎아 두면

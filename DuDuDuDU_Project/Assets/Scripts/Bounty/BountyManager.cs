@@ -243,7 +243,7 @@ namespace OJ.Bounty
             OnChanged?.Invoke();
         }
 
-        /// <summary>벽을 한 대 때리고 사라졌다(또는 어떤 경로로든 사라졌다). 보상은 없다.</summary>
+        /// <summary>잡히지 않고 사라졌다(화면 밖·씬 정리 등 어떤 경로든). 보상은 없다. 벽에 닿아도 사라지지 않고 남아서 때린다.</summary>
         public void NotifyEscaped(Monster monster)
         {
             if (monster == null || !active.Remove(monster))
