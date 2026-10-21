@@ -187,6 +187,48 @@ namespace OJ.Tower
             newlyUnlocked.Clear();
         }
 
+        // ── 로비 가이드 ─────────────────────────────────────────────────
+
+        public Button StartButton => startButton;
+
+        private UITowerDiceCell CellOf(DiceType diceType)
+        {
+            for (int i = 0; i < cells.Count; i++)
+            {
+                if (cells[i] != null && cells[i].DiceType == diceType)
+                    return cells[i];
+            }
+
+            return null;
+        }
+
+        /// <summary>가이드가 가리키는 칸의 사각형. 없으면 null.</summary>
+        public RectTransform GuideCellRect(DiceType diceType)
+        {
+            UITowerDiceCell cell = CellOf(diceType);
+            return cell != null ? cell.transform as RectTransform : null;
+        }
+
+        /// <summary>그 다이스가 지금 편성에 들어 있는가.</summary>
+        public bool IsEquipped(DiceType diceType)
+        {
+            UITowerDiceCell cell = CellOf(diceType);
+            return cell != null && loadout.Contains(diceType, cell.Star);
+        }
+
+        /// <summary>
+        /// 가이드용: 추천 편성이 이미 킹 썬더를 끼워 놓았으면 빼 둔다 — 유저가 직접 눌러 장착하게 하려는 것이다.
+        /// </summary>
+        public void ClearForGuide(DiceType diceType)
+        {
+            UITowerDiceCell cell = CellOf(diceType);
+            if (cell == null || !loadout.Contains(diceType, cell.Star))
+                return;
+
+            loadout.Toggle(diceType, cell.Star);
+            Refresh();
+        }
+
         /// <summary>새로 해금된 다이스를 알려 준다. 결과 화면이 이 창을 열기 전에 부른다.</summary>
         public void MarkNewlyUnlocked(DiceType diceType)
         {
@@ -322,11 +364,11 @@ namespace OJ.Tower
 
         /// <summary>
         /// 줄 왼쪽의 (n / n) 표기. 기획서 5.3 "줄 좌측의 선택 한도 표기가 규칙을 학습시킨다".
-        /// 순서는 그리드와 같다 — 신화 · 스페셜 · 4성 · 3성 · 2성 · 1성.
+        /// 순서는 그리드와 같다 — 신화 · 스페셜 · 3성 · 2성 · 1성.
         /// </summary>
         private void RefreshRowCapacity()
         {
-            if (rowCapacityTexts.Count < 6)
+            if (rowCapacityTexts.Count < GridRows)
                 return;
 
             SetRowCapacity(0, "신화", loadout.Mythics.Count, TowerFormula.MythicSlotCount);
@@ -589,7 +631,6 @@ namespace OJ.Tower
 
         // 시안 Infinity_Layout_Skill 실측값(시안 픽셀, 좌상단 원점).
         private const float SlotSize = 88f;
-        private const float SlotStartX = 245f;
         private const float SlotPitch = 101.2f;
         private const float SlotRowY = 643f;
         private const float CellSize = 96f;   // 보이는 크기. 그림은 여백 7px x2 만큼 더 크다
@@ -599,7 +640,8 @@ namespace OJ.Tower
         private const float GridPitchY = 110f;
         private const float RowLabelX = 248f;
         private const int GridColumns = 5;
-        private const int GridRows = 6;
+        /// <summary>신화 줄 + 스페셜 줄 + 기본 다이스(성급 수) 줄.</summary>
+        private const int GridRows = 2 + TowerFormula.MaxBaseStar;
 
         /// <summary>에디터 굽기 전용.</summary>
         public static UITowerLoadoutDialog Create(Transform parent, TMP_FontAsset font)
@@ -637,7 +679,7 @@ namespace OJ.Tower
                 TextAlignmentOptions.Center, Color.white, font);
             UITowerUIFactory.SetRect(formationTitle.rectTransform, new Vector2(400f, 52f), UITowerUIFactory.Pos(cx, 348f));
 
-            dialog.slotCountText = UITowerUIFactory.CreateText("SlotCount", p, "6/7", 30f,
+            dialog.slotCountText = UITowerUIFactory.CreateText("SlotCount", p, "5/6", 30f,
                 TextAlignmentOptions.Right, UITowerUIFactory.TextGold, font);
             UITowerUIFactory.SetRect(dialog.slotCountText.rectTransform, new Vector2(160f, 40f), UITowerUIFactory.Pos(825f, 350f));
 
@@ -675,15 +717,17 @@ namespace OJ.Tower
                 TextAlignmentOptions.Left, UITowerUIFactory.TextGold, font);
             UITowerUIFactory.SetRect(slotCaption.rectTransform, new Vector2(300f, 40f), UITowerUIFactory.Pos(348f, 573f));
 
+            // 슬롯 수가 바뀌어도 가운데에 놓인다.
+            float slotStartX = cx - (TowerFormula.TotalSlotCount - 1) * SlotPitch * 0.5f;
             for (int i = 0; i < TowerFormula.TotalSlotCount; i++)
             {
                 UITowerSlotView slot = UITowerSlotView.Create(p,
                     new Vector2(SlotSize, SlotSize),
-                    UITowerUIFactory.Pos(SlotStartX + i * SlotPitch, SlotRowY), font);
+                    UITowerUIFactory.Pos(slotStartX + i * SlotPitch, SlotRowY), font);
                 dialog.slotViews.Add(slot);
             }
 
-            // (3) 후보 그리드 5 × 6
+            // (3) 후보 그리드 5 × GridRows
             for (int row = 0; row < GridRows; row++)
             {
                 float y = GridStartY + row * GridPitchY;
@@ -760,7 +804,7 @@ namespace OJ.Tower
 
         /// <summary>
         /// 그리드 (줄, 칸) 에 놓일 다이스. 기획서 5.3 목업의 배치 그대로다 —
-        /// 0줄 신화, 1줄 스페셜, 2~5줄이 4성부터 1성까지의 기본 다이스다.
+        /// 0줄 신화, 1줄 스페셜, 2~4줄이 3성부터 1성까지의 기본 다이스다.
         /// </summary>
         private static DiceType GridDiceAt(int row, int column)
         {
@@ -775,7 +819,7 @@ namespace OJ.Tower
             }
         }
 
-        /// <summary>2줄이 4성, 5줄이 1성이다. 신화·스페셜 줄은 성급이 없어 1 이다.</summary>
+        /// <summary>2줄이 3성, 4줄이 1성이다. 신화·스페셜 줄은 성급이 없어 1 이다.</summary>
         private static int GridStarAt(int row)
         {
             if (row < 2)

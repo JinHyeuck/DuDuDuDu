@@ -299,6 +299,16 @@ namespace OJ.Core
         /// 빈 슬롯 안내를 이미 봤는가. 기획서 5.5 "빈 슬롯 안내는 최초 출전 시 1회만 노출".
         /// </summary>
         public bool EmptySlotNoticeShown { get; set; }
+
+        /// <summary>
+        /// 탑 봉인 이야기의 진행. 0 = 아직, 1 = 처음 봉인되는 장면을 봤다, 2 = 처음 풀리는 장면까지 봤다.
+        /// (<c>TowerSealDirector</c>) 처음 장면만 길게 보여 주고 이후 반복은 짧게 하려는 구분이다.
+        /// <b>버전을 올리지 않았다</b> — 필드를 더하는 것이라 옛 세이브는 "아직" 과 같다.
+        /// </summary>
+        public int SealStory { get; set; }
+
+        /// <summary>탑 1층을 깬 뒤 "킹 썬더를 신화석으로 강화해 보라" 는 로비 안내를 봤는가. 필드 추가라 버전은 그대로다.</summary>
+        public bool KingUpgradeGuideDone { get; set; }
     }
 
     /// <summary>층 하나의 기록.</summary>

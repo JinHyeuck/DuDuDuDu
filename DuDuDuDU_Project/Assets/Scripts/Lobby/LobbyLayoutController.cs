@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
 using OJ.ContentUnlock;
+using OJ.Core;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
@@ -27,6 +28,13 @@ namespace OJ.Lobby
 
     public class LobbyLayoutController : MonoBehaviour
     {
+        /// <summary>
+        /// 지금 열려 있는 하단 탭. 해금 가이드가 "유저가 홈으로 돌아왔는가" 를 보는 데 쓴다
+        /// (<c>LobbyUnlockDirector</c>) — 가이드로 연 화면을 닫고 나와야 다음 가이드를 건다.
+        /// 로비 씬이 새로 뜰 때마다 홈으로 되돌린다.
+        /// </summary>
+        public static LobbyTab CurrentTab { get; private set; } = LobbyTab.Home;
+
         [Header("Top / Middle")]
         [SerializeField] private Button enterStageButton;
         [SerializeField] private TMP_Text selectedStageText;
@@ -58,6 +66,7 @@ namespace OJ.Lobby
 
         private void Awake()
         {
+            CurrentTab = LobbyTab.Home;
 
             if (enterStageButton != null) enterStageButton.onClick.AddListener(OnClickEnterStage);
             if (bottomButtons != null)
@@ -176,6 +185,8 @@ namespace OJ.Lobby
             if (TryExplainLockedTab(tab))
                 return;
 
+            CurrentTab = tab;
+
             SetPageActive<UIShopPage>(tab == LobbyTab.Shop);
             SetPageActive<UIEquipmentPage>(tab == LobbyTab.Equipment);
             SetPageActive<UIDiceGrowthPage>(tab == LobbyTab.Bullet);
@@ -254,6 +265,17 @@ namespace OJ.Lobby
                 {
                     stageSummaryText.SetText(
                         $"Wave {stageData.totalWaves} / Start SP {stageData.initialSP} / Wave SP {stageData.waveClearSP} / Best {bestGrade}");
+
+                    // 탑이 뒤처지면 들어가기 전에 알린다. 전투에서 갑자기 아래 줄이 막혀 있는 것보다 낫다.
+                    int towerCleared = OJ.Tower.TowerProgressManager.Instance != null
+                        ? OJ.Tower.TowerProgressManager.Instance.HighestClearedFloor
+                        : 0;
+                    if (TowerGateRules.IsBottomRowLocked(selectedStageIndex, towerCleared))
+                    {
+                        int required = TowerGateRules.RequiredTowerFloor(selectedStageIndex);
+                        stageSummaryText.SetText(
+                            stageSummaryText.text + $"\n<color=#FFD24D>탑 {required}층 필요 · 현재 {towerCleared}층 (미달 시 맨 아래 줄 잠김)</color>");
+                    }
                 }
             }
 

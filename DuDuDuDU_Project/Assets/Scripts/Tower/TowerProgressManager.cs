@@ -107,6 +107,8 @@ namespace OJ.Tower
 
         private int highestClearedFloor;
         private bool emptySlotNoticeShown;
+        private int sealStory;
+        private bool kingUpgradeGuideDone;
 
         /// <summary>
         /// 다음 전투가 탑인가. 전투 씬이 <see cref="ConsumePendingRun"/> 으로 가져간다.
@@ -125,6 +127,31 @@ namespace OJ.Tower
         public bool HasAnyClear => HighestClearedFloor > 0;
 
         public bool EmptySlotNoticeShown => emptySlotNoticeShown;
+
+        /// <summary>탑 봉인 이야기의 진행(0 아직 / 1 처음 봉인을 봄 / 2 처음 해제를 봄).</summary>
+        public int SealStory => sealStory;
+
+        /// <summary>1층 클리어 뒤 킹 다이스 강화 안내를 봤는가.</summary>
+        public bool KingUpgradeGuideDone => kingUpgradeGuideDone;
+
+        public void MarkKingUpgradeGuideDone()
+        {
+            if (kingUpgradeGuideDone)
+                return;
+
+            kingUpgradeGuideDone = true;
+            Save();
+        }
+
+        /// <summary>이야기를 앞으로만 진행시킨다. 되감지 않는다.</summary>
+        public void AdvanceSealStory(int stage)
+        {
+            if (stage <= sealStory)
+                return;
+
+            sealStory = stage;
+            Save();
+        }
 
         // "선택한 층" 을 들고 있지 않다. <b>고를 것이 없기 때문이다</b> —
         // 도전 가능한 층은 언제나 HighestUnlockedFloor 하나뿐이다(반복 없음).
@@ -351,7 +378,7 @@ namespace OJ.Tower
             if (plan == null)
                 return loadout;
 
-            // 기본 4칸: 층의 주 콘셉트가 선호하는 속성을 4성부터 채우고, 나머지 성급은
+            // 기본 3칸: 층의 주 콘셉트가 선호하는 속성을 3성부터 채우고, 나머지 성급은
             // 서로 다른 속성으로 흩어 놓는다. 한 속성으로 몰면 상성이 어긋났을 때
             // 통째로 무력해진다.
             DiceType preferred = PreferredBaseFor(plan.Concepts[0]);
@@ -524,6 +551,8 @@ namespace OJ.Tower
         {
             state.Tower.HighestClearedFloor = HighestClearedFloor;
             state.Tower.EmptySlotNoticeShown = emptySlotNoticeShown;
+            state.Tower.SealStory = sealStory;
+            state.Tower.KingUpgradeGuideDone = kingUpgradeGuideDone;
 
             state.Tower.Records.Clear();
             foreach (KeyValuePair<int, TowerFloorRecord> pair in records)
@@ -550,6 +579,8 @@ namespace OJ.Tower
         {
             highestClearedFloor = Mathf.Clamp(state.Tower.HighestClearedFloor, 0, TowerFormula.TotalFloors);
             emptySlotNoticeShown = state.Tower.EmptySlotNoticeShown;
+            sealStory = state.Tower.SealStory;
+            kingUpgradeGuideDone = state.Tower.KingUpgradeGuideDone;
 
             records.Clear();
             foreach (KeyValuePair<string, TowerFloorRecordSave> pair in state.Tower.Records)

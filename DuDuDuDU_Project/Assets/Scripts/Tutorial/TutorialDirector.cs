@@ -4,6 +4,8 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using OJ.Bounty;
+using OJ.Core;
+using OJ.Economy;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Element;
@@ -91,9 +93,8 @@ namespace OJ.Tutorial
             GameManager game = battle.Game;
             UIDiceSummonSystem summon = battle.Summon;
             RectTransform summonButton = RectOf(summon.summonButton);
-            RectTransform playButton = RectOf(game.PlayUI);
 
-            // 1웨이브 전 ─────────────────────────────────────────────
+            // 판 시작 전: 소환 · 머지 ─────────────────────────────────
             Enter(TutorialStep.IntroGoal);
             overlay.SetDim();
             await TalkAsync("몬스터가 아래 벽까지 내려오면 져요.\n주사위를 놓아서 막아 봐요!");
@@ -114,147 +115,36 @@ namespace OJ.Tutorial
             overlay.SetTalk("같은 주사위 둘을 겹치면 합쳐져요.\n노멀 주사위를 옆 노멀 위로 끌어다 놓아요!");
             await Until(() => CountDice(TutorialStage.MergeResult, 2) > 0);
 
-            Enter(TutorialStep.StartWave1);
-            Guide(playButton, "번개 주사위가 됐어요! 합치면 별이 오르고 종류가 바뀌어요.\n이제 웨이브를 시작해요.", dim: true);
-            await Until(() => game.inGameState == InGameState.Wave);
-
-            Enter(TutorialStep.Wave1);
-            overlay.ClearAll();
-            await Until(() => game.inGameState == InGameState.Setting);
-
-            Enter(TutorialStep.Wave1Reward);
+            // 실시간 시작 ────────────────────────────────────────────
+            // 웨이브 사이에 쉬는 시간이 없다. 시작 버튼도 없다 — 3 · 2 · 1 이 끝나면 몬스터가 내려온다.
+            Enter(TutorialStep.StartWaves);
             overlay.SetDim();
-            await TalkAsync("웨이브를 막으면 SP를 받아요.\n받은 SP는 다음 웨이브 전에 쓸 수 있어요.");
-
-            // 2웨이브 전: 현상금 ─────────────────────────────────────
-            Enter(TutorialStep.BountyOpen);
-            UIBountyBanner banner = GameContainer.UI?.Get<UIBountyBanner>();
-            UIBountySelectDialog bountyDialog = GameContainer.UI?.Get<UIBountySelectDialog>();
-            // 띠 전체가 아니라 <b>선택하기 버튼</b>을 가리킨다. 띠 가운데(현상금 정보)를 가리키면
-            // 거기를 누르게 되는데, 그 자리는 아무 일도 하지 않는다.
-            Guide(banner != null ? banner.ChangeButtonRect : null, "현상금 몬스터를 걸 수 있어요.\n잡으면 보상을 더 받아요!", dim: true);
-            await Until(() => bountyDialog != null && bountyDialog.isEnter);
-
-            Enter(TutorialStep.BountySelect);
-            Guide(bountyDialog.GetSlotRect(1), "1단계 현상금을 골라 봐요.", dim: true);
-            await Until(() => battle.Bounty.SelectedGrade == 1 && !bountyDialog.isEnter);
-
-            // 고른 것이 띠에 걸린 모습을 한 번 보여 준다. 선택 창이 닫히자마자 시작 버튼으로 넘어가면
-            // "무엇이 걸렸는지" 를 못 본 채 지나간다. 구멍을 띠에 연 채로 탭을 받는다.
-            Enter(TutorialStep.BountySet);
-            overlay.SetDim(RectOf(banner));
-            await TalkAsync("1단계 현상금이 걸렸어요!\n이번 웨이브에 현상금 몬스터가 나와요.");
-
-            Enter(TutorialStep.StartWave2);
-            Guide(playButton, "현상금을 걸었어요. 웨이브를 시작해요!", dim: true);
+            await TalkAsync("번개 주사위가 됐어요! 합치면 별이 오르고 종류가 바뀌어요.\n이제 몬스터가 쉬지 않고 몰려와요. 준비!");
+            overlay.ClearAll();
+            game.BeginTutorialWaves();
             await Until(() => game.inGameState == InGameState.Wave);
 
-            // 2웨이브: 되돌리기 ──────────────────────────────────────
-            Enter(TutorialStep.Wave2Crisis);
-            overlay.ClearAll();
-            await Until(() => battle.Spawner.RegularSpawnCount >= 3);
+            // 몬스터가 내려오는 것이 보이도록 잠깐 둔다. 가르치는 동안에는 게임을 세워 둔다.
+            await DelaySeconds(2f);
 
-            Enter(TutorialStep.RewindTalk);
-            Time.timeScale = 0f;
-            battle.Rewind.NotifyRewindOffered();
-            overlay.SetDim();
-            await TalkAsync("잠깐! SP를 하나도 안 쓰고 시작했어요.\n이대로면 현상금 몬스터를 놓칠 거예요!");
-            battle.Rewind.NotifyOfferClosed();
+            // 1웨이브: 자리 구매 · 확률업 · 영혼 보너스 ───────────────────────
+            await RunSlotUnlockAsync();
+            await RunProbabilityAsync(game, summon);
+            await RunSoulBonusAsync(game);
 
-            Enter(TutorialStep.Rewind);
+            // 2웨이브: 현상금 · 행운 주사위 · 속성강화 ─────────────────
+            await Until(() => game.CurrentWaveIndex >= TutorialStage.BountyWave);
+            await DelaySeconds(2f);
 
-            // 되돌리기 버튼은 여기서 처음 나타난다. 앞 웨이브에서 보이면 미리 눌러 판에 하나뿐인
-            // 무료 되돌리기를 써 버린다(GameManager.ChangeState 가 그때까지 감춘다).
-            battle.Tutorial.UnlockRewind();
-            GameContainer.UI?.Show<UIWaveRewindButton>();
-            UIWaveRewindButton rewindButton = GameContainer.UI?.Get<UIWaveRewindButton>();
-            UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
-            Guide(RectOf(rewindButton), "되돌리기를 쓰면 이번 웨이브를\n시작하기 직전으로 돌아가요.", dim: true);
-            await Until(() => confirm != null && confirm.isEnter);
+            await RunBountyAsync(game);
+            await RunLuckyDiceAsync(game);
+            await RunUpgradeAsync(game);
 
-            Enter(TutorialStep.RewindConfirm);
-            Guide(confirm.ConfirmButtonRect, "'되돌릴게요'를 눌러요.", dim: true);
-            await Until(() => !confirm.isEnter);
+            // 3웨이브: 진화(변신) ─────────────────────────────────────
+            await Until(() => game.CurrentWaveIndex >= TutorialStage.EvolveWave);
+            await DelaySeconds(2f);
 
-            // 되감기 연출 동안은 딤드를 걷는다. 시간이 거꾸로 흐르는 장면이 이 단계의 볼거리인데
-            // 어둠에 덮여 있으면 답답하기만 하다. 그 사이 상태는 None 이라 눌러도 될 것이 없다.
-            overlay.ClearAll();
-            await Until(() => game.inGameState == InGameState.Setting);
-
-            Enter(TutorialStep.SpendSp);
-            Guide(summonButton, "이번엔 SP를 모두 써서\n주사위를 늘려요!", dim: true);
-            await Until(() => summon.currentSP < summon.summonCost);
-
-            Enter(TutorialStep.StartWave2Retry);
-            Guide(playButton, "다시 도전!", dim: true);
-            await Until(() => game.inGameState == InGameState.Wave);
-
-            // 2웨이브(재) ─────────────────────────────────────────────
-            // 딜미터기 안내는 뺐다. 전투 중에 말풍선이 뜨는 것이 어색했다.
-            overlay.ClearAll();
-
-            Enter(TutorialStep.Wave2Retry);
-            await Until(() => game.inGameState == InGameState.Setting);
-
-            // 3웨이브 전: 속성강화 ─────────────────────────────────────
-            // 진화 직전에 마석을 진화 비용까지 맞춰 주므로(GrantEvolveGift) 여기서 마석을 써도
-            // 진화가 막히지 않는다. 이 시점 마석은 웨이브 두 번 클리어분(2개)이고 첫 강화는 1개다.
-            await RunUpgradeAsync();
-
-            // 3웨이브: 손 놓기 ───────────────────────────────────────
-            await RunHintsAsync(game, summon, summonButton, playButton, banner, bountyDialog);
-
-            Enter(TutorialStep.Wave3);
-            overlay.ClearAll();
-            await Until(() => game.inGameState == InGameState.Setting);
-
-            // 4웨이브 전: 진화(변신) ─────────────────────────────────
-            Enter(TutorialStep.EvolveGift);
-            overlay.SetDim();
-            await TalkAsync("보스가 다가와요!\n특별히 번개 4성과 마석을 줄게요.");
-
-            // 말풍선을 닫는 순간에 준다. 미리 놓아 두면 "줄게요" 라는 말보다 선물이 먼저 와 있다.
-            UIDice gift = GrantEvolveGift();
-            if (gift != null)
-            {
-                overlay.SetDim(RectOf(gift));
-
-                // 팝은 <c>UIBoard.SpawnDice</c> 가 이미 걸었다(<c>DiceFx.PlaySummon</c>).
-                // 여기서 또 걸면 두 쪽이 같은 <c>localScale</c> 에 써서 서로를 덮는다 —
-                // 기다리기만 한다. 뒤의 0.5초는 자리를 잡은 4성을 잠깐 보여 주는 시간이다
-                // (연출이 끝나자마자 다음 말풍선이 뜨면 어색하다).
-                float resume = Time.unscaledTime + DiceFx.SummonSeconds + 0.5f;
-                await Until(() => Time.unscaledTime >= resume);
-            }
-
-            await TalkAsync("주사위가 4성이 되면\n마석으로 변신시킬 수 있어요.");
-
-            UIBattleDiceDetailPanel detail = GameContainer.UI?.Get<UIBattleDiceDetailPanel>();
-            if (gift != null && detail != null)
-            {
-                Enter(TutorialStep.EvolveSelect);
-                Guide(RectOf(gift), "번개 4성을 눌러 보세요.", dim: true);
-                await Until(() => detail.isEnter && detail.CurrentDice == gift);
-
-                Enter(TutorialStep.EvolveConfirm);
-                Guide(detail.EvolveButtonRect, "'진화'를 눌러 변신시켜요!", dim: true);
-                await Until(() => gift == null || gift.Type == TutorialStage.EvolveTarget);
-
-                Enter(TutorialStep.EvolveClose);
-                overlay.ClearAll();
-                overlay.SetTalk(
-                    DiceName(TutorialStage.EvolveTarget) + "(으)로 변신했어요!\n바깥을 눌러 창을 닫아요.",
-                    where: UITutorialOverlay.TalkPlacement.Top);
-                await Until(() => !detail.isEnter);
-            }
-            else
-            {
-                Debug.LogError("[튜토리얼] 4성 번개를 놓지 못했거나 상세 패널이 없어 진화 단계를 건너뛴다.");
-            }
-
-            Enter(TutorialStep.StartWave4);
-            Guide(playButton, "보스를 잡으러 가요!", dim: false);
-            await Until(() => game.inGameState == InGameState.Wave);
+            await RunEvolveAsync(game);
 
             // 보스 ───────────────────────────────────────────────────
             Enter(TutorialStep.BossWave);
@@ -304,52 +194,228 @@ namespace OJ.Tutorial
         }
 
         /// <summary>
-        /// 3웨이브 앞의 손가락 가이드 셋. <b>강제가 아니다</b> — 언제든 웨이브를 시작하면
-        /// 남은 안내를 건너뛴다. 손을 놓는 구간이라 막지도 기다리지도 않는다.
+        /// 자리 구매 — 첫 줄 밖의 칸은 잠겨 있다. 잠긴 칸을 눌러 SP 로 연다(여는 값은 구매마다 오른다).
+        /// SP 가 모자라면 채워 준다.
         /// </summary>
-        private async UniTask RunHintsAsync(
-            GameManager game, UIDiceSummonSystem summon,
-            RectTransform summonButton, RectTransform playButton,
-            UIBountyBanner banner, UIBountySelectDialog bountyDialog)
+        private async UniTask RunSlotUnlockAsync()
         {
-            Enter(TutorialStep.SummonHint);
-            if (game.inGameState == InGameState.Setting && summon.currentSP >= summon.summonCost)
+            UIBoard board = battle.Board;
+            RectTransform slot = board.GetSlotRect(TutorialStage.UnlockSlot);
+            if (slot == null || !board.IsSlotLockActive || board.IsSlotUnlocked(TutorialStage.UnlockSlot))
             {
-                int before = summon.currentSP;
-                Guide(summonButton, "웨이브를 막을 때마다 SP가 쌓여요.\n소환해서 주사위를 늘려 봐요!", dim: false);
-                await Until(() => summon.currentSP < before || game.inGameState == InGameState.Wave);
+                Debug.LogError("[튜토리얼] 잠긴 칸을 못 찾아 자리 구매 단계를 건너뛴다.");
+                return;
             }
 
-            Enter(TutorialStep.BountyHint);
-            if (game.inGameState == InGameState.Setting
-                && battle.Bounty.IsSelectable(2) && bountyDialog != null)
-            {
-                // 1단계를 잡으면 선택이 저절로 2단계로 올라간다(BountyManager.NotifyDefeated).
-                // 그래서 "골라라" 가 아니라 "올라갔다" 를 알린다.
-                Guide(banner != null ? banner.ChangeButtonRect : null, "1단계를 잡아서 2단계 현상금이 열렸어요.\n더 센 만큼 보상도 커요!", dim: false);
-                await Until(() => bountyDialog.isEnter || game.inGameState == InGameState.Wave);
+            Enter(TutorialStep.SlotUnlock);
+            EnsureSp(board.NextSlotUnlockCost);
+            FreezeGame();
 
-                if (bountyDialog.isEnter)
-                {
-                    overlay.ClearAll();
-                    await Until(() => !bountyDialog.isEnter || game.inGameState == InGameState.Wave);
-                }
+            Guide(slot, "자리가 모자라면 SP로 열 수 있어요.\n잠긴 칸을 눌러 열어 봐요!", dim: true);
+            await Until(() => board.IsSlotUnlocked(TutorialStage.UnlockSlot));
+
+            Enter(TutorialStep.SlotUnlocked);
+            overlay.ClearAll();
+            overlay.SetDim();
+            await TalkAsync("자리를 열 때마다 다음 칸은 조금씩 비싸져요.");
+
+            overlay.ClearAll();
+            ThawGame();
+        }
+
+        /// <summary>
+        /// 확률업 — 버튼을 누르고, 소환 버튼 위 확률 띠를 짚는다. SP 가 모자라면 채워 준다
+        /// (가르치는 동안 SP 가 몇이냐는 플레이 솜씨에 달려 있어 단계가 막히면 안 된다).
+        /// </summary>
+        private async UniTask RunProbabilityAsync(GameManager game, UIDiceSummonSystem summon)
+        {
+            Enter(TutorialStep.ProbUp);
+            GameContainer.UI?.Show<UIProbabilityUpButton>();
+            GameContainer.UI?.Show<UISummonRateStrip>();
+            UIProbabilityUpButton button = GameContainer.UI?.Get<UIProbabilityUpButton>();
+
+            EnsureSp(summon.NextProbUpgradeCost);
+            FreezeGame();
+
+            int level = summon.ProbLevel;
+            Guide(RectOf(button), "확률UP에 SP를 쓰면\n높은 성급의 주사위가 더 자주 나와요!", dim: true);
+            await Until(() => summon.ProbLevel > level);
+
+            Enter(TutorialStep.ProbRates);
+            overlay.SetDim(RectOf(GameContainer.UI?.Get<UISummonRateStrip>()));
+            await TalkAsync("소환 버튼 위에서 성급별 확률을 볼 수 있어요.");
+
+            overlay.ClearAll();
+            ThawGame();
+        }
+
+        /// <summary>
+        /// 영혼 보너스 — 버튼을 짚어 "적을 잡으면 영혼이 모인다" 를 알리고, 목표를 채워 <b>팝업이 저절로 뜰 때까지</b>
+        /// 게임을 돌려 두었다가(몬스터를 잡는 동안 영혼이 날아오는 것이 보인다), 팝업이 뜨면 두 버튼을 짚고 고르게 한다.
+        /// 팝업은 게임을 스스로 멈추므로 이 단계는 <see cref="FreezeGame"/> 을 쓰지 않는다.
+        /// </summary>
+        private async UniTask RunSoulBonusAsync(GameManager game)
+        {
+            Enter(TutorialStep.SoulBonus);
+            GameContainer.UI?.Show<UISoulBonusButton>();
+            UISoulBonusButton button = GameContainer.UI?.Get<UISoulBonusButton>();
+
+            FreezeGame();
+            overlay.SetDim(RectOf(button));
+            overlay.SetFinger(null);
+            await TalkAsync("적을 잡으면 영혼이 저금통에 모여요!\n다 모으면 보상을 골라요.");
+            overlay.ClearAll();
+            ThawGame();
+
+            // 목표(첫 10마리)를 채울 때까지 기다린다. 그 사이 몬스터가 내려오는 대로 평소처럼 진행된다.
+            await Until(() => game.SoulBonus.IsReady);
+
+            // 채웠다 — 저금통을 눌러 받게 한다(게임은 멈추지 않으니 잠깐 세운다).
+            FreezeGame();
+            Guide(RectOf(button), "영혼이 가득 찼어요!\n저금통을 눌러 보상을 받아요.", dim: true);
+            await Until(() => UISoulBonusDialog.IsOpen);
+
+            Enter(TutorialStep.SoulBonusReward);
+            UISoulBonusDialog dialog = GameContainer.UI?.Get<UISoulBonusDialog>();
+            overlay.SetFinger(null);
+            overlay.SetDim(dialog != null ? dialog.GetChoiceRect(true) : null,
+                           dialog != null ? dialog.GetChoiceRect(false) : null);
+            overlay.SetTalk("SP와 마석 중 하나를 골라요!\n마석은 속성 강화와 진화에 쓰여요.",
+                where: UITutorialOverlay.TalkPlacement.Top);
+
+            await Until(() => !UISoulBonusDialog.IsOpen);
+            overlay.ClearAll();
+            ThawGame();
+        }
+
+        /// <summary>현상금 — 아이콘을 눌러 1단계를 고르면 그 자리에서 나온다. 쿨타임이 있다는 것까지 알린다.</summary>
+        private async UniTask RunBountyAsync(GameManager game)
+        {
+            Enter(TutorialStep.BountyOpen);
+            battle.Tutorial.UnlockBounty();
+            GameContainer.UI?.Show<UIBountyButton>();
+            UIBountyButton button = GameContainer.UI?.Get<UIBountyButton>();
+
+            FreezeGame();
+            Guide(RectOf(button), "현상금 아이콘을 눌러요.\n강한 몬스터를 불러서 보상을 받아요!", dim: true);
+            await Until(() => UIBountySelectDialog.IsOpen);
+
+            Enter(TutorialStep.BountySelect);
+            UIBountySelectDialog dialog = GameContainer.UI?.Get<UIBountySelectDialog>();
+            Guide(dialog != null ? dialog.GetSlotRect(1) : null, "1단계를 골라요.\n잡으면 보상을 바로 받아요!", dim: true);
+            await Until(() => battle.Bounty.CooldownRemaining > 0f);
+
+            Enter(TutorialStep.BountySet);
+            overlay.ClearAll();
+            overlay.SetDim();
+            await TalkAsync("현상금 몬스터가 나왔어요!\n다음 현상금은 " + (int)BountyFormula.CooldownSeconds + "초 뒤에 다시 부를 수 있어요.");
+
+            overlay.ClearAll();
+            ThawGame();
+        }
+
+        /// <summary>
+        /// 행운 주사위 — SP 를 내고 마석을 뽑는다. 굴리는 동안 "?" 는 막아 둔다(확률표 창은 딤드 밖이라
+        /// 열리면 닫을 수 없다). 굴린 뒤에 확률표를 따로 짚는다.
+        /// </summary>
+        private async UniTask RunLuckyDiceAsync(GameManager game)
+        {
+            Enter(TutorialStep.LuckyDice);
+            GameContainer.UI?.Show<UILuckyDiceButton>();
+            UILuckyDiceButton button = GameContainer.UI?.Get<UILuckyDiceButton>();
+
+            EnsureSp(LuckyDiceRules.CostSp);
+            int stones = battle.BattlePoints.Get(BattlePointType.EnhanceStone);
+            FreezeGame();
+
+            button?.SetHelpInteractable(false);
+            Guide(RectOf(button),
+                "행운 주사위는 " + LuckyDiceRules.CostSp + " SP로\n마석 " + LuckyDiceRules.MinStones + "~" + LuckyDiceRules.MaxStones + "개를 뽑아요!",
+                dim: true);
+            await Until(() => battle.BattlePoints.Get(BattlePointType.EnhanceStone) > stones);
+
+            Enter(TutorialStep.LuckyDiceResult);
+
+            // 결과 연출(전체 화면)이 끝나기를 기다린다. 오버레이를 걷어 두어야 연출이 입력을 받고, 딤드에 안 가려진다.
+            overlay.ClearAll();
+            await Until(() => UILuckyDiceResultPopup.IsPlaying);
+            await Until(() => !UILuckyDiceResultPopup.IsPlaying);
+
+            overlay.SetDim();
+            await TalkAsync("마석을 얻었어요!\n마석은 속성 강화와 진화에 쓰여요.");
+
+            // 확률표. 판 부분만 구멍으로 열어 보여 주고, 탭하면 닫는다.
+            button?.SetHelpInteractable(true);
+            GameContainer.UI?.Show<UILuckyDiceOddsTooltip>();
+            UILuckyDiceOddsTooltip tooltip = GameContainer.UI?.Get<UILuckyDiceOddsTooltip>();
+            overlay.SetDim(tooltip != null ? tooltip.PanelRect : null);
+            await TalkAsync("낮은 눈이 자주, 높은 눈은 드물게 나와요.\n옆의 ? 버튼으로 언제든 볼 수 있어요.");
+            GameContainer.UI?.Hide<UILuckyDiceOddsTooltip>();
+
+            overlay.ClearAll();
+            ThawGame();
+        }
+
+        /// <summary>
+        /// 3성 진화 — 선물받은 3성을 눌러 변신시킨다. 진화 조건이 3성이라 선물도 3성이다.
+        /// 마석은 진화 비용까지 맞춰 주므로 앞에서 속성강화에 써도 막히지 않는다.
+        /// </summary>
+        private async UniTask RunEvolveAsync(GameManager game)
+        {
+            Enter(TutorialStep.EvolveGift);
+            FreezeGame();
+            overlay.SetDim();
+            await TalkAsync("보스가 다가와요!\n특별히 번개 " + TutorialStage.GiftStar + "성과 마석을 줄게요.");
+
+            // 말풍선을 닫는 순간에 준다. 미리 놓아 두면 "줄게요" 라는 말보다 선물이 먼저 와 있다.
+            UIDice gift = GrantEvolveGift();
+            if (gift != null)
+            {
+                overlay.SetDim(RectOf(gift));
+
+                // 팝은 <c>UIBoard.SpawnDice</c> 가 이미 걸었다(<c>DiceFx.PlaySummon</c>).
+                // 여기서 또 걸면 두 쪽이 같은 <c>localScale</c> 에 써서 서로를 덮는다 —
+                // 기다리기만 한다. 뒤의 0.5초는 자리를 잡은 선물을 잠깐 보여 주는 시간이다
+                // (연출이 끝나자마자 다음 말풍선이 뜨면 어색하다).
+                float resume = Time.unscaledTime + DiceFx.SummonSeconds + 0.5f;
+                await Until(() => Time.unscaledTime >= resume);
             }
 
-            Enter(TutorialStep.StartWave3);
-            if (game.inGameState == InGameState.Setting)
+            await TalkAsync("주사위가 " + TutorialStage.GiftStar + "성이 되면\n마석으로 변신시킬 수 있어요.");
+
+            UIBattleDiceDetailPanel detail = GameContainer.UI?.Get<UIBattleDiceDetailPanel>();
+            if (gift != null && detail != null)
             {
-                Guide(playButton, "준비되면 웨이브를 시작해요.", dim: false);
-                await Until(() => game.inGameState == InGameState.Wave);
+                Enter(TutorialStep.EvolveSelect);
+                Guide(RectOf(gift), "번개 " + TutorialStage.GiftStar + "성을 눌러 보세요.", dim: true);
+                await Until(() => detail.isEnter && detail.CurrentDice == gift);
+
+                Enter(TutorialStep.EvolveConfirm);
+                Guide(detail.EvolveButtonRect, "'진화'를 눌러 변신시켜요!", dim: true);
+                await Until(() => gift == null || gift.Type == TutorialStage.EvolveTarget);
+
+                Enter(TutorialStep.EvolveClose);
+                overlay.ClearAll();
+                overlay.SetTalk(
+                    DiceName(TutorialStage.EvolveTarget) + "(으)로 변신했어요!\n바깥을 눌러 창을 닫아요.",
+                    where: UITutorialOverlay.TalkPlacement.Top);
+                await Until(() => !detail.isEnter);
             }
+            else
+            {
+                Debug.LogError("[튜토리얼] 선물 다이스를 놓지 못했거나 상세 패널이 없어 진화 단계를 건너뛴다.");
+            }
+
+            overlay.ClearAll();
+            ThawGame();
         }
 
         /// <summary>
         /// 속성강화 한 번 — 강화 버튼 → 번개의 속성 줄 강화 → 창 닫기. 셋 다 딤드다.
         /// 고르는 속성은 머지로 만든 번개의 속성이다. 보드에서 가장 센 다이스라 효과가 바로 보이고,
-        /// 뒤에서 진화시킬 4성도 같은 계통이다.
+        /// 뒤에서 진화시킬 3성도 같은 계통이다. 마석은 앞의 행운 주사위가 준 것을 쓴다(최소 1개).
         /// </summary>
-        private async UniTask RunUpgradeAsync()
+        private async UniTask RunUpgradeAsync(GameManager game)
         {
             ElementUpgradeManager upgrade = battle.ElementUpgrade;
             UIElementUpgradePanel panel = GameContainer.UI?.Get<UIElementUpgradePanel>();
@@ -361,8 +427,14 @@ namespace OJ.Tutorial
 
             ElementType element = ElementOf(TutorialStage.MergeResult);
 
+            // 첫 강화 비용은 마석 1개다. 행운 주사위가 최소 1개는 주므로 모자랄 일이 없지만 방어해 둔다.
+            if (battle.BattlePoints.Get(BattlePointType.EnhanceStone) < 1)
+                battle.BattlePoints.Set(BattlePointType.EnhanceStone, 1);
+
+            FreezeGame();
+
             Enter(TutorialStep.UpgradeOpen);
-            Guide(upgrade.OpenButtonRect, "웨이브를 막으면 마석도 받아요.\n마석으로 속성을 강화할 수 있어요!", dim: true);
+            Guide(upgrade.OpenButtonRect, "마석으로 속성을 강화할 수 있어요!", dim: true);
             await Until(() => panel.isEnter);
 
             // 창이 막 열린 프레임에는 줄이 아직 없을 수 있다(UIElementUpgradePanel.BuildIfNeeded).
@@ -387,6 +459,37 @@ namespace OJ.Tutorial
 
             await Until(() => !panel.isEnter);
             overlay.ClearAll();
+            ThawGame();
+        }
+
+        // ── 게임 멈춤 ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// 가르치는 동안 게임을 세운다. 실시간이라 몬스터는 기다려 주지 않는다 — 읽고 누르는 사이에
+        /// 벽이 깎이면 안 된다. UI 와 이 디렉터는 실제 시간으로 돌아 영향이 없다.
+        /// </summary>
+        private void FreezeGame()
+        {
+            Time.timeScale = 0f;
+        }
+
+        private void ThawGame()
+        {
+            Time.timeScale = battle.Game.CurrentTimeSpeed;
+        }
+
+        /// <summary>SP 가 <paramref name="needed"/> 에 모자라면 채워 준다. 가르치는 단계가 솜씨에 따라 막히지 않게 한다.</summary>
+        private void EnsureSp(int needed)
+        {
+            int missing = needed - battle.Summon.currentSP;
+            if (missing > 0)
+                battle.Summon.AddSP(missing);
+        }
+
+        private async UniTask DelaySeconds(float seconds)
+        {
+            float end = Time.unscaledTime + seconds;
+            await Until(() => Time.unscaledTime >= end);
         }
 
         private static ElementType ElementOf(DiceType type)
@@ -421,7 +524,7 @@ namespace OJ.Tutorial
         // ── 진화 선물 ─────────────────────────────────────────────────
 
         /// <summary>
-        /// 보스 앞의 선물 둘 — 마석, 4성 번개. 놓은 4성을 돌려준다(못 놓으면 null).
+        /// 보스 앞의 선물 둘 — 마석, 3성 번개. 놓은 4성을 돌려준다(못 놓으면 null).
         ///
         /// <b>보유를 지급하던 줄이 사라졌다(2026-10-14).</b> <c>MergeSystem.TryEvolve</c> 가
         /// 대상 보유를 보는 것은 그대로지만, 진화 대상(<c>TutorialStage.EvolveTarget</c>)이
@@ -441,24 +544,25 @@ namespace OJ.Tutorial
             if (slot < 0)
                 return null;
 
-            battle.DiceStars.OnDiceSpawn(TutorialStage.GiftDice, MergeSystem.MaxStar);
-            battle.Board.SpawnDice(TutorialStage.GiftDice, MergeSystem.MaxStar, slot);
+            battle.DiceStars.OnDiceSpawn(TutorialStage.GiftDice, TutorialStage.GiftStar);
+            battle.Board.SpawnDice(TutorialStage.GiftDice, TutorialStage.GiftStar, slot);
             return battle.Board.GetDice(slot);
         }
 
         private int FindGiftSlot()
         {
+            // 잠긴 칸에는 놓을 수 없다(UIBoard.SpawnDice). 열린 빈 칸만 쓴다.
             IReadOnlyList<int> candidates = TutorialStage.GiftSlotCandidates;
             for (int i = 0; i < candidates.Count; i++)
             {
-                if (battle.Board.GetDice(candidates[i]) == null)
+                if (battle.Board.GetDice(candidates[i]) == null && battle.Board.IsSlotUnlocked(candidates[i]))
                     return candidates[i];
             }
 
             int total = battle.Board.rows * battle.Board.cols;
             for (int i = 0; i < total; i++)
             {
-                if (battle.Board.GetDice(i) == null)
+                if (battle.Board.GetDice(i) == null && battle.Board.IsSlotUnlocked(i))
                     return i;
             }
 

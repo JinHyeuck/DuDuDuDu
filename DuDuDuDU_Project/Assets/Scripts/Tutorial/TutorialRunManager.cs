@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OJ.Core;
 
 namespace OJ.Tutorial
 {
@@ -33,6 +34,8 @@ namespace OJ.Tutorial
 
         private readonly Queue<ScriptedSummon> scriptedSummons = new Queue<ScriptedSummon>();
 
+        private int guideMergesLeft;
+
         private bool hasForcedMergeType;
         private DiceType forcedMergeType;
 
@@ -46,18 +49,49 @@ namespace OJ.Tutorial
         public bool IsFailed { get; private set; }
 
         /// <summary>
-        /// 되돌리기 버튼을 보여도 되는가. 되돌리기를 가르치기 전에 버튼이 떠 있으면
-        /// 1웨이브에서 눌러 버려 판에 하나뿐인 무료 되돌리기를 미리 써 버린다.
+        /// 되돌리기 버튼을 보여도 되는가. 되돌리기는 지금 꺼져 있고(설정 에셋) 튜토리얼도 가르치지 않으므로
+        /// 튜토리얼 판에서는 감춘다. 튜토리얼 판이 아니면 언제나 참이다.
+        /// </summary>
+        public bool IsRewindButtonAllowed => !IsActive;
+
+        /// <summary>
+        /// 현상금 버튼을 보여도 되는가. 가르칠 차례가 오기 전에 떠 있으면 아직 모르는 버튼이 화면에 먼저 있다.
         /// 튜토리얼 판이 아니면 언제나 참이다.
         /// </summary>
-        public bool IsRewindButtonAllowed => !IsActive || rewindUnlocked;
+        public bool IsBountyButtonAllowed => !IsActive || bountyUnlocked;
 
-        private bool rewindUnlocked;
+        private bool bountyUnlocked;
 
-        /// <summary>되돌리기 단계에 들어왔다. 이 뒤로는 평소처럼 버튼이 뜬다.</summary>
-        public void UnlockRewind()
+        /// <summary>현상금을 가르치는 단계에 들어왔다. 이 뒤로는 평소처럼 버튼이 뜬다.</summary>
+        public void UnlockBounty()
         {
-            rewindUnlocked = true;
+            bountyUnlocked = true;
+        }
+
+        /// <summary>
+        /// 4스테이지 첫 진입의 킹 썬더 유도가 걸린 판인가(<see cref="KingThunderGuide"/>). <b>튜토리얼(<see cref="IsActive"/>)과 별개다</b> —
+        /// 튜토리얼 판의 부수 효과(유물 끄기·버튼 감추기)를 이 판에 끌어오지 않으려고 따로 둔다.
+        /// </summary>
+        public bool IsKingThunderGuideActive { get; private set; }
+
+        /// <summary>유도를 걸거나 푼다. 판을 세울 때마다 부른다 — 이전 판의 남은 대본이 따라오지 않게 늘 먼저 지운다.</summary>
+        public void SetKingThunderGuide(bool active)
+        {
+            IsKingThunderGuideActive = active;
+            guideMergesLeft = active ? KingThunderGuide.ScriptedThreeStarMerges : 0;
+        }
+
+        /// <summary>
+        /// 이번 머지 결과를 썬더로 고정해야 하는가. <paramref name="resultStar"/> 가 유도 성급(3성)일 때만 한 번씩 센다 —
+        /// 1→2성 머지는 평소처럼 굴린다. 남지 않았으면 거짓.
+        /// </summary>
+        public bool TryTakeGuideMerge(int resultStar)
+        {
+            if (!IsKingThunderGuideActive || guideMergesLeft <= 0 || resultStar != KingThunderGuide.ScriptedStar)
+                return false;
+
+            guideMergesLeft--;
+            return true;
         }
 
         /// <summary>아직 쓰지 않은 대본 소환 수.</summary>
@@ -74,7 +108,8 @@ namespace OJ.Tutorial
             IsActive = false;
             IsCleared = false;
             IsFailed = false;
-            rewindUnlocked = false;
+            bountyUnlocked = false;
+            SetKingThunderGuide(false);
             scriptedSummons.Clear();
             hasForcedMergeType = false;
         }

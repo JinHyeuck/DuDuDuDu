@@ -10,50 +10,35 @@ namespace OJ.Tutorial
     {
         None = 0,
 
-        // ── 1웨이브 전: 소환 · 머지 ─────────────
+        // ── 판 시작 전: 소환 · 머지 ─────────────
         IntroGoal,
         Summon,
         Merge,
-        StartWave1,
+        StartWaves,
 
-        // ── 1웨이브 ────────────────────────────
-        Wave1,
-        Wave1Reward,
+        // ── 1웨이브: 자리 구매 · 확률업 · 영혼 보너스 ──
+        SlotUnlock,
+        SlotUnlocked,
+        ProbUp,
+        ProbRates,
+        SoulBonus,
+        SoulBonusReward,
 
-        // ── 2웨이브 전: 현상금 ─────────────────
+        // ── 2웨이브: 현상금 · 행운 주사위 · 속성강화 ──
         BountyOpen,
         BountySelect,
         BountySet,
-        StartWave2,
-
-        // ── 2웨이브: 되돌리기 ──────────────────
-        Wave2Crisis,
-        RewindTalk,
-        Rewind,
-        RewindConfirm,
-        SpendSp,
-        StartWave2Retry,
-
-        // ── 2웨이브(재) ────────────────────────
-        Wave2Retry,
-
-        // ── 3웨이브 전: 속성강화 ───────────────
+        LuckyDice,
+        LuckyDiceResult,
         UpgradeOpen,
         UpgradeLevelUp,
         UpgradeClose,
 
-        // ── 3웨이브: 손 놓기 ───────────────────
-        SummonHint,
-        BountyHint,
-        StartWave3,
-        Wave3,
-
-        // ── 4웨이브 전: 진화(변신) ─────────────
+        // ── 3웨이브: 진화(변신) ────────────────
         EvolveGift,
         EvolveSelect,
         EvolveConfirm,
         EvolveClose,
-        StartWave4,
 
         // ── 보스 ───────────────────────────────
         BossWave,

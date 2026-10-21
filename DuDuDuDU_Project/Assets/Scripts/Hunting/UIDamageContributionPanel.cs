@@ -245,9 +245,9 @@ namespace OJ.Hunting
         /// 패널 가로. 이름과 퍼센트를 뺐으므로 아이콘 + 막대만 들어가면 된다 —
         /// 좁을수록 전투를 덜 가린다.
         /// </summary>
-        private const float PanelWidth = 240f;
+        private const float PanelWidth = 300f;
 
-        private const float RowHeight = 40f;
+        private const float RowHeight = 62f;
         private const float HeaderHeight = 44f;
         private const float Padding = 10f;
 

@@ -55,10 +55,10 @@ namespace OJ.Hunting
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             float duration = DiceMetaDataProvider.GetSlowDuration(DiceType, level);
-            target.ApplySlow(duration);
-            target.ApplySlow(duration);
+            target.ApplySlow(duration, 0.8f, DiceType);
+            target.ApplySlow(duration, 0.8f, DiceType);
             if (level >= 9)
-                target.ApplyStun(1f);
+                target.ApplyStun(1f, DiceType);
         }
     }
 }

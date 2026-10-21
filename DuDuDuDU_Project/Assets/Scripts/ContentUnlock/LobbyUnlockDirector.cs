@@ -5,6 +5,10 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
+using OJ.Dice;
+using OJ.IdleReward;
+using OJ.Lobby;
+using OJ.Tower;
 using OJ.DI;
 using OJ.Tutorial;
 using OJ.UI;
@@ -34,6 +38,12 @@ namespace OJ.ContentUnlock
         /// <summary>누른 뒤 화면이 열리고 자리를 잡을 때까지. 열리는 연출 위에 말풍선이 겹치면 어색하다.</summary>
         private const float SettleSeconds = 0.35f;
 
+        /// <summary>홈으로 돌아온 뒤 다음 가이드를 걸기까지 잠깐 쉰다. 화면 전환 연출과 겹치지 않게.</summary>
+        private const float ChainRestSeconds = 0.6f;
+
+        /// <summary>고기 축제 가이드 때 채워 두는 세트 수. 한 세트가 고기 30개다(<c>IdleRewardManager.MeatPerSet</c>).</summary>
+        private const int GuideMeatSets = 1;
+
         private readonly LobbyContentGate gate;
         private UITutorialOverlay overlay;
         private CancellationToken token;
@@ -53,8 +63,43 @@ namespace OJ.ContentUnlock
 
             List<ContentUnlockDefinition> queue = manager.GetVisitQueue();
             if (queue.Count == 0)
-                return;
+            {
+                // 연출이 남아 있지 않은 진입에서만 킹 다이스 강화 안내를 한다.
+                if (ShouldGuideKingUpgrade())
+                    await KingUpgradeGuideAsync();
 
+                return;
+            }
+
+            try
+            {
+                while (queue.Count > 0)
+                {
+                    await RunQueueAsync(manager, queue);
+
+                    // 가이드에서 끊긴 뒤에도 남은 연출이 있으면, 유저가 가이드로 연 화면을 닫고 홈으로 돌아왔을 때
+                    // 이어서 보여 준다. 예전에는 다음 로비 진입까지 안 나와서 "다이스를 보고 왔는데 고기 축제 가이드가
+                    // 안 나온다" 로 보였다. 두 가이드가 연달아 뜨지는 않는다 — 홈으로 돌아와야 다음이 나온다.
+                    queue = manager.GetVisitQueue();
+                    if (queue.Count == 0)
+                        break;
+
+                    await UniTask.WaitUntil(() => LobbyLayoutController.CurrentTab == LobbyTab.Home,
+                        PlayerLoopTiming.Update, token);
+
+                    float rest = Time.unscaledTime + ChainRestSeconds;
+                    await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 로비가 내려갔다. 기록하지 않은 것은 다음 진입에 다시 나온다.
+            }
+        }
+
+        /// <summary>대기열 한 판. 화면(오버레이)을 열고 표 순서대로 보여 준 뒤 닫는다.</summary>
+        private async UniTask RunQueueAsync(ContentUnlockManager manager, List<ContentUnlockDefinition> queue)
+        {
             try
             {
                 // 한 프레임 미룬다. 입구들의 Start 와 레이아웃이 자리를 잡은 뒤에 재야 구멍이 맞는다.
@@ -80,6 +125,10 @@ namespace OJ.ContentUnlock
 
                 foreach (ContentUnlockDefinition d in queue)
                 {
+                    // 고기 축제는 "눌러서 받아요" 를 가르치는 가이드라 받을 게 있어야 한다. 한 세트(30개)를 채워 둔다.
+                    if (d.contentId == ContentId.MeatFestival)
+                        IdleRewardManager.Instance?.EnsureMeatSets(GuideMeatSets);
+
                     await AnnounceAsync(d);
 
                     if (d.presentation == UnlockPresentation.Guide)
@@ -88,10 +137,6 @@ namespace OJ.ContentUnlock
                     overlay.ClearAll();
                     manager.MarkAnnounced(d.contentId);
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                // 로비가 내려갔다. 기록하지 않은 것은 다음 진입에 다시 나온다.
             }
             finally
             {
@@ -165,6 +210,172 @@ namespace OJ.ContentUnlock
 
             overlay.SetTalk(d.guideDetailText, tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
             await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
+
+            if (d.contentId == ContentId.Tower && ShouldGuideTowerLoadout())
+                await TowerLoadoutGuideAsync(d);
+        }
+
+        // ── 탑 1층: 킹 썬더 장착 ────────────────────────────────────────
+
+        /// <summary>킹 썬더가 있는데 탑을 한 번도 안 깼을 때만 — 장착을 눌러 보게 하는 첫 안내다.</summary>
+        private static bool ShouldGuideTowerLoadout()
+        {
+            TowerProgressManager tower = TowerProgressManager.Instance;
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+            return tower != null && ownership != null
+                && tower.HighestClearedFloor == 0 && ownership.IsOwned(DiceType.KingThunder);
+        }
+
+        private async UniTask TowerLoadoutGuideAsync(ContentUnlockDefinition d)
+        {
+            UITowerFloorSelectDialog floorSelect = GameContainer.UI?.Get<UITowerFloorSelectDialog>();
+            Button challenge = floorSelect != null ? floorSelect.ChallengeButton : null;
+            if (challenge == null)
+            {
+                Debug.LogError("[해금] 탑 도전 버튼을 못 찾아 편성 가이드를 건너뛴다.");
+                return;
+            }
+
+            bool clicked = false;
+            void OnClick() => clicked = true;
+            challenge.onClick.AddListener(OnClick);
+            try
+            {
+                overlay.SetFinger(challenge.transform as RectTransform);
+                overlay.SetDim(challenge.transform as RectTransform);
+                overlay.SetTalk("1층에 도전해 볼까요?");
+                await UniTask.WaitUntil(() => clicked, PlayerLoopTiming.Update, token);
+            }
+            finally
+            {
+                if (challenge != null)
+                    challenge.onClick.RemoveListener(OnClick);
+            }
+
+            overlay.SetFinger(null);
+            overlay.SetDim();
+            overlay.SetTalk(null);
+
+            UITowerLoadoutDialog loadout = GameContainer.UI?.Get<UITowerLoadoutDialog>();
+            if (loadout == null)
+                return;
+
+            await UniTask.WaitUntil(() => loadout.isEnter, PlayerLoopTiming.Update, token);
+
+            // 추천 편성이 킹 썬더를 끼워 놓았으면 빼서, 유저가 직접 눌러 끼우게 한다.
+            loadout.ClearForGuide(DiceType.KingThunder);
+
+            float settle = Time.unscaledTime + SettleSeconds;
+            await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
+
+            RectTransform cell = loadout.GuideCellRect(DiceType.KingThunder);
+            if (cell == null)
+            {
+                Debug.LogError("[해금] 편성 화면에서 킹 썬더 칸을 못 찾아 가이드를 건너뛴다.");
+                return;
+            }
+
+            overlay.SetDim(cell);
+            overlay.SetFinger(cell);
+            overlay.SetTalk("<b>킹 썬더</b>를 눌러 장착해요!\n신화 다이스는 강력해요.");
+            await UniTask.WaitUntil(() => loadout.IsEquipped(DiceType.KingThunder) || !loadout.isEnter,
+                PlayerLoopTiming.Update, token);
+
+            // 장착까지 봤으면 여기서 기록한다 — 이어지는 출발은 씬이 바뀌어 이 코드가 끝까지 못 간다.
+            ContentUnlockManager.Instance?.MarkAnnounced(d.contentId);
+
+            if (!loadout.isEnter)
+                return;
+
+            Button start = loadout.StartButton;
+            if (start == null)
+                return;
+
+            bool started = false;
+            void OnStart() => started = true;
+            start.onClick.AddListener(OnStart);
+            try
+            {
+                overlay.SetDim(start.transform as RectTransform);
+                overlay.SetFinger(start.transform as RectTransform);
+                overlay.SetTalk("좋아요! 전투를 시작해요.");
+                await UniTask.WaitUntil(() => started || !loadout.isEnter, PlayerLoopTiming.Update, token);
+            }
+            finally
+            {
+                if (start != null)
+                    start.onClick.RemoveListener(OnStart);
+            }
+        }
+
+        // ── 탑 1층 클리어 뒤: 킹 다이스 강화 ────────────────────────────
+
+        private static bool ShouldGuideKingUpgrade()
+        {
+            TowerProgressManager tower = TowerProgressManager.Instance;
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+            return tower != null && ownership != null && !tower.KingUpgradeGuideDone
+                && tower.HighestClearedFloor >= 1 && ownership.IsOwned(DiceType.KingThunder);
+        }
+
+        /// <summary>1층 보상으로 받은 신화석으로 킹 썬더를 강화해 보게 한다. 다이스 탭을 눌러 열고 한 마디 한다.</summary>
+        private async UniTask KingUpgradeGuideAsync()
+        {
+            Button tab = gate != null ? gate.ButtonOf(ContentId.Dice) : null;
+            RectTransform target = gate != null ? gate.TargetOf(ContentId.Dice) : null;
+            if (tab == null || target == null)
+                return;
+
+            try
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+
+                overlay = GameContainer.UI?.Get<UITutorialOverlay>();
+                if (overlay == null)
+                    return;
+
+                overlay.Enter();
+                overlay.SetFinger(target);
+                overlay.SetDim(target);
+                overlay.SetTalk("탑 보상으로 <b>신화석</b>을 받았어요!\n다이스에서 킹 썬더를 강화해 봐요.");
+
+                bool clicked = false;
+                void OnClick() => clicked = true;
+                tab.onClick.AddListener(OnClick);
+                try
+                {
+                    await UniTask.WaitUntil(() => clicked, PlayerLoopTiming.Update, token);
+                }
+                finally
+                {
+                    if (tab != null)
+                        tab.onClick.RemoveListener(OnClick);
+                }
+
+                overlay.SetFinger(null);
+                overlay.SetDim();
+                overlay.SetTalk(null);
+
+                float settle = Time.unscaledTime + SettleSeconds;
+                await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
+
+                overlay.SetTalk("<b>킹 썬더</b>를 눌러 신화석으로 강화하면\n탑과 전투에서 훨씬 강해져요!",
+                    tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
+                await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
+
+                TowerProgressManager.Instance?.MarkKingUpgradeGuideDone();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                if (overlay != null)
+                {
+                    overlay.ClearAll();
+                    overlay.Exit();
+                }
+            }
         }
 
         /// <summary>0 → 1.3 → 1. 배율만 쓴다 — 입구 대부분이 레이아웃 아래라 위치를 쓰면 배치가 무너진다(UIAppear 주석).</summary>

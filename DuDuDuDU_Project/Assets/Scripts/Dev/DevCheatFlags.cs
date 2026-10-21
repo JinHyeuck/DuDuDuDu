@@ -15,6 +15,7 @@ namespace OJ.Dev
     {
         /// <summary>벽이 피해를 받지 않는다. 전투 밖에서 미리 켜 둘 수 있다.</summary>
         internal static bool WallInvincible { get; set; }
+
     }
 }
 #endif

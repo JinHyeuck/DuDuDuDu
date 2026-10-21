@@ -2,11 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
+using Cysharp.Threading.Tasks;
 using VContainer;
 using VContainer.Unity;
 using OJ.Core;
 using OJ.DI;
-using OJ.Dev;
 using OJ.Relic;
 
 namespace OJ.Dice
@@ -45,11 +45,21 @@ namespace OJ.Dice
         private GameObject[] slotLockOverlays;
         private TMP_Text[] slotLockLabels;
 
+        // ── 탑 연동 잠금 ────────────────────────────────────────────
+        // 스테이지에 비해 탑이 뒤처지면 맨 아래 줄은 SP 로도 못 연다(TowerGateRules). 전투 시작 때 확정한다.
+        private int gateStartIndex = int.MaxValue;
+        private int gateRequiredFloor;
+        private int gateClearedFloor;
+        private TMP_Text gateNoticeText;
+        private bool towerRunSealed;
+        private readonly List<GameObject> sealFx = new();
+        private float gateNoticeUntil;
+
         /// <summary>자리 해금 모드가 이 판에 걸려 있는가.</summary>
         public bool IsSlotLockActive => slotLockActive;
 
         /// <summary>다음 자리를 열 때 드는 SP.</summary>
-        public int NextSlotUnlockCost => TestModeRules.SlotUnlockCost(purchasedSlotCount);
+        public int NextSlotUnlockCost => SlotUnlockRules.Cost(purchasedSlotCount);
 
         private void Start()
         {
@@ -246,72 +256,6 @@ namespace OJ.Dice
             return true;
         }
 
-        // ── 카드 상점이 쓰는 조회 ────────────────────────────────────
-
-        /// <summary>보드에 (type, star) 다이스가 몇 개 있는가.</summary>
-        public int CountDice(DiceType type, int star)
-        {
-            if (diceMap == null)
-                return 0;
-
-            int count = 0;
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                UIDice dice = diceMap[i];
-                if (dice != null && dice.Type == type && dice.Star == star)
-                    count++;
-            }
-
-            return count;
-        }
-
-        /// <summary>(type, star) 다이스 하나. <paramref name="exclude"/> 는 건너뛴다. 없으면 null.</summary>
-        public UIDice FindDice(DiceType type, int star, UIDice exclude = null)
-        {
-            if (diceMap == null)
-                return null;
-
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                UIDice dice = diceMap[i];
-                if (dice != null && dice != exclude && dice.Type == type && dice.Star == star)
-                    return dice;
-            }
-
-            return null;
-        }
-
-        /// <summary>열려 있는 빈 칸이 하나라도 있는가. 카드가 지금 살 수 있는지 매 프레임 묻는 용도다.</summary>
-        public bool HasEmptyUnlockedSlot()
-        {
-            if (diceMap == null)
-                return false;
-
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                if (diceMap[i] == null && IsSlotUnlocked(i))
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>열려 있는 빈 칸 중 아무 칸. 없으면 -1.</summary>
-        public int GetRandomEmptyUnlockedSlot()
-        {
-            if (diceMap == null)
-                return -1;
-
-            var empty = new List<int>();
-            for (int i = 0; i < diceMap.Length; i++)
-            {
-                if (diceMap[i] == null && IsSlotUnlocked(i))
-                    empty.Add(i);
-            }
-
-            return empty.Count > 0 ? empty[Random.Range(0, empty.Count)] : -1;
-        }
-
         // ── 자리 해금 ──────────────────────────────────────────────
 
         /// <summary>
@@ -326,7 +270,16 @@ namespace OJ.Dice
             if (slotIndex < 0 || slotIndex >= slotUnlocked.Length)
                 return false;
 
+            if (IsTowerGated(slotIndex))
+                return false;
+
             return slotIndex < freeSlotCount || slotUnlocked[slotIndex];
+        }
+
+        /// <summary>탑 진행이 모자라 SP 로도 못 여는 칸인가.</summary>
+        public bool IsTowerGated(int slotIndex)
+        {
+            return slotLockActive && slotIndex >= gateStartIndex;
         }
 
         /// <summary>
@@ -340,6 +293,13 @@ namespace OJ.Dice
 
             if (battle.Game == null || !battle.Game.CanManageBoard)
                 return false;
+
+            // SP 는 건드리지 않고 이유만 알려 준다.
+            if (IsTowerGated(slotIndex))
+            {
+                ShowGateNotice();
+                return false;
+            }
 
             int cost = NextSlotUnlockCost;
             if (battle.BattlePoints == null
@@ -363,18 +323,21 @@ namespace OJ.Dice
 
         private void SetUpSlotLocks(int total)
         {
-            slotLockActive = TestModeFlags.SlotUnlock
-                && !battle.Tutorial.IsActive
-                && !battle.Tower.IsActive;
+            // 자리구매는 정식 규칙이다. 탑(편성이 곧 배치다)만 뺀다.
+            // 튜토리얼도 켜 둔다 — 자리 구매를 가르친다. 대본 소환은 무료인 첫 줄에만 놓는다(TutorialStage).
+            //
+            // 단, 탑 판이라도 스테이지에 비해 탑이 뒤처져 봉인된 조건이면(TowerGateRules) 맨 아래 줄을
+            // 막은 채 시작한다. 본편과 같은 규칙이고, 이 판을 깨면 봉인이 풀리는 장면이 나온다(TowerSealDirector).
+            towerRunSealed = IsTowerRunSealed();
+            slotLockActive = !battle.Tower.IsActive || towerRunSealed;
 
             purchasedSlotCount = 0;
             if (!slotLockActive)
                 return;
 
             // 첫 줄은 열려 있다. 한 줄의 칸 수는 그리드 설정(고정 열 수)이 정본이다.
-            freeSlotCount = grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount
-                ? grid.constraintCount
-                : cols;
+            int columns = BottomRowColumns();
+            freeSlotCount = towerRunSealed && total >= columns ? total - columns : columns;
 
             slotUnlocked = new bool[total];
             slotLockOverlays = new GameObject[total];
@@ -387,10 +350,311 @@ namespace OJ.Dice
             for (int i = freeSlotCount; i < total; i++)
                 CreateLockOverlay(i, font);
 
+            SetUpTowerGate(total);
+
             RefreshSlotLockLabels();
 
             battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
             battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
+        }
+
+        private void SetUpTowerGate(int total)
+        {
+            gateStartIndex = int.MaxValue;
+
+            if (towerRunSealed)
+            {
+                // 봉인된 탑 판: 맨 아래 줄(freeSlotCount 이후 전부)이 봉인된 채 시작한다.
+                gateStartIndex = freeSlotCount;
+                for (int i = gateStartIndex; i < total; i++)
+                {
+                    if (slotLockLabels[i] == null)
+                        continue;
+
+                    slotLockLabels[i].text = "봉인";
+                    slotLockLabels[i].color = new Color(1f, 0.82f, 0.3f);
+                }
+
+                return;
+            }
+
+            // 튜토리얼은 가르치는 중이라 잠그지 않는다.
+            if (battle.Tutorial != null && battle.Tutorial.IsActive)
+                return;
+
+            int stage = OJ.Stage.StageProgressManager.Instance != null
+                ? OJ.Stage.StageProgressManager.Instance.GetSelectedStageIndex()
+                : 1;
+            gateClearedFloor = OJ.Tower.TowerProgressManager.Instance != null
+                ? OJ.Tower.TowerProgressManager.Instance.HighestClearedFloor
+                : 0;
+            gateRequiredFloor = TowerGateRules.RequiredTowerFloor(stage);
+
+            if (!TowerGateRules.IsBottomRowLocked(stage, gateClearedFloor))
+                return;
+
+            // 한 줄의 칸 수는 그리드 설정이 정본이다. 맨 아래 줄 전체를 막는다.
+            int columns = BottomRowColumns();
+            if (!TowerGateRules.IsBottomRowSlot(total - 1, total, columns))
+                return;
+
+            gateStartIndex = total - columns;
+
+            for (int i = gateStartIndex; i < total; i++)
+            {
+                if (i < freeSlotCount || slotLockLabels[i] == null)
+                    continue;
+
+                slotLockLabels[i].text = "탑\n" + gateRequiredFloor + "층";
+                slotLockLabels[i].color = new Color(1f, 0.82f, 0.3f);
+            }
+        }
+
+        /// <summary>한 줄의 칸 수. 그리드 설정(고정 열 수)이 정본이고, 없으면 <see cref="cols"/>.</summary>
+        private int BottomRowColumns()
+        {
+            return grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount
+                ? grid.constraintCount
+                : cols;
+        }
+
+        /// <summary>
+        /// 이 탑 판의 맨 아래 줄이 봉인된 조건인가. 본편과 같은 규칙이다 — 지금 도전 가능한 최고 스테이지가 요구하는
+        /// 탑 층을 아직 못 깼으면 봉인한다. 탑 판에서도 풀어야 하는 이유(이 층을 깨야 풀린다)를 그대로 보여 준다.
+        /// </summary>
+        private bool IsTowerRunSealed()
+        {
+            if (!battle.Tower.IsActive)
+                return false;
+
+            OJ.Tower.TowerProgressManager tower = OJ.Tower.TowerProgressManager.Instance;
+            OJ.Stage.StageProgressManager stage = OJ.Stage.StageProgressManager.Instance;
+            if (tower == null || stage == null)
+                return false;
+
+            int frontierStage = stage.GetHighestUnlockedStageIndex();
+            gateClearedFloor = tower.HighestClearedFloor;
+            gateRequiredFloor = TowerGateRules.RequiredTowerFloor(frontierStage);
+            return TowerGateRules.IsBottomRowLocked(frontierStage, gateClearedFloor);
+        }
+
+        // ── 봉인 연출(TowerSealDirector 가 부른다) ─────────────────────
+
+        /// <summary>맨 아래 줄을 봉인하는 장면. 칸마다 어두운 판이 시차를 두고 쾅 내려앉는다.</summary>
+        public async UniTask PlaySealVisualAsync(string label)
+        {
+            ClearSealFx();
+            var token = this.GetCancellationTokenOnDestroy();
+
+            int total = slots.Count;
+            int columns = BottomRowColumns();
+            int first = total - columns;
+            if (columns <= 0 || first < 0)
+                return;
+
+            var panels = new List<GameObject>();
+            for (int i = first; i < total; i++)
+            {
+                GameObject panel = CreateSealPanel(i, label);
+                panel.GetComponent<CanvasGroup>().alpha = 0f;
+                panels.Add(panel);
+                sealFx.Add(panel);
+            }
+
+            const float stagger = 0.06f;
+            const float duration = 0.25f;
+            float start = Time.unscaledTime;
+            float end = panels.Count * stagger + duration;
+
+            while (Time.unscaledTime - start < end)
+            {
+                float elapsed = Time.unscaledTime - start;
+                for (int i = 0; i < panels.Count; i++)
+                {
+                    if (panels[i] == null)
+                        continue;
+
+                    float p = Mathf.Clamp01((elapsed - i * stagger) / duration);
+                    float eased = OJ.UI.UIEase.OutQuad(p);
+                    panels[i].GetComponent<CanvasGroup>().alpha = eased;
+                    panels[i].transform.localScale = Vector3.one * Mathf.Lerp(1.8f, 1f, eased);
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            for (int i = 0; i < panels.Count; i++)
+            {
+                if (panels[i] == null)
+                    continue;
+
+                panels[i].GetComponent<CanvasGroup>().alpha = 1f;
+                panels[i].transform.localScale = Vector3.one;
+            }
+        }
+
+        /// <summary>
+        /// 맨 아래 줄의 봉인이 풀리는 장면. 이 판에 봉인(탑 첫 판의 잠금)이 걸려 있으면 그것을, 아니면
+        /// <see cref="PlaySealVisualAsync"/> 가 깐 판을, 그것도 없으면 방금 봉인판을 깔았다가 깬다.
+        /// </summary>
+        public async UniTask PlayReleaseVisualAsync(string label)
+        {
+            var token = this.GetCancellationTokenOnDestroy();
+            var targets = new List<GameObject>();
+
+            if (gateStartIndex != int.MaxValue && slotLockOverlays != null)
+            {
+                for (int i = gateStartIndex; i < slotLockOverlays.Length; i++)
+                {
+                    if (slotLockOverlays[i] != null)
+                        targets.Add(slotLockOverlays[i]);
+
+                    slotLockOverlays[i] = null;
+                    slotLockLabels[i] = null;
+                    slotUnlocked[i] = true;
+                }
+
+                gateStartIndex = int.MaxValue;
+                towerRunSealed = false;
+            }
+
+            if (sealFx.Count > 0)
+            {
+                targets.AddRange(sealFx);
+                sealFx.Clear();
+            }
+
+            if (targets.Count == 0)
+            {
+                int total = slots.Count;
+                int first = total - BottomRowColumns();
+                for (int i = Mathf.Max(0, first); i < total; i++)
+                    targets.Add(CreateSealPanel(i, label));
+
+                float settle = Time.unscaledTime + 0.3f;
+                while (Time.unscaledTime < settle)
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            // 부르르 떨다가 커지며 사라진다.
+            foreach (GameObject target in targets)
+            {
+                if (target != null && target.GetComponent<CanvasGroup>() == null)
+                    target.AddComponent<CanvasGroup>();
+            }
+
+            const float shake = 0.25f;
+            const float fade = 0.35f;
+            float start = Time.unscaledTime;
+            while (Time.unscaledTime - start < shake + fade)
+            {
+                float elapsed = Time.unscaledTime - start;
+                bool shaking = elapsed < shake;
+                float p = shaking ? 0f : Mathf.Clamp01((elapsed - shake) / fade);
+
+                foreach (GameObject target in targets)
+                {
+                    if (target == null)
+                        continue;
+
+                    var rect = (RectTransform)target.transform;
+                    rect.anchoredPosition = shaking
+                        ? new Vector2(Mathf.Sin(elapsed * 90f) * 6f, 0f)
+                        : Vector2.zero;
+                    rect.localScale = Vector3.one * Mathf.Lerp(1f, 1.3f, p);
+                    target.GetComponent<CanvasGroup>().alpha = 1f - p;
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            foreach (GameObject target in targets)
+            {
+                if (target != null)
+                    Destroy(target);
+            }
+        }
+
+        private GameObject CreateSealPanel(int slotIndex, string label)
+        {
+            var panel = new GameObject("SealFx", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            var rect = (RectTransform)panel.transform;
+            rect.SetParent(slots[slotIndex].transform, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0.12f, 0.05f, 0.18f, 0.92f);
+
+            var labelObject = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            var labelRect = (RectTransform)labelObject.transform;
+            labelRect.SetParent(rect, false);
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            var text = labelObject.GetComponent<TextMeshProUGUI>();
+            if (battle.Summon != null && battle.Summon.spText != null)
+                text.font = battle.Summon.spText.font;
+            text.alignment = TextAlignmentOptions.Center;
+            text.fontSize = 30f;
+            text.color = new Color(1f, 0.82f, 0.3f);
+            text.text = label;
+            text.raycastTarget = false;
+            return panel;
+        }
+
+        private void ClearSealFx()
+        {
+            foreach (GameObject panel in sealFx)
+            {
+                if (panel != null)
+                    Destroy(panel);
+            }
+
+            sealFx.Clear();
+        }
+
+        private void ShowGateNotice()
+        {
+            if (gateNoticeText == null)
+            {
+                var obj = new GameObject("TowerGateNotice", typeof(RectTransform), typeof(TextMeshProUGUI));
+                var rect = (RectTransform)obj.transform;
+                rect.SetParent(grid.transform.parent, false);
+                rect.anchorMin = new Vector2(0f, 1f);
+                rect.anchorMax = new Vector2(1f, 1f);
+                rect.pivot = new Vector2(0.5f, 1f);
+                rect.anchoredPosition = Vector2.zero;
+                rect.sizeDelta = new Vector2(0f, 60f);
+
+                gateNoticeText = obj.GetComponent<TextMeshProUGUI>();
+                if (battle.Summon != null && battle.Summon.spText != null)
+                    gateNoticeText.font = battle.Summon.spText.font;
+                gateNoticeText.alignment = TextAlignmentOptions.Center;
+                gateNoticeText.fontSize = 32f;
+                gateNoticeText.color = new Color(1f, 0.82f, 0.3f);
+                gateNoticeText.raycastTarget = false;
+            }
+
+            // 탑 판에서는 이 층을 깨는 것으로 요구가 채워질 때만 "이 층을 클리어하면" 이라고 말한다.
+            bool thisFloorReleases = towerRunSealed && gateClearedFloor + 1 >= gateRequiredFloor;
+            gateNoticeText.text = thisFloorReleases
+                ? "이 층을 클리어하면 봉인이 풀려요!"
+                : "무한의 탑 " + gateRequiredFloor + "층을 클리어하면 열려요 (현재 " + gateClearedFloor + "층)";
+            gateNoticeText.gameObject.SetActive(true);
+            gateNoticeUntil = Time.unscaledTime + 2f;
+            HideGateNoticeLater().Forget();
+        }
+
+        private async UniTaskVoid HideGateNoticeLater()
+        {
+            while (gateNoticeText != null && Time.unscaledTime < gateNoticeUntil)
+                await UniTask.Yield();
+
+            if (gateNoticeText != null && Time.unscaledTime >= gateNoticeUntil)
+                gateNoticeText.gameObject.SetActive(false);
         }
 
         private void CreateLockOverlay(int slotIndex, TMP_FontAsset font)
@@ -446,7 +710,7 @@ namespace OJ.Dice
 
             for (int i = 0; i < slotLockLabels.Length; i++)
             {
-                if (slotLockLabels[i] == null)
+                if (slotLockLabels[i] == null || i >= gateStartIndex)
                     continue;
 
                 slotLockLabels[i].text = cost + "\nSP";

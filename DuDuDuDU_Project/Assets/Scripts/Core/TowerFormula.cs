@@ -43,13 +43,13 @@ namespace OJ.Core
         /// <summary>스페셜 슬롯 수.</summary>
         public const int SpecialSlotCount = 2;
 
-        /// <summary>기본 다이스 슬롯 수. 1·2·3·4성 각 1개라 성급 수와 같다.</summary>
-        public const int BaseSlotCount = 4;
+        /// <summary>기본 다이스 슬롯 수. 1·2·3성 각 1개라 성급 수와 같다(4성은 폐지됐다).</summary>
+        public const int BaseSlotCount = 3;
 
-        /// <summary>기본 다이스 슬롯의 최고 성급. 4성 슬롯이 있다는 뜻이다.</summary>
+        /// <summary>기본 다이스 슬롯의 최고 성급. 3성이 마지막이다(머지 최고 성급과 같다).</summary>
         public const int MaxBaseStar = BaseSlotCount;
 
-        /// <summary>편성 슬롯 총합. 기획서 "최대 7개 = 기본 4(고정) + 스페셜 2 + 신화 1".</summary>
+        /// <summary>편성 슬롯 총합. 기획서 "최대 6개 = 기본 3(고정) + 스페셜 2 + 신화 1".</summary>
         public const int TotalSlotCount = MythicSlotCount + SpecialSlotCount + BaseSlotCount;
 
         // ── 층 → 구간 ───────────────────────────────────────────────────
@@ -252,6 +252,9 @@ namespace OJ.Core
         {
             return 10 + (BandOf(floor) - 1) * 2;
         }
+
+        /// <summary>1층 첫 클리어로 주는 신화석. 킹 썬더를 처음 키워 보게 하는 재료다(2026-10-20).</summary>
+        public const int FirstFloorMythicStone = 10;
 
         /// <summary>
         /// 구간 마지막 층이 주는 <b>다이스 재료</b>의 양. 어떤 재화로 낼지는 여기서 정하지 않는다

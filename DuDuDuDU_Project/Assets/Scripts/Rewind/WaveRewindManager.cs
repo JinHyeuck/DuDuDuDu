@@ -482,7 +482,7 @@ namespace OJ.Rewind
             // ChangeState 는 Wave 로 들어갈 때만 WaveIndex 를 올리므로, Setting 으로
             // 부르면 위에서 되돌린 번호가 그대로 살아남는다. 관리 단계 UI 와 배속(1)도
             // 여기서 한꺼번에 제자리로 온다.
-            game.ChangeState(InGameState.Setting);
+            game.EnterAfterRewind();
         }
 
         /// <summary>

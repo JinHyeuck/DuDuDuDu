@@ -259,65 +259,66 @@ namespace OJ.Core
         {
             return new List<ContentUnlockDefinition>
             {
-                // 튜토리얼 직후
+                // 0클리어 — 튜토리얼 직후. 가이드(다이스)에서 끊기므로 고기 축제 가이드는 다음 진입에 나온다.
                 new ContentUnlockDefinition(ContentId.Dice, 0, UnlockPresentation.Guide,
                     "다이스", "다이스를 강화하면\n전투에서 더 강해져요.",
                     "튜토리얼에서 얻은 다이스를 보러 가요!",
                     "여기서 다이스를 강화하고\n새 다이스를 열 수 있어요."),
-
-                // 1클리어
-                new ContentUnlockDefinition(ContentId.StageReward, 1, UnlockPresentation.Quiet,
+                new ContentUnlockDefinition(ContentId.StageReward, 0, UnlockPresentation.Quiet,
                     "스테이지 보상", "스테이지를 깨면 보상을 받아요."),
+                new ContentUnlockDefinition(ContentId.StageStar, 0, UnlockPresentation.Quiet,
+                    "별의 축제", "별을 모으면 보상을 받아요."),
+                new ContentUnlockDefinition(ContentId.MeatFestival, 0, UnlockPresentation.Guide,
+                    "고기 축제", "시간이 지나면 고기가 구워져요.\n눌러서 받아요!",
+                    "고기가 구워졌어요! 눌러 보세요.",
+                    "고기는 시간이 지나면 쌓여요.\n가득 차기 전에 받아 가요."),
+
+                // 1클리어 — 연출(방치 보상)을 가이드(장비)보다 앞에 둬야 한 번에 나온다.
+                new ContentUnlockDefinition(ContentId.IdleReward, 1, UnlockPresentation.Announce,
+                    "방치 보상", "게임을 꺼 둬도 보상이 쌓여요.\n자주 받으러 와요!"),
                 new ContentUnlockDefinition(ContentId.Equipment, 1, UnlockPresentation.Guide,
                     "장비", "장비를 강화하면 다이스가 더 세져요.",
                     "장비가 열렸어요! 눌러 보세요.",
                     "골드로 장비를 강화하면\n모든 다이스의 공격력이 올라요."),
 
                 // 2클리어
-                new ContentUnlockDefinition(ContentId.StageStar, 2, UnlockPresentation.Quiet,
-                    "별의 축제", "별을 모으면 보상을 받아요."),
-                new ContentUnlockDefinition(ContentId.IdleReward, 2, UnlockPresentation.Announce,
-                    "방치 보상", "게임을 꺼 둬도 보상이 쌓여요.\n자주 받으러 와요!"),
-
-                // 3클리어 — 받기(고기) 먼저, 쓰기(소탕) 다음. 7일은 가이드 뒤라 다음 진입에 나온다.
-                new ContentUnlockDefinition(ContentId.MeatFestival, 3, UnlockPresentation.Announce,
-                    "고기 축제", "시간이 지나면 고기가 구워져요.\n눌러서 받아요!"),
-                new ContentUnlockDefinition(ContentId.Sweep, 3, UnlockPresentation.Guide,
-                    "소탕", "깬 스테이지의 보상을 바로 받아요.",
-                    "소탕이 열렸어요! 눌러 보세요.",
-                    "고기를 써서 깬 스테이지 보상을\n전투 없이 받아요."),
-                new ContentUnlockDefinition(ContentId.SpecialSevenDays, 3, UnlockPresentation.Announce,
-                    "특별한 7일", "7일 동안 매일 보석을 받아요."),
-
-                // 4클리어 — 연출(퀘스트)을 가이드(핀볼)보다 앞에 둬야 한 번에 나온다.
-                new ContentUnlockDefinition(ContentId.Quest, 4, UnlockPresentation.Announce,
-                    "퀘스트", "미션을 깨고 보상을 받아요."),
-                new ContentUnlockDefinition(ContentId.Pinball, 4, UnlockPresentation.Guide,
+                new ContentUnlockDefinition(ContentId.Pinball, 2, UnlockPresentation.Guide,
                     "핀볼", "티켓으로 핀볼을 굴려\n고기와 보상을 받아요.",
                     "핀볼이 열렸어요! 눌러 보세요.",
                     "티켓으로 공을 쏘면\n맞힌 핀만큼 보상을 받아요."),
 
-                // 5클리어
-                new ContentUnlockDefinition(ContentId.Membership, 5, UnlockPresentation.Quiet,
+                // 3클리어 — 킹 썬더가 열리는 스테이지. 클리어 직후 아랫줄이 봉인되고(TowerSealDirector)
+                // 탑 1층을 깨야 풀린다. 연출(퀘스트)을 가이드(탑)보다 앞에 둔다.
+                new ContentUnlockDefinition(ContentId.Quest, 3, UnlockPresentation.Announce,
+                    "퀘스트", "미션을 깨고 보상을 받아요."),
+                new ContentUnlockDefinition(ContentId.Tower, 3, UnlockPresentation.Guide,
+                    "무한의 탑", "층을 올라 킹 다이스를 얻어요.\n봉인된 아랫줄도 탑에서 풀어요.",
+                    "무한의 탑이 열렸어요! 눌러 보세요.",
+                    "1층을 깨면 봉인이 풀려요.\n층을 깰수록 보상이 커지고,\n정해진 층에서 킹 다이스가 열려요."),
+
+                // 4클리어
+                new ContentUnlockDefinition(ContentId.Membership, 4, UnlockPresentation.Quiet,
                     "멤버십", "멤버십 혜택을 받아요."),
+                new ContentUnlockDefinition(ContentId.SpecialSevenDays, 4, UnlockPresentation.Quiet,
+                    "특별한 7일", "7일 동안 매일 보석을 받아요."),
+                new ContentUnlockDefinition(ContentId.Sweep, 4, UnlockPresentation.Guide,
+                    "소탕", "깬 스테이지의 보상을 바로 받아요.",
+                    "소탕이 열렸어요! 눌러 보세요.",
+                    "고기를 써서 깬 스테이지 보상을\n전투 없이 받아요."),
+
+                // 5클리어
+                new ContentUnlockDefinition(ContentId.SeasonPass, 5, UnlockPresentation.Quiet,
+                    "시즌 패스", "고기를 쓰면 패스가 올라\n보상을 받아요."),
                 new ContentUnlockDefinition(ContentId.Shop, 5, UnlockPresentation.Guide,
                     "상점", "보석을 뽑아 장비에 끼워요.",
                     "상점이 열렸어요! 눌러 보세요.",
                     "보석을 뽑아서 장비 칸에 끼우면\n능력치가 올라요."),
-                new ContentUnlockDefinition(ContentId.SeasonPass, 5, UnlockPresentation.Announce,
-                    "시즌 패스", "고기를 쓰면 패스가 올라\n보상을 받아요."),
 
-                // 7클리어
-                new ContentUnlockDefinition(ContentId.Relic, 7, UnlockPresentation.Guide,
+                // 6클리어
+                new ContentUnlockDefinition(ContentId.Relic, 6, UnlockPresentation.Guide,
                     "유물", "유물을 소환해\n전투를 유리하게 만들어요.",
                     "유물이 열렸어요! 눌러 보세요.",
                     "유물은 전투 내내 효과를 줘요.\n소환하고 레벨을 올려 봐요."),
-
-                // 10클리어
-                new ContentUnlockDefinition(ContentId.Tower, 10, UnlockPresentation.Guide,
-                    "무한의 탑", "층을 올라 킹 다이스를 얻어요.",
-                    "무한의 탑이 열렸어요! 눌러 보세요.",
-                    "층을 깰수록 보상이 커지고,\n정해진 층에서 킹 다이스가 열려요."),
             };
         }
     }

@@ -27,7 +27,7 @@ namespace OJ.Dice
     /// 원하는 상위 다이스 하나를 얻으려고 서로 다른 두 계통을 동시에 키워야 했고,
     /// 그것이 게임을 시작하기 전에 넘어야 하는 허들이 됐다.
     ///
-    /// 이제는 <b>한 줄기다.</b> 기본 다이스를 4성까지 머지하면 그 다이스 하나만으로
+    /// 이제는 <b>한 줄기다.</b> 기본 다이스를 3성까지 머지하면 그 다이스 하나만으로
     /// 재화를 내고 다음 단계로 올라간다. 재료 조합이 없으므로 배선도 1:1 이다.
     ///
     /// <code>
@@ -70,8 +70,12 @@ namespace OJ.Dice
         /// <summary>
         /// 진화가 열리는 성급. 기본 다이스는 <b>여기까지 머지해야</b> 진화할 수 있다.
         /// 특수 다이스는 성급 개념이 없어(<c>showStarUI = false</c>, 항상 1) 이 조건을 안 본다.
+        ///
+        /// <b>3성이다(실시간 전환, 2026-10-17).</b> 예전에는 머지 최대 성급이 4성이라 진화에 닿기 전에 시행 횟수가 너무 많았다.
+        /// 4성이 폐지되어(2026-10-20) 이제 머지 최대 성급(<see cref="MergeSystem.MaxStar"/>)과 같은 3성이다.
+        /// 두 값은 따로 선언돼 있으니 한쪽을 바꾸면 다른 쪽도 맞출 것.
         /// </summary>
-        public const int EvolveRequiredStar = MergeSystem.MaxStar;
+        public const int EvolveRequiredStar = 3;
 
         private static readonly DiceType[] baseTypes =
         {

@@ -96,11 +96,16 @@ namespace OJ.Hunting
 
                 monster.PushBy(Vector2.up, distance);
                 if (level >= 6)
-                    monster.ApplyWindDamageTakenBonus(10, 3f);
+                    monster.ApplyWindDamageTakenBonus(10, 3f, DiceType);
                 if (RelicManager.Instance != null)
                     monster.ApplyRelicDamageTakenBonus(RelicManager.Instance.GetWindDamageTakenBonusPercent(), 3f);
-                PlayEffectAt(DiceType, effectPosition);
             }
+
+            // 이펙트는 밀기 성공과 무관하게 캐스트마다 한 번 띄운다. 예전에는 밀기에 성공한 대상마다
+            // 같은 자리에 겹쳐 찍어서(벽 앞 띠 중앙), 밀기 확률(41~62%)에 따라 대상이 둘이면 캐스트의
+            // 5~35% 가 피해는 들어가는데 이펙트가 없었다.
+            if (castAny)
+                PlayEffectAt(DiceType, effectPosition);
 
             return castAny;
         }

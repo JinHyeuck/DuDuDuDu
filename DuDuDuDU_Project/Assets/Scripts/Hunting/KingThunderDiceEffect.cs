@@ -62,7 +62,7 @@ namespace OJ.Hunting
             Vector3 center = target.transform.position;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             if (level >= 12 && target.gameObject.activeInHierarchy)
-                target.ApplyThunderDamageTakenBonus(15, 5f);
+                target.ApplyThunderDamageTakenBonus(15, 5f, DiceType);
 
             if (level >= 9 && UnityEngine.Random.value <= 0.3f)
             {
