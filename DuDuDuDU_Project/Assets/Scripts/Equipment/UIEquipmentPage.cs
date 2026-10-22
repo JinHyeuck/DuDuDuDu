@@ -4,20 +4,20 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
-using OJ.DI;
 using OJ.Point;
 using OJ.UI;
 
 namespace OJ.Equipment
 {
+    /// <summary>
+    /// 로비의 장비 탭. 위는 캐릭터와 장비 6칸·일괄 레벨업, 아래는 장착 효과 목록.
+    ///
+    /// 예전 아래쪽은 "장착 효과" / "보석" 두 탭이었다. 보석 목록과 합성은 장비 칸을 누르면 뜨는
+    /// 강화 팝업(<see cref="UIEquipmentConfirmDialog"/>)으로 옮겨 갔고(2026-10-22 시안),
+    /// 그래서 아래쪽은 <b>장착 효과만 고정으로 보여 준다.</b>
+    /// </summary>
     public class UIEquipmentPage : DialogBase
     {
-        private enum EquipmentPageTab
-        {
-            EquippedEffects,
-            Gems
-        }
-
         private class EquippedEffectGroup
         {
             public EquipmentType equipmentType;
@@ -27,14 +27,6 @@ namespace OJ.Equipment
 
         [Header("Summary")]
         [SerializeField] private TMP_Text totalAttackText;
-
-        [Header("Tabs")]
-        [SerializeField] private Button equippedEffectTabButton;
-        [SerializeField] private Button gemTabButton;
-        [SerializeField] private GameObject equippedEffect_UnselectedTabIndicator;
-        [SerializeField] private GameObject gem_UnselectedTabIndicator;
-        [SerializeField] private GameObject equippedEffectView;
-        [SerializeField] private GameObject gemInventoryView;
 
         [Header("Equipped Effects")]
         [SerializeField] private TMP_Text emptyEquippedEffectText;
@@ -46,12 +38,8 @@ namespace OJ.Equipment
         [SerializeField] private Transform equipmentListRoot;
         [SerializeField] private UIEquipmentItem equipmentItemPrefab;
 
-        [Header("Gem Inventory")]
-        [SerializeField] private Transform gemInventoryRoot;
-        [SerializeField] private UIGemInventoryItem gemInventoryItemPrefab;
-
         [Header("Buttons")]
-        [SerializeField] private Button mergeButton;
+        [SerializeField] private Button levelUpAllButton;
 
         [Header("Dialogs")]
         [SerializeField] private UIEquipmentConfirmDialog confirmDialog;
@@ -59,14 +47,16 @@ namespace OJ.Equipment
         public event Action OnDataChanged;
 
         private readonly List<UIEquipmentItem> equipmentItems = new List<UIEquipmentItem>();
-        private readonly List<UIGemInventoryItem> gemInventoryItems = new List<UIGemInventoryItem>();
         private readonly List<UIEquipmentEffectGroupItem> equippedEffectGroups = new List<UIEquipmentEffectGroupItem>();
         private readonly List<EquipmentType> equipmentTypes = new List<EquipmentType>();
 
         private EquipmentType selectedEquipmentType = EquipmentType.Weapon;
-        private EquipmentPageTab currentTab = EquipmentPageTab.EquippedEffects;
         private bool buttonsBound;
         private bool missingReferenceWarned;
+
+        // 일괄 레벨업 동안은 단계마다 오는 변경 이벤트로 다시 그리지 않는다 — 한 단계에 이벤트가
+        // 넷(장비·보석·재화 둘)이라 50단계면 200번 다시 그린다. 끝나고 한 번만 그린다.
+        private bool suppressRefresh;
 
         protected override void OnLoad()
         {
@@ -75,12 +65,8 @@ namespace OJ.Equipment
 
         protected override void OnUnload()
         {
-            if (buttonsBound && mergeButton != null)
-                mergeButton.onClick.RemoveListener(OnClickMergeAll);
-            if (buttonsBound && equippedEffectTabButton != null)
-                equippedEffectTabButton.onClick.RemoveListener(OnClickEquippedEffectTab);
-            if (buttonsBound && gemTabButton != null)
-                gemTabButton.onClick.RemoveListener(OnClickGemTab);
+            if (buttonsBound && levelUpAllButton != null)
+                levelUpAllButton.onClick.RemoveListener(OnClickLevelUpAll);
         }
 
         protected override void OnEnter()
@@ -88,12 +74,11 @@ namespace OJ.Equipment
             ValidateSceneReferences();
             Subscribe();
             BuildIfNeeded();
-            SelectTab(EquipmentPageTab.EquippedEffects, false);
             RefreshAll();
 
-            // RefreshAll 이 목록을 다 채운 뒤여야 한다. 장비 칸은 화면에 늘 보이는 것이라
-            // 여기를 띄우고, 탭 내용물은 탭을 누를 때 SelectTab 이 띄운다.
+            // RefreshAll 이 목록을 다 채운 뒤여야 한다.
             UIAppear.PlayChildren(equipmentListRoot);
+            UIAppear.PlayChildren(equippedEffectRoot);
         }
 
         protected override void OnExit()
@@ -108,9 +93,7 @@ namespace OJ.Equipment
             RefreshSummary();
             RefreshEquipmentList();
             RefreshEquippedEffects();
-            RefreshGemInventory();
-            RefreshTabViews();
-            RefreshMergeButton();
+            RefreshLevelUpAllButton();
             NotifyChanged();
         }
 
@@ -120,8 +103,7 @@ namespace OJ.Equipment
                 (manualEquipmentItems.Count > 0 || equipmentListRoot != null) &&
                 equippedEffectRoot != null &&
                 equippedEffectGroupPrefab != null &&
-                gemInventoryRoot != null &&
-                gemInventoryItemPrefab != null &&
+                levelUpAllButton != null &&
                 confirmDialog != null)
             {
                 return;
@@ -181,17 +163,6 @@ namespace OJ.Equipment
                     equipmentItems[i].Bind(equipmentTypes[i], OnClickEquipmentItem);
                 }
             }
-
-            if (gemInventoryItemPrefab != null && gemInventoryRoot != null && EquipmentManager.Instance != null)
-            {
-                IReadOnlyList<GemDefinition> gemDefinitions = EquipmentManager.Instance.GetGemDefinitions();
-                while (gemInventoryItems.Count < gemDefinitions.Count)
-                {
-                    UIGemInventoryItem item = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
-                    item.gameObject.SetActive(true);
-                    gemInventoryItems.Add(item);
-                }
-            }
         }
 
         private void RefreshSummary()
@@ -218,7 +189,8 @@ namespace OJ.Equipment
                 bool selected = selectedEquipmentType == equipmentType;
                 List<EquipmentSlotVisualState> slotStates = BuildSlotStates(equipmentType);
                 equipmentItems[i].Refresh(level, attack, selected, slotStates);
-                equipmentItems[i].SetUpgradeDot(CanUpgradeEquipment(equipmentType));            }
+                equipmentItems[i].SetUpgradeDot(CanUpgradeEquipment(equipmentType));
+            }
         }
 
         /// <summary>이 장비를 지금 강화할 수 있는가 — 레드닷이 본다(<see cref="UpgradeAffordability"/>).</summary>
@@ -271,38 +243,6 @@ namespace OJ.Equipment
                 if (effectCount <= 0)
                     emptyEquippedEffectText.SetText("장착한 보석 효과가 없습니다.");
             }
-        }
-
-        private List<string> BuildEquippedEffectLines()
-        {
-            List<string> lines = new List<string>();
-            if (EquipmentManager.Instance == null)
-                return lines;
-
-            foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
-            {
-                for (int slotIndex = 0; slotIndex < Define.MaxEquipmentSlot; slotIndex++)
-                {
-                    string gemId = EquipmentManager.Instance.GetEquippedGemId(equipmentType, slotIndex);
-                    if (string.IsNullOrEmpty(gemId))
-                        continue;
-
-                    if (!EquipmentManager.Instance.TryGetGemDefinition(gemId, out GemDefinition definition) || definition == null)
-                        continue;
-
-                    string prefix = $"{UIEquipmentText.GetEquipmentName(equipmentType)} {slotIndex + 1} - {definition.displayName}";
-                    if (definition.effects == null || definition.effects.Count <= 0)
-                    {
-                        lines.Add($"{prefix}: 효과 없음");
-                        continue;
-                    }
-
-                    for (int effectIndex = 0; effectIndex < definition.effects.Count; effectIndex++)
-                        lines.Add($"{prefix}: {UIEquipmentEffectTextFormatter.BuildEffectText(definition.effects[effectIndex])}");
-                }
-            }
-
-            return lines;
         }
 
         private List<EquippedEffectGroup> BuildEquippedEffectGroups()
@@ -396,168 +336,56 @@ namespace OJ.Equipment
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
         }
 
-        private void RefreshGemInventory()
-        {
-            if (EquipmentManager.Instance == null)
-                return;
-
-            IReadOnlyList<GemDefinition> gemDefinitions = EquipmentManager.Instance.GetGemDefinitions();
-            int itemIndex = 0;
-            bool filterByEquipmentType = confirmDialog != null && confirmDialog.isEnter;
-
-            for (int i = 0; i < gemDefinitions.Count; i++)
-            {
-                GemDefinition definition = gemDefinitions[i];
-                if (definition == null)
-                    continue;
-                if (filterByEquipmentType && definition.equipableType != selectedEquipmentType)
-                    continue;
-
-                int count = EquipmentManager.Instance.GetGemCount(definition.gemId);
-                if (count <= 0)
-                    continue;
-
-                for (int countIndex = 0; countIndex < count; countIndex++)
-                {
-                    while (gemInventoryItems.Count <= itemIndex)
-                    {
-                        if (gemInventoryItemPrefab == null || gemInventoryRoot == null)
-                            break;
-
-                        UIGemInventoryItem newItem = Instantiate(gemInventoryItemPrefab, gemInventoryRoot);
-                        gemInventoryItems.Add(newItem);
-                    }
-
-                    if (itemIndex < gemInventoryItems.Count)
-                    {
-                        gemInventoryItems[itemIndex].gameObject.SetActive(true);
-                        gemInventoryItems[itemIndex].Bind(definition.gemId, OnClickGemInventoryItem);
-                        gemInventoryItems[itemIndex].Refresh(definition, false, true);
-                        itemIndex++;
-                    }
-                }
-            }
-
-            for (int i = itemIndex; i < gemInventoryItems.Count; i++)
-                gemInventoryItems[i].gameObject.SetActive(false);
-        }
-
         private void OnClickEquipmentItem(EquipmentType equipmentType)
         {
             selectedEquipmentType = equipmentType;
             RefreshEquipmentList();
-            OpenEquipmentDialog(string.Empty);
-        }
 
-        private void OnClickGemInventoryItem(string gemId)
-        {
-            if (string.IsNullOrEmpty(gemId) || EquipmentManager.Instance == null)
-                return;
-
-            if (EquipmentManager.Instance.TryGetGemDefinition(gemId, out GemDefinition definition))
-            {
-                selectedEquipmentType = definition.equipableType;
-                RefreshEquipmentList();
-                RefreshGemInventory();
-            }
-
-            OpenEquipmentDialog(gemId);
-        }
-
-        private void OpenEquipmentDialog(string selectedGemId)
-        {
             if (confirmDialog == null)
             {
                 Debug.LogWarning("UIEquipmentPage: UIEquipmentConfirmDialog is missing.");
                 return;
             }
 
-            confirmDialog.Open(selectedEquipmentType, selectedGemId, RefreshAll);
-            SelectTab(EquipmentPageTab.Gems, false);
-            RefreshGemInventory();
-            RefreshTabViews();
-            RefreshMergeButton();
+            confirmDialog.Open(selectedEquipmentType, RefreshAll);
         }
 
         /// <summary>
-        /// 카탈로그에서 꺼내 띄운다. (10.4)
-        ///
-        /// 예전에는 씬 인스턴스를 <c>[SerializeField]</c> 로 직접 가리켰고, 그 참조가 <c>None</c> 이면
-        /// 여기 있던 널 가드가 <b>아무 로그 없이</b> 그냥 돌아갔다 — 창이 안 떠도 이유를 알 수 없었다.
-        /// <see cref="UIService"/> 는 못 열면 사유를 로그로 남긴다.
-        ///
-        /// <c>Show</c> 가 아니라 <c>Get</c> 인 이유는 <c>Open</c> 이 대상 장비와 콜백을 넣은 뒤
-        /// 스스로 <c>Enter</c> 를 부르기 때문이다. <c>Show</c> 로 열면 <c>Enter</c> 가 두 번 불린다.
+        /// 일괄 레벨업. 규칙은 <see cref="EquipmentManager.LevelUpAll"/> 에 있다 —
+        /// 화면은 누르고 다시 그리기만 한다.
         /// </summary>
-        private void OnClickMergeAll()
+        private void OnClickLevelUpAll()
         {
-            if (confirmDialog == null || !confirmDialog.isEnter)
+            if (EquipmentManager.Instance == null)
                 return;
 
-            GameContainer.UI?.Get<UIMergePopup>()?.Open(selectedEquipmentType, OnMergeCompleted);
-        }
-
-        private void OnMergeCompleted(IReadOnlyList<string> resultGemIds)
-        {
-            RefreshAll();
-        }
-
-        private void OnClickEquippedEffectTab()
-        {
-            SelectTab(EquipmentPageTab.EquippedEffects, true);
-        }
-
-        private void OnClickGemTab()
-        {
-            SelectTab(EquipmentPageTab.Gems, true);
-        }
-
-        private void SelectTab(EquipmentPageTab tab, bool refresh)
-        {
-            currentTab = tab;
-            RefreshTabViews();
-
-            if (!refresh)
+            int count;
+            suppressRefresh = true;
+            try
             {
-                // <b>여기서 연출하면 안 된다.</b> refresh 가 false 인 호출은 탭을 누른 것이
-                // 아니라 내부 사정으로 탭을 맞추는 것이다 — 특히 OpenEquipmentDialog 가
-                // 보석을 고를 때마다 이 경로로 들어온다. 그때 목록을 다시 띄우면
-                // <b>클릭할 때마다 보석이 사라졌다 나타나 클릭이 씹힌다.</b>
-                return;
+                count = EquipmentManager.Instance.LevelUpAll();
+            }
+            finally
+            {
+                suppressRefresh = false;
             }
 
-            RefreshAll();
-
-            // 사람이 탭을 눌렀을 때만. RefreshAll 뒤여야 새로 채워진 칸을 훑는다.
-            UIAppear.PlayChildren(
-                currentTab == EquipmentPageTab.EquippedEffects ? equippedEffectRoot : gemInventoryRoot);
+            if (count > 0)
+                RefreshAll();
         }
 
-        private void RefreshTabViews()
+        private GameObject levelUpAllDot;
+
+        private void RefreshLevelUpAllButton()
         {
-            bool showEquippedEffects = currentTab == EquipmentPageTab.EquippedEffects;
-
-            if (equippedEffectView != null)
-                equippedEffectView.SetActive(showEquippedEffects);
-            if (gemInventoryView != null)
-                gemInventoryView.SetActive(!showEquippedEffects);
-
-            if (equippedEffect_UnselectedTabIndicator != null)
-                equippedEffect_UnselectedTabIndicator.SetActive(!showEquippedEffects);
-            if (gem_UnselectedTabIndicator != null)
-                gem_UnselectedTabIndicator.SetActive(showEquippedEffects);
-        }
-
-        private void RefreshMergeButton()
-        {
-            if (mergeButton == null)
+            if (levelUpAllButton == null)
                 return;
 
-            bool visible = confirmDialog != null && confirmDialog.isEnter;
-            mergeButton.gameObject.SetActive(visible);
-            mergeButton.interactable = visible &&
-                                       EquipmentManager.Instance != null &&
-                                       EquipmentManager.Instance.HasMergeMaterials(selectedEquipmentType);
+            bool canAny = EquipmentManager.Instance != null && EquipmentManager.Instance.CanLevelUpAny();
+            levelUpAllButton.interactable = canAny;
+
+            // 일괄 레벨업 버튼에도 레드닷 — 뉴비가 "한 번에 올릴 수 있다" 를 놓치지 않게 한다.
+            UpgradeRedDot.Set(ref levelUpAllDot, levelUpAllButton.transform, canAny, 54f, new Vector2(-14f, -14f));
         }
 
         private void Subscribe()
@@ -568,12 +396,6 @@ namespace OJ.Equipment
                 EquipmentManager.Instance.OnGemChanged -= OnGemChanged;
                 EquipmentManager.Instance.OnEquipmentChanged += OnEquipmentChanged;
                 EquipmentManager.Instance.OnGemChanged += OnGemChanged;
-            }
-
-            if (confirmDialog != null)
-            {
-                confirmDialog.Hidden -= OnConfirmDialogHidden;
-                confirmDialog.Hidden += OnConfirmDialogHidden;
             }
 
             if (PointManager.Instance != null)
@@ -593,30 +415,29 @@ namespace OJ.Equipment
 
             if (PointManager.Instance != null)
                 PointManager.Instance.OnPointChanged -= OnPointChanged;
-
-            if (confirmDialog != null)
-                confirmDialog.Hidden -= OnConfirmDialogHidden;
-        }
-
-        private void OnConfirmDialogHidden()
-        {
-            RefreshGemInventory();
-            RefreshTabViews();
-            RefreshMergeButton();
         }
 
         private void OnEquipmentChanged(EquipmentType equipmentType)
         {
+            if (suppressRefresh)
+                return;
+
             RefreshAll();
         }
 
         private void OnGemChanged()
         {
+            if (suppressRefresh)
+                return;
+
             RefreshAll();
         }
 
         private void OnPointChanged(PointType pointType, int value)
         {
+            if (suppressRefresh)
+                return;
+
             RefreshAll();
         }
 
@@ -630,16 +451,10 @@ namespace OJ.Equipment
             if (buttonsBound)
                 return;
 
-            if (mergeButton != null)
-                mergeButton.onClick.AddListener(OnClickMergeAll);
-            if (equippedEffectTabButton != null)
-                equippedEffectTabButton.onClick.AddListener(OnClickEquippedEffectTab);
-            if (gemTabButton != null)
-                gemTabButton.onClick.AddListener(OnClickGemTab);
+            if (levelUpAllButton != null)
+                levelUpAllButton.onClick.AddListener(OnClickLevelUpAll);
 
-            buttonsBound = mergeButton != null ||
-                           equippedEffectTabButton != null ||
-                           gemTabButton != null;
+            buttonsBound = levelUpAllButton != null;
         }
     }
 }
