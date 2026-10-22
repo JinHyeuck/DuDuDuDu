@@ -8,6 +8,7 @@ using OJ.Core;
 using OJ.Dice;
 using OJ.IdleReward;
 using OJ.Lobby;
+using OJ.Point;
 using OJ.Tower;
 using OJ.DI;
 using OJ.Tutorial;
@@ -213,6 +214,118 @@ namespace OJ.ContentUnlock
 
             if (d.contentId == ContentId.Tower && ShouldGuideTowerLoadout())
                 await TowerLoadoutGuideAsync(d);
+
+            // 다이스 가이드는 설명으로 끝나지 않는다 — 노멀 다이스를 한 번 강화해 보게 한다(강제). 강화할 줄 모르면 뉴비가 약한 채로 막힌다.
+            if (d.contentId == ContentId.Dice && ShouldGuideDiceUpgrade())
+                await DiceUpgradeGuideAsync();
+        }
+
+        // ── 다이스 가이드: 노멀 1강화 강제 ───────────────────────────────
+
+        /// <summary>노멀 다이스가 1레벨일 때만 — 이미 올렸으면(재시도·옛 세이브) 다시 시키지 않는다.</summary>
+        private static bool ShouldGuideDiceUpgrade()
+        {
+            DiceLevelManager levels = DiceLevelManager.Instance;
+            return levels != null && levels.GetLevel(DiceType.Normal) <= 1;
+        }
+
+        /// <summary>
+        /// 1강화에 필요한 재화(골드·노멀 두루마리)가 모자라면 <b>미리 채워 둔다</b>. 이미 충분하면 건드리지 않는다.
+        /// 가이드가 "눌러 보세요" 라고 했는데 재화가 없어 버튼이 안 눌리면 뉴비가 그 자리에서 멈춘다.
+        /// </summary>
+        private static void EnsureUpgradeResources()
+        {
+            PointManager points = PointManager.Instance;
+            if (points == null)
+                return;
+
+            var cost = DiceMetaDataProvider.GetUpgradeCost(DiceType.Normal, 1);
+            int missingGold = cost.goldCost - points.Get(PointType.Gold);
+            if (missingGold > 0)
+                points.Add(PointType.Gold, missingGold);
+
+            int missingScroll = cost.scrollCost - points.Get(PointType.NormalScroll);
+            if (missingScroll > 0)
+                points.Add(PointType.NormalScroll, missingScroll);
+        }
+
+        private async UniTask DiceUpgradeGuideAsync()
+        {
+            EnsureUpgradeResources();
+
+            // 목록이 그려질 때까지 기다린다(탭을 연 직후 한두 프레임은 비어 있다).
+            UIDiceGrowthItem item = null;
+            for (int i = 0; i < 120 && item == null; i++)
+            {
+                foreach (UIDiceGrowthItem candidate in UnityEngine.Object.FindObjectsByType<UIDiceGrowthItem>(FindObjectsSortMode.None))
+                {
+                    if (candidate.isActiveAndEnabled && candidate.DiceType == DiceType.Normal && candidate.Button != null)
+                    {
+                        item = candidate;
+                        break;
+                    }
+                }
+
+                if (item == null)
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            if (item == null)
+            {
+                Debug.LogError("[해금] 다이스 목록에서 노멀 다이스를 못 찾아 강화 가이드를 건너뛴다.");
+                return;
+            }
+
+            // 1) 노멀 다이스를 눌러 상세를 연다.
+            bool opened = false;
+            void OnItemClick() => opened = true;
+            item.Button.onClick.AddListener(OnItemClick);
+            try
+            {
+                overlay.SetDim(item.transform as RectTransform);
+                overlay.SetFinger(item.transform as RectTransform);
+                overlay.SetTalk("<b>노멀 다이스</b>를 눌러서\n강화해 봐요!");
+                await UniTask.WaitUntil(() => opened, PlayerLoopTiming.Update, token);
+            }
+            finally
+            {
+                if (item != null && item.Button != null)
+                    item.Button.onClick.RemoveListener(OnItemClick);
+            }
+
+            overlay.SetFinger(null);
+            overlay.SetDim();
+            overlay.SetTalk(null);
+
+            // 2) 상세가 열리고 강화 버튼이 보일 때까지.
+            UIDiceGrowthDetailPanel panel = GameContainer.UI?.Get<UIDiceGrowthDetailPanel>();
+            if (panel == null)
+            {
+                Debug.LogError("[해금] 다이스 상세 창을 못 찾아 강화 가이드를 건너뛴다.");
+                return;
+            }
+
+            await UniTask.WaitUntil(() => panel.isEnter && panel.UpgradeButton != null && panel.UpgradeButton.isActiveAndEnabled,
+                PlayerLoopTiming.Update, token);
+
+            float settle = Time.unscaledTime + SettleSeconds;
+            await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
+
+            // 3) 강화 버튼을 눌러 노멀이 2레벨이 될 때까지. 강화가 안 되는 상태(재화 부족)면 위에서 채워 두었다.
+            RectTransform upgrade = panel.UpgradeButton.transform as RectTransform;
+            overlay.SetDim(upgrade);
+            overlay.SetFinger(upgrade);
+            overlay.SetTalk("<b>강화</b> 버튼을 눌러요!");
+            await UniTask.WaitUntil(() => DiceLevelManager.Instance != null
+                && DiceLevelManager.Instance.GetLevel(DiceType.Normal) >= 2, PlayerLoopTiming.Update, token);
+
+            overlay.SetFinger(null);
+            overlay.SetDim();
+            overlay.SetTalk("강화했어요! 레벨이 오를수록\n다이스가 더 강해져요.", tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
+            await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
+
+            // 상세 창은 닫아 준다 — 열린 채로 두면 아래 하단 탭이 가려져 홈으로 못 돌아가 다음 가이드가 안 나온다.
+            GameContainer.UI?.Hide<UIDiceGrowthDetailPanel>();
         }
 
         // ── 탑 1층: 킹 썬더 장착 ────────────────────────────────────────

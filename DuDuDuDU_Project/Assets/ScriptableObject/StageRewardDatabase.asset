@@ -16,453 +16,377 @@ MonoBehaviour:
   - id: stage_1_minimum
     stageIndex: 1
     requiredStageIndex: 1
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 100
-      amount: 50
+      amount: 370
     - pointType: 200
-      amount: 10
+      amount: 7
+    - pointType: 201
+      amount: 2
+    - pointType: 202
+      amount: 2
+    - pointType: 203
+      amount: 3
+    - pointType: 204
+      amount: 2
+    - pointType: 205
+      amount: 2
   - id: stage_1_half
     stageIndex: 1
     requiredStageIndex: 1
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
-    - pointType: 100
-      amount: 50
+      amount: 320
+    - pointType: 104
+      amount: 10
     - pointType: 101
-      amount: 50
-    - pointType: 200
       amount: 10
-    - pointType: 201
-      amount: 10
-    - pointType: 105
-      amount: 25
+    - pointType: 2
+      amount: 30
   - id: stage_1_perfect
     stageIndex: 1
     requiredStageIndex: 1
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 100
-      amount: 50
-    - pointType: 101
-      amount: 50
-    - pointType: 102
-      amount: 50
-    - pointType: 1
-      amount: 300
-    - pointType: 105
-      amount: 40
+      amount: 360
   - id: stage_2_minimum
     stageIndex: 2
     requiredStageIndex: 2
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 101
-      amount: 50
+      amount: 370
     - pointType: 201
-      amount: 10
+      amount: 3
+    - pointType: 202
+      amount: 3
+    - pointType: 203
+      amount: 4
+    - pointType: 204
+      amount: 3
+    - pointType: 205
+      amount: 3
   - id: stage_2_half
     stageIndex: 2
     requiredStageIndex: 2
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
-    - pointType: 101
-      amount: 50
-    - pointType: 102
-      amount: 50
-    - pointType: 201
+      amount: 320
+    - pointType: 100
+      amount: 30
+    - pointType: 103
       amount: 10
-    - pointType: 202
-      amount: 10
-    - pointType: 105
-      amount: 25
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 30
   - id: stage_2_perfect
     stageIndex: 2
     requiredStageIndex: 2
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 101
-      amount: 50
-    - pointType: 102
-      amount: 50
-    - pointType: 103
-      amount: 50
-    - pointType: 1
-      amount: 300
-    - pointType: 105
-      amount: 40
+      amount: 370
+    - pointType: 106
+      amount: 3
   - id: stage_3_minimum
     stageIndex: 3
     requiredStageIndex: 3
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 102
-      amount: 50
-    - pointType: 202
-      amount: 10
+      amount: 260
+    - pointType: 200
+      amount: 5
+    - pointType: 203
+      amount: 5
   - id: stage_3_half
     stageIndex: 3
     requiredStageIndex: 3
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
+      amount: 220
+    - pointType: 104
+      amount: 30
     - pointType: 102
-      amount: 50
-    - pointType: 103
-      amount: 50
-    - pointType: 202
       amount: 10
-    - pointType: 203
-      amount: 10
-    - pointType: 105
-      amount: 25
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
   - id: stage_3_perfect
     stageIndex: 3
     requiredStageIndex: 3
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 102
-      amount: 50
-    - pointType: 103
-      amount: 50
-    - pointType: 104
-      amount: 50
-    - pointType: 1
-      amount: 300
-    - pointType: 105
-      amount: 40
+      amount: 270
+    - pointType: 106
+      amount: 3
   - id: stage_4_minimum
     stageIndex: 4
     requiredStageIndex: 4
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 103
-      amount: 50
-    - pointType: 203
-      amount: 10
+      amount: 370
+    - pointType: 201
+      amount: 4
+    - pointType: 202
+      amount: 4
   - id: stage_4_half
     stageIndex: 4
     requiredStageIndex: 4
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
-    - pointType: 103
-      amount: 50
-    - pointType: 104
-      amount: 50
-    - pointType: 203
-      amount: 10
-    - pointType: 204
-      amount: 10
-    - pointType: 105
-      amount: 25
+      amount: 320
+    - pointType: 101
+      amount: 30
+    - pointType: 102
+      amount: 30
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
   - id: stage_4_perfect
     stageIndex: 4
     requiredStageIndex: 4
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 103
-      amount: 50
-    - pointType: 104
-      amount: 50
-    - pointType: 100
-      amount: 50
-    - pointType: 1
-      amount: 300
+      amount: 370
+    - pointType: 106
+      amount: 3
     - pointType: 105
-      amount: 40
+      amount: 10
   - id: stage_5_minimum
     stageIndex: 5
     requiredStageIndex: 5
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 104
-      amount: 50
+      amount: 390
     - pointType: 204
-      amount: 10
+      amount: 4
+    - pointType: 205
+      amount: 4
   - id: stage_5_half
     stageIndex: 5
     requiredStageIndex: 5
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
-    - pointType: 104
-      amount: 50
+      amount: 330
+    - pointType: 103
+      amount: 30
     - pointType: 100
       amount: 50
-    - pointType: 204
-      amount: 10
-    - pointType: 205
-      amount: 10
-    - pointType: 105
-      amount: 25
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
   - id: stage_5_perfect
     stageIndex: 5
     requiredStageIndex: 5
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 104
-      amount: 50
-    - pointType: 100
-      amount: 50
-    - pointType: 101
-      amount: 50
-    - pointType: 1
-      amount: 300
+      amount: 390
+    - pointType: 106
+      amount: 3
     - pointType: 105
-      amount: 40
+      amount: 10
   - id: stage_6_minimum
     stageIndex: 6
     requiredStageIndex: 6
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 100
-      amount: 50
-    - pointType: 205
-      amount: 10
+      amount: 460
+    - pointType: 200
+      amount: 6
+    - pointType: 203
+      amount: 6
   - id: stage_6_half
     stageIndex: 6
     requiredStageIndex: 6
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
       amount: 400
-    - pointType: 100
+    - pointType: 104
       amount: 50
     - pointType: 101
       amount: 50
-    - pointType: 205
-      amount: 10
-    - pointType: 200
-      amount: 10
-    - pointType: 105
-      amount: 25
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
   - id: stage_6_perfect
     stageIndex: 6
     requiredStageIndex: 6
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 100
-      amount: 50
-    - pointType: 101
-      amount: 50
-    - pointType: 102
-      amount: 50
-    - pointType: 1
-      amount: 300
+      amount: 460
+    - pointType: 106
+      amount: 3
     - pointType: 105
-      amount: 40
+      amount: 10
   - id: stage_7_minimum
     stageIndex: 7
     requiredStageIndex: 7
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 101
-      amount: 50
-    - pointType: 200
-      amount: 10
+      amount: 440
+    - pointType: 201
+      amount: 5
+    - pointType: 202
+      amount: 5
   - id: stage_7_half
     stageIndex: 7
     requiredStageIndex: 7
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
-    - pointType: 101
-      amount: 50
+      amount: 380
     - pointType: 102
       amount: 50
-    - pointType: 200
-      amount: 10
-    - pointType: 201
-      amount: 10
-    - pointType: 105
-      amount: 25
+    - pointType: 103
+      amount: 50
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
   - id: stage_7_perfect
     stageIndex: 7
     requiredStageIndex: 7
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 101
-      amount: 50
-    - pointType: 102
-      amount: 50
-    - pointType: 103
-      amount: 50
-    - pointType: 1
-      amount: 300
+      amount: 450
+    - pointType: 106
+      amount: 3
     - pointType: 105
-      amount: 40
+      amount: 10
   - id: stage_8_minimum
     stageIndex: 8
     requiredStageIndex: 8
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 102
-      amount: 50
-    - pointType: 201
-      amount: 10
+      amount: 480
+    - pointType: 204
+      amount: 5
+    - pointType: 205
+      amount: 5
   - id: stage_8_half
     stageIndex: 8
     requiredStageIndex: 8
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
-    - pointType: 102
-      amount: 50
-    - pointType: 103
-      amount: 50
-    - pointType: 201
-      amount: 10
-    - pointType: 202
-      amount: 10
-    - pointType: 105
-      amount: 25
+      amount: 410
+    - pointType: 100
+      amount: 70
+    - pointType: 101
+      amount: 70
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
   - id: stage_8_perfect
     stageIndex: 8
     requiredStageIndex: 8
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 102
-      amount: 50
-    - pointType: 103
-      amount: 50
-    - pointType: 104
-      amount: 50
-    - pointType: 1
-      amount: 300
+      amount: 480
+    - pointType: 106
+      amount: 3
     - pointType: 105
-      amount: 40
+      amount: 10
   - id: stage_9_minimum
     stageIndex: 9
     requiredStageIndex: 9
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 103
-      amount: 50
-    - pointType: 202
-      amount: 10
+      amount: 540
+    - pointType: 200
+      amount: 7
+    - pointType: 203
+      amount: 7
   - id: stage_9_half
     stageIndex: 9
     requiredStageIndex: 9
-    requiredWaveIndex: 7
+    requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 400
-    - pointType: 103
-      amount: 50
+      amount: 460
     - pointType: 104
-      amount: 50
-    - pointType: 202
-      amount: 10
-    - pointType: 203
-      amount: 10
-    - pointType: 105
-      amount: 25
+      amount: 70
+    - pointType: 102
+      amount: 70
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
   - id: stage_9_perfect
     stageIndex: 9
     requiredStageIndex: 9
-    requiredWaveIndex: 10
+    requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 500
-    - pointType: 103
-      amount: 50
-    - pointType: 104
-      amount: 50
-    - pointType: 100
-      amount: 50
-    - pointType: 1
-      amount: 300
+      amount: 530
+    - pointType: 106
+      amount: 3
     - pointType: 105
-      amount: 40
+      amount: 10
   - id: stage_10_minimum
     stageIndex: 10
     requiredStageIndex: 10
-    requiredWaveIndex: 4
+    requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 300
-    - pointType: 104
-      amount: 50
-    - pointType: 203
-      amount: 10
+      amount: 540
+    - pointType: 201
+      amount: 6
+    - pointType: 202
+      amount: 6
   - id: stage_10_half
-    stageIndex: 10
-    requiredStageIndex: 10
-    requiredWaveIndex: 7
-    rewards:
-    - pointType: 0
-      amount: 400
-    - pointType: 104
-      amount: 50
-    - pointType: 100
-      amount: 50
-    - pointType: 203
-      amount: 10
-    - pointType: 204
-      amount: 10
-    - pointType: 105
-      amount: 25
-  - id: stage_10_perfect
     stageIndex: 10
     requiredStageIndex: 10
     requiredWaveIndex: 10
     rewards:
     - pointType: 0
-      amount: 500
+      amount: 460
+    - pointType: 103
+      amount: 70
     - pointType: 104
-      amount: 50
-    - pointType: 100
-      amount: 50
-    - pointType: 101
-      amount: 50
-    - pointType: 1
-      amount: 300
+      amount: 90
+    - pointType: 2
+      amount: 30
+    - pointType: 6
+      amount: 20
+  - id: stage_10_perfect
+    stageIndex: 10
+    requiredStageIndex: 10
+    requiredWaveIndex: 15
+    rewards:
+    - pointType: 0
+      amount: 530
+    - pointType: 106
+      amount: 3
     - pointType: 105
-      amount: 40
+      amount: 10
   - id: stage_11_minimum
     stageIndex: 11
     requiredStageIndex: 11

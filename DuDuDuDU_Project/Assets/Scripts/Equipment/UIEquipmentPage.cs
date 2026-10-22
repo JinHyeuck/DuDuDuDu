@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Core;
 using OJ.Point;
 using OJ.UI;
 
@@ -188,7 +189,24 @@ namespace OJ.Equipment
                 bool selected = selectedEquipmentType == equipmentType;
                 List<EquipmentSlotVisualState> slotStates = BuildSlotStates(equipmentType);
                 equipmentItems[i].Refresh(level, attack, selected, slotStates);
+                equipmentItems[i].SetUpgradeDot(CanUpgradeEquipment(equipmentType));
             }
+        }
+
+        /// <summary>이 장비를 지금 강화할 수 있는가 — 레드닷이 본다(<see cref="UpgradeAffordability"/>).</summary>
+        public static bool CanUpgradeEquipment(EquipmentType equipmentType)
+        {
+            EquipmentManager equipment = EquipmentManager.Instance;
+            PointManager points = PointManager.Instance;
+            if (equipment == null || points == null)
+                return false;
+
+            var cost = equipment.GetNextUpgradeCost(equipmentType);
+            return UpgradeAffordability.CanUpgrade(
+                equipment.IsMaxLevel(equipmentType),
+                points.Get(PointType.Gold),
+                points.Get(PointManager.ToEquipmentScrollType(equipmentType)),
+                cost.goldCost, cost.scrollCost);
         }
 
         private List<EquipmentSlotVisualState> BuildSlotStates(EquipmentType equipmentType)
@@ -356,13 +374,18 @@ namespace OJ.Equipment
                 RefreshAll();
         }
 
+        private GameObject levelUpAllDot;
+
         private void RefreshLevelUpAllButton()
         {
             if (levelUpAllButton == null)
                 return;
 
-            levelUpAllButton.interactable = EquipmentManager.Instance != null &&
-                                            EquipmentManager.Instance.CanLevelUpAny();
+            bool canAny = EquipmentManager.Instance != null && EquipmentManager.Instance.CanLevelUpAny();
+            levelUpAllButton.interactable = canAny;
+
+            // 일괄 레벨업 버튼에도 레드닷 — 뉴비가 "한 번에 올릴 수 있다" 를 놓치지 않게 한다.
+            UpgradeRedDot.Set(ref levelUpAllDot, levelUpAllButton.transform, canAny, 54f, new Vector2(-14f, -14f));
         }
 
         private void Subscribe()

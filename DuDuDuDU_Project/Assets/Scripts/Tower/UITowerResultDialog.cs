@@ -229,12 +229,42 @@ namespace OJ.Tower
 
         // ── (2) 기여도 ──────────────────────────────────────────────────
 
+        /// <summary>
+        /// 클리어했고 킹 다이스가 피해의 큰 몫을 냈으면 그것을 자랑한다 — 킹이 얼마나 센지 보여 주는 쇼케이스다.
+        /// 킹이 여럿이면 가장 큰 몫 하나를 쓴다. 평소 문구는 그대로다.
+        /// </summary>
+        private string BuildContributionCaption(List<DiceDamageShare> shares)
+        {
+            const string normal = "다이스별 피해 기여도";
+            if (data == null || !data.IsClear)
+                return normal;
+
+            float best = 0f;
+            DiceType bestType = DiceType.Max;
+            foreach (DiceDamageShare share in shares)
+            {
+                bool king = share.DiceType == DiceType.KingNormal || share.DiceType == DiceType.KingFire
+                            || share.DiceType == DiceType.KingIce || share.DiceType == DiceType.KingThunder
+                            || share.DiceType == DiceType.KingPoison;
+                if (king && share.Ratio > best)
+                {
+                    best = share.Ratio;
+                    bestType = share.DiceType;
+                }
+            }
+
+            if (bestType == DiceType.Max || best < 0.3f)
+                return normal;
+
+            return "킹 다이스가 전체 피해의 " + Mathf.RoundToInt(best * 100f) + "% 를 담당했어요!";
+        }
+
         private void RefreshContribution()
         {
             List<DiceDamageShare> shares = data.DamageShares ?? new List<DiceDamageShare>();
 
             if (contributionCaption != null)
-                contributionCaption.SetText("다이스별 피해 기여도");
+                contributionCaption.SetText(BuildContributionCaption(shares));
 
             for (int i = 0; i < damageBars.Count; i++)
             {

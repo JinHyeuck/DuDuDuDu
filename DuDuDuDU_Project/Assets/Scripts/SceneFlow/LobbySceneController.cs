@@ -18,6 +18,8 @@ namespace OJ.SceneFlow
         private void Awake()
         {
             contentGate = gameObject.AddComponent<LobbyContentGate>();
+            // 강화할 수 있는 장비·다이스가 있으면 하단 탭에 레드닷을 건다(씬을 고치지 않고 코드로 붙인다).
+            gameObject.AddComponent<OJ.Lobby.LobbyUpgradeBadges>();
         }
 
         /// <summary>

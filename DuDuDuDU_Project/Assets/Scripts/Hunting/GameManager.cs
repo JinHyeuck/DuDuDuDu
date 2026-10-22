@@ -1615,7 +1615,52 @@ namespace OJ.Hunting
                 return;
             }
 
+            // 진 판이 킹 썬더를 안 쓴 판이면 "킹을 만들어 보세요" 를 알려 준다(KingHintRules).
+            if (!isWin && ShouldShowKingHint(stageIndex))
+            {
+                ShowKingHintThenLobby();
+                return;
+            }
+
             SceneFlowManager.LoadLobby();
+        }
+
+        private bool ShouldShowKingHint(int stageIndex)
+        {
+            DiceOwnershipManager ownership = DiceOwnershipManager.Instance;
+            bool owns = ownership != null && ownership.IsOwned(DiceType.KingThunder);
+
+            bool kingOnBoard = false;
+            UIDice[] map = battle.Board != null ? battle.Board.diceMap : null;
+            if (map != null)
+            {
+                for (int i = 0; i < map.Length && !kingOnBoard; i++)
+                {
+                    DiceType type = map[i] != null ? map[i].Type : DiceType.Max;
+                    kingOnBoard = type == DiceType.KingNormal || type == DiceType.KingFire || type == DiceType.KingIce
+                                  || type == DiceType.KingThunder || type == DiceType.KingPoison;
+                }
+            }
+
+            return KingHintRules.ShouldShow(false, battle.Tutorial.IsActive, false, stageIndex, owns, kingOnBoard);
+        }
+
+        private void ShowKingHintThenLobby()
+        {
+            int stones = DiceEvolution.GetEvolveCost(DiceType.Thunder) + DiceEvolution.GetEvolveCost(DiceType.Time);
+            UIConfirmDialog dialog = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (dialog == null)
+            {
+                SceneFlowManager.LoadLobby();
+                return;
+            }
+
+            dialog.Open(
+                "킹 썬더를 써 보세요!",
+                "킹 썬더는 일반 다이스보다 훨씬 강해요.\n3성 번개 → 타임 → 킹 썬더로 진화시켜 보세요.\n(마석 " + stones + "개)",
+                "확인",
+                null,
+                () => SceneFlowManager.LoadLobby());
         }
 
         private async UniTaskVoid PlaySealThenLobbyAsync(int stageIndex)
