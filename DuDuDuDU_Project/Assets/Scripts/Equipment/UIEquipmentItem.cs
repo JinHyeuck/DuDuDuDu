@@ -53,7 +53,7 @@ namespace OJ.Equipment
         public void SetUpgradeDot(bool on)
         {
             // 카드 그림(아이콘) 모서리에 붙인다 — 칸 루트에 붙이면 슬롯 줄까지 포함한 큰 사각형의 모서리라 카드 밖에 뜬다.
-            OJ.UI.UpgradeRedDot.Set(ref upgradeRedDot, iconImage != null ? iconImage.transform : transform, on, 46f, new Vector2(-8f, -8f));
+            OJ.UI.UpgradeRedDot.Set(ref upgradeRedDot, iconImage != null ? iconImage.transform : transform, on, 50f, new Vector2(-34f, -34f));
         }
 
         public void Bind(EquipmentType type, System.Action<EquipmentType> onClick)
