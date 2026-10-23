@@ -301,6 +301,13 @@ namespace OJ.Hunting
 
         private static float BodyHeight => HeaderHeight + MaxRows * RowHeight + Padding * 2f;
 
+        /// <summary>
+        /// 패널 윗선이 화면 세로 중심에서 캔버스 단위로 얼마 위인가. 몬스터를 쏘기 시작하는
+        /// 높이(<see cref="OJ.Core.EngageLine"/>)가 이 선을 따라간다 — 패널 크기나 자리를 바꾸면
+        /// 교전선도 같이 움직여야 하므로 숫자를 따로 적지 않고 같은 상수에서 읽는다.
+        /// </summary>
+        public static float TopFromScreenCenter => CenterY + BodyHeight * 0.5f;
+
         private static void BuildExpanded(
             UIDamageContributionPanel panel, Transform parent, TMP_FontAsset font)
         {

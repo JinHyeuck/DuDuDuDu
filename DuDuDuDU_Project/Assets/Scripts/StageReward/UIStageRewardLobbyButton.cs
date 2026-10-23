@@ -12,6 +12,8 @@ namespace OJ.StageReward
         [SerializeField] private TMP_Text progressText;
         [SerializeField] private GameObject redDot;
 
+        private GameObject strongDot;
+
         private void Awake()
         {
             if (button == null)
@@ -50,8 +52,11 @@ namespace OJ.StageReward
             if (progressText != null)
                 progressText.SetText("스테이지 {0}/{1}", current, total);
 
+            // 장비·다이스 칸과 같은 큰 레드닷으로 바꾼다. 씬에 박힌 옛 작은 점은 꺼 둔다.
             if (redDot != null)
-                redDot.SetActive(manager != null && manager.HasClaimableReward());
+                redDot.SetActive(false);
+
+            UpgradeRedDot.Set(ref strongDot, transform, manager != null && manager.HasClaimableReward(), 54f, new Vector2(-34f, -24f));
         }
 
         /// <summary>

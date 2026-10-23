@@ -156,6 +156,12 @@ namespace OJ.IdleReward
             return StageRewardCalculator.BuildAutoBattleRewards(stageIndex, clearCount, BuildRewardSeed(stageIndex));
         }
 
+        /// <summary>쌓인 시간이 한도(<see cref="AutoBattleMaxSeconds"/>)에 닿았고 받을 보상이 있는가.</summary>
+        public bool IsAutoBattleFull()
+        {
+            return GetAutoBattleElapsed().TotalSeconds >= AutoBattleMaxSeconds && CanClaimAutoBattle();
+        }
+
         public bool CanClaimAutoBattle()
         {
             return GetAutoBattleRewards().Count > 0;

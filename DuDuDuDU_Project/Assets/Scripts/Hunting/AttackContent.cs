@@ -425,10 +425,15 @@ namespace OJ.Hunting
             float maxForward = halfLength;
             float width = Mathf.Max(0.01f, halfWidth);
 
+            float engageLineY = battle.Monsters.EngageLineY;
             for (int i = 0; i < battle.Monsters.activeMonsters.Count; i++)
             {
                 Monster monster = battle.Monsters.activeMonsters[i];
                 if (monster == null || monster.gameObject.activeInHierarchy == false)
+                    continue;
+
+                // 교전선 위에서 막 나온 몬스터는 관통에 휘말려도 죽지 않는다 — 아직 안 보인다.
+                if (!OJ.Core.EngageLine.IsEngaged(monster.transform.position.y, engageLineY))
                     continue;
 
                 Vector2 delta = (Vector2)monster.transform.position - origin;

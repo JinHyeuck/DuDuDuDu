@@ -13,7 +13,7 @@ namespace OJ.Economy
 {
     /// <summary>
     /// 행운 주사위 결과 연출. <b>신화 다이스가 나올 때처럼 화면 전체</b>를 어둡게 덮고 마석 아이콘을 크게 띄운다.
-    /// 숫자가 빠르게 돌다가 결과에서 멈추고(높은 눈은 "대박!"), 잠깐 보여 준 뒤 <b>강화 칸(마석 수가 있는 곳)으로 날아 들어간다</b>.
+    /// 숫자가 빠르게 돌다가 결과에서 멈추고(높은 눈은 "대박!"), 잠깐 보여 준 뒤 <b>보유 마석 칸으로 날아 들어간다</b>.
     ///
     /// <b>굴림은 이 창이 뜨기 전에 이미 끝나 있다</b>(SP 차감·마석 지급). 이 창은 결과를 보여 주기만 하므로
     /// 도중에 닫혀도 잃는 것이 없다. 화면을 한 번 누르면 숫자 돌리기·멈춤을 건너뛰고 곧바로 날아간다.
@@ -48,6 +48,9 @@ namespace OJ.Economy
         private int sequence;
         private bool skip;
 
+        // 이미 지급된 마석을 이 창이 보여 주는 동안 보유 마석 칸의 숫자에서 쥐어 둔 몫. 닿는 순간 푼다.
+        private int heldStones;
+
         protected override void OnLoad()
         {
             skipButton.onClick.AddListener(() => skip = true);
@@ -56,6 +59,15 @@ namespace OJ.Economy
         /// <summary>연출을 시작한다. <paramref name="stones"/> 는 이미 지급된 마석 개수.</summary>
         public void Play(int stones)
         {
+            ReleaseHeldStones();
+
+            // 데이터는 이미 올랐다. 화면 숫자만 마석이 칸에 닿을 때까지 기다리게 한다.
+            if (stones > 0 && battle != null && battle.ElementUpgrade != null)
+            {
+                heldStones = stones;
+                battle.ElementUpgrade.HoldStone(stones);
+            }
+
             Enter();
             RunAsync(stones, ++sequence).Forget();
         }
@@ -71,11 +83,24 @@ namespace OJ.Economy
         {
             sequence++;
             IsPlaying = false;
+            ReleaseHeldStones();
         }
 
         protected override void OnUnload()
         {
             IsPlaying = false;
+            ReleaseHeldStones();
+        }
+
+        // 몇 번 불려도 한 번만 푼다. 도중에 닫혀도(판 종료·되돌리기) 숫자가 영영 모자란 채 남지 않게 한다.
+        private void ReleaseHeldStones()
+        {
+            if (heldStones <= 0)
+                return;
+
+            int amount = heldStones;
+            heldStones = 0;
+            battle?.ElementUpgrade?.ReleaseStone(amount);
         }
 
         private async UniTaskVoid RunAsync(int stones, int mySequence)
@@ -185,6 +210,14 @@ namespace OJ.Economy
                 numberText.alpha = 1f - Mathf.Clamp01((k - 0.6f) * 2.5f);
             }
 
+            // 닿았다 — 칸이 튕기고 "+N" 이 뜨며 숫자가 오른다.
+            RectTransform stoneRect = battle != null && battle.ElementUpgrade != null ? battle.ElementUpgrade.StoneRect : null;
+            if (stoneRect != null && stones > 0)
+            {
+                UIRewardFly.Punch(stoneRect);
+                UIRewardFly.FloatText(stoneRect, "+" + stones, numberText, GoodColor);
+            }
+
             Exit();
         }
 
@@ -201,12 +234,14 @@ namespace OJ.Economy
         }
 
         /// <summary>
-        /// 마석 수가 있는 강화 칸의 화면 위치를 이 창 안의 좌표로 바꾼다. 못 구하면 <paramref name="fallback"/>.
+        /// 보유 마석 칸(없으면 강화 칸)의 화면 위치를 이 창 안의 좌표로 바꾼다. 못 구하면 <paramref name="fallback"/>.
         /// 대상이 다른 캔버스(카메라 캔버스)에 있어 화면 좌표를 거쳐 건넌다.
         /// </summary>
         private Vector2 TargetLocalPosition(Vector2 fallback)
         {
-            RectTransform target = battle != null && battle.ElementUpgrade != null ? battle.ElementUpgrade.OpenButtonRect : null;
+            RectTransform target = battle != null && battle.ElementUpgrade != null ? battle.ElementUpgrade.StoneRect : null;
+            if (target == null)
+                target = battle != null && battle.ElementUpgrade != null ? battle.ElementUpgrade.UpgradeButtonRect : null;
             if (target == null)
                 return fallback;
 

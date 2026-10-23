@@ -401,7 +401,7 @@ namespace OJ.Hunting
 
                     if (IsBounty)
                     {
-                        battle.Bounty?.NotifyDefeated(this);
+                        battle.Bounty?.NotifyDefeated(this, deathPosition);
                         battle.Monsters.UnregisterMonster(this, false);
                     }
                     else
@@ -886,6 +886,7 @@ namespace OJ.Hunting
         public void ConfigureAsBounty(float moveSpeedMultiplier)
         {
             IsBounty = true;
+            AttachRoleOutline();
 
             // moveSpeed 자체는 건드리지 않는다. 그것은 프리팹 값이고, 풀에서 재사용될 때
             // OnSpawn 이 ApplyMoveSpeed 를 여기로 되돌리는 기준점이다 — 깎아 두면
@@ -904,6 +905,14 @@ namespace OJ.Hunting
         public void ConfigureAsStageBoss()
         {
             IsStageBoss = true;
+            AttachRoleOutline();
+        }
+
+        /// <summary>보스·현상금에 빨간 테두리를 붙인다. 켜고 끄는 것은 테두리가 역할을 읽어 스스로 한다.</summary>
+        private void AttachRoleOutline()
+        {
+            if (characterAnimation != null)
+                MonsterOutline.Attach(this, characterAnimation.spriteRenderer);
         }
 
         /// <summary>

@@ -13,6 +13,13 @@ using OJ.Utils;
 
 namespace OJ.Dice
 {
+    public enum DiceResetResult
+    {
+        Done,
+        NothingToReset,
+        NotEnoughGems,
+    }
+
     /// <summary>
     /// 주사위 레벨. (MIGRATION_BASELINE 8.3a — 두 번째 전환 대상)
     ///
@@ -152,6 +159,65 @@ namespace OJ.Dice
         public (int goldCost, int scrollCost) GetNextUpgradeCost(DiceType diceType)
         {
             return DiceMetaDataProvider.GetUpgradeCost(diceType, GetLevel(diceType));
+        }
+
+        /// <summary>1레벨보다 높아 되돌릴 것이 있는가.</summary>
+        public bool CanReset(DiceType diceType)
+        {
+            return DiceLevelResetRules.CanReset(GetLevel(diceType));
+        }
+
+        /// <summary>지금 레벨 기준 초기화 비용(무료젬). 공짜 구간이면 0.</summary>
+        public int GetResetGemCost(DiceType diceType)
+        {
+            return DiceLevelResetRules.GemCostFor(GetLevel(diceType));
+        }
+
+        /// <summary>
+        /// 초기화하면 돌려받을 골드·스크롤. 지금의 강화 비용표로 다시 센다 —
+        /// 올릴 때와 표가 달라졌으면 그 차이만큼 환급도 달라진다.
+        /// </summary>
+        public (int gold, int scroll) GetResetRefund(DiceType diceType)
+        {
+            return DiceLevelResetRules.Refund(GetLevel(diceType),
+                from => DiceMetaDataProvider.GetUpgradeCost(diceType, from));
+        }
+
+        /// <summary>
+        /// 이 주사위의 레벨을 1 로 되돌리고 레벨업에 쓴 골드·스크롤을 돌려준다.
+        /// 7레벨부터는 무료젬이 든다.
+        ///
+        /// <b>돌려받은 것은 <paramref name="refundInto"/> 에 쌓아 준다.</b> 호출부가 획득 팝업에 그대로 넘긴다.
+        /// 재화는 <b>모자란 것을 확인한 뒤에</b> 한꺼번에 움직인다 — 젬이 모자라면 아무것도 건드리지 않는다.
+        /// 저장은 마지막 <see cref="SetLevel"/> 이 한 번만 한다.
+        /// </summary>
+        public DiceResetResult TryReset(DiceType diceType, List<PointRewardEntry> refundInto)
+        {
+            int level = GetLevel(diceType);
+            if (!DiceLevelResetRules.CanReset(level))
+                return DiceResetResult.NothingToReset;
+
+            int gemCost = DiceLevelResetRules.GemCostFor(level);
+            if (gemCost > 0 && !points.TrySpend(PointType.FreeGem, gemCost, false))
+                return DiceResetResult.NotEnoughGems;
+
+            var refund = GetResetRefund(diceType);
+
+            if (refund.gold > 0)
+            {
+                points.Add(PointType.Gold, refund.gold, false);
+                refundInto?.Add(new PointRewardEntry(PointType.Gold, refund.gold));
+            }
+
+            if (refund.scroll > 0)
+            {
+                PointType scrollType = PointManager.ToScrollType(diceType);
+                points.Add(scrollType, refund.scroll, false);
+                refundInto?.Add(new PointRewardEntry(scrollType, refund.scroll));
+            }
+
+            SetLevel(diceType, 1);
+            return DiceResetResult.Done;
         }
 
         /// <summary>

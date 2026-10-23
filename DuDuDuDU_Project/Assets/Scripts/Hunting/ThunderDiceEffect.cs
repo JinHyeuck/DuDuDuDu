@@ -26,7 +26,7 @@ namespace OJ.Hunting
 
             int thunderTargets = attackContent.GetThunderTargetCount(DiceType);
             Dictionary<Monster, List<Monster>> chainedByTarget = attackContent.GetNPerTarget_NoGlobalDup(
-                battle.Monsters.activeMonsters,
+                battle.Monsters.EngagedMonsters,
                 hitMonsters,
                 thunderTargets);
 

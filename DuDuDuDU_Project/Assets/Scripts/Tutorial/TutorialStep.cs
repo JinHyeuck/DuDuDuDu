@@ -30,9 +30,8 @@ namespace OJ.Tutorial
         BountySet,
         LuckyDice,
         LuckyDiceResult,
-        UpgradeOpen,
-        UpgradeLevelUp,
-        UpgradeClose,
+        UpgradePress,
+        UpgradeDone,
 
         // ── 3웨이브: 진화(변신) ────────────────
         EvolveGift,

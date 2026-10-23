@@ -65,7 +65,8 @@ SP 가 모자란 단계는 디렉터가 **채워 준다**(`EnsureSp`) — 솜씨
 | BountySet | Talk | 탭 — "다음 현상금은 60초 뒤" |
 | LuckyDice | Dim 행운 주사위 (SP 100 보충, "?" 잠금) | 마석이 늘어남 |
 | LuckyDiceResult | 결과 연출(전체 화면)을 기다림 → Talk → Talk(구멍을 확률표 판에) | 연출 종료 + 탭 둘. 두 번째에서 확률표를 닫는다 |
-| UpgradeOpen / LevelUp / Close | Dim 강화 버튼 → 번개 줄 → 닫기 | 번개 속성 +1 (마석 1개) |
+| UpgradePress | Dim 강화 버튼 (마석이 첫 강화 값 25 에 모자라면 채움) | 모든 속성 +1단계(+10%) — 팝업 없이 즉시 |
+| UpgradeDone | Talk | 탭 — "모든 속성 주사위가 10% 세졌어요" |
 | **3웨이브** (게임 정지) | | |
 | EvolveGift | Talk → (탭) 3성 번개 지급 + 마석 보충 → Talk | 탭 둘 |
 | EvolveSelect | Dim 3성 번개 | 상세 패널이 그 다이스로 열림 |

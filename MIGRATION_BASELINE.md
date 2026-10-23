@@ -84,7 +84,7 @@
 | 12 | `UIBattleDiceDetailPanel` | Battle | [x] | 연결됨 |
 | 13 | `UIDiceCraftPanelDialog` | Battle | [x] | 연결됨 |
 | 14 | `UIDiceCraftProgressDialog` | Battle | [x] | 연결됨 |
-| 15 | `UIElementUpgradePanel` | Battle | [x] | 연결됨 |
+| 15 | `UIElementUpgradePanel` | Battle | [x] | 연결됨 → **2026-10-23 삭제** (속성강화가 팝업 없이 즉시 적용으로 바뀜) |
 | 16 | `UIStageResultDialog` | Battle | [x] | 연결됨. 빼도 안전 — `GameManager.ShowStageResult`에 null 가드(`CoReturnToLobby`) 있음 |
 | 17 | `UIWaveRewardPreviewDialog` | Battle | [x] | 연결됨. 빼도 안전 — 호출부가 `?.Exit()` |
 
@@ -1457,6 +1457,7 @@ UniTask가 패키지로 와도 `Library/ScriptAssemblies/UniTask.dll`로 똑같�
 | 상점 맨 위 **광고 보상 칸**(초기화 2/2 · 골드 10,000)을 눌러도 아무 일이 없다 | 시안 이식(`Art/Layout/Shop_Ads_Layout.png`)에서 새로 생긴 칸인데, 하루 한도와 지급이 세이브·`ShopPurchaseManager` 에 자리가 없다. 겉모습만 옮기고 콜백은 로그만 남긴다 | `UIShopPage.RefreshAdShop` 의 콜백 둘을 실제 경로로 잇는다. 광고는 `GameContainer.RewardedAds` 가 이미 포트로 있다 |
 | 상점의 **상품 원터치 구매 토글**이 껐다 켜지지만 저장되지 않는다 | 같은 이유 — 설정을 담을 자리가 없다. 토글은 보이는 상태만 바꾼다 | 설정 저장이 생길 때 `UIShopPage.RefreshAdShop` 의 `oneTouchChanged` 를 잇는다 |
 | 상점 **다이아 섹션에 "유료젬 1 = 무료젬 N" 교환비 안내가 없다** | 시안에 그 글자 자리가 없어서 굽지 않는다(`freeGemRateText` 는 비어 있다) | 안내가 필요하면 시안에 자리를 받고 `BuildSection` 에 한 줄 추가 |
+| **속성강화 선택 팝업이 없다** (`UIElementUpgradePanel`·`UIElementUpgradeItem` 삭제) | 고장이 아니라 **의도된 삭제**다(2026-10-23, 사용자 지시). 강화 버튼이 팝업 없이 모든 속성을 +10% 올린다(마석 25 + 5씩). 보유 마석은 따로 `UIEnhanceStoneChip` 이 보여 준다 | 해당 없음 |
 | **튜토리얼이 새 진행방식과 맞지 않는다** — 시작 버튼·준비 단계를 전제로 한 대본이고, 현상금 안내 단계(BountyOpen·BountySelect·BountySet·BountyHint)는 코드에서 빠졌다. 튜토리얼 판은 기존 준비 단계 흐름을 그대로 타고(`GameManager.IsContinuousWave` 가 튜토리얼에서 false) 현상금은 아예 나오지 않는다 | 2026-10-17 실시간 전환: 시작 버튼 제거 + 3초 카운트다운 자동 시작, 현상금이 "웨이브마다 선택"에서 "아이콘을 눌러 즉시 소환 + 30초 쿨타임"으로 바뀌었다. 사용자 결정: 진행방식이 굳은 뒤 튜토리얼을 다시 짠다 | 실시간 진행이 굳고 나서 튜토리얼 재작성 |
 
 > 0.5단계 추출은 전부 씬 인스턴스 연결을 유지한 채 끝났으므로 그 시점에 의도적 미동작은 없었다.

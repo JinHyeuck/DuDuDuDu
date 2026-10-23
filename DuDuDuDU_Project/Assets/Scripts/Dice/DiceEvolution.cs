@@ -52,7 +52,7 @@ namespace OJ.Dice
         /// <b>비용 네 개는 전부 여기 있다.</b> 흩뿌려 두면 수급이 바뀔 때 한쪽만 고치게 된다.
         /// 지금 수급은 웨이브 클리어당 +1(<c>GameManager.HandleWaveCompleted</c>)이고
         /// 스테이지가 15웨이브라 한 판 예산이 15 안팎이다. 같은 재화를 속성강화
-        /// (<c>ElementUpgradeManager.GetNextUpgradeCost</c>, 1·2·3…)가 함께 쓴다.
+        /// (<c>ElementUpgradeRules</c>, 25 에서 시작해 한 번에 5 씩 오른다)가 함께 쓴다.
         /// 즉 <b>지금 값은 수급 대비 비싸다</b> — 현상금 시스템이 들어와 수급이 늘면
         /// 이 네 상수만 만지면 된다.
         /// </summary>
