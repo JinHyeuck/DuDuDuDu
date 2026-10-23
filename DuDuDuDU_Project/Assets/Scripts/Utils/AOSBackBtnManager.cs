@@ -96,6 +96,25 @@ namespace OJ.Utils
             }
         }
         //------------------------------------------------------------------------------------
+        /// <summary>
+        /// 지금 열려 있는(뒤로가기로 닫히는) 창의 수. 해금 가이드가 "보상 창 같은 것이 다 닫혔는가" 를 보고
+        /// 입장 유도를 거는 데 쓴다.
+        /// </summary>
+        public int OpenDialogCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (DialogBase dialog in m_backBtnActionPool)
+                {
+                    if (dialog != null && dialog.isEnter)
+                        count++;
+                }
+
+                return count;
+            }
+        }
+        //------------------------------------------------------------------------------------
         public void EnterBackBtnAction(DialogBase action)
         {
             m_backBtnActionPool.Push(action);

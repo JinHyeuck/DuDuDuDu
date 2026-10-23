@@ -466,7 +466,7 @@ namespace OJ.Hunting
             // 역할 표시. 통과했을 때의 벽 피해가 일반 몬스터의 5배다
             // (OJ.Core.WallLeakFormula). OnSpawn 이 끈 뒤이므로 이 자리여야 한다 —
             // ConfigureStageSpeed 와 같은 제약이고 같은 이유다.
-            monster.ConfigureAsStageBoss();
+            monster.ConfigureAsStageBoss(battle.Game.GetBossContactDamage());
             bossSpawnedInWave = true;
 
             OnBossSpawned?.Invoke();
@@ -577,6 +577,10 @@ namespace OJ.Hunting
             if (!IsBossWave() || bossSpawnedInWave)
                 return false;
 
+            // 단독 보스 웨이브는 기다릴 일반 몬스터가 없다 — 간격이 한 번 차면 바로 나온다.
+            if (battle.Game.IsSoloBossWave())
+                return true;
+
             // CurrentStageData 는 매니저가 아니라 데이터다. 아직 안 정해졌을 수 있으므로
             // 계산식 폴백은 그대로 둔다.
             int threshold = battle.Game.CurrentStageData != null
@@ -605,6 +609,10 @@ namespace OJ.Hunting
         {
             // 스테이지 데이터가 없으면 0 을 돌려 스폰을 멈추는 기존 동작은 유지한다.
             if (battle.Game.CurrentStageData == null)
+                return 0;
+
+            // 보스 단독 웨이브는 일반 몬스터가 0 마리다(최소 1 로 올리면 안 된다).
+            if (battle.Game.IsSoloBossWave())
                 return 0;
 
             // 스테이지 값에 초반 3웨이브 완화를 적용한 수. 처치 목표(GameManager.GetWaveTargetCount)와 같은 함수다.

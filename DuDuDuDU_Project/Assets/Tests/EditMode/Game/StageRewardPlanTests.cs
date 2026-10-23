@@ -15,7 +15,13 @@ namespace OJ.Game.Tests
     {
         private const int DiceBaseGold = 130, DiceGoldPerLevel = 55, DiceBaseScroll = 10, DiceScrollPerLevel = 20;
 
-        // 스테이지별 목표 레벨(그 스테이지를 깬 뒤 이 레벨까지). 키 = 장비 인덱스 / 다이스 종류. 노멀 다이스는 튜토리얼이 2레벨로 시작시킨다.
+        // 스테이지별 목표 레벨(그 스테이지를 깬 뒤 이 레벨까지). 키 = 장비 인덱스 / 다이스 종류.
+        // 노멀 다이스는 1스테이지 5웨이브에서 다이스 가이드가 3레벨까지 올려 준다(재화를 채워 주며 직접 누르게 한다).
+        // 그래서 시작 레벨을 3 으로 본다. 2스테이지의 "노멀 3" 몫은 이미 올라 있어 보너스다 — 값은 건드리지 않고 아래 StageTwoNormalBonusGold 로 허용한다.
+        private const int StageTwoNormalBonusGold = 185;
+
+        // 1스테이지 15웨이브 레어석: 레어 다이스 두 개를 3레벨까지(150+62/레벨 골드, 3+5/레벨 레어석).
+        private const int RareDiceCount = 2, RareDiceGold = 150 + 212, RareDiceStones = 11;
         private static readonly (int[] equip, (PointType scroll, int level)[] dice)[] Plan =
         {
             (new[] { 3, 2, 2, 2, 2, 2 }, new[] { (PointType.ThunderScroll, 2), (PointType.FireScroll, 2) }),
@@ -51,7 +57,7 @@ namespace OJ.Game.Tests
             var equipLevel = new[] { 1, 1, 1, 1, 1, 1 };
             var diceLevel = new Dictionary<PointType, int>
             {
-                { PointType.NormalScroll, 2 }, { PointType.FireScroll, 1 }, { PointType.IceScroll, 1 },
+                { PointType.NormalScroll, 3 }, { PointType.FireScroll, 1 }, { PointType.IceScroll, 1 },
                 { PointType.ThunderScroll, 1 }, { PointType.PoisonScroll, 1 },
             };
 
@@ -93,9 +99,32 @@ namespace OJ.Game.Tests
                 }
 
                 int kingGold = stage >= 4 ? 300 : 0;
-                Assert.GreaterOrEqual(got[PointType.Gold], gold + kingGold, stage + "스테이지 골드가 강화 비용보다 적다.");
-                Assert.LessOrEqual(got[PointType.Gold], gold + kingGold + 9, stage + "스테이지 골드가 비용보다 10 넘게 많다(올림 한도).");
+                int extraGold = stage == 1 ? RareDiceCount * RareDiceGold : stage == 2 ? StageTwoNormalBonusGold : 0;
+                Assert.GreaterOrEqual(got[PointType.Gold], gold + kingGold + extraGold, stage + "스테이지 골드가 강화 비용보다 적다.");
+                Assert.LessOrEqual(got[PointType.Gold], gold + kingGold + extraGold + 9, stage + "스테이지 골드가 비용보다 10 넘게 많다(올림 한도).");
             }
+        }
+
+        [Test]
+        public void StageOne_FollowsTheWaveMilestoneTheme()
+        {
+            // 5웨이브: 다이스 재료만. 장비 재료는 아직 쓸 수 없다(장비는 10웨이브에 열린다).
+            foreach (StageRewardEntry e in StageRewardPlan.Build(1, 0))
+                CollectionAssert.DoesNotContain(EquipScroll, e.pointType, "5웨이브 보상에 장비 재료가 있다.");
+
+            // 10웨이브: 장비 재료.
+            var tier1 = new HashSet<PointType>();
+            foreach (StageRewardEntry e in StageRewardPlan.Build(1, 1))
+                tier1.Add(e.pointType);
+            foreach (PointType scroll in EquipScroll)
+                Assert.IsTrue(tier1.Contains(scroll), "10웨이브 보상에 " + scroll + " 이 없다.");
+
+            // 15웨이브: 레어석이 레어 다이스 두 개를 3레벨까지 올릴 만큼.
+            int stones = 0;
+            foreach (StageRewardEntry e in StageRewardPlan.Build(1, 2))
+                if (e.pointType == PointType.RareStone)
+                    stones += e.amount;
+            Assert.AreEqual(RareDiceCount * RareDiceStones, stones);
         }
 
         [Test]

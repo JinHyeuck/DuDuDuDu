@@ -48,6 +48,10 @@ namespace OJ.ContentUnlock
         public int LastClearedStage =>
             StageProgressManager.Instance != null ? StageProgressManager.Instance.GetLastClearedStageIndex() : 0;
 
+        /// <summary>1스테이지에서 깬 가장 높은 웨이브. 웨이브로 여는 컨텐츠(<c>requiredWave</c>)가 본다.</summary>
+        public int Stage1BestWave =>
+            StageProgressManager.Instance != null ? StageProgressManager.Instance.GetBestClearedWave(1) : 0;
+
         public ContentUnlockDefinition GetDefinition(ContentId id)
         {
             return ContentUnlockDatabaseProvider.Database.Get(id);
@@ -57,7 +61,7 @@ namespace OJ.ContentUnlock
         public bool IsOpen(ContentId id)
         {
             ContentUnlockDefinition definition = GetDefinition(id);
-            return definition == null || ContentUnlockRules.IsOpen(definition, LastClearedStage);
+            return definition == null || ContentUnlockRules.IsOpen(definition, LastClearedStage, Stage1BestWave);
         }
 
         /// <summary>입구를 보이는가. 열렸어도 연출 전이면 숨는다.</summary>
@@ -65,14 +69,14 @@ namespace OJ.ContentUnlock
         {
             ApplyBackfillIfNeeded();
             ContentUnlockDefinition definition = GetDefinition(id);
-            return definition == null || ContentUnlockRules.IsVisible(definition, LastClearedStage, announced);
+            return definition == null || ContentUnlockRules.IsVisible(definition, LastClearedStage, announced, Stage1BestWave);
         }
 
         /// <summary>이번 로비 진입에 보여 줄 연출(가이드 하나에서 끊긴다).</summary>
         public List<ContentUnlockDefinition> GetVisitQueue()
         {
             ApplyBackfillIfNeeded();
-            return ContentUnlockRules.VisitQueue(Definitions, LastClearedStage, announced);
+            return ContentUnlockRules.VisitQueue(Definitions, LastClearedStage, announced, Stage1BestWave);
         }
 
         /// <summary>
@@ -82,7 +86,7 @@ namespace OJ.ContentUnlock
         public bool HasPending()
         {
             ApplyBackfillIfNeeded();
-            return ContentUnlockRules.HasPending(Definitions, LastClearedStage, announced);
+            return ContentUnlockRules.HasPending(Definitions, LastClearedStage, announced, Stage1BestWave);
         }
 
         /// <summary>
@@ -121,7 +125,7 @@ namespace OJ.ContentUnlock
             for (int i = 0; i < definitions.Count; i++)
             {
                 ContentUnlockDefinition d = definitions[i];
-                if (d != null && ContentUnlockRules.IsOpen(d, lastCleared))
+                if (d != null && ContentUnlockRules.IsOpen(d, lastCleared, Stage1BestWave))
                     announced.Add(d.contentId);
             }
         }

@@ -62,6 +62,9 @@ namespace OJ.Lobby
 
         [SerializeField] private LobbyTab defaultTab = LobbyTab.Home;
 
+        /// <summary>스테이지 입장 버튼. 해금 가이드가 가이드 뒤에 손가락으로 가리킨다(<c>LobbyUnlockDirector</c>).</summary>
+        public Button EnterStageButton => enterStageButton;
+
         private int selectedStageIndex = 1;
 
         private void Awake()
@@ -214,9 +217,11 @@ namespace OJ.Lobby
 
             OJ.Core.ContentUnlockDefinition definition = ContentUnlockManager.Instance?.GetDefinition(id);
             string name = definition != null ? definition.displayName : tab.ToString();
-            string message = definition != null && definition.requiredClear > 0
-                ? definition.requiredClear + "스테이지를 클리어하면 열려요."
-                : "곧 열려요.";
+            string message = definition != null && definition.requiredWave > 0
+                ? "1스테이지 " + definition.requiredWave + "웨이브를 클리어하면 열려요."
+                : definition != null && definition.requiredClear > 0
+                    ? definition.requiredClear + "스테이지를 클리어하면 열려요."
+                    : "곧 열려요.";
 
             UIConfirmDialog dialog = GameContainer.UI?.Get<UIConfirmDialog>();
             if (dialog != null)

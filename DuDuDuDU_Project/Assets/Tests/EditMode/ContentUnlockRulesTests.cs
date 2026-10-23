@@ -34,7 +34,7 @@ namespace OJ.Core.Tests
         }
 
         /// <summary>합의한 순서표(2026-10-20 개정 — 킹 썬더 3스테이지 해금 흐름). 숫자를 바꾸려면 이 테스트와 Docs 를 같이 고친다.</summary>
-        [TestCase(ContentId.Dice, 0, UnlockPresentation.Guide)]
+        [TestCase(ContentId.Dice, 1, UnlockPresentation.Guide)]
         [TestCase(ContentId.StageReward, 0, UnlockPresentation.Quiet)]
         [TestCase(ContentId.StageStar, 0, UnlockPresentation.Quiet)]
         [TestCase(ContentId.MeatFestival, 0, UnlockPresentation.Guide)]
@@ -57,26 +57,54 @@ namespace OJ.Core.Tests
             Assert.AreEqual(presentation, d.presentation, id + " 알리는 방법");
         }
 
-        /// <summary>튜토리얼만 마친 신규 유저: 다이스 가이드 하나. 고기 축제 가이드는 다음 진입.</summary>
+        /// <summary>튜토리얼만 마친 신규 유저: 고기 축제 가이드 하나뿐이다. 다이스·장비는 아직 닫혀 있다.</summary>
         [Test]
-        public void FreshPlayerGetsDiceGuideThenMeatNextVisit()
+        public void FreshPlayerGetsOnlyMeatFestival()
         {
             var seen = new HashSet<ContentId>();
             var first = ContentUnlockRules.VisitQueue(Defaults, 0, seen);
-            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(first));
+            CollectionAssert.AreEqual(new[] { ContentId.MeatFestival }, Ids(first));
 
-            seen.Add(ContentId.Dice);
-            var second = ContentUnlockRules.VisitQueue(Defaults, 0, seen);
-            CollectionAssert.AreEqual(new[] { ContentId.MeatFestival }, Ids(second));
+            seen.Add(ContentId.MeatFestival);
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen));
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 4));
         }
 
-        /// <summary>1클리어: 방치 보상 연출 → 장비 가이드가 한 진입에 나온다.</summary>
+        /// <summary>1스테이지 5웨이브를 넘으면 다이스 가이드, 10웨이브를 넘으면 장비 가이드(스테이지를 못 깼어도).</summary>
         [Test]
-        public void FirstClearShowsIdleThenEquipment()
+        public void StageOneWavesOpenDiceThenEquipment()
         {
-            var seen = new HashSet<ContentId> { ContentId.Dice, ContentId.MeatFestival };
-            var queue = ContentUnlockRules.VisitQueue(Defaults, 1, seen);
-            CollectionAssert.AreEqual(new[] { ContentId.IdleReward, ContentId.Equipment }, Ids(queue));
+            var seen = new HashSet<ContentId> { ContentId.MeatFestival };
+            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 5)));
+
+            seen.Add(ContentId.Dice);
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 9));
+            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 10)));
+        }
+
+        /// <summary>한 판에 12웨이브까지 간 유저: 가이드는 하나씩 — 다이스가 먼저, 그다음 장비(디렉터가 이어서 건다).</summary>
+        [Test]
+        public void BigJumpQueuesGuidesOneAtATime()
+        {
+            var seen = new HashSet<ContentId> { ContentId.MeatFestival };
+            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 12)));
+
+            seen.Add(ContentId.Dice);
+            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 12)));
+
+            seen.Add(ContentId.Equipment);
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 12));
+        }
+
+        /// <summary>스테이지를 통째로 깨면 웨이브 기록이 없어도 열린다. 방치 보상 연출은 그때 나온다.</summary>
+        [Test]
+        public void FirstClearStillOpensEverythingAndShowsIdle()
+        {
+            var seen = new HashSet<ContentId> { ContentId.MeatFestival, ContentId.Dice, ContentId.Equipment };
+            CollectionAssert.AreEqual(new[] { ContentId.IdleReward }, Ids(ContentUnlockRules.VisitQueue(Defaults, 1, seen)));
+
+            CollectionAssert.AreEqual(new[] { ContentId.Dice },
+                Ids(ContentUnlockRules.VisitQueue(Defaults, 1, new HashSet<ContentId> { ContentId.MeatFestival })));
         }
 
         /// <summary>3클리어: 퀘스트 연출 → 탑 가이드. 탑 가이드가 봉인 연출로 이어지는 이야기다.</summary>
@@ -151,6 +179,14 @@ namespace OJ.Core.Tests
             state.Stage.Records["x"] = new StageRecordSave { BestClearGrade = 2 };
 
             Assert.AreEqual(3, ContentUnlockRules.LastClearedFromSave(state));
+        }
+
+        [Test]
+        public void WaveConditionNeedsAStageFallback()
+        {
+            var table = ContentUnlockRules.BuildDefaults();
+            table.Find(d => d.contentId == ContentId.Dice).requiredClear = 0;
+            StringAssert.Contains("요구 웨이브가 있는데", string.Join("\n", ContentUnlockRules.Validate(table, 30)));
         }
 
         [Test]
