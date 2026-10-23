@@ -258,12 +258,14 @@ namespace OJ.Hunting
         private const float LeftMargin = 16f;
 
         /// <summary>
-        /// 화면 세로 중심에서 얼마나 올릴지.
+        /// 화면 <b>아래</b>에서 패널 세로 중심까지 캔버스 단위로 얼마인지 (1080x1920 에서 중심 +430).
         ///
         /// 위로는 웨이브 게이지, 아래로는 다이스 보드가 있다. 그 사이의 빈 왼쪽
         /// 영역이 이 자리다 — 현상금 선택 창(중심 +300)과 겹치지 않게 조금 더 위로 올렸다.
+        /// 다이스 보드가 아래에 붙어 있으므로 패널도 아래를 기준으로 삼는다 — 중심 기준이면
+        /// 22:9 처럼 세로가 긴 기기에서 보드와의 간격이 벌어진다.
         /// </summary>
-        private const float CenterY = 430f;
+        private const float CenterFromBottom = 1390f;
 
         /// <summary>에디터 굽기 전용.</summary>
         public static UIDamageContributionPanel Create(Transform parent, TMP_FontAsset font)
@@ -273,11 +275,11 @@ namespace OJ.Hunting
 
             // <b>화면 전체로 늘리지 않는다.</b> 늘리면 이 캔버스의 레이캐스터가
             // 보드 클릭을 통째로 먹는다. 왼쪽 가장자리에 붙여 패널 크기만 차지한다.
-            rootRect.anchorMin = new Vector2(0f, 0.5f);
-            rootRect.anchorMax = new Vector2(0f, 0.5f);
+            rootRect.anchorMin = new Vector2(0f, 0f);
+            rootRect.anchorMax = new Vector2(0f, 0f);
             rootRect.pivot = new Vector2(0f, 0.5f);
             rootRect.sizeDelta = new Vector2(PanelWidth, BodyHeight);
-            rootRect.anchoredPosition = new Vector2(LeftMargin, CenterY);
+            rootRect.anchoredPosition = new Vector2(LeftMargin, CenterFromBottom);
 
             GameObject view = CreateRect("DialogView", root.transform);
             RectTransform viewRect = view.GetComponent<RectTransform>();
@@ -302,11 +304,11 @@ namespace OJ.Hunting
         private static float BodyHeight => HeaderHeight + MaxRows * RowHeight + Padding * 2f;
 
         /// <summary>
-        /// 패널 윗선이 화면 세로 중심에서 캔버스 단위로 얼마 위인가. 몬스터를 쏘기 시작하는
+        /// 패널 윗선이 화면 아래에서 캔버스 단위로 얼마 위인가. 몬스터를 쏘기 시작하는
         /// 높이(<see cref="OJ.Core.EngageLine"/>)가 이 선을 따라간다 — 패널 크기나 자리를 바꾸면
         /// 교전선도 같이 움직여야 하므로 숫자를 따로 적지 않고 같은 상수에서 읽는다.
         /// </summary>
-        public static float TopFromScreenCenter => CenterY + BodyHeight * 0.5f;
+        public static float TopFromScreenBottom => CenterFromBottom + BodyHeight * 0.5f;
 
         private static void BuildExpanded(
             UIDamageContributionPanel panel, Transform parent, TMP_FontAsset font)

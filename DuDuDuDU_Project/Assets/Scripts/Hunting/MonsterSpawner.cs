@@ -629,7 +629,20 @@ namespace OJ.Hunting
                 maxX = centerX;
             }
 
-            return new Vector2(Random.Range(minX, maxX), spawnY);
+            return new Vector2(Random.Range(minX, maxX), GetSpawnY());
+        }
+
+        /// <summary>
+        /// 세로가 긴 기기에서는 카메라가 위로 늘어나므로(<see cref="BattleViewFit"/>) 고정 높이에서
+        /// 나오면 화면 한가운데에서 불쑥 나타난다. 카메라 윗변보다 낮아지지 않게 올린다.
+        /// </summary>
+        private float GetSpawnY()
+        {
+            CacheSpawnCamera();
+            if (spawnCamera == null || !spawnCamera.orthographic)
+                return spawnY;
+
+            return Mathf.Max(spawnY, spawnCamera.transform.position.y + spawnCamera.orthographicSize);
         }
 
         private bool TryGetVisibleSpawnBounds(out float minX, out float maxX)
