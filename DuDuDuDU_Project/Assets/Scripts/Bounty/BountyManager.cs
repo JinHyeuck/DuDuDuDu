@@ -4,11 +4,13 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using OJ.Core;
 using OJ.Battle;
+using OJ.Element;
 using OJ.DI;
 using OJ.Hunting;
 using OJ.Mission;
 using OJ.Point;
 using OJ.Stage;
+using OJ.UI;
 
 namespace OJ.Bounty
 {
@@ -207,8 +209,10 @@ namespace OJ.Bounty
         /// 잡았다. <b>보상은 그 자리에서 준다.</b> 한 등급을 잡으면 다음 등급이 열린다.
         /// 죽어서 사라진 경우에는 이 호출이 개체를 비워 두므로 뒤따르는 <see cref="NotifyEscaped"/> 는
         /// 그냥 지나간다 — 보상이 두 번 서지 않는다.
+        ///
+        /// <paramref name="deathWorld"/> 는 쓰러진 자리다. 보상 아이콘이 거기서 터져 나와 제자리로 날아간다.
         /// </summary>
-        public void NotifyDefeated(Monster monster)
+        public void NotifyDefeated(Monster monster, Vector3 deathWorld)
         {
             if (monster == null || !active.TryGetValue(monster, out int grade))
                 return;
@@ -231,9 +235,13 @@ namespace OJ.Bounty
             {
                 case BattlePointType.SummonPoint:
                     battle.Summon.AddSP(definition.rewardAmount);
+                    FlySummonPoint(deathWorld, definition.rewardAmount);
                     break;
                 case BattlePointType.EnhanceStone:
+                    // 먼저 쥐고 나서 넣는다. 데이터는 지금 오르지만 화면 숫자는 아이콘이 닿을 때 오른다.
+                    battle.ElementUpgrade?.HoldStone(definition.rewardAmount);
                     battle.BattlePoints?.Add(BattlePointType.EnhanceStone, definition.rewardAmount);
+                    FlyEnhanceStone(deathWorld, definition.rewardAmount);
                     break;
             }
 
@@ -241,6 +249,33 @@ namespace OJ.Bounty
                 Run.HighestDefeatedBountyGrade = grade;
 
             OnChanged?.Invoke();
+        }
+
+        // SP 는 소환 버튼으로 날아간다. 버튼의 SP 글자(spText)는 창구 이벤트로 이미 올랐고, 닿으면 버튼이 튕긴다.
+        private void FlySummonPoint(Vector3 deathWorld, int amount)
+        {
+            var summon = battle.Summon;
+            if (summon == null || summon.summonButton == null)
+                return;
+
+            UIRewardFly.FlyFromWorld(deathWorld, BattlePointUtility.GetIcon(BattlePointType.SummonPoint),
+                summon.summonButton.transform as RectTransform, amount, "+" + amount + " SP", summon.spText,
+                new Color(0.55f, 0.9f, 1f, 1f));
+        }
+
+        // 마석 그림은 64 칸 안에 작게 들어 있어 같은 크기로 날리면 코인보다 훨씬 작아 보인다.
+        private const float StoneIconScale = 1.9f;
+
+        // 마석은 보유 마석 칸으로 간다. 칸이 없으면(강화 UI 가 없는 씬) 쥐고 있던 숫자를 바로 풀어 준다.
+        private void FlyEnhanceStone(Vector3 deathWorld, int amount)
+        {
+            ElementUpgradeManager upgrade = battle.ElementUpgrade;
+            if (upgrade == null)
+                return;
+
+            UIRewardFly.FlyFromWorld(deathWorld, BattlePointUtility.GetIcon(BattlePointType.EnhanceStone),
+                upgrade.StoneRect, amount, "+" + amount, battle.Summon != null ? battle.Summon.spText : null,
+                new Color(0.75f, 0.8f, 1f, 1f), upgrade.ReleaseStone, StoneIconScale);
         }
 
         /// <summary>잡히지 않고 사라졌다(화면 밖·씬 정리 등 어떤 경로든). 보상은 없다. 벽에 닿아도 사라지지 않고 남아서 때린다.</summary>

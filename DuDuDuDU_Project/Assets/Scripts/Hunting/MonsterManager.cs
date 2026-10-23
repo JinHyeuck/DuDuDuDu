@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using VContainer;
+using OJ.Core;
 using OJ.DI;
 using OJ.Utils;
 
@@ -47,13 +48,72 @@ namespace OJ.Hunting
                 battle.Tower.NotifyKillForfeited(monster);
         }
 
+        private const float CanvasReferenceWidth = 1080f;
+
+        private readonly List<Monster> engagedBuffer = new List<Monster>();
+        private Camera engageCamera;
+
+        /// <summary>
+        /// 이 높이 아래로 내려온 몬스터만 표적이 된다. 기여도 패널 윗선과 같은 높이다 —
+        /// 화면 맨 위에서 나오자마자 죽어 버려 보이지 않는 것을 막는다.
+        /// </summary>
+        public float EngageLineY
+        {
+            get
+            {
+                if (engageCamera == null)
+                    engageCamera = Camera.main;
+
+                if (engageCamera == null)
+                    return float.PositiveInfinity;
+
+                return EngageLine.WorldY(
+                    UIDamageContributionPanel.TopFromScreenCenter,
+                    CanvasReferenceWidth,
+                    Screen.width,
+                    Screen.height,
+                    engageCamera.transform.position.y,
+                    engageCamera.orthographicSize);
+            }
+        }
+
+        public bool IsEngaged(Monster monster)
+        {
+            return monster != null && EngageLine.IsEngaged(monster.transform.position.y, EngageLineY);
+        }
+
+        /// <summary>
+        /// 교전선 아래로 내려온 몬스터만 모은 목록. 호출할 때마다 같은 버퍼를 다시 채워
+        /// 돌려주므로 <b>들고 있지 말고 바로 쓸 것</b>.
+        /// </summary>
+        public List<Monster> EngagedMonsters
+        {
+            get
+            {
+                engagedBuffer.Clear();
+                float lineY = EngageLineY;
+                for (int i = 0; i < activeMonsters.Count; i++)
+                {
+                    Monster m = activeMonsters[i];
+                    if (m != null && EngageLine.IsEngaged(m.transform.position.y, lineY))
+                        engagedBuffer.Add(m);
+                }
+
+                return engagedBuffer;
+            }
+        }
+
         public Monster GetClosestMonster(Vector3 position)
         {
             Monster closest = null;
             float minDist = Mathf.Infinity;
+            float lineY = EngageLineY;
 
             foreach (Monster m in activeMonsters)
             {
+                if (!EngageLine.IsEngaged(m.transform.position.y, lineY))
+                    continue;
+
                 float dist = Vector2.Distance(position, m.transform.position);
                 if (dist < minDist)
                 {

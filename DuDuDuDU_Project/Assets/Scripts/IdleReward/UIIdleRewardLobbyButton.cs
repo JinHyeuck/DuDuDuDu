@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using OJ.DI;
+using OJ.UI;
 
 namespace OJ.IdleReward
 {
@@ -19,6 +20,8 @@ namespace OJ.IdleReward
         [Tooltip("돼지 아래 \"00:00:00\" 글자. 비어 있으면 Awake 에서 자식 중 그 글자를 찾아 잇는다.")]
         [SerializeField] private TMP_Text progressText;
         [SerializeField] private GameObject redDot;
+
+        private GameObject strongDot;
 
         private float nextRefreshTime;
 
@@ -80,10 +83,13 @@ namespace OJ.IdleReward
         private void Refresh()
         {
             IdleRewardManager manager = IdleRewardManager.Instance;
-            bool canClaim = manager != null && manager.CanClaimAutoBattle();
+            // 받을 게 조금이라도 쌓였을 때가 아니라 <b>한도까지 꽉 찼을 때</b>만 켠다 — 더 쌓이지 않아 손해가 시작되는 순간이다.
+            bool full = manager != null && manager.IsAutoBattleFull();
 
             if (redDot != null)
-                redDot.SetActive(canClaim);
+                redDot.SetActive(false);
+
+            UpgradeRedDot.Set(ref strongDot, transform, full, 54f, new Vector2(-34f, -24f));
 
             if (progressText != null && manager != null)
                 progressText.SetText(FormatTime(manager.GetAutoBattleElapsed()));

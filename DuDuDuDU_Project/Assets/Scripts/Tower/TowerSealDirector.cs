@@ -60,20 +60,23 @@ namespace OJ.Tower
 
             await RunAsync(async overlay =>
             {
+                // 봉인된 줄은 딤드에서 열어 둔다. 화면 전체를 어둡게 하면 무엇이 봉인됐는지 안 보인다.
+                RectTransform[] sealedRow = board != null ? board.GetBottomRowRects() : null;
+
                 if (first)
                 {
                     await Say(overlay, Speaker + "크크크… 첫 구간을 넘었다고 방심했나?", token);
                     if (board != null)
                         await board.PlaySealVisualAsync(SealLabel);
-                    await Say(overlay, Speaker + "아랫줄은 내가 봉인했다!", token);
-                    await Say(overlay, Speaker + "풀고 싶다면 <b>무한의 탑 " + required + "층</b>을 클리어해 보라고!", token);
+                    await Say(overlay, Speaker + "아랫줄은 내가 봉인했다!", token, sealedRow);
+                    await Say(overlay, Speaker + "풀고 싶다면 <b>무한의 탑 " + required + "층</b>을 클리어해 보라고!", token, sealedRow);
                 }
                 else
                 {
                     if (board != null)
                         await board.PlaySealVisualAsync(SealLabel);
                     await Say(overlay,
-                        Speaker + "크크, 아랫줄은 다시 봉인했다!\n<b>무한의 탑 " + required + "층</b>을 클리어하면 풀려요.", token);
+                        Speaker + "크크, 아랫줄은 다시 봉인했다!\n<b>무한의 탑 " + required + "층</b>을 클리어하면 풀려요.", token, sealedRow);
                 }
             }, token);
 
@@ -92,15 +95,17 @@ namespace OJ.Tower
                 if (board != null)
                     await board.PlayReleaseVisualAsync(SealLabel);
 
+                RectTransform[] freedRow = board != null ? board.GetBottomRowRects() : null;
+
                 if (first)
                 {
-                    await Say(overlay, Speaker + "으윽… 내 봉인이 풀리다니!", token);
+                    await Say(overlay, Speaker + "으윽… 내 봉인이 풀리다니!", token, freedRow);
                     await Say(overlay,
-                        "이제 아랫줄도 마음껏 쓸 수 있어요.\n탑이 스테이지를 따라오지 못하면 또 막힐 수 있으니 틈틈이 올라오세요!", token);
+                        "이제 아랫줄도 마음껏 쓸 수 있어요.\n탑이 스테이지를 따라오지 못하면 또 막힐 수 있으니 틈틈이 올라오세요!", token, freedRow);
                 }
                 else
                 {
-                    await Say(overlay, "아랫줄의 봉인이 풀렸어요!", token);
+                    await Say(overlay, "아랫줄의 봉인이 풀렸어요!", token, freedRow);
                 }
             }, token);
 
@@ -133,10 +138,11 @@ namespace OJ.Tower
         /// 화면 전체를 막은 채 말풍선을 띄우고 탭을 기다린다. 말풍선은 위쪽에 둔다 —
         /// 아래쪽 보드의 봉인이 보여야 하기 때문이다.
         /// </summary>
-        private static async UniTask Say(UITutorialOverlay overlay, string text, CancellationToken token)
+        private static async UniTask Say(UITutorialOverlay overlay, string text, CancellationToken token,
+            RectTransform[] visibleRects = null)
         {
             overlay.SetFinger(null);
-            overlay.SetDim();
+            overlay.SetDim(visibleRects);
             overlay.SetTalk(text, tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
             await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
         }

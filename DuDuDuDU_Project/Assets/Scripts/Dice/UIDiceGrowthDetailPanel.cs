@@ -3,7 +3,10 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using OJ.Bounty;
+using OJ.Core;
 using OJ.DI;
+using OJ.Hunting;
 using OJ.Point;
 using OJ.UI;
 using OJ.Utils;
@@ -115,8 +118,165 @@ namespace OJ.Dice
         // 두 규칙을 섞어 기억하는 것이 사고의 원천이고, 늦게 읽어서 손해 볼 것이 없다.
         [Inject] private IBattleRefs battle;
 
+        // ── 레벨 초기화 버튼 ─────────────────────────────────────────────
+        //
+        // <b>코드로 만든다.</b> 이 창의 프리팹 YAML 을 건드리지 않고 강화 버튼 왼쪽에 붙이기 위해서다
+        // (<c>UIEnhanceStoneChip</c> 과 같은 방식). 자리는 강화 버튼을 기준으로 잡는다.
+
+        private static readonly Vector2 ResetButtonSize = new Vector2(220f, 110f);
+        private const float ResetButtonGap = 24f;
+
+        private Button resetButton;
+        private TMP_Text resetLabel;
+
+        private void BuildResetButton()
+        {
+            if (upgradeButton == null || levelText == null || resetButton != null)
+                return;
+
+            var upRect = (RectTransform)upgradeButton.transform;
+            Transform parent = upRect.parent;
+
+            GameObject root = UIBountyUIFactory.CreateRect("ResetButton", parent);
+            var rect = (RectTransform)root.transform;
+            rect.anchorMin = upRect.anchorMin;
+            rect.anchorMax = upRect.anchorMax;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = ResetButtonSize;
+
+            Vector2 upCenter = upRect.anchoredPosition +
+                               Vector2.Scale(new Vector2(0.5f, 0.5f) - upRect.pivot, upRect.rect.size);
+            float x = upCenter.x - upRect.rect.width * 0.5f - ResetButtonGap - ResetButtonSize.x * 0.5f;
+            rect.anchoredPosition = new Vector2(x, upCenter.y);
+
+            Image back = root.AddComponent<Image>();
+            back.sprite = UIBountyUIFactory.LoadSprite("Ingame/Big_Btn_Red");
+            back.type = Image.Type.Sliced;
+            back.color = new Color(0.9f, 0.5f, 0.5f, 1f);
+
+            resetButton = root.AddComponent<Button>();
+            resetButton.targetGraphic = back;
+            ColorBlock colors = resetButton.colors;
+            colors.disabledColor = new Color(0.55f, 0.55f, 0.55f, 0.85f);
+            resetButton.colors = colors;
+
+            resetLabel = UIBountyUIFactory.CreateText("Label", root.transform, "초기화", 38f,
+                TextAlignmentOptions.Center, Color.white, levelText.font, levelText.fontSharedMaterial);
+            UIBountyUIFactory.Stretch(resetLabel.rectTransform);
+            resetLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            resetLabel.lineSpacing = -12f;
+
+            resetButton.onClick.AddListener(OnClickReset);
+        }
+
+        private void RefreshResetButton(bool owned)
+        {
+            if (resetButton == null)
+                return;
+
+            resetButton.gameObject.SetActive(owned);
+            if (!owned)
+                return;
+
+            DiceLevelManager levels = DiceLevelManager.Instance;
+            bool can = levels != null && levels.CanReset(currentDiceType);
+            resetButton.interactable = can;
+
+            if (!can)
+            {
+                resetLabel.SetText("초기화");
+                return;
+            }
+
+            int gem = levels.GetResetGemCost(currentDiceType);
+            resetLabel.SetText(gem > 0
+                ? "초기화\n<size=60%><color=#FFE27A>무료젬 " + gem + "</color></size>"
+                : "초기화\n<size=60%><color=#CFFFD0>무료</color></size>");
+        }
+
+        private void OnClickReset()
+        {
+            DiceLevelManager levels = DiceLevelManager.Instance;
+            if (levels == null || !levels.CanReset(currentDiceType))
+                return;
+
+            UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (confirm == null)
+                return;
+
+            DiceType target = currentDiceType;
+            int level = levels.GetLevel(target);
+            int gem = levels.GetResetGemCost(target);
+            int held = PointManager.Instance != null ? PointManager.Instance.Get(PointType.FreeGem) : 0;
+
+            var meta = DiceMetaDataProvider.GetMeta(target);
+            string diceName = meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : target.ToString();
+
+            var message = new StringBuilder();
+            message.Append("<size=32>").Append(diceName).Append("의 레벨을 1로 되돌려요.\n");
+            message.Append("레벨업에 쓴 재화는 모두 돌려받아요.</size>\n");
+            message.Append("<size=12> </size>\n");
+            message.Append("<size=28><color=#C9D6EE>")
+                .Append(DiceLevelResetRules.FreeMaxLevel).Append("레벨까지 무료 / ")
+                .Append(DiceLevelResetRules.FreeMaxLevel + 1).Append("레벨부터 무료젬 ")
+                .Append(DiceLevelResetRules.GemCost).Append("개</color></size>\n");
+            message.Append("<size=32><color=#FFE27A>");
+            if (gem > 0)
+                message.Append("지금 Lv.").Append(level).Append(" : 무료젬 ").Append(gem).Append("개 (보유 ").Append(held).Append(")");
+            else
+                message.Append("지금 Lv.").Append(level).Append(" : 무료로 초기화해요");
+            message.Append("</color></size>");
+
+            confirm.transform.SetAsLastSibling();
+            confirm.Open("다이스 초기화", message.ToString(), "초기화", "취소", () => ConfirmReset(target));
+        }
+
+        private void ConfirmReset(DiceType target)
+        {
+            DiceLevelManager levels = DiceLevelManager.Instance;
+            if (levels == null)
+                return;
+
+            var refund = new List<PointRewardEntry>();
+            switch (levels.TryReset(target, refund))
+            {
+                case DiceResetResult.Done:
+                    Refresh();
+                    onChanged?.Invoke();
+                    ShowResetRefund(refund);
+                    break;
+
+                case DiceResetResult.NotEnoughGems:
+                    UIConfirmDialog alert = GameContainer.UI?.Get<UIConfirmDialog>();
+                    if (alert != null)
+                    {
+                        int held = PointManager.Instance != null ? PointManager.Instance.Get(PointType.FreeGem) : 0;
+                        alert.transform.SetAsLastSibling();
+                        alert.Open("무료젬이 부족해요",
+                            "초기화에는 무료젬 " + levels.GetResetGemCost(target) + "개가 필요해요.\n(보유 " + held + "개)",
+                            "확인", null, null);
+                    }
+                    break;
+            }
+        }
+
+        private static void ShowResetRefund(List<PointRewardEntry> refund)
+        {
+            if (refund.Count == 0)
+                return;
+
+            UIRewardResultDialog result = GameContainer.UI?.Get<UIRewardResultDialog>();
+            if (result == null)
+                return;
+
+            result.transform.SetAsLastSibling();
+            result.Open(refund, "레벨업에 쓴 재화를 돌려받았어요.");
+        }
+
         protected override void OnLoad()
         {
+            BuildResetButton();
+
             if (upgradeButton != null)
                 upgradeButton.onClick.AddListener(OnClickUpgrade);
 
@@ -129,6 +289,9 @@ namespace OJ.Dice
 
         protected override void OnUnload()
         {
+            if (resetButton != null)
+                resetButton.onClick.RemoveListener(OnClickReset);
+
             if (upgradeButton != null)
                 upgradeButton.onClick.RemoveListener(OnClickUpgrade);
 
@@ -207,6 +370,7 @@ namespace OJ.Dice
             if (descText != null) descText.SetText(BuildDescriptionText(meta, level));
 
             RefreshCostSection(owned, ownership, cost);
+            RefreshResetButton(owned);
             RefreshMilestoneRows(meta, level);
 
             RefreshEvolvePath();

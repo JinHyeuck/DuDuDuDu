@@ -198,6 +198,24 @@ namespace OJ.Dice
             return slots[slotIndex].transform as RectTransform;
         }
 
+        /// <summary>
+        /// 맨 아래 줄 칸들의 사각형. 봉인 안내 딤드가 이 줄만 구멍으로 열어 둔다 —
+        /// 화면 전체를 어둡게 하면 무엇이 봉인됐는지 안 보인다.
+        /// </summary>
+        public RectTransform[] GetBottomRowRects()
+        {
+            int columns = BottomRowColumns();
+            int first = slots.Count - columns;
+            if (columns <= 0 || first < 0)
+                return System.Array.Empty<RectTransform>();
+
+            var rects = new RectTransform[columns];
+            for (int i = 0; i < columns; i++)
+                rects[i] = GetSlotRect(first + i);
+
+            return rects;
+        }
+
         public int GetSlotIndexFromObject(GameObject hitObj)
         {
             if (hitObj == null)

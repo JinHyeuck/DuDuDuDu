@@ -4,9 +4,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using OJ.Battle;
+using OJ.Bounty;
+using OJ.Core;
 using OJ.DI;
 using OJ.Dice;
-using OJ.Point;
 using OJ.UI;
 using OJ.Utils;
 using VContainer;
@@ -27,6 +28,13 @@ namespace OJ.Element
 
         public event Action<ElementType, int> OnElementLevelChanged;
 
+        private static readonly Color PayableColor = Color.white;
+        private static readonly Color CannotPayColor = new Color(1f, 0.35f, 0.3f, 1f);
+        private static readonly Color BonusColor = new Color(1f, 0.87f, 0.35f, 1f);
+
+        private UIEnhanceStoneChip chip;
+        private TMP_Text bonusText;
+
         void Awake()
         {
             // <b>여기서 battle 을 건드리면 안 된다.</b> VContainer 의 주입은 Awake 뒤에
@@ -40,8 +48,9 @@ namespace OJ.Element
 
         private void Start()
         {
+            BuildUI();
             BindUI();
-            RefreshCoinUI();
+            RefreshUI();
         }
 
         private void OnDestroy()
@@ -50,8 +59,49 @@ namespace OJ.Element
 
         }
 
-        /// <summary>강화 창을 여는 버튼(보드 왼쪽 "강화" 칸). 튜토리얼이 그 자리만 열어 둔다.</summary>
-        public RectTransform OpenButtonRect => ElementUpgrade != null ? ElementUpgrade.transform as RectTransform : null;
+        /// <summary>강화 버튼(보드 왼쪽 "강화" 칸). 튜토리얼이 그 자리만 열어 두고, 연출이 이 칸을 튕긴다.</summary>
+        public RectTransform UpgradeButtonRect => ElementUpgrade != null ? ElementUpgrade.transform as RectTransform : null;
+
+        /// <summary>보유 마석 수 칸. 마석이 날아와 닿는 자리다. 칸을 못 만들었으면 null.</summary>
+        public RectTransform StoneRect => chip != null ? chip.Rect : null;
+
+        /// <summary>
+        /// 날아오는 마석을 화면 숫자에 넣지 않고 쥐어 둔다. 아이콘이 닿을 때 <see cref="ReleaseStone"/> 으로 푼다.
+        /// 데이터는 이미 올랐고, 바뀌는 것은 보이는 숫자뿐이다.
+        /// </summary>
+        public void HoldStone(int amount)
+        {
+            if (chip != null)
+                chip.Hold(amount);
+        }
+
+        public void ReleaseStone(int amount)
+        {
+            if (chip != null)
+                chip.Release(amount);
+        }
+
+        /// <summary>
+        /// 지금까지 강화한 횟수. 전 속성이 같은 레벨로 오르므로 가장 높은 레벨이 곧 횟수다.
+        /// 따로 세지 않는다 — 되돌리기가 레벨을 복원해도 가격이 어긋날 곳이 없다.
+        /// </summary>
+        public int UpgradeCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (int level in levels.Values)
+                {
+                    if (level > count)
+                        count = level;
+                }
+
+                return count;
+            }
+        }
+
+        /// <summary>다음 강화에 드는 마석.</summary>
+        public int NextUpgradeCost => ElementUpgradeRules.NextCost(UpgradeCount);
 
         public int GetLevel(ElementType elementType)
         {
@@ -69,16 +119,16 @@ namespace OJ.Element
             int clamped = Mathf.Max(0, level);
             levels[elementType] = clamped;
             OnElementLevelChanged?.Invoke(elementType, clamped);
+            RefreshUI();
         }
 
-        public int GetNextUpgradeCost(ElementType elementType)
+        /// <summary>
+        /// 모든 속성을 한 단계씩 올린다(한 단계 = 위력 <see cref="ElementUpgradeRules.BonusPercentPerUpgrade"/>%).
+        /// 마석이 모자라거나 지금 보드를 못 만지는 단계면 아무것도 바꾸지 않고 false.
+        /// </summary>
+        public bool TryUpgradeAll()
         {
-            return GetLevel(elementType) + 1;
-        }
-
-        public bool TryLevelUp(ElementType elementType)
-        {
-            if (elementType == ElementType.Max || PointManager.Instance == null)
+            if (battle == null || battle.Game == null || battle.BattlePoints == null)
                 return false;
 
             // <b>관리 단계에서만 올린다.</b> 소환(UIDiceSummonSystem)·머지(MergeSystem)·
@@ -91,11 +141,16 @@ namespace OJ.Element
             if (!battle.Game.CanManageBoard)
                 return false;
 
-            int cost = GetNextUpgradeCost(elementType);
-            if (battle.BattlePoints == null || !battle.BattlePoints.TrySpend(BattlePointType.EnhanceStone, cost))
+            if (!battle.BattlePoints.TrySpend(BattlePointType.EnhanceStone, NextUpgradeCost))
                 return false;
 
-            SetLevel(elementType, GetLevel(elementType) + 1);
+            int next = UpgradeCount + 1;
+            foreach (ElementType elementType in Enum.GetValues(typeof(ElementType)))
+            {
+                if (elementType != ElementType.Max)
+                    SetLevel(elementType, next);
+            }
+
             return true;
         }
 
@@ -111,7 +166,12 @@ namespace OJ.Element
         public void ResetRunState()
         {
             ResetAll();
-            RefreshCoinUI();
+
+            // 날아오던 마석이 있었다면 그 연출은 새 판에서 의미가 없다. 쥔 채로 두면 숫자가 영영 모자란다.
+            if (chip != null)
+                chip.ReleaseAll();
+
+            RefreshUI();
         }
 
         public void ResetAll(bool notify = true)
@@ -143,7 +203,7 @@ namespace OJ.Element
                 totalLevel += GetLevel(elementType);
             }
 
-            return 1f + (totalLevel * 0.1f);
+            return 1f + (totalLevel * (ElementUpgradeRules.BonusPercentPerUpgrade / 100f));
         }
 
         public float GetTotalBonusPercent(DiceType diceType)
@@ -224,15 +284,25 @@ namespace OJ.Element
         }
 
         /// <summary>
-        /// 카탈로그에서 꺼내 띄운다. (10.4)
-        ///
-        /// 예전에는 씬 인스턴스를 <c>[SerializeField]</c> 로 직접 가리켰고, 그 참조가 <c>None</c> 이면
-        /// <c>?.</c> 가 그대로 삼켜 <b>아무 로그 없이</b> 버튼이 먹통이 됐다.
-        /// <see cref="UIService"/> 는 못 열면 사유를 로그로 남긴다.
+        /// 누르면 곧바로 모든 속성을 한 단계 올린다. 팝업을 거치지 않는다.
+        /// 성공하면 버튼이 튕기며 "+10%" 가 뜨고, 마석이 모자라면 보유 마석 칸이 흔들린다.
+        /// 지금 보드를 못 만지는 때는 버튼이 눌리지 않으므로(<see cref="SetUpgradeUIAvailable"/>) 여기까지 오지 않는다.
         /// </summary>
         private void OnClickElementUpgrade()
         {
-            GameContainer.UI?.Show<UIElementUpgradePanel>();
+            if (TryUpgradeAll())
+            {
+                UIRewardFly.Punch(UpgradeButtonRect);
+                UIRewardFly.FloatText(UpgradeButtonRect, "+" + ElementUpgradeRules.BonusPercentPerUpgrade + "%",
+                    coinAmountText, BonusColor);
+                return;
+            }
+
+            if (chip != null && battle != null && battle.BattlePoints != null &&
+                battle.BattlePoints.Get(BattlePointType.EnhanceStone) < NextUpgradeCost)
+            {
+                chip.Shake();
+            }
         }
 
         // 종류를 거르지 않는다. 창구가 전투 재화만 내보내고 그중 강화석 말고는
@@ -240,20 +310,67 @@ namespace OJ.Element
         // 전투 재화가 늘었을 때 이 줄이 막지 않는다.
         private void OnBattlePointChanged(BattlePointType battlePointType, int value)
         {
-            RefreshCoinUI();
+            RefreshUI();
         }
 
-        private void RefreshCoinUI()
+        /// <summary>
+        /// 강화 버튼 칸에 다음 강화의 값과 지금까지 쌓인 위력을 붙이고, 보유 마석 칸을 만든다.
+        /// 씬을 고치지 않고 코드로 얹는다(<c>UpgradeRedDot</c> 와 같은 방식).
+        /// </summary>
+        private void BuildUI()
+        {
+            RectTransform button = UpgradeButtonRect;
+            if (button == null)
+                return;
+
+            if (coinAmountText != null)
+            {
+                // 값이 세 자리(25, 30 … 100 이상)로 늘어도 칸 안에 들어오게 한다.
+                coinAmountText.textWrappingMode = TextWrappingModes.NoWrap;
+                coinAmountText.enableAutoSizing = true;
+                coinAmountText.fontSizeMax = coinAmountText.fontSize;
+                coinAmountText.fontSizeMin = 20f;
+            }
+
+            if (coinAmountText != null && bonusText == null)
+            {
+                bonusText = UIBountyUIFactory.CreateText("Bonus", button, string.Empty, 24f,
+                    TextAlignmentOptions.Center, BonusColor, coinAmountText.font, coinAmountText.fontSharedMaterial);
+                UIBountyUIFactory.SetRect(bonusText.rectTransform, new Vector2(104f, 64f), new Vector2(0f, -124f));
+                bonusText.raycastTarget = false;
+                bonusText.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+
+            // 칸의 자리는 화면 비율로 정해지므로 부모는 전투 HUD 캔버스의 뿌리여야 한다.
+            Canvas canvas = button.GetComponentInParent<Canvas>();
+            if (chip == null && coinAmountText != null && canvas != null)
+            {
+                chip = UIEnhanceStoneChip.Create((RectTransform)canvas.rootCanvas.transform, coinAmountText,
+                    BattlePointUtility.GetIcon(BattlePointType.EnhanceStone));
+            }
+        }
+
+        private void RefreshUI()
         {
             int owned = battle != null && battle.BattlePoints != null
                 ? battle.BattlePoints.Get(BattlePointType.EnhanceStone)
                 : 0;
 
+            if (chip != null)
+                chip.SetOwned(owned);
+
+            int cost = NextUpgradeCost;
             if (coinAmountText != null)
-                coinAmountText.SetText("{0}", owned);
+            {
+                coinAmountText.SetText("{0}", cost);
+                coinAmountText.color = owned >= cost ? PayableColor : CannotPayColor;
+            }
 
             if (coinIconImage != null)
                 coinIconImage.sprite = BattlePointUtility.GetIcon(BattlePointType.EnhanceStone);
+
+            if (bonusText != null)
+                bonusText.SetText("전 속성\n+{0}%", ElementUpgradeRules.TotalBonusPercent(UpgradeCount));
         }
     }
 }

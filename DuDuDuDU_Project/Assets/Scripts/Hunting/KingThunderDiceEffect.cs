@@ -30,7 +30,7 @@ namespace OJ.Hunting
             // 이 효과는 전투 중에만 만들어지고 불리므로 창구 뒤의 매니저는 null 이 될 수 없다.
             // 그래서 battle.Monsters 에 새 ?. 를 붙이지 않는다 — 비어 있으면 조용히 넘어가는 대신 울어야 한다.
             Dictionary<Monster, List<Monster>> chainedByTarget = attackContent.GetNPerTarget_NoGlobalDup(
-                battle.Monsters.activeMonsters,
+                battle.Monsters.EngagedMonsters,
                 hitMonsters,
                 thunderTargets);
 

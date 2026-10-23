@@ -476,13 +476,9 @@ namespace OJ.Hunting
             // 속성강화도 관리 단계 전용이다. 소환·머지·진화가 전부 그런데 이것만
             // 전투 중에 열려 있었다 — 같은 강화석을 쓰면서 규칙이 혼자 달랐다.
             //
-            // 실제 차단은 ElementUpgradeManager.TryLevelUp 이 하고, 여기서는 버튼을
+            // 실제 차단은 ElementUpgradeManager.TryUpgradeAll 이 하고, 여기서는 버튼을
             // 흐리게 만든다(치우지 않는다 — 빈 자리는 기능이 사라진 것처럼 보인다).
-            // 창이 열린 채 웨이브가 시작될 수 있으므로(그 창은 전체 화면을 덮지 않는다)
-            // 닫는 것까지 해야 한다.
             battle.ElementUpgrade.SetUpgradeUIAvailable(CanManageBoard);
-            if (!CanManageBoard)
-                GameContainer.UI?.Hide<UIElementUpgradePanel>();
 
             // 관리 단계마다 자동으로 뜨던 조합 진행도 창(UIDiceCraftProgressDialog)은
             // 조합식과 함께 사라졌다. 상위 다이스로 가는 길은 이제 목록을 띄워 재고를
@@ -668,7 +664,6 @@ namespace OJ.Hunting
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceButton>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceOddsTooltip>();
             GameContainer.UI?.Hide<OJ.Economy.UILuckyDiceResultPopup>();
-            GameContainer.UI?.Hide<UIElementUpgradePanel>();
             GameContainer.UI?.Hide<UIWaveRewindButton>();
             battle.ElementUpgrade.SetUpgradeUIAvailable(false);
         }
@@ -922,7 +917,8 @@ namespace OJ.Hunting
 
         public bool IsBossWave()
         {
-            return CurrentStageData != null && CurrentWaveIndex >= CurrentStageData.totalWaves;
+            return CurrentStageData != null
+                && BossWaveRules.IsBossWave(CurrentStageData.stageIndex, CurrentWaveIndex, CurrentStageData.totalWaves);
         }
 
         private void InitializeStage()

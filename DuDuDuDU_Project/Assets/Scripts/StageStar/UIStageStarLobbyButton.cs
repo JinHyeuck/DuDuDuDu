@@ -12,6 +12,8 @@ namespace OJ.StageStar
         [SerializeField] private TMP_Text totalStarText;
         [SerializeField] private GameObject redDot;
 
+        private GameObject strongDot;
+
         private void Awake()
         {
             if (button == null)
@@ -50,7 +52,9 @@ namespace OJ.StageStar
                 totalStarText.SetText("x{0}", totalStars);
 
             if (redDot != null)
-                redDot.SetActive(manager != null && manager.HasClaimableReward());
+                redDot.SetActive(false);
+
+            UpgradeRedDot.Set(ref strongDot, transform, manager != null && manager.HasClaimableReward(), 54f, new Vector2(-34f, -24f));
         }
 
         /// <summary>

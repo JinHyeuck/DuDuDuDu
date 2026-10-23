@@ -411,53 +411,39 @@ namespace OJ.Tutorial
         }
 
         /// <summary>
-        /// 속성강화 한 번 — 강화 버튼 → 번개의 속성 줄 강화 → 창 닫기. 셋 다 딤드다.
-        /// 고르는 속성은 머지로 만든 번개의 속성이다. 보드에서 가장 센 다이스라 효과가 바로 보이고,
-        /// 뒤에서 진화시킬 3성도 같은 계통이다. 마석은 앞의 행운 주사위가 준 것을 쓴다(최소 1개).
+        /// 속성강화 한 번 — 강화 버튼을 누르면 모든 속성이 곧바로 한 단계 오른다. 창은 없다.
+        /// 마석이 첫 강화 값에 모자라면 그만큼만 채워 준다(많으면 깎지 않는다 — 번 것을 가져가지 않는다).
+        /// 진화 선물이 진화 비용까지 마석을 다시 맞춰 주므로 여기서 쓴 만큼 뒤가 막히지 않는다.
         /// </summary>
         private async UniTask RunUpgradeAsync(GameManager game)
         {
             ElementUpgradeManager upgrade = battle.ElementUpgrade;
-            UIElementUpgradePanel panel = GameContainer.UI?.Get<UIElementUpgradePanel>();
-            if (upgrade == null || panel == null || upgrade.OpenButtonRect == null)
+            if (upgrade == null || upgrade.UpgradeButtonRect == null)
             {
-                Debug.LogError("[튜토리얼] 속성강화 버튼이나 창이 없어 강화 단계를 건너뛴다.");
+                Debug.LogError("[튜토리얼] 속성강화 버튼이 없어 강화 단계를 건너뛴다.");
                 return;
             }
 
-            ElementType element = ElementOf(TutorialStage.MergeResult);
-
-            // 첫 강화 비용은 마석 1개다. 행운 주사위가 최소 1개는 주므로 모자랄 일이 없지만 방어해 둔다.
-            if (battle.BattlePoints.Get(BattlePointType.EnhanceStone) < 1)
-                battle.BattlePoints.Set(BattlePointType.EnhanceStone, 1);
+            int cost = upgrade.NextUpgradeCost;
+            if (battle.BattlePoints.Get(BattlePointType.EnhanceStone) < cost)
+                battle.BattlePoints.Set(BattlePointType.EnhanceStone, cost);
 
             FreezeGame();
 
-            Enter(TutorialStep.UpgradeOpen);
-            Guide(upgrade.OpenButtonRect, "마석으로 속성을 강화할 수 있어요!", dim: true);
-            await Until(() => panel.isEnter);
+            Enter(TutorialStep.UpgradePress);
+            int before = upgrade.UpgradeCount;
+            Guide(upgrade.UpgradeButtonRect,
+                "마석으로 모든 속성을 한 번에 강화할 수 있어요!\n눌러 보세요.", dim: true);
+            await Until(() => upgrade.UpgradeCount > before);
 
-            // 창이 막 열린 프레임에는 줄이 아직 없을 수 있다(UIElementUpgradePanel.BuildIfNeeded).
-            await Until(() => panel.GetUpgradeButtonRect(element) != null);
+            // 버튼이 튕기고 "+10%" 가 뜨는 연출을 잠깐 보여 준 뒤 설명한다.
+            overlay.ClearAll();
+            await DelaySeconds(0.6f);
 
-            Enter(TutorialStep.UpgradeLevelUp);
-            int before = upgrade.GetLevel(element);
-            Guide(panel.GetUpgradeButtonRect(element), "번개 주사위의 속성을 강화해 봐요.", dim: true);
-            await Until(() => upgrade.GetLevel(element) > before);
+            Enter(TutorialStep.UpgradeDone);
+            overlay.SetDim();
+            await TalkAsync("모든 속성 주사위가 " + ElementUpgradeRules.BonusPercentPerUpgrade + "% 세졌어요!\n강화할수록 마석이 조금씩 더 들어요.");
 
-            Enter(TutorialStep.UpgradeClose);
-            RectTransform close = panel.FindExitButtonRect("Exit");
-            if (close != null)
-            {
-                Guide(close, "강화한 만큼 같은 속성 주사위가 모두 세져요.\n창을 닫아요.", dim: true);
-            }
-            else
-            {
-                overlay.ClearAll();
-                overlay.SetTalk("강화한 만큼 같은 속성 주사위가 모두 세져요.\n창을 닫아요.", where: UITutorialOverlay.TalkPlacement.Top);
-            }
-
-            await Until(() => !panel.isEnter);
             overlay.ClearAll();
             ThawGame();
         }
@@ -490,14 +476,6 @@ namespace OJ.Tutorial
         {
             float end = Time.unscaledTime + seconds;
             await Until(() => Time.unscaledTime >= end);
-        }
-
-        private static ElementType ElementOf(DiceType type)
-        {
-            DiceMetaDataDatabase.DiceMeta meta = DiceMetaDataProvider.GetMeta(type);
-            return meta != null && meta.elementType != null && meta.elementType.Length > 0
-                ? meta.elementType[0]
-                : ElementType.Light;
         }
 
         private async UniTask HandleFailureAsync()
