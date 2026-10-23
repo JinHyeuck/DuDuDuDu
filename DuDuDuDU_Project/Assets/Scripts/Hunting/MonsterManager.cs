@@ -68,7 +68,7 @@ namespace OJ.Hunting
                     return float.PositiveInfinity;
 
                 return EngageLine.WorldY(
-                    UIDamageContributionPanel.TopFromScreenCenter,
+                    UIDamageContributionPanel.TopFromScreenBottom,
                     CanvasReferenceWidth,
                     Screen.width,
                     Screen.height,

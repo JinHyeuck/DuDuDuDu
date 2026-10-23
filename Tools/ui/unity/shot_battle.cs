@@ -1,16 +1,18 @@
 // 전투 화면(월드 + ScreenSpaceCamera 보드 + Overlay 팝업)을 한 장으로 합쳐 찍는다.
-// ARGS: [0] 저장할 PNG 절대경로
+// ARGS: [0] 저장할 PNG 절대경로, [1] 가로(선택, 기본 1080), [2] 세로(선택, 기본 1920) — 22:9 는 1080 2640
 //
 // shot_canvas 는 Overlay 캔버스만 모은다. 전투 보드/데미지 캔버스는 ScreenSpaceCamera 라 빠진다.
 // 그래서 활성 카메라를 depth 순으로 한 RenderTexture 에 차례로 그리고(둘째부터 Depth 만 지움),
 // Overlay 캔버스는 임시 카메라에 붙여 맨 위에 덧그린다.
 // 게임 뷰가 가로(1280x720)면 CanvasScaler 가 그 비율로 짜므로 먼저 세로 해상도를 잡는다.
-if (ARGS.Length < 1) { return "사용법: shot_battle <out.png>"; }
+if (ARGS.Length < 1) { return "사용법: shot_battle <out.png> [가로 세로]"; }
 
-UnityEditor.PlayModeWindow.SetCustomRenderingResolution(1080, 1920, "portrait");
+int W = ARGS.Length >= 3 ? int.Parse(ARGS[1]) : 1080;
+int H = ARGS.Length >= 3 ? int.Parse(ARGS[2]) : 1920;
+UnityEditor.PlayModeWindow.SetCustomRenderingResolution((uint)W, (uint)H, "portrait");
 Canvas.ForceUpdateCanvases();
 
-var rtex = new RenderTexture(1080, 1920, 24);
+var rtex = new RenderTexture(W, H, 24);
 
 var cams = new System.Collections.Generic.List<Camera>();
 foreach (var c in Camera.allCameras)
@@ -33,7 +35,7 @@ var overlayCam = camGo.AddComponent<Camera>();
 overlayCam.clearFlags = CameraClearFlags.Depth;
 overlayCam.cullingMask = ~0;
 overlayCam.orthographic = true;
-overlayCam.orthographicSize = 960f;
+overlayCam.orthographicSize = H * 0.5f;
 overlayCam.targetTexture = rtex;
 overlayCam.transform.position = new Vector3(100000f, 100000f, -1000f);
 
@@ -54,8 +56,8 @@ Canvas.ForceUpdateCanvases();
 overlayCam.Render();
 
 RenderTexture.active = rtex;
-var tex = new Texture2D(1080, 1920, TextureFormat.RGB24, false);
-tex.ReadPixels(new Rect(0, 0, 1080, 1920), 0, 0);
+var tex = new Texture2D(W, H, TextureFormat.RGB24, false);
+tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
 tex.Apply();
 RenderTexture.active = null;
 System.IO.File.WriteAllBytes(ARGS[0], tex.EncodeToPNG());

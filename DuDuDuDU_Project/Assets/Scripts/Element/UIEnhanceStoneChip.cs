@@ -43,12 +43,12 @@ namespace OJ.Element
             GameObject root = UIBountyUIFactory.CreateRect("UIEnhanceStoneChip", parent);
             var rect = (RectTransform)root.transform;
 
-            // 앵커를 비율로 잡는다. 캔버스 단위가 화면 픽셀과 달라도 같은 자리에 선다.
-            Vector2 anchor = new Vector2(CenterOnScreen.x / 1080f, 1f - CenterOnScreen.y / 1920f);
-            rect.anchorMin = rect.anchorMax = anchor;
+            // 가로는 비율, 세로는 화면 아래에서의 거리로 잡는다. 이 칸은 아래에 붙은 보드·버튼 곁에 서므로
+            // 세로가 긴 기기(22:9)에서도 그 곁에 남아야 한다 — 위쪽 비율로 잡으면 허공으로 떠오른다.
+            rect.anchorMin = rect.anchorMax = new Vector2(CenterOnScreen.x / 1080f, 0f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = Size;
-            rect.anchoredPosition = Vector2.zero;
+            rect.anchoredPosition = new Vector2(0f, 1920f - CenterOnScreen.y);
 
             var chip = root.AddComponent<UIEnhanceStoneChip>();
             chip.home = rect.anchoredPosition;

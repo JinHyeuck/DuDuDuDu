@@ -112,13 +112,14 @@ namespace OJ.Rewind
         private const float RightMargin = 16f;
 
         /// <summary>
-        /// 화면 세로 중심에서 얼마나 올릴지.
+        /// 화면 <b>아래</b>에서 버튼 세로 중심까지 캔버스 단위로 얼마인지 (1080x1920 에서 중심 +430).
         ///
         /// <c>UIDamageContributionPanel</c> 과 <b>같은 띠의 반대쪽</b>이다. 그 패널
         /// 주석이 적어 둔 대로 위로는 웨이브 게이지, 아래로는 다이스 보드가 있고 그 사이가
-        /// 비어 있다 — 왼쪽은 기여도가 쓰고 있으므로 오른쪽을 쓴다.
+        /// 비어 있다 — 왼쪽은 기여도가 쓰고 있으므로 오른쪽을 쓴다. 같은 띠에 있어야 하므로
+        /// 그 패널과 똑같이 아래를 기준으로 삼는다.
         /// </summary>
-        private const float CenterY = 430f;
+        private const float CenterFromBottom = 1390f;
 
         private static readonly Color ButtonColor = new Color(0.55f, 0.24f, 0.24f, 0.92f);
 
@@ -128,11 +129,11 @@ namespace OJ.Rewind
             GameObject root = UIBountyUIFactory.CreateRect("UIWaveRewindButton", parent);
             RectTransform rootRect = root.GetComponent<RectTransform>();
 
-            rootRect.anchorMin = new Vector2(1f, 0.5f);
-            rootRect.anchorMax = new Vector2(1f, 0.5f);
+            rootRect.anchorMin = new Vector2(1f, 0f);
+            rootRect.anchorMax = new Vector2(1f, 0f);
             rootRect.pivot = new Vector2(1f, 0.5f);
             rootRect.sizeDelta = new Vector2(ButtonWidth, ButtonHeight);
-            rootRect.anchoredPosition = new Vector2(-RightMargin, CenterY);
+            rootRect.anchoredPosition = new Vector2(-RightMargin, CenterFromBottom);
 
             GameObject view = UIBountyUIFactory.CreateRect("DialogView", root.transform);
             UIBountyUIFactory.Stretch(view.GetComponent<RectTransform>());

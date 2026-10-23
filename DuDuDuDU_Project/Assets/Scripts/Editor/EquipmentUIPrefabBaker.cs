@@ -124,8 +124,12 @@ namespace OJ.EditorTools
                 Transform inventory = group.Find("InventoryArea");
                 DestroyIfExists(inventory, "InventoryScroll", log);
                 var inventoryRect = (RectTransform)inventory;
-                inventoryRect.anchoredPosition = new Vector2(inventoryRect.anchoredPosition.x, 870f);
-                inventoryRect.sizeDelta = new Vector2(inventoryRect.sizeDelta.x, 870f);
+                // 긴 화면용으로 이미 세로로 늘려 뒀으면(TallScreenLayoutBaker) 그대로 둔다 — 1920 에서 870 자리와 같다.
+                if (Mathf.Approximately(inventoryRect.anchorMin.y, inventoryRect.anchorMax.y))
+                {
+                    inventoryRect.anchoredPosition = new Vector2(inventoryRect.anchoredPosition.x, 870f);
+                    inventoryRect.sizeDelta = new Vector2(inventoryRect.sizeDelta.x, 870f);
+                }
 
                 // 강화 팝업은 맨 위에 그려져야 한다 — 예전엔 절반 창이라 아래 영역 뒤에 있어도 됐다.
                 Transform dialog = group.Find("UIEquipmentConfirmDialog");
@@ -137,6 +141,8 @@ namespace OJ.EditorTools
                     levelUpAll != null ? levelUpAll.GetComponent<Button>() : null;
                 so.FindProperty("confirmDialog").objectReferenceValue = dialog.GetComponent<UIEquipmentConfirmDialog>();
                 so.ApplyModifiedPropertiesWithoutUndo();
+
+                TallScreenLayoutBaker.ApplyEquipmentPage(root.transform, log);
 
                 PrefabUtility.SaveAsPrefabAsset(root, PagePath);
                 log.AppendLine("  페이지: 저장했다");
