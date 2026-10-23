@@ -77,7 +77,8 @@ namespace OJ.Hunting
         /// <param name="reachedWaveCount">이번 판에 깬 웨이브 수.</param>
         /// <param name="totalWaves">이 스테이지의 전체 웨이브 수. 큰 숫자 칸에 "깬 수/전체" 로 나온다.</param>
         /// <param name="bestWave">이 스테이지에서 가장 멀리 간 웨이브. 이번 판을 포함한다.</param>
-        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int totalWaves, int bestWave, IReadOnlyList<PointRewardEntry> rewards, Action onClose)
+        /// <param name="note">최고 기록 아래에 작게 붙는 한 줄(신기록 · 보스 잔여 체력 · 다음 보상까지). 없으면 생략.</param>
+        public void Open(bool isWin, int stageIndex, int reachedWaveCount, int totalWaves, int bestWave, IReadOnlyList<PointRewardEntry> rewards, Action onClose, string note = null)
         {
             closeAction = onClose;
 
@@ -105,10 +106,42 @@ namespace OJ.Hunting
             if (bestStageValueText != null)
                 bestStageValueText.SetText("Wave {0}", Mathf.Max(Mathf.Max(0, reachedWaveCount), bestWave));
 
+            SetNote(note);
+
             BindRewards(rewards);
             Enter();
         }
 
+
+        private TMP_Text noteText;
+
+        /// <summary>
+        /// 최고 기록 아래 한 줄 메모("신기록 / 보스 체력 N% 남김 / 다음 보상까지"). 최고 기록 글자를 복제해 그 아래에 둔다 —
+        /// 값 글자에 줄바꿈으로 붙이면 가운데 정렬이라 위로 밀려 "최고 기록" 라벨과 겹친다. 프리팹은 건드리지 않는다.
+        /// </summary>
+        private void SetNote(string note)
+        {
+            if (noteText == null)
+            {
+                if (bestStageValueText == null || string.IsNullOrEmpty(note))
+                    return;
+
+                noteText = Instantiate(bestStageValueText, bestStageValueText.transform.parent);
+                noteText.name = "NoteText";
+                noteText.rectTransform.anchoredPosition = bestStageValueText.rectTransform.anchoredPosition + new Vector2(0f, -50f);
+                noteText.enableAutoSizing = false;
+                noteText.fontSize = bestStageValueText.fontSize * 0.55f;
+                noteText.textWrappingMode = TextWrappingModes.NoWrap;
+                noteText.overflowMode = TextOverflowModes.Overflow;
+                noteText.alignment = TextAlignmentOptions.Center;
+                noteText.richText = true;
+            }
+
+            bool show = !string.IsNullOrEmpty(note);
+            noteText.gameObject.SetActive(show);
+            if (show)
+                noteText.SetText(note);
+        }
 
         private void BindRewards(IReadOnlyList<PointRewardEntry> rewards)
         {

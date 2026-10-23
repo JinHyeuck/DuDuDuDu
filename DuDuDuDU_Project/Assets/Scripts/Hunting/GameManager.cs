@@ -108,6 +108,12 @@ namespace OJ.Hunting
         /// <summary>탑 층을 깨기 직전의 최고 클리어 층. 봉인 해제 연출 판정용(<see cref="OnTowerResultClosed"/>).</summary>
         private int towerFloorBeforeClear;
 
+        /// <summary>이 판을 시작할 때의 이 스테이지 최고 웨이브. 끝나고 "신기록" 인지 가르는 기준이다.</summary>
+        private int runStartBestWave;
+
+        /// <summary>패배한 순간 살아 있던 보스의 남은 체력(%). 보스가 없었으면 -1.</summary>
+        private int defeatBossRemainPercent = -1;
+
         [Header("Stage Theme")]
         [SerializeField] private SpriteRenderer stageBackground;
         public Button PlayUI;
@@ -849,6 +855,7 @@ namespace OJ.Hunting
             int totalWaves = CurrentStageData != null ? Mathf.Max(1, CurrentStageData.totalWaves) : 1;
             int clearedWaves = Mathf.Clamp(CurrentWaveIndex - 1, 0, totalWaves);
             float rewardRatio = (float)clearedWaves / totalWaves;
+            defeatBossRemainPercent = FindAliveBossHpPercent();
 
             List<PointRewardEntry> partialRewards = StageRewardCalculator.ScaleRewards(
                 StageRewardCalculator.BuildNormalClearRewards(stageIndex),
@@ -862,6 +869,60 @@ namespace OJ.Hunting
             Debug.Log(
                 $"Stage {stageIndex} Failed | Cleared Waves: {clearedWaves}/{totalWaves} | Ratio: {rewardRatio:0.##} | Partial Normal: {PointRewardUtility.BuildRewardSummary(partialRewards)}");
             ShowStageResult(false, stageIndex, clearedWaves, partialRewards);
+        }
+
+        /// <summary>살아 있는 스테이지 보스의 남은 체력(%). 없으면 -1. 패배 결과창의 "보스 체력 N% 남김" 이다.</summary>
+        private int FindAliveBossHpPercent()
+        {
+            List<Monster> active = battle.Monsters != null ? battle.Monsters.activeMonsters : null;
+            if (active == null)
+                return -1;
+
+            int percent = -1;
+            for (int i = 0; i < active.Count; i++)
+            {
+                Monster monster = active[i];
+                if (monster != null && monster.IsStageBoss && monster.HpPercent > 0)
+                    percent = percent < 0 ? monster.HpPercent : Mathf.Min(percent, monster.HpPercent);
+            }
+
+            return percent;
+        }
+
+        /// <summary>
+        /// 결과창 최고 기록 아래 한 줄. 신기록 &gt; 보스 잔여 체력 &gt; 다음 보상까지 순으로 하나만 쓴다 —
+        /// "아깝다 / 올랐다 / 조금만 더" 가 다음 판을 켜게 하는 마음이라 가장 강한 것 하나만 보인다.
+        /// </summary>
+        private string BuildResultNote(bool isWin, int stageIndex, int reachedWaveCount)
+        {
+            if (isWin || CurrentStageData == null)
+                return null;
+
+            if (runStartBestWave > 0 && reachedWaveCount > runStartBestWave)
+                return "<color=#FFD84A>신기록!</color> (이전 " + runStartBestWave + ")";
+
+            if (defeatBossRemainPercent > 0)
+                return "<color=#FF8A6A>보스 체력 " + defeatBossRemainPercent + "% 남기고 패배</color>";
+
+            int toNext = WavesToNextMilestone(stageIndex, StageProgressManager.Instance != null
+                ? StageProgressManager.Instance.GetBestClearedWave(stageIndex) : reachedWaveCount);
+            return toNext > 0 ? "다음 보상까지 <b>" + toNext + "</b>웨이브" : null;
+        }
+
+        private static int WavesToNextMilestone(int stageIndex, int bestWave)
+        {
+            StageRewardManager rewards = StageRewardManager.Instance;
+            if (rewards == null)
+                return 0;
+
+            int next = int.MaxValue;
+            foreach (StageRewardMilestone milestone in rewards.GetMilestones())
+            {
+                if (milestone != null && milestone.requiredStageIndex == stageIndex && milestone.requiredWaveIndex > bestWave)
+                    next = Mathf.Min(next, milestone.requiredWaveIndex);
+            }
+
+            return next == int.MaxValue ? 0 : next - bestWave;
         }
 
         public int GetCurrentWaveMonsterHp()
@@ -885,7 +946,26 @@ namespace OJ.Hunting
             if (CurrentStageData == null)
                 return 1;
 
+            // 보스 단독 웨이브는 일반 몬스터가 없으므로 그 웨이브 전체 체력을 보스가 진다(SoloBossRules).
+            if (!battle.Tutorial.IsActive && CurrentStageData.IsSoloBossWaveIndex(CurrentWaveIndex))
+                return LateHp(CurrentStageData.GetSoloBossHpForWave(CurrentWaveIndex));
+
             return LateHp(CurrentStageData.GetBossHpForWave(CurrentWaveIndex));
+        }
+
+        /// <summary>이 웨이브는 보스만 나오는가. 튜토리얼은 대본이 정한다.</summary>
+        public bool IsSoloBossWave()
+        {
+            return CurrentStageData != null && !battle.Tutorial.IsActive
+                && CurrentStageData.IsSoloBossWaveIndex(CurrentWaveIndex);
+        }
+
+        /// <summary>이 판의 보스가 벽 앞에서 주는 초당 피해.</summary>
+        public int GetBossContactDamage()
+        {
+            return IsSoloBossWave()
+                ? Mathf.Max(WallLeakFormula.ContactDamagePerSecond, CurrentStageData.bossContactDamagePerSecond)
+                : WallLeakFormula.ContactDamagePerSecond;
         }
 
         /// <summary>
@@ -917,8 +997,15 @@ namespace OJ.Hunting
 
         public bool IsBossWave()
         {
-            return CurrentStageData != null
-                && BossWaveRules.IsBossWave(CurrentStageData.stageIndex, CurrentWaveIndex, CurrentStageData.totalWaves);
+            if (CurrentStageData == null)
+                return false;
+
+            // 스테이지에 보스 간격(bossWaveInterval)이 있으면 그 스테이지는 보스 단독 웨이브 시험 모드다(SoloBossRules).
+            // 없으면 5스테이지부터 5웨이브마다 중간 보스인 기존 규칙이다(BossWaveRules). 튜토리얼 스테이지는 간격이 0 이다.
+            if (CurrentStageData.bossWaveInterval > 0 && !battle.Tutorial.IsActive)
+                return CurrentStageData.IsBossWaveIndex(CurrentWaveIndex);
+
+            return BossWaveRules.IsBossWave(CurrentStageData.stageIndex, CurrentWaveIndex, CurrentStageData.totalWaves);
         }
 
         private void InitializeStage()
@@ -957,6 +1044,11 @@ namespace OJ.Hunting
             }
 
             ApplyStageTheme();
+
+            runStartBestWave = StageProgressManager.Instance != null
+                ? StageProgressManager.Instance.GetBestClearedWave(CurrentStageData.stageIndex)
+                : 0;
+            defeatBossRemainPercent = -1;
 
             // 런 상태를 한 번에 세운다. 예전에는 이 다섯 줄이 각각 다른 필드를 건드렸고,
             // 하나만 빠뜨리면 이전 판 값이 새어 나갔다.
@@ -1246,6 +1338,10 @@ namespace OJ.Hunting
         {
             if (CurrentStageData == null)
                 return 1;
+
+            // 보스 단독 웨이브에는 일반 몬스터가 없다. 0 을 돌려주는 것이 이 함수 유일한 예외다.
+            if (IsSoloBossWave() && waveIndex == CurrentWaveIndex)
+                return 0;
 
             return battle.Tutorial.IsActive
                 ? Mathf.Max(1, CurrentStageData.monstersPerWave)
@@ -1638,7 +1734,7 @@ namespace OJ.Hunting
                 }
             }
 
-            return KingHintRules.ShouldShow(false, battle.Tutorial.IsActive, false, stageIndex, owns, kingOnBoard);
+            return KingHintRules.ShouldShow(false, battle.Tutorial != null && battle.Tutorial.IsActive, false, stageIndex, owns, kingOnBoard);
         }
 
         private void ShowKingHintThenLobby()
@@ -1749,7 +1845,8 @@ namespace OJ.Hunting
                 CurrentStageData != null ? CurrentStageData.totalWaves : reachedWaveCount,
                 bestWave,
                 rewards,
-                () => OnStageResultClosed(isWin, stageIndex));
+                () => OnStageResultClosed(isWin, stageIndex),
+                BuildResultNote(isWin, stageIndex, reachedWaveCount));
         }
 
         public void OnApplicationQuit()

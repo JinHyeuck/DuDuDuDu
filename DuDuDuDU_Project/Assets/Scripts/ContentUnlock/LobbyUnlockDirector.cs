@@ -13,6 +13,7 @@ using OJ.Tower;
 using OJ.DI;
 using OJ.Tutorial;
 using OJ.UI;
+using OJ.Utils;
 
 namespace OJ.ContentUnlock
 {
@@ -45,6 +46,12 @@ namespace OJ.ContentUnlock
         /// <summary>고기 축제 가이드 때 채워 두는 세트 수. 한 세트가 고기 30개다(<c>IdleRewardManager.MeatPerSet</c>).</summary>
         private const int GuideMeatSets = 1;
 
+        /// <summary>한 번의 로비 방문에서 이어 붙이는 가이드의 최대 수. 이 수를 넘는 것은 다음 방문에 나온다.</summary>
+        private const int MaxChainedGuides = 2;
+
+        /// <summary>다이스 가이드가 노멀 다이스를 올려 주는 목표 레벨. 이 레벨의 마일스톤(최종 대미지 +10%)을 짚어 준다.</summary>
+        private const int DiceGuideTargetLevel = 3;
+
         private readonly LobbyContentGate gate;
         private UITutorialOverlay overlay;
         private CancellationToken token;
@@ -74,23 +81,41 @@ namespace OJ.ContentUnlock
 
             try
             {
+                int guidesThisVisit = 0;
                 while (queue.Count > 0)
                 {
+                    ContentId last = queue[queue.Count - 1].contentId;
                     await RunQueueAsync(manager, queue);
+                    guidesThisVisit++;
 
-                    // 가이드에서 끊긴 뒤에도 남은 연출이 있으면, 유저가 가이드로 연 화면을 닫고 홈으로 돌아왔을 때
-                    // 이어서 보여 준다. 예전에는 다음 로비 진입까지 안 나와서 "다이스를 보고 왔는데 고기 축제 가이드가
-                    // 안 나온다" 로 보였다. 두 가이드가 연달아 뜨지는 않는다 — 홈으로 돌아와야 다음이 나온다.
+                    // 가이드에서 끊긴 뒤에도 남은 연출이 있으면 <b>바로 이어서</b> 건다(상한 MaxChainedGuides).
+                    // 예전에는 다음 로비 진입까지 안 나와서 "다이스를 보고 왔는데 고기 축제 가이드가 안 나온다" 로 보였다.
                     queue = manager.GetVisitQueue();
                     if (queue.Count == 0)
                         break;
 
-                    await UniTask.WaitUntil(() => LobbyLayoutController.CurrentTab == LobbyTab.Home,
-                        PlayerLoopTiming.Update, token);
+                    // 상한을 넘으면 남은 것은 다음 진입으로 넘긴다 — 가이드가 줄줄이 이어지면 피로하다.
+                    if (guidesThisVisit >= MaxChainedGuides)
+                    {
+                        queue = new List<ContentUnlockDefinition>();
+                        break;
+                    }
+
+                    // 탭(다이스·장비)으로 들어간 가이드는 끝에 상세 창을 닫아 하단 탭이 보이므로 홈을 거치지 않고 잇는다.
+                    // 그 밖의 가이드는 화면(탑·핀볼·상점 …)이 하단 탭을 가릴 수 있어 유저가 홈으로 돌아오기를 기다린다.
+                    if (!IsTabGuide(last))
+                    {
+                        await UniTask.WaitUntil(() => LobbyLayoutController.CurrentTab == LobbyTab.Home,
+                            PlayerLoopTiming.Update, token);
+                    }
 
                     float rest = Time.unscaledTime + ChainRestSeconds;
                     await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
                 }
+
+                // 가이드를 한 뒤에는 스테이지 입장을 약하게 이끈다(딤드 없이 손가락만).
+                if (guidesThisVisit > 0)
+                    await StageEntryNudgeAsync();
             }
             catch (OperationCanceledException)
             {
@@ -220,38 +245,57 @@ namespace OJ.ContentUnlock
                 await DiceUpgradeGuideAsync();
         }
 
-        // ── 다이스 가이드: 노멀 1강화 강제 ───────────────────────────────
+        // ── 다이스 가이드: 노멀 3레벨까지 + 3레벨 마일스톤 강조 ──────────────
 
-        /// <summary>노멀 다이스가 1레벨일 때만 — 이미 올렸으면(재시도·옛 세이브) 다시 시키지 않는다.</summary>
+        private static bool IsTabGuide(ContentId id)
+        {
+            return id == ContentId.Dice || id == ContentId.Equipment;
+        }
+
+        /// <summary>노멀 다이스가 목표 레벨 미만일 때만 — 이미 올렸으면(재시도·옛 세이브) 다시 시키지 않는다.</summary>
         private static bool ShouldGuideDiceUpgrade()
         {
             DiceLevelManager levels = DiceLevelManager.Instance;
-            return levels != null && levels.GetLevel(DiceType.Normal) <= 1;
+            return levels != null && levels.GetLevel(DiceType.Normal) < DiceGuideTargetLevel;
         }
 
         /// <summary>
-        /// 1강화에 필요한 재화(골드·노멀 두루마리)가 모자라면 <b>미리 채워 둔다</b>. 이미 충분하면 건드리지 않는다.
+        /// 목표 레벨까지 올리는 데 필요한 재화(골드·노멀 두루마리)가 모자라면 <b>미리 채워 둔다</b>. 이미 충분하면 건드리지 않는다.
         /// 가이드가 "눌러 보세요" 라고 했는데 재화가 없어 버튼이 안 눌리면 뉴비가 그 자리에서 멈춘다.
+        /// (5웨이브 보상을 아직 안 받았어도 가이드는 막히지 않는다.)
         /// </summary>
-        private static void EnsureUpgradeResources()
+        private static void EnsureUpgradeResources(int fromLevel, int toLevel)
         {
             PointManager points = PointManager.Instance;
             if (points == null)
                 return;
 
-            var cost = DiceMetaDataProvider.GetUpgradeCost(DiceType.Normal, 1);
-            int missingGold = cost.goldCost - points.Get(PointType.Gold);
+            int needGold = 0;
+            int needScroll = 0;
+            for (int level = Mathf.Max(1, fromLevel); level < toLevel; level++)
+            {
+                var cost = DiceMetaDataProvider.GetUpgradeCost(DiceType.Normal, level);
+                needGold += cost.goldCost;
+                needScroll += cost.scrollCost;
+            }
+
+            int missingGold = needGold - points.Get(PointType.Gold);
             if (missingGold > 0)
                 points.Add(PointType.Gold, missingGold);
 
-            int missingScroll = cost.scrollCost - points.Get(PointType.NormalScroll);
+            int missingScroll = needScroll - points.Get(PointType.NormalScroll);
             if (missingScroll > 0)
                 points.Add(PointType.NormalScroll, missingScroll);
         }
 
+        private static int NormalLevel()
+        {
+            return DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Normal) : DiceGuideTargetLevel;
+        }
+
         private async UniTask DiceUpgradeGuideAsync()
         {
-            EnsureUpgradeResources();
+            EnsureUpgradeResources(NormalLevel(), DiceGuideTargetLevel);
 
             // 목록이 그려질 때까지 기다린다(탭을 연 직후 한두 프레임은 비어 있다).
             UIDiceGrowthItem item = null;
@@ -311,21 +355,124 @@ namespace OJ.ContentUnlock
             float settle = Time.unscaledTime + SettleSeconds;
             await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
 
-            // 3) 강화 버튼을 눌러 노멀이 2레벨이 될 때까지. 강화가 안 되는 상태(재화 부족)면 위에서 채워 두었다.
+            // 3) 강화 버튼을 눌러 목표 레벨이 될 때까지. 한 번 누를 때마다 레벨이 올랐는지 확인하고 다음 안내로 넘어간다.
             RectTransform upgrade = panel.UpgradeButton.transform as RectTransform;
-            overlay.SetDim(upgrade);
-            overlay.SetFinger(upgrade);
-            overlay.SetTalk("<b>강화</b> 버튼을 눌러요!");
-            await UniTask.WaitUntil(() => DiceLevelManager.Instance != null
-                && DiceLevelManager.Instance.GetLevel(DiceType.Normal) >= 2, PlayerLoopTiming.Update, token);
+            while (NormalLevel() < DiceGuideTargetLevel)
+            {
+                int level = NormalLevel();
+                overlay.SetDim(upgrade);
+                overlay.SetFinger(upgrade);
+                overlay.SetTalk(level <= 1
+                    ? "<b>강화</b> 버튼을 눌러요!"
+                    : "한 번 더! <b>" + DiceGuideTargetLevel + "레벨</b>이 되면\n새로운 효과가 열려요.");
+
+                await UniTask.WaitUntil(() => NormalLevel() > level, PlayerLoopTiming.Update, token);
+
+                // 연타로 지나치지 않게 잠깐 숨을 돌린다 — 패널이 새 레벨로 다시 그려질 시간이기도 하다.
+                overlay.SetFinger(null);
+                overlay.SetDim();
+                overlay.SetTalk(null);
+                float rest = Time.unscaledTime + SettleSeconds;
+                await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
+            }
+
+            // 4) 목표 레벨의 마일스톤 줄을 짚어 준다 — "레벨마다 효과가 열린다 = 어떤 다이스를 키울지가 전략" 을 보여 주는 자리다.
+            RectTransform row = panel.GetMilestoneRow(DiceGuideTargetLevel);
+            if (row != null)
+                overlay.SetDim(row);
+            else
+                overlay.SetDim();
 
             overlay.SetFinger(null);
-            overlay.SetDim();
-            overlay.SetTalk("강화했어요! 레벨이 오를수록\n다이스가 더 강해져요.", tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
+            overlay.SetTalk(
+                "<b>" + DiceGuideTargetLevel + "레벨</b> 효과가 열렸어요!\n레벨마다 이런 효과가 생겨요.\n어떤 다이스를 키울지가 <b>전략</b>이에요!",
+                tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
             await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
 
-            // 상세 창은 닫아 준다 — 열린 채로 두면 아래 하단 탭이 가려져 홈으로 못 돌아가 다음 가이드가 안 나온다.
+            // 상세 창은 닫아 준다 — 열린 채로 두면 아래 하단 탭이 가려져 다음 가이드가 탭을 못 짚는다.
             GameContainer.UI?.Hide<UIDiceGrowthDetailPanel>();
+        }
+
+        // ── 가이드 뒤: 스테이지 입장 유도(약하게) ────────────────────────
+
+        /// <summary>
+        /// 가이드를 마친 뒤 입장 버튼을 손가락으로 가리킨다. <b>딤드도 탭 대기도 없다</b> — 입력은 그대로 열려 있고,
+        /// 입장 버튼을 누르거나 홈을 떠나면 거둔다. 가이드로 연 화면(다이스 등)에 있으면 먼저 홈 탭을 가리킨다.
+        /// </summary>
+        private async UniTask StageEntryNudgeAsync()
+        {
+            LobbyLayoutController layout = UnityEngine.Object.FindFirstObjectByType<LobbyLayoutController>();
+            Button enter = layout != null ? layout.EnterStageButton : null;
+            if (enter == null || !enter.isActiveAndEnabled)
+                return;
+
+            try
+            {
+                // 홈에서 가이드가 연 보상 창 같은 것이 아직 떠 있으면 입장 버튼이 가려 있다 — 다 닫힌 뒤에 가리킨다.
+                // 다른 탭(다이스·장비 페이지)은 페이지 자체가 열린 창으로 잡히므로 기다리지 않는다(아래에서 홈 탭을 먼저 가리킨다).
+                if (LobbyLayoutController.CurrentTab == LobbyTab.Home)
+                {
+                    await UniTask.WaitUntil(() => AOSBackBtnManager.Instance == null || AOSBackBtnManager.Instance.OpenDialogCount == 0,
+                        PlayerLoopTiming.Update, token);
+                }
+
+                overlay = GameContainer.UI?.Get<UITutorialOverlay>();
+                if (overlay == null)
+                    return;
+
+                overlay.Enter();
+
+                if (LobbyLayoutController.CurrentTab != LobbyTab.Home)
+                {
+                    RectTransform home = FindHomeTab();
+                    if (home != null)
+                    {
+                        overlay.SetFinger(home);
+                        overlay.SetTalk("홈으로 돌아가 볼까요?");
+                        await UniTask.WaitUntil(() => LobbyLayoutController.CurrentTab == LobbyTab.Home,
+                            PlayerLoopTiming.Update, token);
+                    }
+                }
+
+                bool clicked = false;
+                void OnClick() => clicked = true;
+                enter.onClick.AddListener(OnClick);
+                try
+                {
+                    overlay.ClearDim();
+                    overlay.SetFinger(enter.transform as RectTransform);
+                    overlay.SetTalk("스테이지에 도전해 봐요!");
+                    await UniTask.WaitUntil(() => clicked || LobbyLayoutController.CurrentTab != LobbyTab.Home,
+                        PlayerLoopTiming.Update, token);
+                }
+                finally
+                {
+                    if (enter != null)
+                        enter.onClick.RemoveListener(OnClick);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                if (overlay != null)
+                {
+                    overlay.ClearAll();
+                    overlay.Exit();
+                }
+            }
+        }
+
+        private static RectTransform FindHomeTab()
+        {
+            foreach (LobbyBottomBtn button in UnityEngine.Object.FindObjectsByType<LobbyBottomBtn>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (button._tab == LobbyTab.Home)
+                    return button.transform as RectTransform;
+            }
+
+            return null;
         }
 
         // ── 탑 1층: 킹 썬더 장착 ────────────────────────────────────────

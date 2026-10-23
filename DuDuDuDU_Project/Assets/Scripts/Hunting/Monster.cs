@@ -215,6 +215,7 @@ namespace OJ.Hunting
 
             IsBounty = false;
             IsStageBoss = false;
+            _contactDamage = WallLeakFormula.ContactDamagePerSecond;
             ClearTowerTraits();
 
             battle.Monsters.RegisterMonster(this);
@@ -270,6 +271,7 @@ namespace OJ.Hunting
             // 목표가 자식까지 세는 지금은 자식이 사라져도 한 칸이 비기 때문이다.
             IsBounty = false;
             IsStageBoss = false;
+            _contactDamage = WallLeakFormula.ContactDamagePerSecond;
             ClearTowerTraits();
 
             // 여기 ?. 는 새로 넣은 것이 아니라 원래 MonsterManager.Instance 뒤에 붙어 있던
@@ -670,7 +672,7 @@ namespace OJ.Hunting
                     continue;
                 }
 
-                int damage = WallLeakFormula.ContactDamagePerSecond;
+                int damage = _contactDamage;
                 wall.TakeDamage(damage);
 
                 GameObject dtObj = battle.DamageTexts.GetDamageText();
@@ -873,6 +875,9 @@ namespace OJ.Hunting
             isAttacking = false;
         }
 
+        /// <summary>남은 체력 백분율(올림, 살아 있으면 최소 1). 패배 결과창이 "보스 체력 N% 남김" 을 보여 주는 데 쓴다.</summary>
+        public int HpPercent => _maxHp > 0 && _hp > 0 ? Mathf.Clamp(Mathf.CeilToInt(100f * _hp / _maxHp), 1, 100) : 0;
+
         public void SetHp(int hp)
         {
             _hp = hp;
@@ -902,9 +907,10 @@ namespace OJ.Hunting
         /// <c>SetCombatStats</c> · <c>ConfigureStageSpeed</c> 로 이미 세웠고, 여기서
         /// 또 만지면 "보스 스탯을 세우는 곳" 이 둘이 된다.
         /// </summary>
-        public void ConfigureAsStageBoss()
+        public void ConfigureAsStageBoss(int contactDamagePerSecond = WallLeakFormula.ContactDamagePerSecond)
         {
             IsStageBoss = true;
+            _contactDamage = Mathf.Max(WallLeakFormula.ContactDamagePerSecond, contactDamagePerSecond);
             AttachRoleOutline();
         }
 
@@ -914,6 +920,9 @@ namespace OJ.Hunting
             if (characterAnimation != null)
                 MonsterOutline.Attach(this, characterAnimation.spriteRenderer);
         }
+
+        /// <summary>벽 앞에서 초당 주는 피해. 풀에서 재사용될 때 <c>OnSpawn</c> 이 기본값으로 되돌린다.</summary>
+        private int _contactDamage = WallLeakFormula.ContactDamagePerSecond;
 
         /// <summary>
         /// 이 개체를 탑의 몬스터로 만든다. <b><c>OnSpawn</c> · <c>SetCombatStats</c> 뒤에

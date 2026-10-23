@@ -7,7 +7,7 @@ namespace OJ.StageReward
     ///
     /// <b>원칙.</b> 보상은 "그 스테이지를 깨면 <b>이 레벨까지 올릴 수 있는 재화</b>" 다. 장비·다이스 강화 비용(골드+두루마리)을 그대로
     /// 계산해서 넣었다 — 그래서 뉴비가 보상을 받고도 강화를 못 하는 일이 없다. 1~3스테이지는 장비·다이스·고기·핀볼 티켓만 준다.
-    /// 다이스 튜토리얼이 노멀 다이스를 1→2 로 강제 강화시키므로(재화를 미리 넣어 둔다) 노멀은 2레벨에서 시작한다.
+    /// 1스테이지 5웨이브에서 다이스 가이드가 노멀 다이스를 1→3 으로 올려 주므로(재화를 채워 준다) 노멀은 3레벨에서 시작한다.
     ///
     /// <b>세 칸에 나눠 준다</b>(웨이브 1/3 · 2/3 · 전부 클리어): 첫 칸은 장비 두루마리, 둘째 칸은 다이스 두루마리·고기·핀볼 티켓,
     /// 마지막 칸은 레어석(4스테이지부터 신화석). 골드는 세 칸에 35% · 30% · 35% 로 나뉜다. 한 칸에 아이콘이 열 개를 넘지 않게 하려는 것이다.
@@ -38,13 +38,16 @@ namespace OJ.StageReward
 
             switch (stageIndex)
             {
-                // 1스테이지: 무기 3, 투구 2, 갑옷 2, 반지 2, 신발 2, 목걸이 2, 번개다이스 2, 불다이스 2
+                // 1스테이지 (시험 모드 — 5 · 10 · 15웨이브 보스, 웨이브로 해금):
+                //   5웨이브  = 다이스 재료만 (번개 2, 불 2). 노멀 1→3 은 다이스 가이드가 재화를 채워 주며 올려 준다(LobbyUnlockDirector)
+                //   10웨이브 = 장비 재료 (무기 3, 투구·갑옷·반지·신발·목걸이 2) + 고기
+                //   15웨이브 = 레어석 — 레어 다이스 두 개를 3레벨까지 (11개씩)
                 case 1:
                     switch (tier)
                     {
-                        case 0: list.AddRange(new[] { E(PointType.Gold, 370), E(PointType.WeaponScroll, 7), E(PointType.HelmetScroll, 2), E(PointType.ArmorScroll, 2), E(PointType.RingScroll, 3), E(PointType.ShoesScroll, 2), E(PointType.NecklaceScroll, 2) }); break;
-                        case 1: list.AddRange(new[] { E(PointType.Gold, 320), E(PointType.ThunderScroll, 10), E(PointType.FireScroll, 10), E(PointType.Stamina, 30) }); break;
-                        default: list.AddRange(new[] { E(PointType.Gold, 360) }); break;
+                        case 0: list.AddRange(new[] { E(PointType.Gold, 260), E(PointType.ThunderScroll, 10), E(PointType.FireScroll, 10) }); break;
+                        case 1: list.AddRange(new[] { E(PointType.Gold, 787), E(PointType.WeaponScroll, 7), E(PointType.HelmetScroll, 2), E(PointType.ArmorScroll, 2), E(PointType.RingScroll, 3), E(PointType.ShoesScroll, 2), E(PointType.NecklaceScroll, 2), E(PointType.Stamina, 30) }); break;
+                        default: list.AddRange(new[] { E(PointType.Gold, 724), E(PointType.RareStone, 22) }); break;
                     }
                     break;
                 // 2스테이지: 투구 3, 갑옷 3, 반지 3, 신발 3, 목걸이 3, 노멀다이스 3, 독다이스 2

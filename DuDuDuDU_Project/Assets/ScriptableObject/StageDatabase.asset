@@ -34,6 +34,12 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.9
     monsterScaleMultiplier: 1
     spawnIntervalMultiplier: 1
+    bossWaveInterval: 5
+    bossWaveHpFactors:
+    - 1
+    - 4
+    - 4
+    bossContactDamagePerSecond: 6
   - stageIndex: 2
     theme: 1
     totalWaves: 15

@@ -19,7 +19,18 @@ MonoBehaviour:
     requiredWaveIndex: 5
     rewards:
     - pointType: 0
-      amount: 370
+      amount: 260
+    - pointType: 104
+      amount: 10
+    - pointType: 101
+      amount: 10
+  - id: stage_1_half
+    stageIndex: 1
+    requiredStageIndex: 1
+    requiredWaveIndex: 10
+    rewards:
+    - pointType: 0
+      amount: 787
     - pointType: 200
       amount: 7
     - pointType: 201
@@ -32,17 +43,6 @@ MonoBehaviour:
       amount: 2
     - pointType: 205
       amount: 2
-  - id: stage_1_half
-    stageIndex: 1
-    requiredStageIndex: 1
-    requiredWaveIndex: 10
-    rewards:
-    - pointType: 0
-      amount: 320
-    - pointType: 104
-      amount: 10
-    - pointType: 101
-      amount: 10
     - pointType: 2
       amount: 30
   - id: stage_1_perfect
@@ -51,7 +51,9 @@ MonoBehaviour:
     requiredWaveIndex: 15
     rewards:
     - pointType: 0
-      amount: 360
+      amount: 724
+    - pointType: 106
+      amount: 22
   - id: stage_2_minimum
     stageIndex: 2
     requiredStageIndex: 2

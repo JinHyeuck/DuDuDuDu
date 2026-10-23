@@ -112,6 +112,15 @@ namespace OJ.Stage
         [Tooltip("등장 간격 배수. 스포너 기본 간격(2초)에 곱한다. 물량은 작게, 정예는 크게.")]
         [Min(0.1f)] public float spawnIntervalMultiplier = 1f;
 
+        [Tooltip("0 이면 마지막 웨이브에만 보스(일반 몬스터와 섞임). 5 이면 5 · 10 · 15 웨이브가 보스 단독 웨이브다. OJ.Core.SoloBossRules")]
+        [Min(0)] public int bossWaveInterval = 0;
+
+        [Tooltip("보스 단독 웨이브의 체력 배수(보스 순서대로). 1 = 그 웨이브 일반 몬스터 전체 체력. 모자란 칸은 1.")]
+        public float[] bossWaveHpFactors = new float[0];
+
+        [Tooltip("보스 단독 웨이브의 보스가 벽 앞에서 주는 초당 피해. 일반 몬스터는 WallLeakFormula.ContactDamagePerSecond.")]
+        [Min(1)] public int bossContactDamagePerSecond = 1;
+
         // 아래 성장식 6개는 OJ.Core.StageGrowthFormula 로 옮겼다. 여기 남은 것은 직렬화 필드를
         // 기본형으로 풀어서 넘기는 얇은 위임뿐이다 — public 시그니처와 호출 순서는 그대로다.
         // 식을 다시 여기로 인라인하지 말 것. 골든 기준선(Tests/Golden/formula_baseline.txt)이
@@ -136,6 +145,25 @@ namespace OJ.Stage
         public int GetBossDefenseForWave(int waveIndex)
         {
             return StageGrowthFormula.BossDefense(GetMonsterDefenseForWave(waveIndex), bossDefenseMultiplier);
+        }
+
+        public bool IsBossWaveIndex(int waveIndex)
+        {
+            return SoloBossRules.IsBossWave(bossWaveInterval, totalWaves, waveIndex);
+        }
+
+        /// <summary>보스만 나오는 웨이브인가(일반 몬스터 없음).</summary>
+        public bool IsSoloBossWaveIndex(int waveIndex)
+        {
+            return SoloBossRules.IsSoloBossWave(bossWaveInterval, totalWaves, waveIndex);
+        }
+
+        /// <summary>단독 보스 체력. 일반 몬스터 한 마리 체력 × 웨이브당 마릿수 × 그 보스의 배수.</summary>
+        public int GetSoloBossHpForWave(int waveIndex)
+        {
+            int ordinal = SoloBossRules.BossOrdinal(bossWaveInterval, totalWaves, waveIndex);
+            float factor = bossWaveHpFactors != null && ordinal < bossWaveHpFactors.Length ? bossWaveHpFactors[ordinal] : 1f;
+            return SoloBossRules.SoloBossHp(GetMonsterHpForWave(waveIndex), monstersPerWave, factor);
         }
 
         public int GetBossSpawnThreshold()

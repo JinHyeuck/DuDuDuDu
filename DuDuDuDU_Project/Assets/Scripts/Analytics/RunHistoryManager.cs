@@ -291,6 +291,13 @@ namespace OJ.Analytics
 
             AppendEvent(RunEventType.RunEnd, currentRun.finalWaveIndex, wallHp, note: resultType.ToString());
 
+            // 시도별 도달 웨이브를 콘솔에서 바로 읽을 수 있게 한 줄 남긴다(같은 스테이지의 몇 번째 판인지 포함).
+            int attempt = 1;
+            for (int i = 0; i < runs.Count; i++)
+                if (runs[i].stageIndex == currentRun.stageIndex)
+                    attempt++;
+            Debug.Log($"[판기록] 스테이지 {currentRun.stageIndex} {attempt}번째 판 | {resultType} | 웨이브 {currentRun.finalWaveIndex} | {currentRun.durationSeconds:0}초 | 벽 {wallHp}");
+
             runs.Add(currentRun);
             TrimRuns();
             currentRun = null;

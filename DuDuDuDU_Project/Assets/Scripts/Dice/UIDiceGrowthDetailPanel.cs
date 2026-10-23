@@ -600,12 +600,29 @@ namespace OJ.Dice
             }
         }
 
+        /// <summary>줄마다 어느 레벨의 마일스톤인가. 가이드가 "3레벨 효과" 줄을 짚는 데 쓴다.</summary>
+        private readonly List<int> milestoneRowLevels = new List<int>();
+
+        /// <summary>이 레벨의 마일스톤 줄. 안 보이거나 없으면 null.</summary>
+        public RectTransform GetMilestoneRow(int level)
+        {
+            for (int i = 0; i < milestoneElements.Count && i < milestoneRowLevels.Count; i++)
+            {
+                if (milestoneRowLevels[i] == level && milestoneElements[i] != null && milestoneElements[i].gameObject.activeInHierarchy)
+                    return milestoneElements[i].transform as RectTransform;
+            }
+
+            return null;
+        }
+
         private void RefreshMilestoneRows(DiceMetaDataDatabase.DiceMeta meta, int currentLevel)
         {
             int count = meta != null && meta.milestones != null ? meta.milestones.Count : 0;
+            milestoneRowLevels.Clear();
             for (int i = 0; i < count; i++)
             {
                 UIMilestoneElement row = GetOrCreateMilestoneElement(i);
+                milestoneRowLevels.Add(meta.milestones[i].level);
                 if (row == null)
                     continue;
 
