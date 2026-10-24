@@ -6,9 +6,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
 using OJ.Dice;
+using OJ.Hunting;
 using OJ.IdleReward;
 using OJ.Lobby;
 using OJ.Point;
+using OJ.StageReward;
 using OJ.Tower;
 using OJ.DI;
 using OJ.Tutorial;
@@ -155,6 +157,11 @@ namespace OJ.ContentUnlock
                     if (d.contentId == ContentId.MeatFestival)
                         IdleRewardManager.Instance?.EnsureMeatSets(GuideMeatSets);
 
+                    // 다이스·장비 가이드는 "강화하라" 는 안내다. 강화할 재화(웨이브 보상)를 아직 안 받았으면 뭘 하라는지 모른다 —
+                    // 받을 보상이 있으면 그것부터 받게 한다.
+                    if (IsTabGuide(d.contentId))
+                        await RewardClaimGuideAsync();
+
                     await AnnounceAsync(d);
 
                     if (d.presentation == UnlockPresentation.Guide)
@@ -260,9 +267,9 @@ namespace OJ.ContentUnlock
         }
 
         /// <summary>
-        /// 목표 레벨까지 올리는 데 필요한 재화(골드·노멀 두루마리)가 모자라면 <b>미리 채워 둔다</b>. 이미 충분하면 건드리지 않는다.
-        /// 가이드가 "눌러 보세요" 라고 했는데 재화가 없어 버튼이 안 눌리면 뉴비가 그 자리에서 멈춘다.
-        /// (5웨이브 보상을 아직 안 받았어도 가이드는 막히지 않는다.)
+        /// 목표 레벨까지 올리는 데 필요한 재화(골드·노멀 두루마리)를 <b>선물로 얹어 둔다</b> — 가진 것과 상관없이 필요한 만큼이다.
+        /// 모자랄 때만 채우면 방금 받은 웨이브 보상 골드가 이 가이드에 먹혀 번개·불 다이스 강화가 모자라진다.
+        /// 가이드가 "눌러 보세요" 라고 했는데 재화가 없어 버튼이 안 눌리면 뉴비가 그 자리에서 멈추기도 한다.
         /// </summary>
         private static void EnsureUpgradeResources(int fromLevel, int toLevel)
         {
@@ -279,13 +286,106 @@ namespace OJ.ContentUnlock
                 needScroll += cost.scrollCost;
             }
 
-            int missingGold = needGold - points.Get(PointType.Gold);
-            if (missingGold > 0)
-                points.Add(PointType.Gold, missingGold);
+            if (needGold > 0)
+                points.Add(PointType.Gold, needGold);
 
-            int missingScroll = needScroll - points.Get(PointType.NormalScroll);
-            if (missingScroll > 0)
-                points.Add(PointType.NormalScroll, missingScroll);
+            if (needScroll > 0)
+                points.Add(PointType.NormalScroll, needScroll);
+        }
+
+        // ── 가이드 앞: 웨이브 보상 받기 ───────────────────────────────
+
+        /// <summary>
+        /// 받을 웨이브 보상이 있으면 보상 창을 열게 하고 받기를 눌러 <b>다 받게</b> 한다. 없으면 바로 돌아간다.
+        /// 받는 순간 뜨는 보상 결과 창은 유저가 직접 닫는다(그 동안 안내는 거둔다). 다 받으면 보상 창을 닫아 준다 —
+        /// 열린 채로 두면 아래 하단 탭이 가려져 다음 가이드가 탭을 못 짚는다.
+        /// </summary>
+        private async UniTask RewardClaimGuideAsync()
+        {
+            StageRewardManager rewards = StageRewardManager.Instance;
+            Button entry = gate != null ? gate.ButtonOf(ContentId.StageReward) : null;
+            RectTransform entryRect = gate != null ? gate.TargetOf(ContentId.StageReward) : null;
+            if (rewards == null || entry == null || entryRect == null || !rewards.HasClaimableReward())
+                return;
+
+            // 1) 입구를 눌러 보상 창을 연다.
+            bool opened = false;
+            void OnEntryClick() => opened = true;
+            entry.onClick.AddListener(OnEntryClick);
+            try
+            {
+                overlay.SetDim(entryRect);
+                overlay.SetFinger(entryRect);
+                overlay.SetTalk("웨이브 보상을 받을 수 있어요!\n눌러서 받아 봐요.");
+                await UniTask.WaitUntil(() => opened, PlayerLoopTiming.Update, token);
+            }
+            finally
+            {
+                if (entry != null)
+                    entry.onClick.RemoveListener(OnEntryClick);
+            }
+
+            overlay.SetFinger(null);
+            overlay.SetDim();
+            overlay.SetTalk(null);
+
+            UIStageRewardDialog dialog = GameContainer.UI?.Get<UIStageRewardDialog>();
+            if (dialog == null)
+            {
+                Debug.LogError("[해금] 보상 창을 못 찾아 보상 받기 가이드를 건너뛴다.");
+                return;
+            }
+
+            await UniTask.WaitUntil(() => dialog.isEnter, PlayerLoopTiming.Update, token);
+            float settle = Time.unscaledTime + SettleSeconds;
+            await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
+
+            // 2) 받을 것이 남아 있는 동안 받기 버튼을 짚는다.
+            while (rewards.HasClaimableReward())
+            {
+                Button claim = dialog.ClaimButton;
+                await UniTask.WaitUntil(() => claim != null && claim.isActiveAndEnabled, PlayerLoopTiming.Update, token);
+
+                RectTransform claimRect = claim.transform as RectTransform;
+                bool claimed = false;
+                void OnClaim() => claimed = true;
+                claim.onClick.AddListener(OnClaim);
+                try
+                {
+                    overlay.SetDim(claimRect);
+                    overlay.SetFinger(claimRect);
+                    overlay.SetTalk("<b>받기</b>를 눌러요!");
+                    await UniTask.WaitUntil(() => claimed, PlayerLoopTiming.Update, token);
+                }
+                finally
+                {
+                    if (claim != null)
+                        claim.onClick.RemoveListener(OnClaim);
+                }
+
+                // 받으면 보상 결과 창이 뜬다. 유저가 닫을 때까지 안내를 거두고 기다린다.
+                overlay.ClearAll();
+                await UniTask.Delay(300, DelayType.UnscaledDeltaTime, PlayerLoopTiming.Update, token);
+                await UniTask.WaitUntil(() => !IsRewardResultOpen(), PlayerLoopTiming.Update, token);
+                await UniTask.Delay(300, DelayType.UnscaledDeltaTime, PlayerLoopTiming.Update, token);
+            }
+
+            overlay.SetDim();
+            overlay.SetTalk("보상을 받았어요!\n이 재료로 강화해 봐요.", tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
+            await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
+
+            GameContainer.UI?.Hide<UIStageRewardDialog>();
+        }
+
+        private static bool IsRewardResultOpen()
+        {
+            foreach (UIRewardResultDialog dialog in UnityEngine.Object.FindObjectsByType<UIRewardResultDialog>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (dialog != null && dialog.isEnter)
+                    return true;
+            }
+
+            return false;
         }
 
         private static int NormalLevel()
