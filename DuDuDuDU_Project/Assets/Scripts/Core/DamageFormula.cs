@@ -49,6 +49,9 @@ namespace OJ.Core
         public float FinalDamagePercentBonus;
         public float ElementUpgradeMultiplier;
         public float RelicDamageMultiplier;
+
+        /// <summary>다이스 등급: 0 일반 · 1 레어 · 2 킹. 새 밸런스(<see cref="BalanceProfile"/>)가 켜졌을 때만 배수가 붙는다. 기본값 0 이 중립이다.</summary>
+        public int DiceTier;
     }
 
     /// <summary>
@@ -95,6 +98,24 @@ namespace OJ.Core
         ///    평탄 보너스만 남는 이상한 데미지가 된다. 에셋에서 사람이 음수를 넣을 수 있는
         ///    값이라 여기서 막는다.
         /// </summary>
+        /// <summary>
+        /// 성급(=머지 횟수) 데미지 배수(<b>새 밸런스가 켜졌을 때</b>). <b>1성 1 · 2성 3 · 3성 9 · 4성 27</b> — 성급이 오를 때마다 3배다.
+        /// 예전에는 성급이 그대로 곱(1·2·3)이라 2성 한 칸이 1성 두 칸과 같았고, 그래서 머지가 "자리 절약" 이상의 보상이 아니었다.
+        /// 지금은 1성 두 개를 합친 2성이 1성 세 개 몫이라 합칠수록 이득이고, 중반부터 1성은 딜 비중이 거의 없다.
+        /// 3 의 거듭제곱이라 float 곱셈에서 오차가 없다. 1성은 1f 라 옛 값과 한 자리도 안 다르다.
+        /// </summary>
+        public static float StarMultiplier(int star)
+        {
+            if (star <= 1)
+                return 1f;
+
+            float result = 1f;
+            for (int i = 1; i < star; i++)
+                result *= 3f;
+
+            return result;
+        }
+
         public static float AttackPercent(float basePercent, float percentPerLevel, int level)
         {
             int clamped = OJMath.Max(1, level);
@@ -141,7 +162,12 @@ namespace OJ.Core
             float attackBase = inputs.EquipmentAttackTotal * percent;
 
             // 왼쪽부터 (attackBase * pips) * 0.5f 로 계산된다. 0.5f 를 앞으로 빼지 말 것.
-            float scaled = attackBase * pips * GlobalDamageBalanceMultiplier;
+            // 꺼져 있으면 옛 식 그대로다(성급 = 곱). int → float 승격 시점도 그대로 둔다.
+            float scaled = BalanceProfile.Active
+                ? attackBase * StarMultiplier(pips) * GlobalDamageBalanceMultiplier
+                : attackBase * pips * GlobalDamageBalanceMultiplier;
+            if (BalanceProfile.Active)
+                scaled *= BalanceProfile.TierMultiplier(inputs.DiceTier);
             scaled *= inputs.LevelDamageMultiplier;
             scaled *= inputs.KingSynergyMultiplier;
             if (inputs.IsKingDice)

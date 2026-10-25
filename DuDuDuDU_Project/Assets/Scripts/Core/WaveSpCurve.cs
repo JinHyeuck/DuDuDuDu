@@ -23,9 +23,18 @@ namespace OJ.Core
         public const int StartSp = 20;
 
         /// <summary>15웨이브 기준 웨이브 클리어 SP 배율(퍼센트, 기준값 = 스테이지의 <c>waveClearSP</c>).</summary>
-        private static readonly int[] table = { 10, 30, 47, 69, 97, 132, 154, 175, 167, 151, 129, 101, 78, 60, 37 };
+        // 2026-10-25: 소환 클릭 수가 웨이브마다 초반 2회 → 후반 4회로 천천히 늘어나게 다시 짰다(옛 곡선은 6~9웨이브에 8회 가까이 몰렸다가
+        // 끝에서 꺾였다). "많이 뽑아 1성으로 채우기" 가 아니라 "적게 뽑아 잘 키우기" 가 되게 하려는 것이다.
+        // 값 = 다음 웨이브의 클릭 수 × 그때의 소환 비용(10 에서 시작, 2회마다 +1)을 15웨이브 기준 waveClearSP 115 로 나눈 퍼센트.
+        // 클릭 수: 1~4웨이브 2회, 5~11웨이브 3회, 12~15웨이브 4회. 마지막 웨이브 값은 쓰이지 않아 앞과 같다.
+        private static readonly int[] tableV2 = { 19, 21, 23, 37, 41, 45, 49, 53, 57, 61, 87, 94, 101, 108, 108 };
 
-        private static readonly int tableSum = Sum(table);
+        // 옛 곡선(새 밸런스가 꺼진 판): 6~9웨이브에 몰렸다가 끝에서 꺾인다.
+        private static readonly int[] tableV1 = { 10, 30, 47, 69, 97, 132, 154, 175, 167, 151, 129, 101, 78, 60, 37 };
+
+        private static int[] table => BalanceProfile.Active ? tableV2 : tableV1;
+
+        private static int tableSum => Sum(table);
 
         /// <summary>
         /// <paramref name="waveIndex"/>(1부터) 번째 웨이브의 SP 배율(퍼센트). 100 이면 <c>waveClearSP</c> 그대로다.

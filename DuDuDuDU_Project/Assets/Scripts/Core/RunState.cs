@@ -69,6 +69,13 @@ namespace OJ.Core
         public int SummonsSinceLastCostIncrease { get; set; }
 
         /// <summary>
+        /// 무료 소환권. 자리를 SP 로 사면 한 장 생기고, 다음 소환에 SP 를 내지 않고 비용도 오르지 않는다.
+        /// 자리만 사면 빈 칸 하나뿐이라 "내 노력에 비해 돌아오는 게 작다" 는 평이 있어 사는 순간 돌려받게 했다.
+        /// SP 와 같은 이유로 <b>런이 소유하고 되돌리기 스냅샷에 들어간다</b>.
+        /// </summary>
+        public int FreeSummonCharges { get; set; }
+
+        /// <summary>
         /// 확률업 레벨(<see cref="SummonStarRules"/>). SP 소환으로 나오는 다이스의 성급 확률을 정한다.
         /// 소환 비용과 같은 이유로 <b>런이 소유하고 되돌리기 스냅샷에 같이 들어간다</b> — SP 는 되돌아가는데
         /// 레벨만 남으면 되돌린 뒤 같은 SP 로 한 번 더 올릴 수 있다.
@@ -135,6 +142,7 @@ namespace OJ.Core
             SummonPoint = initialSummonPoint;
             SummonCost = initialSummonCost;
             SummonsSinceLastCostIncrease = 0;
+            FreeSummonCharges = 0;
             SummonProbLevel = SummonStarRules.MinLevel;
             EnhanceStone = 0;
             IsGameOver = false;
@@ -166,6 +174,7 @@ namespace OJ.Core
             public int SummonPoint;
             public int SummonCost;
             public int SummonsSinceLastCostIncrease;
+            public int FreeSummonCharges;
             public int SummonProbLevel;
             public int EnhanceStone;
             public bool IsGameOver;
@@ -199,6 +208,7 @@ namespace OJ.Core
                 SummonPoint = SummonPoint,
                 SummonCost = SummonCost,
                 SummonsSinceLastCostIncrease = SummonsSinceLastCostIncrease,
+                FreeSummonCharges = FreeSummonCharges,
                 SummonProbLevel = SummonProbLevel,
                 EnhanceStone = EnhanceStone,
                 IsGameOver = IsGameOver,
@@ -224,6 +234,7 @@ namespace OJ.Core
             SummonPoint = snapshot.SummonPoint;
             SummonCost = snapshot.SummonCost;
             SummonsSinceLastCostIncrease = snapshot.SummonsSinceLastCostIncrease;
+            FreeSummonCharges = snapshot.FreeSummonCharges;
             SummonProbLevel = snapshot.SummonProbLevel;
             EnhanceStone = snapshot.EnhanceStone;
             IsGameOver = snapshot.IsGameOver;

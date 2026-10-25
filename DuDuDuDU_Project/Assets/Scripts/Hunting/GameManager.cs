@@ -170,6 +170,9 @@ namespace OJ.Hunting
 
         private void OnDestroy()
         {
+            // 전투 씬이 내려가면 로비·다른 화면은 항상 옛 규칙이다.
+            BalanceProfile.Active = false;
+
             // 창구는 스코프가 파괴될 때 비워지는데 그 순서가 정해져 있지 않다.
             // 이미 비었으면 뗄 것도 없으므로 ?. 를 쓴다 — 여기는 사고가 아니라 정리 경로다.
             if (battle != null && battle.Bounty != null)
@@ -974,9 +977,12 @@ namespace OJ.Hunting
         /// </summary>
         private int LateHp(int hp)
         {
-            return battle.Tutorial.IsActive
-                ? hp
-                : LateWaveSurge.ApplyHp(hp, CurrentWaveIndex, CurrentStageData.totalWaves);
+            if (battle.Tutorial.IsActive)
+                return hp;
+
+            int surged = LateWaveSurge.ApplyHp(hp, CurrentWaveIndex, CurrentStageData.totalWaves);
+            return MidWaveRamp.Apply(surged, CurrentWaveIndex,
+                CurrentStageData.hpRampStartWave, CurrentStageData.hpRampEndWave, CurrentStageData.hpRampMultiplier);
         }
 
         public int GetCurrentWaveBossDefense()
@@ -1010,6 +1016,9 @@ namespace OJ.Hunting
 
         private void InitializeStage()
         {
+            // 새 밸런스는 판마다 다시 정한다. 튜토리얼·탑은 아래에서 일찍 돌아가므로 꺼진 채로 남는다.
+            BalanceProfile.Active = false;
+
             RelicManager.Instance?.BeginStageRun();
 
             // "게임 플레이" 는 <b>입장</b>으로 센다. 클리어로 세면 못 깨는 스테이지에
@@ -1044,6 +1053,8 @@ namespace OJ.Hunting
             }
 
             ApplyStageTheme();
+
+            BalanceProfile.Active = CurrentStageData.newBalance;
 
             runStartBestWave = StageProgressManager.Instance != null
                 ? StageProgressManager.Instance.GetBestClearedWave(CurrentStageData.stageIndex)

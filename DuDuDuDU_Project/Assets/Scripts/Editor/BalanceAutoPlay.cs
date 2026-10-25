@@ -71,6 +71,14 @@ namespace OJ.EditorTools
         private const int StallFrames = 3600;
 
         private static bool running;
+
+        /// <summary>
+        /// 실시간 모드(2026-10-25 추가): 실제 게임과 같은 <b>연속 웨이브</b>로 돌리고, 웨이브 중에도 소환·머지·진화에 더해
+        /// <b>속성 강화 버튼 · 현상금 · 영혼 보너스 · 확률업</b>을 쓴다. 옛 모드(준비 단계 + 소환·머지·진화만)는 이 기능들이 없어
+        /// 사람보다 훨씬 약한 하한을 쟀다 — "겨우 깰 만하다" 를 맞추려면 사람이 쓰는 도구를 다 쓰는 봇이 필요하다.
+        /// </summary>
+        private static bool realtime;
+        private static float lastRealtimeLogWall;
         private static int stageIndex;
         private static float speed;
         private static bool evolve;
@@ -128,6 +136,19 @@ namespace OJ.EditorTools
             return Begin(timeScale, evolveWhenPossible, minDice, freshPower);
         }
 
+        /// <summary>실시간 모드로 여러 스테이지를 잰다. 로그는 <c>oj_balance_range.log</c>.</summary>
+        public static string StartRealtime(int from, int to, float timeScale = 6f, bool freshPower = true, int minDice = DefaultMinBoardDice)
+        {
+            queue.Clear();
+            for (int i = Mathf.Max(1, from); i <= Mathf.Max(1, to); i++)
+                queue.Add(i);
+            queueIndex = 0;
+            lines.Clear();
+            outPath = Path.Combine(Path.GetTempPath(), "oj_balance_range.log");
+            realtime = true;
+            return Begin(timeScale, true, minDice, freshPower);
+        }
+
         private static string Begin(float timeScale, bool evolveWhenPossible, int minDice, bool freshPower)
         {
             if (!Application.isPlaying)
@@ -144,7 +165,7 @@ namespace OJ.EditorTools
 
             // 이 도구는 준비 단계에서 소환·머지하고 시작 버튼으로 웨이브를 여는 흐름을 전제로 측정한다.
             // 실시간이 정식 규칙이 되었으므로 도는 동안만 레거시 흐름으로 돌리고 Stop 에서 끈다.
-            GameManager.LegacySetupFlow = true;
+            GameManager.LegacySetupFlow = !realtime;
 
             running = true;
             waitingForLobby = false;
@@ -194,6 +215,7 @@ namespace OJ.EditorTools
 
         public static void Stop()
         {
+            realtime = false;
             GameManager.LegacySetupFlow = false;
             running = false;
             EditorApplication.update -= Update;
@@ -315,6 +337,12 @@ namespace OJ.EditorTools
                 return;
             }
 
+            if (realtime)
+            {
+                RealtimeTick(battle, game);
+                return;
+            }
+
             if (game.inGameState == InGameState.Wave)
             {
                 // GameManager 가 웨이브 진입에서 timeScale 을 timeSpeed(1) 로 써 버린다.
@@ -423,6 +451,114 @@ namespace OJ.EditorTools
             Log(string.Format("STALL stage={0} — 진행이 멈춰 포기한다", stageIndex));
             idleFrames = 0;
             NextStageOrStop();
+        }
+
+        // ── 실시간 모드 ────────────────────────────────────────────────
+
+        private static void RealtimeTick(IBattleRefs battle, GameManager game)
+        {
+            if (Time.timeScale < speed - 0.01f)
+                Time.timeScale = speed;
+
+            if (game.WallHp <= 0)
+            {
+                Log(string.Format("DEFEAT stage={0} wave={1}/{2} wallHp=0",
+                    stageIndex, game.CurrentWaveIndex,
+                    game.CurrentStageData != null ? game.CurrentStageData.totalWaves : 0));
+                NextStageOrStop();
+                return;
+            }
+
+            // 웨이브가 바뀌는 순간을 기록한다(옛 모드의 "wave N done" 과 같은 모양이라 같은 스크립트로 읽는다).
+            int wave = game.CurrentWaveIndex;
+            if (wave != lastWaveIndex)
+            {
+                if (lastWaveIndex > 0)
+                {
+                    Log(string.Format("wave {0,2} done  wallHp={1,4} sec={2,5:0.0} {3}",
+                        lastWaveIndex, game.WallHp, Time.realtimeSinceStartup - waveStartTime, BoardSummary(battle)));
+                }
+
+                lastWaveIndex = wave;
+                waveStartTime = Time.realtimeSinceStartup;
+                Log(string.Format("wave {0,2} start sp={1,4} stone={2,3} {3}",
+                    wave, battle.BattlePoints.Get(BattlePointType.SummonPoint),
+                    battle.BattlePoints.Get(BattlePointType.EnhanceStone), BoardSummary(battle)));
+            }
+
+            idleFrames = 0;
+            DoRealtimeAction(battle, game);
+        }
+
+        /// <summary>한 프레임에 한 가지. 사람이 한 번에 한 번 누르는 것과 같은 속도다.</summary>
+        private static void DoRealtimeAction(IBattleRefs battle, GameManager game)
+        {
+            UIBoard board = battle.Board;
+            UIDiceSummonSystem summon = battle.Summon;
+            if (board == null || board.diceMap == null || summon == null || !game.CanManageBoard)
+                return;
+
+            // 1) 영혼 보너스: 차면 열고, 열렸으면 고른다. 마석이 다음 강화에 모자라면 마석, 아니면 SP.
+            OJ.Economy.SoulBonusManager soul = game.SoulBonus;
+            if (soul != null && soul.Enabled)
+            {
+                if (soul.IsPopupOpen)
+                {
+                    int stones = battle.BattlePoints.Get(BattlePointType.EnhanceStone);
+                    int need = battle.ElementUpgrade != null ? battle.ElementUpgrade.NextUpgradeCost : 0;
+                    soul.Choose(stones < need);
+                    return;
+                }
+
+                if (soul.IsReady && soul.TryOpen())
+                    return;
+            }
+
+            // 2) 현상금: 쿨타임이 돌면 고를 수 있는 가장 높은 등급을 부른다.
+            if (game.inGameState == InGameState.Wave && battle.Bounty != null && battle.Bounty.CanSummonNow)
+            {
+                for (int grade = 6; grade >= 1; grade--)
+                {
+                    if (battle.Bounty.IsSelectable(grade) && battle.Bounty.GetDefinition(grade) != null
+                        && battle.Bounty.TrySummon(grade))
+                        return;
+                }
+            }
+
+            // 3) 진화 → 속성 강화(마석). 진화가 마석 10을 먼저 쓴다.
+            if (evolve && TryEvolveOne(battle, board))
+                return;
+
+            if (battle.ElementUpgrade != null && battle.ElementUpgrade.TryUpgradeAll())
+                return;
+
+            // 4) 확률업: 4레벨까지, 소환 한 번 값을 남기고 살 수 있을 때.
+            if (summon.ProbLevel < 4 && summon.NextProbUpgradeCost > 0
+                && summon.currentSP >= summon.NextProbUpgradeCost + summon.summonCost
+                && summon.TryUpgradeProbability())
+                return;
+
+            // 5) 소환(빈 칸이 있을 때), 6) 머지.
+            int alive = 0;
+            int emptySlots = 0;
+            for (int i = 0; i < board.diceMap.Length; i++)
+            {
+                if (board.diceMap[i] != null)
+                    alive++;
+                else if (board.IsSlotUnlocked(i))
+                    emptySlots++;
+            }
+
+            bool canSummon = summon.summonButton != null && emptySlots > 0
+                && (game.Run.FreeSummonCharges > 0 || summon.currentSP >= summon.summonCost);
+            if (canSummon)
+            {
+                summon.summonButton.onClick.Invoke();
+                return;
+            }
+
+            if ((alive > minBoardDice || emptySlots == 0) && TryMergeOnePair(battle, board))
+                return;
         }
 
         private static bool DoOneSetupAction(IBattleRefs battle)

@@ -100,7 +100,8 @@ namespace OJ.Economy
         private void OnChoiceClicked(bool sp)
         {
             // 지급·재개·닫기는 매니저가 한다. 여기서 Exit 를 부르지 않는다 — 매니저가 Hide 한다.
-            Manager?.Choose(sp);
+            Choice choice = sp ? spChoice : stoneChoice;
+            Manager?.Choose(sp, choice.icon != null ? choice.icon.rectTransform : null);
         }
 
         // ──────────────────────────────────────────────────────────────

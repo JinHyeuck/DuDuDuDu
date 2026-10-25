@@ -112,6 +112,14 @@ namespace OJ.Stage
         [Tooltip("등장 간격 배수. 스포너 기본 간격(2초)에 곱한다. 물량은 작게, 정예는 크게.")]
         [Min(0.1f)] public float spawnIntervalMultiplier = 1f;
 
+        [Tooltip("새 밸런스(OJ.Core.BalanceProfile): 소환 클릭 수 초반 2회→후반 4회, 성급 3배씩, 레어·킹 강화, 자리·확률업 값 조정, 자리를 사면 무료 소환권. 1스테이지 시험.")]
+        public bool newBalance = false;
+
+        [Tooltip("중반 체력 램프(OJ.Core.MidWaveRamp): 시작 웨이브까지 100%, 끝 웨이브에서 배수, 이후 유지. 배수 1 이하면 꺼짐.")]
+        public int hpRampStartWave = 0;
+        public int hpRampEndWave = 0;
+        public float hpRampMultiplier = 1f;
+
         [Tooltip("0 이면 마지막 웨이브에만 보스(일반 몬스터와 섞임). 5 이면 5 · 10 · 15 웨이브가 보스 단독 웨이브다. OJ.Core.SoloBossRules")]
         [Min(0)] public int bossWaveInterval = 0;
 
