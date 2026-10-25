@@ -127,6 +127,15 @@ namespace OJ.Dice
             int sp = currentSP;
             int cost = summonCost;
 
+            int free = battle != null && battle.Game != null ? battle.Game.Run.FreeSummonCharges : 0;
+            if (free > 0)
+            {
+                // 공짜가 있으면 그것이 먼저 나간다 — 눈에 띄게 알린다.
+                spText.text = free > 1 ? $"무료 x{free}" : "무료!";
+                spText.color = new Color(0.45f, 1f, 0.55f, 1f);
+                return;
+            }
+
             spText.text = $"{sp} / {cost}";
             spText.color = sp >= cost ? Color.white : Color.red;
         }
@@ -158,7 +167,9 @@ namespace OJ.Dice
             if (battle.Game.IsBoardLockedByWave)
                 return;
 
-            if (currentSP < summonCost)
+            // 무료 소환권(자리를 사면 생긴다)이 있으면 SP 도 필요 없다.
+            bool useFree = battle.Game.Run.FreeSummonCharges > 0;
+            if (!useFree && currentSP < summonCost)
             {
                 Debug.Log("SP 부족!");
                 return;
@@ -194,15 +205,19 @@ namespace OJ.Dice
             if (summonable.Count == 0)
                 return;
 
-            int spentCost = summonCost;
-            battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, spentCost);
+            int spentCost = useFree ? 0 : summonCost;
+            if (useFree)
+                battle.Game.Run.FreeSummonCharges--;
+            else
+                battle.BattlePoints.TrySpend(BattlePointType.SummonPoint, spentCost);
 
             // 튜토리얼 판에서는 유물이 소환에 끼지 않는다. 시작 SP 가 "정확히 여섯 번" 으로
             // 계산돼 있어서(TutorialStage.Build) 비용 상승을 건너뛰거나 쌍둥이가 나오면
             // "SP 를 다 쓰면 다음" 이 어긋난다.
             bool relicsApply = RelicManager.Instance != null && !battle.Tutorial.IsActive;
 
-            bool skipCostIncrease = relicsApply && RelicManager.Instance.ShouldSkipSummonCostIncrease();
+            // 공짜 소환은 비용도 올리지 않는다(자리를 산 값에 이미 들어 있다).
+            bool skipCostIncrease = useFree || (relicsApply && RelicManager.Instance.ShouldSkipSummonCostIncrease());
             if (!skipCostIncrease)
             {
                 RunState run = battle.Game.Run;

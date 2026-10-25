@@ -344,6 +344,13 @@ namespace OJ.Dice
         /// 매니저가 없으면 <b>산술적으로 중립인 값</b>을 넣는다(0 또는 1f). 블록을 건너뛰는 것과
         /// 중립값을 통과시키는 것이 같음은 <see cref="DamageFormula"/> 주석에 근거가 있다.
         /// </summary>
+        /// <summary>레어 5종(회오리·스턴·방깎·바람·시간). 킹은 따로 센다.</summary>
+        private static bool IsRareTier(DiceType diceType)
+        {
+            return diceType == DiceType.Tornado || diceType == DiceType.Stun || diceType == DiceType.ArmorBreak
+                   || diceType == DiceType.Wind || diceType == DiceType.Time;
+        }
+
         public static DamageInputs CaptureDamageInputs(DiceType diceType, int dicePip, int bulletLevel)
         {
             var meta = GetMeta(diceType);
@@ -414,6 +421,7 @@ namespace OJ.Dice
                 LevelDamageMultiplier = levelDamageMultiplier,
                 KingSynergyMultiplier = kingSynergyMultiplier,
                 IsKingDice = isKingDice,
+                DiceTier = isKingDice ? 2 : IsRareTier(diceType) ? 1 : 0,
                 AttackPercentBonus = attackPercent,
                 AttackFlatBonus = attackFlat,
                 EarlyWaveFlatBonus = earlyWaveFlat,

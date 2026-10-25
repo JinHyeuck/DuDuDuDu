@@ -23,8 +23,8 @@ MonoBehaviour:
     waveClearStone: 2
     baseMonsterHp: 12
     baseMonsterDefense: 5
-    waveHpLinearFactor: 0.25
-    waveHpQuadraticFactor: 0.05
+    waveHpLinearFactor: 0.2
+    waveHpQuadraticFactor: 0.09
     waveDefenseLinearFactor: 0.12
     waveDefenseQuadraticFactor: 0.015
     bossHpMultiplier: 3.5
@@ -34,11 +34,15 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.9
     monsterScaleMultiplier: 1
     spawnIntervalMultiplier: 1
+    newBalance: 1
+    hpRampStartWave: 3
+    hpRampEndWave: 7
+    hpRampMultiplier: 2.8
     bossWaveInterval: 5
     bossWaveHpFactors:
     - 1
-    - 4
-    - 4
+    - 3.5
+    - 5
     bossContactDamagePerSecond: 6
   - stageIndex: 2
     theme: 1

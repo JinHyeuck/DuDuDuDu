@@ -330,6 +330,13 @@ namespace OJ.Dice
             slotUnlocked[slotIndex] = true;
             purchasedSlotCount++;
 
+            // 사는 순간 돌려받는다: 다음 소환 한 번이 공짜다. 튜토리얼은 SP 를 정확히 맞춰 둔 대본이라 끼우지 않는다.
+            if (BalanceProfile.Active && !battle.Tutorial.IsActive)
+            {
+                battle.Game.Run.FreeSummonCharges++;
+                battle.Summon?.UpdateSPUI();
+            }
+
             if (slotLockOverlays[slotIndex] != null)
                 Destroy(slotLockOverlays[slotIndex]);
             slotLockOverlays[slotIndex] = null;

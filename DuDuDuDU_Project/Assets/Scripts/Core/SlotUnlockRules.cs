@@ -11,6 +11,9 @@ namespace OJ.Core
         /// <summary>첫 자리의 해금 비용(SP).</summary>
         public const int BaseCost = 50;
 
+        /// <summary>새 밸런스(<see cref="BalanceProfile"/>)의 첫 자리 값. 소환 클릭 수가 줄어든 경제에 맞춰 낮췄다.</summary>
+        public const int BaseCostV2 = 30;
+
         /// <summary>자리를 하나 열 때마다 다음 비용이 오르는 양(SP).</summary>
         public const int CostStep = 5;
 
@@ -22,7 +25,7 @@ namespace OJ.Core
             if (unlockedCount < 0)
                 unlockedCount = 0;
 
-            return BaseCost + CostStep * unlockedCount;
+            return (BalanceProfile.Active ? BaseCostV2 : BaseCost) + CostStep * unlockedCount;
         }
     }
 }
