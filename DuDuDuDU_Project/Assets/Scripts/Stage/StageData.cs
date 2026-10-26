@@ -112,6 +112,9 @@ namespace OJ.Stage
         [Tooltip("등장 간격 배수. 스포너 기본 간격(2초)에 곱한다. 물량은 작게, 정예는 크게.")]
         [Min(0.1f)] public float spawnIntervalMultiplier = 1f;
 
+        [Tooltip("웨이브 테마(OJ.Core.WaveTheme): 10웨이브가 한 바퀴. 웨이브가 끝나면 영혼 보너스·현상금 도전·자리 보상을 고르고, 10웨이브마다 60초 보스. 상단 웨이브 현황 UI와 하단 버튼 정리도 같이 켜진다. 1스테이지 시험.")]
+        public bool waveTheme = false;
+
         [Tooltip("새 밸런스(OJ.Core.BalanceProfile): 소환 클릭 수 초반 2회→후반 4회, 성급 3배씩, 레어·킹 강화, 자리·확률업 값 조정, 자리를 사면 무료 소환권. 1스테이지 시험.")]
         public bool newBalance = false;
 

@@ -45,6 +45,22 @@ namespace OJ.Economy
         /// <summary>팝업이 떠 있는가.</summary>
         public bool IsPopupOpen { get; private set; }
 
+        /// <summary>지금까지 보상을 <b>고른</b> 횟수. 웨이브 테마가 "이번 제안에서 골랐는가" 를 이 값의 증가로 안다(창을 그냥 닫으면 안 오른다).</summary>
+        public int ChoiceCount { get; private set; }
+
+        /// <summary>
+        /// 처치 수와 상관없이 보상 선택 창을 지금 띄운다(웨이브 테마: 웨이브가 끝날 때마다 제안한다). 이미 떠 있으면 거절.
+        /// 값은 처음 한 번 굴려 고정되므로 닫았다 다시 열어도 같다.
+        /// </summary>
+        public bool OfferNow()
+        {
+            if (IsPopupOpen || battle == null || battle.Game == null)
+                return false;
+
+            OpenPopup();
+            return true;
+        }
+
         private int displayKills;
 
         public SoulBonusManager(IBattleRefs battle)
@@ -243,6 +259,7 @@ namespace OJ.Economy
             Run.SoulOfferStones = 0;
 
             IsPopupOpen = false;
+            ChoiceCount++;
             GameContainer.UI?.Hide<UISoulBonusDialog>();
 
             OnChanged?.Invoke();

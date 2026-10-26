@@ -82,6 +82,16 @@ namespace OJ.Bounty
         /// <summary>쿨타임이 끝났는가.</summary>
         public bool IsReady => BountyFormula.IsReady(CooldownRemaining);
 
+        /// <summary>쿨타임을 0 으로 만든다. 웨이브 테마의 "현상금 도전" 은 쿨타임이 아니라 도전권으로 소환한다.</summary>
+        public void ForceReady()
+        {
+            if (battle == null || battle.Game == null)
+                return;
+
+            Run.BountyCooldown = 0f;
+            OnChanged?.Invoke();
+        }
+
         /// <summary>지금 화면에 살아 있는 현상금 수.</summary>
         public int ActiveCount => active.Count;
 
