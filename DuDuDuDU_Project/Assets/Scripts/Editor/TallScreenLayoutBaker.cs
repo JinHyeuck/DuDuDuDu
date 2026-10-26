@@ -27,6 +27,7 @@ namespace OJ.EditorTools
         private const string BattleScenePath = "Assets/Scenes/BattleScene.unity";
         private const string LobbyScenePath = "Assets/Scenes/LobbyScene.unity";
         private const string EquipmentPagePath = "Assets/Prefab/Refactory/LobbyScene/UIEquipmentPage.prefab";
+        private const string StageRewardDialogPath = "Assets/Prefab/Refactory/LobbyScene/UIStageRewardDialog.prefab";
         private const float ReferenceHeight = 1920f;
 
         private const float Top = 1f;
@@ -85,6 +86,41 @@ namespace OJ.EditorTools
             }
 
             Debug.Log(log.ToString());
+        }
+
+        [MenuItem("OJ/개발/긴 화면/스테이지 보상 창 굽기")]
+        public static void BakeStageRewardDialog()
+        {
+            var log = new StringBuilder("[긴 화면] 스테이지 보상 창\n");
+            GameObject root = PrefabUtility.LoadPrefabContents(StageRewardDialogPath);
+            try
+            {
+                ApplyStageRewardDialog(root.transform, log);
+                PrefabUtility.SaveAsPrefabAsset(root, StageRewardDialogPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+
+            Debug.Log(log.ToString());
+        }
+
+        /// <summary>
+        /// 이 창은 전부 가운데(0.5)에 앵커돼 있어 화면이 길면 아래 영역(보상 목록·상태 글자·뒤로 가기 띠)이
+        /// 마일스톤 줄에서 멀어지며 위치가 바뀐다. 아래 영역을 바닥에 붙인다. 받기 버튼은 이미 바닥 앵커다.
+        /// </summary>
+        internal static void ApplyStageRewardDialog(Transform dialog, StringBuilder log)
+        {
+            Transform view = dialog.Find("View");
+            if (view == null)
+            {
+                log.AppendLine("  !! View 없음");
+                return;
+            }
+
+            foreach (string name in new[] { "Reward", "State", "Bottom" })
+                ReAnchorNamed(view, name, Bottom, log);
         }
 
         /// <summary>
