@@ -24,6 +24,12 @@ namespace OJ.Core
         /// <summary>킹 다이스 데미지 배수(켜졌을 때). 킹의 기존 <see cref="DamageFormula.KingDiceDamageMultiplier"/> 에 더해 곱해진다.</summary>
         public const float KingMultiplier = 2.55f;
 
+        /// <summary>
+        /// 다이스 쿨타임 배수(켜졌을 때). 웨이브당 소환이 2회뿐인 경제에서 1웨이브에 다이스 둘로도 버겁지 않게 쏘는 속도를 올린다
+        /// (2026-10-27, 사용자 지시). 쿨타임이 짧을수록 높은 성급(×1.2씩 느려진다)·레어도 같이 빨라진다.
+        /// </summary>
+        public const float CooldownMultiplier = 0.6f;
+
         /// <summary>다이스 등급(0 일반 · 1 레어 · 2 킹)별 배수. 꺼져 있으면 1.</summary>
         public static float TierMultiplier(int tier)
         {

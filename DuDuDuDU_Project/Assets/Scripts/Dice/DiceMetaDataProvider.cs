@@ -500,6 +500,8 @@ namespace OJ.Dice
             float baseCooldown = Mathf.Clamp(GetBaseCooldown(diceType), 0.1f, 10f);
             int star = Mathf.Max(1, diceStar);
             float cooldown = baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
+            if (BalanceProfile.Active)
+                cooldown *= BalanceProfile.CooldownMultiplier;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
             cooldown *= GetLevelCooldownMultiplier(diceType, level);
 

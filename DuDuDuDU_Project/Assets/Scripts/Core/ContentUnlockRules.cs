@@ -294,16 +294,16 @@ namespace OJ.Core
                 // 1스테이지 5웨이브 — 다이스. (1스테이지를 통째로 깨도 열린다.) 가이드는 노멀 다이스를 3레벨까지 올리게 한다.
                 new ContentUnlockDefinition(ContentId.Dice, 1, UnlockPresentation.Guide,
                     "다이스", "다이스를 강화하면\n전투에서 더 강해져요.",
-                    "5웨이브를 넘었어요!\n다이스를 강화해 봐요.",
+                    "10웨이브를 넘었어요!\n다이스를 강화해 봐요.",
                     "여기서 다이스를 강화하고\n새 다이스를 열 수 있어요.",
-                    requiredWave: 5),
+                    requiredWave: 10),
 
                 // 1스테이지 10웨이브 — 장비.
                 new ContentUnlockDefinition(ContentId.Equipment, 1, UnlockPresentation.Guide,
                     "장비", "장비를 강화하면 다이스가 더 세져요.",
-                    "10웨이브를 넘었어요!\n장비가 열렸어요. 눌러 보세요.",
+                    "20웨이브를 넘었어요!\n장비가 열렸어요. 눌러 보세요.",
                     "골드로 장비를 강화하면\n모든 다이스의 공격력이 올라요.",
-                    requiredWave: 10),
+                    requiredWave: 20),
 
                 // 1클리어 — 방치 보상.
                 new ContentUnlockDefinition(ContentId.IdleReward, 1, UnlockPresentation.Announce,

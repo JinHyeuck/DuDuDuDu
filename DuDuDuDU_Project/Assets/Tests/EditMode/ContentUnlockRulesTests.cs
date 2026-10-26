@@ -70,30 +70,30 @@ namespace OJ.Core.Tests
             CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 4));
         }
 
-        /// <summary>1스테이지 5웨이브를 넘으면 다이스 가이드, 10웨이브를 넘으면 장비 가이드(스테이지를 못 깼어도).</summary>
+        /// <summary>1스테이지 10웨이브를 넘으면 다이스 가이드, 20웨이브를 넘으면 장비 가이드(스테이지를 못 깼어도). 1스테이지는 30웨이브 시험이다.</summary>
         [Test]
         public void StageOneWavesOpenDiceThenEquipment()
         {
             var seen = new HashSet<ContentId> { ContentId.MeatFestival };
-            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 5)));
+            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 10)));
 
             seen.Add(ContentId.Dice);
-            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 9));
-            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 10)));
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 19));
+            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 20)));
         }
 
-        /// <summary>한 판에 12웨이브까지 간 유저: 가이드는 하나씩 — 다이스가 먼저, 그다음 장비(디렉터가 이어서 건다).</summary>
+        /// <summary>한 판에 25웨이브까지 간 유저: 가이드는 하나씩 — 다이스가 먼저, 그다음 장비(디렉터가 이어서 건다).</summary>
         [Test]
         public void BigJumpQueuesGuidesOneAtATime()
         {
             var seen = new HashSet<ContentId> { ContentId.MeatFestival };
-            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 12)));
+            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 25)));
 
             seen.Add(ContentId.Dice);
-            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 12)));
+            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 25)));
 
             seen.Add(ContentId.Equipment);
-            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 12));
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 25));
         }
 
         /// <summary>스테이지를 통째로 깨면 웨이브 기록이 없어도 열린다. 방치 보상 연출은 그때 나온다.</summary>

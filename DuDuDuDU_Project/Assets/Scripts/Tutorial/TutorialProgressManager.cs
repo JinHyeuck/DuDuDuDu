@@ -35,8 +35,15 @@ namespace OJ.Tutorial
         /// <summary>세이브에 쓰지 않는다. 앱이 죽으면 다음 실행에서 타이틀이 다시 예약한다.</summary>
         private bool pendingRun;
 
-        /// <summary>인게임 첫 튜토리얼을 마쳤는가(또는 건너뛸 세이브인가).</summary>
-        public bool IsInGameCompleted => inGameCompleted || hasPriorProgress;
+        /// <summary>
+        /// 인게임 첫 튜토리얼을 켜 두는가. <b>2026-10-27 사용자 지시로 당분간 끈다</b> — 꺼져 있으면 모든 세이브가 "마친 것" 으로 읽혀
+        /// 타이틀이 곧장 로비로 간다. 코드·대본·세이브 플래그는 그대로 두었다: 이 값을 true 로 되돌리면 이전처럼 첫 판이 튜토리얼이다.
+        /// (튜토리얼 판의 선물 다이스는 그 판 안에서만 쓰이고 영구 지급이 없어 건너뛰어도 잃는 것이 없다.)
+        /// </summary>
+        public const bool InGameTutorialEnabled = false;
+
+        /// <summary>인게임 첫 튜토리얼을 마쳤는가(또는 건너뛸 세이브인가). 튜토리얼이 꺼져 있으면 항상 참.</summary>
+        public bool IsInGameCompleted => !InGameTutorialEnabled || inGameCompleted || hasPriorProgress;
 
         /// <summary>다음 전투를 튜토리얼 판으로 연다. 타이틀과, 튜토리얼에서 졌을 때의 재시작이 부른다.</summary>
         public void RequestInGameRun()

@@ -79,6 +79,9 @@ namespace OJ.EditorTools
         /// </summary>
         private static bool realtime;
         private static float lastRealtimeLogWall;
+
+        /// <summary>이번 웨이브에서 본 보스 남은 시간의 최솟값(보스를 잡았을 때 몇 초 남겼나). 보스 웨이브가 아니면 -1.</summary>
+        private static float bossLeftMin = -1f;
         private static int stageIndex;
         private static float speed;
         private static bool evolve;
@@ -469,6 +472,9 @@ namespace OJ.EditorTools
                 return;
             }
 
+            if (game.BossTimeLeft >= 0f)
+                bossLeftMin = bossLeftMin < 0f ? game.BossTimeLeft : Mathf.Min(bossLeftMin, game.BossTimeLeft);
+
             // 웨이브가 바뀌는 순간을 기록한다(옛 모드의 "wave N done" 과 같은 모양이라 같은 스크립트로 읽는다).
             int wave = game.CurrentWaveIndex;
             if (wave != lastWaveIndex)
@@ -477,7 +483,11 @@ namespace OJ.EditorTools
                 {
                     Log(string.Format("wave {0,2} done  wallHp={1,4} sec={2,5:0.0} {3}",
                         lastWaveIndex, game.WallHp, Time.realtimeSinceStartup - waveStartTime, BoardSummary(battle)));
+                    if (bossLeftMin >= 0f)
+                        Log(string.Format("  boss wave {0}: 보스를 잡고 {1:0.0}초 남겼다(제한 60초)", lastWaveIndex, bossLeftMin));
                 }
+
+                bossLeftMin = -1f;
 
                 lastWaveIndex = wave;
                 waveStartTime = Time.realtimeSinceStartup;
@@ -498,6 +508,27 @@ namespace OJ.EditorTools
             if (board == null || board.diceMap == null || summon == null || !game.CanManageBoard)
                 return;
 
+            // 0) 웨이브 테마: 웨이브 사이의 선택 창. 현상금은 도전하고(가장 센 등급), 자리/영혼은 광고까지 써서 둘 다 받는다.
+            if (game.IsWaveTheme)
+            {
+                UIChoicePopup choice = UnityEngine.Object.FindFirstObjectByType<UIChoicePopup>();
+                if (choice != null)
+                {
+                    choice.Choose(choice.Title.Contains("현상금") ? 0 : choice.OptionCount - 1);
+                    return;
+                }
+
+                if (OJ.Bounty.UIBountySelectDialog.IsOpen && battle.Bounty != null)
+                {
+                    for (int grade = 6; grade >= 1; grade--)
+                    {
+                        if (battle.Bounty.IsSelectable(grade) && battle.Bounty.GetDefinition(grade) != null
+                            && battle.Bounty.TrySummon(grade))
+                            return;
+                    }
+                }
+            }
+
             // 1) 영혼 보너스: 차면 열고, 열렸으면 고른다. 마석이 다음 강화에 모자라면 마석, 아니면 SP.
             OJ.Economy.SoulBonusManager soul = game.SoulBonus;
             if (soul != null && soul.Enabled)
@@ -510,12 +541,12 @@ namespace OJ.EditorTools
                     return;
                 }
 
-                if (soul.IsReady && soul.TryOpen())
+                if (!game.IsWaveTheme && soul.IsReady && soul.TryOpen())
                     return;
             }
 
             // 2) 현상금: 쿨타임이 돌면 고를 수 있는 가장 높은 등급을 부른다.
-            if (game.inGameState == InGameState.Wave && battle.Bounty != null && battle.Bounty.CanSummonNow)
+            if (!game.IsWaveTheme && game.inGameState == InGameState.Wave && battle.Bounty != null && battle.Bounty.CanSummonNow)
             {
                 for (int grade = 6; grade >= 1; grade--)
                 {

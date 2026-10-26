@@ -79,6 +79,54 @@ namespace OJ.Core.Tests
         }
 
         [Test]
+        public void FifteenWaveTableMatchesTheGeneratedOne()
+        {
+            Assert.AreEqual(new[] { 19, 21, 23, 37, 41, 45, 49, 53, 57, 61, 87, 94, 101, 108, 108 }, WaveSpCurve.TableV2For(15));
+            for (int w = 1; w <= 15; w++)
+                Assert.AreEqual(WaveSpCurve.TableV2For(15)[w - 1], WaveSpCurve.Multiplier(w, 15));
+        }
+
+        [Test]
+        public void ThirtyWaveStageKeepsTwoToFourClicks()
+        {
+            int[] table = WaveSpCurve.TableV2For(30);
+            int sp = StartSp;
+            int cost = 10;
+            int done = 0;
+            int first = 0, last = 0;
+            for (int w = 1; w <= 30; w++)
+            {
+                int clicks = 0;
+                while (sp >= cost)
+                {
+                    sp -= cost;
+                    clicks++;
+                    done++;
+                    if (done % 2 == 0)
+                        cost++;
+                }
+
+                if (w == 1) first = clicks;
+                if (w == 30) last = clicks;
+                sp += WaveSpCurve.WaveClearSp(WaveClearSp, w, 30, true);
+            }
+
+            Assert.AreEqual(30, table.Length);
+            Assert.AreEqual(2, first);
+            Assert.GreaterOrEqual(last, 4);
+            Assert.LessOrEqual(last, 5);
+            Assert.GreaterOrEqual(done, 80);
+            Assert.LessOrEqual(done, 100);
+        }
+
+        [Test]
+        public void CooldownIsShorterOnlyWhenOn()
+        {
+            Assert.Less(BalanceProfile.CooldownMultiplier, 1f);
+            Assert.Greater(BalanceProfile.CooldownMultiplier, 0.3f);
+        }
+
+        [Test]
         public void OffKeepsOldRules()
         {
             BalanceProfile.Active = false;

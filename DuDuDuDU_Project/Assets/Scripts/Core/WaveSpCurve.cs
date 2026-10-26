@@ -27,6 +27,47 @@ namespace OJ.Core
         // 끝에서 꺾였다). "많이 뽑아 1성으로 채우기" 가 아니라 "적게 뽑아 잘 키우기" 가 되게 하려는 것이다.
         // 값 = 다음 웨이브의 클릭 수 × 그때의 소환 비용(10 에서 시작, 2회마다 +1)을 15웨이브 기준 waveClearSP 115 로 나눈 퍼센트.
         // 클릭 수: 1~4웨이브 2회, 5~11웨이브 3회, 12~15웨이브 4회. 마지막 웨이브 값은 쓰이지 않아 앞과 같다.
+        // 15웨이브는 아래 계산이 만드는 값 그대로다(SummonEconomyTests 가 표와 맞는지 잠근다). 웨이브 수가 다르면(30웨이브 시험) 같은 계산을 다시 돌린다 —
+        // 소환 비용이 소환 횟수에 따라 오르므로 단순히 늘려 재표본하면 후반 클릭 수가 줄어든다.
+        private static readonly System.Collections.Generic.Dictionary<int, int[]> v2Cache =
+            new System.Collections.Generic.Dictionary<int, int[]>();
+
+        /// <summary>
+        /// 새 밸런스 곡선(퍼센트, 기준 waveClearSP 115). 웨이브 w 의 클릭 수는 <c>2 + 2(w-1)/(N-1)</c> 을 반올림한 값이고,
+        /// 웨이브 w 에서 번 SP 는 w+1 웨이브에 쓴다고 보고 그 클릭들의 소환 비용(10 에서 시작, 2회마다 +1)을 더해 115 로 나눈다.
+        /// </summary>
+        public static int[] TableV2For(int totalWaves)
+        {
+            totalWaves = Math.Max(2, totalWaves);
+            if (v2Cache.TryGetValue(totalWaves, out int[] cached))
+                return cached;
+
+            var seq = new int[totalWaves];
+            int cost = 10;
+            int done = 0;
+            for (int w = 0; w < totalWaves; w++)
+            {
+                int clicks = (int)Math.Round(2.0 + 2.0 * w / (totalWaves - 1));
+                int sum = 0;
+                for (int k = 0; k < clicks; k++)
+                {
+                    sum += cost;
+                    done++;
+                    if (done % 2 == 0)
+                        cost++;
+                }
+
+                seq[w] = sum;
+            }
+
+            var table = new int[totalWaves];
+            for (int w = 0; w < totalWaves; w++)
+                table[w] = (int)Math.Round(100.0 * seq[Math.Min(w + 1, totalWaves - 1)] / 115.0);
+
+            v2Cache[totalWaves] = table;
+            return table;
+        }
+
         private static readonly int[] tableV2 = { 19, 21, 23, 37, 41, 45, 49, 53, 57, 61, 87, 94, 101, 108, 108 };
 
         // 옛 곡선(새 밸런스가 꺼진 판): 6~9웨이브에 몰렸다가 끝에서 꺾인다.
@@ -49,6 +90,9 @@ namespace OJ.Core
                 waveIndex = 1;
             if (waveIndex > totalWaves)
                 waveIndex = totalWaves;
+
+            if (BalanceProfile.Active)
+                return TableV2For(totalWaves)[waveIndex - 1];
 
             if (totalWaves == table.Length)
                 return table[waveIndex - 1];
