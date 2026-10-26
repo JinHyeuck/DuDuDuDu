@@ -18,6 +18,9 @@ namespace OJ.Bounty
     /// 잡으면 강화석 68 이 들어와 킹 두 개가 열린다. 무시해도 판은 굴러가되(특수 다이스
     /// 한 줄기) 상위 단계는 현상금을 통과해야 닿는다. 그것이 "곁가지지만 전략적"의 뜻이다.
     ///
+    /// <b>체력 배수(2026-10-27).</b> 처음 5·6·8·10·14 에서 첫 등급 ×2, 마지막 등급 ×4, 사이는 선형(2 → 2.5 → 3 → 3.5 → 4)으로 올렸다 —
+    /// 10·15·24·35·56. 1스테이지가 30웨이브로 늘고 다이스가 세져 예전 값은 한 방에 녹았다.
+    ///
     /// <b>SP 와 강화석을 번갈아 배치한 것도 의도다.</b> 한 종류로 몰면 등급이 곧 이득
     /// 순서가 되어 고를 것이 없어진다.
     /// </summary>
@@ -94,7 +97,7 @@ namespace OJ.Bounty
                     grade = 1,
                     displayName = "좀도둑",
                     referenceWaveRatio = 0.10f,
-                    hpMultiplier = 5f,
+                    hpMultiplier = 10f,
                     rewardKind = BattlePointType.SummonPoint,
                     rewardAmount = 60,
                     moveSpeedMultiplier = 0.3f,
@@ -106,7 +109,7 @@ namespace OJ.Bounty
                     grade = 2,
                     displayName = "악덕상인",
                     referenceWaveRatio = 0.30f,
-                    hpMultiplier = 6f,
+                    hpMultiplier = 15f,
                     rewardKind = BattlePointType.EnhanceStone,
                     rewardAmount = 8,
                     moveSpeedMultiplier = 0.3f,
@@ -118,7 +121,7 @@ namespace OJ.Bounty
                     grade = 3,
                     displayName = "해적왕",
                     referenceWaveRatio = 0.50f,
-                    hpMultiplier = 8f,
+                    hpMultiplier = 24f,
                     rewardKind = BattlePointType.SummonPoint,
                     rewardAmount = 150,
                     moveSpeedMultiplier = 0.3f,
@@ -130,7 +133,7 @@ namespace OJ.Bounty
                     grade = 4,
                     displayName = "기사단장",
                     referenceWaveRatio = 0.75f,
-                    hpMultiplier = 10f,
+                    hpMultiplier = 35f,
                     rewardKind = BattlePointType.EnhanceStone,
                     rewardAmount = 20,
                     moveSpeedMultiplier = 0.3f,
@@ -142,7 +145,7 @@ namespace OJ.Bounty
                     grade = 5,
                     displayName = "대마법사",
                     referenceWaveRatio = 1.00f,
-                    hpMultiplier = 14f,
+                    hpMultiplier = 56f,
                     rewardKind = BattlePointType.EnhanceStone,
                     rewardAmount = 40,
                     moveSpeedMultiplier = 0.3f,

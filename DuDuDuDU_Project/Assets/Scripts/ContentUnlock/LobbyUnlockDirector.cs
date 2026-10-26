@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using OJ.Core;
 using OJ.Dice;
+using OJ.Equipment;
 using OJ.Hunting;
 using OJ.IdleReward;
 using OJ.Lobby;
@@ -49,7 +50,8 @@ namespace OJ.ContentUnlock
         private const int GuideMeatSets = 1;
 
         /// <summary>한 번의 로비 방문에서 이어 붙이는 가이드의 최대 수. 이 수를 넘는 것은 다음 방문에 나온다.</summary>
-        private const int MaxChainedGuides = 2;
+        /// <summary>스테이지 보상 → 장비 → 다이스가 한 방문에 이어서 나오도록 셋이다.</summary>
+        private const int MaxChainedGuides = 3;
 
         /// <summary>다이스 가이드가 노멀 다이스를 올려 주는 목표 레벨. 이 레벨의 마일스톤(최종 대미지 +10%)을 짚어 준다.</summary>
         private const int DiceGuideTargetLevel = 3;
@@ -247,12 +249,23 @@ namespace OJ.ContentUnlock
             if (d.contentId == ContentId.Tower && ShouldGuideTowerLoadout())
                 await TowerLoadoutGuideAsync(d);
 
+            // 스테이지 보상 가이드는 설명으로 끝나지 않는다 — 받을 보상이 있으면 받게 하고 창을 닫는다.
+            if (d.contentId == ContentId.StageReward)
+                await StageRewardGuideAsync();
+
+            // 장비 가이드도 설명으로 끝나지 않는다 — 무기를 눌러 강화 팝업에서 강화 버튼을 눌러 보게 한다(강제).
+            if (d.contentId == ContentId.Equipment && ShouldGuideEquipmentUpgrade())
+                await EquipmentUpgradeGuideAsync();
+
             // 다이스 가이드는 설명으로 끝나지 않는다 — 노멀 다이스를 한 번 강화해 보게 한다(강제). 강화할 줄 모르면 뉴비가 약한 채로 막힌다.
             if (d.contentId == ContentId.Dice && ShouldGuideDiceUpgrade())
                 await DiceUpgradeGuideAsync();
         }
 
         // ── 다이스 가이드: 노멀 3레벨까지 + 3레벨 마일스톤 강조 ──────────────
+
+        /// <summary>장비 가이드가 올려 보게 하는 부위.</summary>
+        private const EquipmentType EquipmentGuideTarget = EquipmentType.Weapon;
 
         private static bool IsTabGuide(ContentId id)
         {
@@ -309,6 +322,21 @@ namespace OJ.ContentUnlock
                 return;
 
             // 1) 입구를 눌러 보상 창을 연다.
+            await OpenRewardDialogAsync(entry, entryRect, "웨이브 보상을 받을 수 있어요!\n눌러서 받아 봐요.");
+
+            UIStageRewardDialog dialog = GameContainer.UI?.Get<UIStageRewardDialog>();
+            if (dialog == null)
+            {
+                Debug.LogError("[해금] 보상 창을 못 찾아 보상 받기 가이드를 건너뛴다.");
+                return;
+            }
+
+            await ClaimAllInDialogAsync(rewards, dialog, "보상을 받았어요!\n이 재료로 강화해 봐요.");
+        }
+
+        /// <summary>입구를 짚어 누르게 하고 보상 창이 열리는 것을 기다린다.</summary>
+        private async UniTask OpenRewardDialogAsync(Button entry, RectTransform entryRect, string talk)
+        {
             bool opened = false;
             void OnEntryClick() => opened = true;
             entry.onClick.AddListener(OnEntryClick);
@@ -316,7 +344,7 @@ namespace OJ.ContentUnlock
             {
                 overlay.SetDim(entryRect);
                 overlay.SetFinger(entryRect);
-                overlay.SetTalk("웨이브 보상을 받을 수 있어요!\n눌러서 받아 봐요.");
+                overlay.SetTalk(talk);
                 await UniTask.WaitUntil(() => opened, PlayerLoopTiming.Update, token);
             }
             finally
@@ -329,17 +357,21 @@ namespace OJ.ContentUnlock
             overlay.SetDim();
             overlay.SetTalk(null);
 
-            UIStageRewardDialog dialog = GameContainer.UI?.Get<UIStageRewardDialog>();
-            if (dialog == null)
-            {
-                Debug.LogError("[해금] 보상 창을 못 찾아 보상 받기 가이드를 건너뛴다.");
+            UIStageRewardDialog shownDialog = GameContainer.UI?.Get<UIStageRewardDialog>();
+            if (shownDialog == null)
                 return;
-            }
 
-            await UniTask.WaitUntil(() => dialog.isEnter, PlayerLoopTiming.Update, token);
+            await UniTask.WaitUntil(() => shownDialog.isEnter, PlayerLoopTiming.Update, token);
             float settle = Time.unscaledTime + SettleSeconds;
             await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
+        }
 
+        /// <summary>
+        /// 열린 보상 창에서 받을 것이 남아 있는 동안 받기 버튼을 짚는다. 다 받으면 한 마디 하고 창을 닫는다.
+        /// 받을 것이 없으면 아무것도 안 하고 돌아온다(창은 그대로 — 부른 쪽이 닫는다).
+        /// </summary>
+        private async UniTask ClaimAllInDialogAsync(StageRewardManager rewards, UIStageRewardDialog dialog, string doneTalk)
+        {
             // 2) 받을 것이 남아 있는 동안 받기 버튼을 짚는다.
             while (rewards.HasClaimableReward())
             {
@@ -371,10 +403,146 @@ namespace OJ.ContentUnlock
             }
 
             overlay.SetDim();
-            overlay.SetTalk("보상을 받았어요!\n이 재료로 강화해 봐요.", tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
+            overlay.SetTalk(doneTalk, tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
             await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
 
             GameContainer.UI?.Hide<UIStageRewardDialog>();
+        }
+
+        /// <summary>
+        /// 스테이지 보상 가이드의 뒷부분. 입구를 눌러 창이 열리고 설명을 들은 뒤(<see cref="GuideAsync"/>),
+        /// 받을 보상이 있으면 받게 하고 창을 닫는다. 받을 것이 없으면 창만 닫는다 — 열린 채로 두면 아래 하단 탭이 가려
+        /// 이어지는 장비·다이스 가이드가 탭을 못 짚는다.
+        /// </summary>
+        private async UniTask StageRewardGuideAsync()
+        {
+            StageRewardManager rewards = StageRewardManager.Instance;
+            UIStageRewardDialog dialog = GameContainer.UI?.Get<UIStageRewardDialog>();
+            if (rewards == null || dialog == null)
+                return;
+
+            if (rewards.HasClaimableReward())
+                await ClaimAllInDialogAsync(rewards, dialog, "보상을 받았어요!\n웨이브를 더 깰수록 더 많이 받아요.");
+
+            GameContainer.UI?.Hide<UIStageRewardDialog>();
+        }
+
+        // ── 장비 가이드: 무기 → 강화 팝업 → 강화 ───────────────────────────
+
+        /// <summary>무기가 아직 1레벨일 때만 — 이미 올렸으면(재시도·옛 세이브) 다시 시키지 않는다.</summary>
+        private static bool ShouldGuideEquipmentUpgrade()
+        {
+            EquipmentManager equipment = EquipmentManager.Instance;
+            return equipment != null && equipment.GetLevel(EquipmentGuideTarget) <= 1 && !equipment.IsMaxLevel(EquipmentGuideTarget);
+        }
+
+        /// <summary>한 번 올리는 데 필요한 골드·두루마리를 <b>선물로 얹어 둔다</b>(다이스 가이드와 같은 판단 — 재화가 없어 버튼이 안 눌리면 멈춘다).</summary>
+        private static void EnsureEquipmentUpgradeResources()
+        {
+            PointManager points = PointManager.Instance;
+            EquipmentManager equipment = EquipmentManager.Instance;
+            if (points == null || equipment == null)
+                return;
+
+            (int goldCost, int scrollCost) = equipment.GetNextUpgradeCost(EquipmentGuideTarget);
+            PointType scrollType = PointManager.ToEquipmentScrollType(EquipmentGuideTarget);
+
+            int lackGold = goldCost - points.Get(PointType.Gold);
+            if (lackGold > 0)
+                points.Add(PointType.Gold, lackGold);
+
+            int lackScroll = scrollCost - points.Get(scrollType);
+            if (lackScroll > 0)
+                points.Add(scrollType, lackScroll);
+        }
+
+        private async UniTask EquipmentUpgradeGuideAsync()
+        {
+            EquipmentManager equipment = EquipmentManager.Instance;
+            if (equipment == null)
+                return;
+
+            EnsureEquipmentUpgradeResources();
+
+            // 목록이 그려질 때까지 기다린다(탭을 연 직후 한두 프레임은 비어 있다).
+            UIEquipmentItem item = null;
+            for (int i = 0; i < 120 && item == null; i++)
+            {
+                foreach (UIEquipmentItem candidate in UnityEngine.Object.FindObjectsByType<UIEquipmentItem>(FindObjectsSortMode.None))
+                {
+                    if (candidate.isActiveAndEnabled && candidate.Type == EquipmentGuideTarget && candidate.ClickButton != null)
+                    {
+                        item = candidate;
+                        break;
+                    }
+                }
+
+                if (item == null)
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            if (item == null)
+            {
+                Debug.LogError("[해금] 장비 목록에서 무기를 못 찾아 강화 가이드를 건너뛴다.");
+                return;
+            }
+
+            // 1) 무기를 눌러 강화 팝업을 연다.
+            bool opened = false;
+            void OnItemClick() => opened = true;
+            item.ClickButton.onClick.AddListener(OnItemClick);
+            try
+            {
+                overlay.SetDim(item.transform as RectTransform);
+                overlay.SetFinger(item.transform as RectTransform);
+                overlay.SetTalk("<b>무기</b>를 눌러서\n강화해 봐요!");
+                await UniTask.WaitUntil(() => opened, PlayerLoopTiming.Update, token);
+            }
+            finally
+            {
+                if (item != null && item.ClickButton != null)
+                    item.ClickButton.onClick.RemoveListener(OnItemClick);
+            }
+
+            overlay.SetFinger(null);
+            overlay.SetDim();
+            overlay.SetTalk(null);
+
+            // 2) 강화 팝업이 열리고 강화 버튼이 보일 때까지.
+            UIEquipmentConfirmDialog popup = UnityEngine.Object.FindFirstObjectByType<UIEquipmentConfirmDialog>(FindObjectsInactive.Include);
+            if (popup == null)
+            {
+                Debug.LogError("[해금] 장비 강화 팝업을 못 찾아 강화 가이드를 건너뛴다.");
+                return;
+            }
+
+            await UniTask.WaitUntil(() => popup.isEnter && popup.LevelUpButton != null && popup.LevelUpButton.isActiveAndEnabled,
+                PlayerLoopTiming.Update, token);
+
+            float settle = Time.unscaledTime + SettleSeconds;
+            await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
+
+            // 3) 강화 버튼을 눌러 레벨이 오를 때까지.
+            int level = equipment.GetLevel(EquipmentGuideTarget);
+            RectTransform upgrade = popup.LevelUpButton.transform as RectTransform;
+            overlay.SetDim(upgrade);
+            overlay.SetFinger(upgrade);
+            overlay.SetTalk("<b>강화</b> 버튼을 눌러요!");
+            await UniTask.WaitUntil(() => equipment.GetLevel(EquipmentGuideTarget) > level, PlayerLoopTiming.Update, token);
+
+            // 4) 강화된 모습(레벨·공격력)을 팝업에서 보여 주고 한 마디 한다. 팝업은 화면 전체라 딤만 걷고 말풍선을 위에 둔다.
+            overlay.SetFinger(null);
+            overlay.SetDim();
+            overlay.SetTalk(null);
+            float rest = Time.unscaledTime + SettleSeconds;
+            await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
+
+            overlay.SetTalk("강해졌어요!\n장비는 <b>모든 다이스</b>의 공격력을 올려요.",
+                tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
+            await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
+
+            // 팝업은 닫아 준다 — 열린 채로 두면 아래 하단 탭이 가려져 다음 가이드가 탭을 못 짚는다.
+            popup.Exit();
         }
 
         private static bool IsRewardResultOpen()

@@ -33,9 +33,9 @@ namespace OJ.Core.Tests
             CollectionAssert.IsEmpty(ContentUnlockRules.Validate(Defaults, 30));
         }
 
-        /// <summary>합의한 순서표(2026-10-20 개정 — 킹 썬더 3스테이지 해금 흐름). 숫자를 바꾸려면 이 테스트와 Docs 를 같이 고친다.</summary>
+        /// <summary>합의한 순서표(2026-10-27 개정 — 스테이지 보상 → 장비 → 다이스). 숫자를 바꾸려면 이 테스트와 Docs 를 같이 고친다.</summary>
         [TestCase(ContentId.Dice, 1, UnlockPresentation.Guide)]
-        [TestCase(ContentId.StageReward, 0, UnlockPresentation.Quiet)]
+        [TestCase(ContentId.StageReward, 1, UnlockPresentation.Guide)]
         [TestCase(ContentId.StageStar, 0, UnlockPresentation.Quiet)]
         [TestCase(ContentId.MeatFestival, 0, UnlockPresentation.Guide)]
         [TestCase(ContentId.Equipment, 1, UnlockPresentation.Guide)]
@@ -57,7 +57,24 @@ namespace OJ.Core.Tests
             Assert.AreEqual(presentation, d.presentation, id + " 알리는 방법");
         }
 
-        /// <summary>튜토리얼만 마친 신규 유저: 고기 축제 가이드 하나뿐이다. 다이스·장비는 아직 닫혀 있다.</summary>
+        /// <summary>1스테이지의 세 가이드가 열리는 조건. 스테이지 보상은 첫 판 종료, 장비는 5웨이브, 다이스는 10웨이브.</summary>
+        [Test]
+        public void StageOneGuidesOpenAtRunEndThenWave5ThenWave10()
+        {
+            Assert.IsTrue(Get(ContentId.StageReward).requiresRunEnded);
+            Assert.AreEqual(0, Get(ContentId.StageReward).requiredWave);
+            Assert.AreEqual(5, Get(ContentId.Equipment).requiredWave);
+            Assert.AreEqual(10, Get(ContentId.Dice).requiredWave);
+
+            // 표 순서가 곧 나오는 순서다 — 스테이지 보상, 장비, 다이스.
+            int reward = Defaults.FindIndex(d => d.contentId == ContentId.StageReward);
+            int equipment = Defaults.FindIndex(d => d.contentId == ContentId.Equipment);
+            int dice = Defaults.FindIndex(d => d.contentId == ContentId.Dice);
+            Assert.Less(reward, equipment);
+            Assert.Less(equipment, dice);
+        }
+
+        /// <summary>튜토리얼만 마친 신규 유저: 고기 축제 가이드 하나뿐이다. 판을 마치기 전에는 아무것도 더 안 열린다.</summary>
         [Test]
         public void FreshPlayerGetsOnlyMeatFestival()
         {
@@ -67,43 +84,128 @@ namespace OJ.Core.Tests
 
             seen.Add(ContentId.MeatFestival);
             CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen));
-            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 4));
         }
 
-        /// <summary>1스테이지 10웨이브를 넘으면 다이스 가이드, 20웨이브를 넘으면 장비 가이드(스테이지를 못 깼어도). 1스테이지는 30웨이브 시험이다.</summary>
-        [Test]
-        public void StageOneWavesOpenDiceThenEquipment()
+        /// <summary>첫 판이 끝나면 몇 웨이브에서 죽었든(0 이든) 스테이지 보상 가이드가 나온다.</summary>
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(4)]
+        public void AnyDeathShowsStageRewardGuideFirst(int bestWave)
         {
             var seen = new HashSet<ContentId> { ContentId.MeatFestival };
-            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 10)));
 
-            seen.Add(ContentId.Dice);
-            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 19));
-            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 20)));
+            // 판을 마치기 전에는 웨이브 기록이 없으면 나오지 않는다.
+            if (bestWave == 0)
+                CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 0, runEnded: false));
+
+            CollectionAssert.AreEqual(new[] { ContentId.StageReward }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, bestWave, runEnded: true)));
+
+            seen.Add(ContentId.StageReward);
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, bestWave, runEnded: true));
         }
 
-        /// <summary>한 판에 25웨이브까지 간 유저: 가이드는 하나씩 — 다이스가 먼저, 그다음 장비(디렉터가 이어서 건다).</summary>
+        /// <summary>판 종료 기록이 없는 옛 세이브라도 웨이브를 깬 기록이 있으면 판을 마친 것으로 본다.</summary>
         [Test]
-        public void BigJumpQueuesGuidesOneAtATime()
+        public void WaveRecordCountsAsFinishedRun()
         {
             var seen = new HashSet<ContentId> { ContentId.MeatFestival };
-            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 25)));
+            CollectionAssert.AreEqual(new[] { ContentId.StageReward }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 2, runEnded: false)));
+        }
 
-            seen.Add(ContentId.Dice);
-            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 25)));
+        /// <summary>5웨이브를 넘으면 장비, 10웨이브를 넘으면 다이스 가이드(스테이지를 못 깼어도).</summary>
+        [Test]
+        public void StageOneWavesOpenEquipmentThenDice()
+        {
+            var seen = new HashSet<ContentId> { ContentId.MeatFestival, ContentId.StageReward };
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 4, runEnded: true));
+            CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 5, runEnded: true)));
 
             seen.Add(ContentId.Equipment);
-            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 25));
+            CollectionAssert.IsEmpty(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 9, runEnded: true));
+            CollectionAssert.AreEqual(new[] { ContentId.Dice }, Ids(ContentUnlockRules.VisitQueue(Defaults, 0, seen, 10, runEnded: true)));
         }
 
-        /// <summary>스테이지를 통째로 깨면 웨이브 기록이 없어도 열린다. 방치 보상 연출은 그때 나온다.</summary>
+        /// <summary>
+        /// <b>첫 판에 12웨이브에서 죽었으면 스테이지 보상 → 장비 → 다이스.</b> 다이스부터 나오면 안 된다(사용자 지시, 2026-10-27).
+        /// 가이드는 하나씩 끊겨 나오고 디렉터가 이어서 건다.
+        /// </summary>
+        [Test]
+        public void DeathAtWave12ShowsRewardThenEquipmentThenDice()
+        {
+            var seen = new HashSet<ContentId> { ContentId.MeatFestival };
+            var order = new List<ContentId>();
+            for (int guard = 0; guard < 10; guard++)
+            {
+                List<ContentUnlockDefinition> queue = ContentUnlockRules.VisitQueue(Defaults, 0, seen, 12, runEnded: true);
+                if (queue.Count == 0)
+                    break;
+
+                foreach (ContentUnlockDefinition d in queue)
+                {
+                    order.Add(d.contentId);
+                    seen.Add(d.contentId);
+                }
+            }
+
+            CollectionAssert.AreEqual(new[] { ContentId.StageReward, ContentId.Equipment, ContentId.Dice }, order);
+        }
+
+        /// <summary>
+        /// 어떤 웨이브에서 죽었든(0~30) 가이드 순서가 뒤집히지 않는다 — 나온 것 중 스테이지 보상 &lt; 장비 &lt; 다이스.
+        /// "종종 순서가 바뀐다" 를 표와 규칙에서 못박는다.
+        /// </summary>
+        [Test]
+        public void GuideOrderNeverInvertsForAnyBestWave()
+        {
+            ContentId[] chain = { ContentId.StageReward, ContentId.Equipment, ContentId.Dice };
+            for (int wave = 0; wave <= 30; wave++)
+            {
+                foreach (bool runEnded in new[] { false, true })
+                {
+                    var seen = new HashSet<ContentId> { ContentId.MeatFestival };
+                    var order = new List<ContentId>();
+                    for (int guard = 0; guard < 20; guard++)
+                    {
+                        List<ContentUnlockDefinition> queue = ContentUnlockRules.VisitQueue(Defaults, 0, seen, wave, runEnded);
+                        if (queue.Count == 0)
+                            break;
+
+                        foreach (ContentUnlockDefinition d in queue)
+                        {
+                            order.Add(d.contentId);
+                            seen.Add(d.contentId);
+                        }
+                    }
+
+                    string at = "웨이브 " + wave + " 판 종료 " + runEnded;
+                    int lastPosition = -1;
+                    foreach (ContentId id in chain)
+                    {
+                        int position = order.IndexOf(id);
+                        if (position < 0)
+                            continue;
+
+                        Assert.Greater(position, lastPosition, at + ": " + id + " 가 앞 가이드보다 먼저 나왔다 (" + string.Join(",", order) + ")");
+                        lastPosition = position;
+                    }
+
+                    // 뒤의 것이 나왔다면 앞의 것도 나왔어야 한다(앞이 안 열렸는데 뒤만 열리는 일이 없다).
+                    if (order.Contains(ContentId.Dice))
+                        Assert.IsTrue(order.Contains(ContentId.Equipment) && order.Contains(ContentId.StageReward), at + ": 다이스만 나왔다");
+                    if (order.Contains(ContentId.Equipment))
+                        Assert.IsTrue(order.Contains(ContentId.StageReward), at + ": 장비만 나왔다");
+                }
+            }
+        }
+
+        /// <summary>스테이지를 통째로 깨면 웨이브 기록이 없어도 열린다. 방치 보상 연출은 마지막에 나온다.</summary>
         [Test]
         public void FirstClearStillOpensEverythingAndShowsIdle()
         {
-            var seen = new HashSet<ContentId> { ContentId.MeatFestival, ContentId.Dice, ContentId.Equipment };
+            var seen = new HashSet<ContentId> { ContentId.MeatFestival, ContentId.StageReward, ContentId.Dice, ContentId.Equipment };
             CollectionAssert.AreEqual(new[] { ContentId.IdleReward }, Ids(ContentUnlockRules.VisitQueue(Defaults, 1, seen)));
 
-            CollectionAssert.AreEqual(new[] { ContentId.Dice },
+            CollectionAssert.AreEqual(new[] { ContentId.StageReward },
                 Ids(ContentUnlockRules.VisitQueue(Defaults, 1, new HashSet<ContentId> { ContentId.MeatFestival })));
         }
 
@@ -113,7 +215,7 @@ namespace OJ.Core.Tests
         {
             var seen = new HashSet<ContentId>
             {
-                ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward, ContentId.Equipment, ContentId.Pinball,
+                ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward, ContentId.Equipment, ContentId.Pinball, ContentId.StageReward,
             };
 
             var queue = ContentUnlockRules.VisitQueue(Defaults, 3, seen);
@@ -126,7 +228,7 @@ namespace OJ.Core.Tests
         {
             var seen = new HashSet<ContentId>
             {
-                ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward, ContentId.Equipment,
+                ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward, ContentId.Equipment, ContentId.StageReward,
                 ContentId.Pinball, ContentId.Quest, ContentId.Tower,
             };
 
@@ -138,7 +240,7 @@ namespace OJ.Core.Tests
         [Test]
         public void UnfinishedGuideRepeats()
         {
-            var seen = new HashSet<ContentId> { ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward };
+            var seen = new HashSet<ContentId> { ContentId.Dice, ContentId.MeatFestival, ContentId.IdleReward, ContentId.StageReward };
             var queue = ContentUnlockRules.VisitQueue(Defaults, 1, seen);
             CollectionAssert.AreEqual(new[] { ContentId.Equipment }, Ids(queue));
         }
@@ -147,7 +249,7 @@ namespace OJ.Core.Tests
         public void QuietIsVisibleAsSoonAsOpen()
         {
             var none = new HashSet<ContentId>();
-            Assert.IsTrue(ContentUnlockRules.IsVisible(Get(ContentId.StageReward), 0, none));
+            Assert.IsTrue(ContentUnlockRules.IsVisible(Get(ContentId.StageStar), 0, none));
             Assert.IsFalse(ContentUnlockRules.IsVisible(Get(ContentId.Membership), 3, none));
             Assert.IsTrue(ContentUnlockRules.IsVisible(Get(ContentId.Membership), 4, none));
         }
@@ -187,6 +289,14 @@ namespace OJ.Core.Tests
             var table = ContentUnlockRules.BuildDefaults();
             table.Find(d => d.contentId == ContentId.Dice).requiredClear = 0;
             StringAssert.Contains("요구 웨이브가 있는데", string.Join("\n", ContentUnlockRules.Validate(table, 30)));
+        }
+
+        [Test]
+        public void RunEndedConditionNeedsAStageFallback()
+        {
+            var table = ContentUnlockRules.BuildDefaults();
+            table.Find(d => d.contentId == ContentId.StageReward).requiredClear = 0;
+            StringAssert.Contains("판 종료 조건이", string.Join("\n", ContentUnlockRules.Validate(table, 30)));
         }
 
         [Test]

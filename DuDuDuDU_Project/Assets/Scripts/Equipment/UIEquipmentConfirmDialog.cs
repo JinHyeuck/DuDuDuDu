@@ -156,6 +156,9 @@ namespace OJ.Equipment
             base.BackKeyCall();
         }
 
+        /// <summary>강화 버튼. 로비 가이드가 손가락으로 가리킨다.</summary>
+        public Button LevelUpButton => levelUpButton;
+
         public void Open(EquipmentType type, Action changedCallback)
         {
             if (!_isLoaded)
