@@ -56,13 +56,13 @@ namespace OJ.Dice
         /// 즉 <b>지금 값은 수급 대비 비싸다</b> — 현상금 시스템이 들어와 수급이 늘면
         /// 이 네 상수만 만지면 된다.
         /// </summary>
-        public const int BaseEvolveCost = 10;
+        public const int BaseEvolveCost = 20;
 
         /// <summary>기본 다이스를 같은 성급의 다른 기본 다이스로 바꾼다.</summary>
         public const int BaseExchangeCost = 5;
 
         /// <summary>특수 다이스를 대응하는 킹으로 올린다.</summary>
-        public const int SpecialEvolveCost = 20;
+        public const int SpecialEvolveCost = 40;
 
         /// <summary>특수 다이스를 다른 특수 다이스로 바꾼다.</summary>
         public const int SpecialExchangeCost = 10;

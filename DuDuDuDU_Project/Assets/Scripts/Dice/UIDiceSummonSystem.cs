@@ -277,6 +277,19 @@ namespace OJ.Dice
             return true;
         }
 
+        /// <summary>
+        /// 확률업 레벨을 <b>무료로</b> 한 단계 올린다(웨이브 이벤트). 이미 최대면 false. SP 는 건드리지 않는다.
+        /// </summary>
+        public bool GrantProbLevel()
+        {
+            if (battle.Tower.IsActive || NextProbUpgradeCost < 0)
+                return false;
+
+            RunState run = battle.Game.Run;
+            run.SummonProbLevel = SummonStarRules.ClampLevel(run.SummonProbLevel + 1);
+            return true;
+        }
+
         private int GetRandomEmptySlot()
         {
             List<int> emptySlots = new();

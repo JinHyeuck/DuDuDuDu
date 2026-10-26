@@ -46,6 +46,38 @@ namespace OJ.Core
             return MaxStones;
         }
 
+        // ── 웨이브 이벤트판(2026-10-27) ──────────────────────────────────
+        // SP 를 내고 굴리는 옛 버튼과 따로, 웨이브 사이 이벤트에서 "마석 5~15개" 를 굴린다. 가운데(10)가 흔한 종 모양이다.
+
+        public const int EventMinStones = 5;
+        public const int EventMaxStones = 15;
+
+        // [마석 개수 - EventMinStones] = 퍼센트. 합은 100 이다(테스트가 지킨다).
+        private static readonly int[] eventChance = { 5, 7, 9, 11, 12, 14, 12, 11, 9, 6, 4 };
+
+        /// <summary>이벤트에서 <paramref name="stones"/> 개가 나올 확률(퍼센트). 범위 밖이면 0.</summary>
+        public static int EventChance(int stones)
+        {
+            if (stones < EventMinStones || stones > EventMaxStones)
+                return 0;
+
+            return eventChance[stones - EventMinStones];
+        }
+
+        /// <summary>이벤트 굴림. <paramref name="roll"/> 은 0 이상 100 미만의 정수.</summary>
+        public static int RollEvent(int roll)
+        {
+            int cumulative = 0;
+            for (int stones = EventMinStones; stones <= EventMaxStones; stones++)
+            {
+                cumulative += eventChance[stones - EventMinStones];
+                if (roll < cumulative)
+                    return stones;
+            }
+
+            return EventMaxStones;
+        }
+
         /// <summary>기대 마석 개수(100 을 곱한 정수 — 소수점 없이 비교하려는 것이다). 400 이면 평균 4.00개.</summary>
         public static int ExpectedStonesTimes100()
         {

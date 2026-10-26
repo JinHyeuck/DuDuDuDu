@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using OJ.Battle;
 using OJ.Core;
+using OJ.UI;
 
 namespace OJ.Hunting
 {
@@ -155,6 +156,13 @@ namespace OJ.Hunting
             return plain;
         }
 
+        private static void BuildTextBadge(Transform parent, TMP_FontAsset font, string name, string label, Color color, float size)
+        {
+            Image back = Img(name, parent, Circle(), color);
+            Anchor(back.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size, size));
+            Text("Label", back.transform, font, label, size * (label.Length > 2 ? 0.28f : 0.34f), Color.white);
+        }
+
         /// <summary>웨이브 보상 아이콘. 칸 하나(약 48px)에 들어간다. 아이콘 에셋 대신 색과 글자로 그린다 — 한눈에 구분되는 것이 목적이다.</summary>
         public static void BuildRewardBadge(Transform parent, TMP_FontAsset font, WaveInterlude kind, float size)
         {
@@ -198,6 +206,52 @@ namespace OJ.Hunting
                     Text("Label", back.transform, font, "+4·영혼", size * 0.34f, Color.white);
                     break;
                 }
+                case WaveInterlude.LuckyDice:
+                    BuildTextBadge(parent, font, "LuckyDice", "행운", new Color(0.85f, 0.55f, 0.1f, 1f), size);
+                    break;
+                case WaveInterlude.BossChallenge:
+                    BuildTextBadge(parent, font, "BossChallenge", "보스전", new Color(0.55f, 0.1f, 0.14f, 1f), size);
+                    break;
+                case WaveInterlude.WallHeal:
+                    BuildTextBadge(parent, font, "WallHeal", "회복", new Color(0.18f, 0.55f, 0.32f, 1f), size);
+                    break;
+                case WaveInterlude.DiceGiftBasic:
+                    BuildTextBadge(parent, font, "DiceGiftBasic", "다이스", new Color(0.2f, 0.4f, 0.8f, 1f), size);
+                    break;
+                case WaveInterlude.DiceGiftRare:
+                    BuildTextBadge(parent, font, "DiceGiftRare", "특수", new Color(0.4f, 0.25f, 0.8f, 1f), size);
+                    break;
+                case WaveInterlude.SpGamble:
+                case WaveInterlude.StoneGamble:
+                    BuildTextBadge(parent, font, kind.ToString(), "도박", new Color(0.7f, 0.35f, 0.1f, 1f), size);
+                    break;
+                case WaveInterlude.FreeSummons:
+                    BuildTextBadge(parent, font, "FreeSummons", "소환", new Color(0.2f, 0.55f, 0.7f, 1f), size);
+                    break;
+                case WaveInterlude.ProbUp:
+                    BuildTextBadge(parent, font, "ProbUp", "확률", new Color(0.25f, 0.5f, 0.35f, 1f), size);
+                    break;
+                case WaveInterlude.WallUpgrade:
+                    BuildTextBadge(parent, font, "WallUpgrade", "벽업", new Color(0.45f, 0.45f, 0.5f, 1f), size);
+                    break;
+                case WaveInterlude.Exchange:
+                    BuildTextBadge(parent, font, "Exchange", "환전", new Color(0.55f, 0.5f, 0.15f, 1f), size);
+                    break;
+                case WaveInterlude.AttackSpeedBuff:
+                    BuildTextBadge(parent, font, "AttackSpeedBuff", "공속", new Color(0.85f, 0.4f, 0.15f, 1f), size);
+                    break;
+                case WaveInterlude.SlowBuff:
+                    BuildTextBadge(parent, font, "SlowBuff", "슬로", new Color(0.3f, 0.55f, 0.8f, 1f), size);
+                    break;
+                case WaveInterlude.WeakenBuff:
+                    BuildTextBadge(parent, font, "WeakenBuff", "약화", new Color(0.5f, 0.3f, 0.6f, 1f), size);
+                    break;
+                case WaveInterlude.RiskyDeal:
+                    BuildTextBadge(parent, font, "RiskyDeal", "위험", new Color(0.6f, 0.15f, 0.2f, 1f), size);
+                    break;
+                case WaveInterlude.Merchant:
+                    BuildTextBadge(parent, font, "Merchant", "상인", new Color(0.65f, 0.5f, 0.2f, 1f), size);
+                    break;
             }
         }
     }
@@ -218,7 +272,10 @@ namespace OJ.Hunting
         private int shownWave = -1;
         private RectTransform content;
 
-        public static UIWaveStrip Create(Transform canvas, TMP_FontAsset font, int totalWaves)
+        private Func<int, WaveInterlude> after = WaveTheme.After;
+
+        /// <param name="after">웨이브마다 끝난 뒤의 보상(아래 보상 아이콘). 판마다 무작위 이벤트 계획을 넘긴다.</param>
+        public static UIWaveStrip Create(Transform canvas, TMP_FontAsset font, int totalWaves, Func<int, WaveInterlude> after = null)
         {
             RectTransform root = WaveThemeUi.Rect("WaveStrip", canvas);
             WaveThemeUi.Anchor(root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -34f), new Vector2(760f, 190f));
@@ -226,6 +283,8 @@ namespace OJ.Hunting
             strip.font = font;
             strip.total = Mathf.Max(1, totalWaves);
             strip.content = root;
+            if (after != null)
+                strip.after = after;
             return strip;
         }
 
@@ -306,7 +365,7 @@ namespace OJ.Hunting
 
             RectTransform badge = WaveThemeUi.Rect("Reward", node);
             WaveThemeUi.Anchor(badge, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -NodeSize * 0.5f - 34f), new Vector2(52f, 52f));
-            WaveThemeUi.BuildRewardBadge(badge, font, WaveTheme.After(wave), 48f);
+            WaveThemeUi.BuildRewardBadge(badge, font, after(wave), 48f);
             if (done)
             {
                 foreach (Graphic g in badge.GetComponentsInChildren<Graphic>())
@@ -426,7 +485,7 @@ namespace OJ.Hunting
     public sealed class UIEnemyBar : MonoBehaviour
     {
         private MonsterManager monsters;
-        private Func<float> bossTimeLeft;
+        private Func<Monster, (string name, float left, float limit)> info;
         private CanvasGroup group;
         private TMP_Text nameText;
         private TMP_Text percentText;
@@ -437,13 +496,14 @@ namespace OJ.Hunting
         private RectTransform timerFill;
         private Image timerFillImage;
 
-        public static UIEnemyBar Create(Transform canvas, TMP_FontAsset font, MonsterManager monsters, Func<float> bossTimeLeft)
+        /// <param name="info">대상 몬스터의 (이름, 남은 시간, 제한 시간). 제한 시간이 없으면 남은 시간을 음수로 돌려준다.</param>
+        public static UIEnemyBar Create(Transform canvas, TMP_FontAsset font, MonsterManager monsters, Func<Monster, (string name, float left, float limit)> info)
         {
             RectTransform root = WaveThemeUi.Rect("EnemyBar", canvas);
             WaveThemeUi.Anchor(root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(40f, -262f), new Vector2(620f, 120f));
             var bar = root.gameObject.AddComponent<UIEnemyBar>();
             bar.monsters = monsters;
-            bar.bossTimeLeft = bossTimeLeft;
+            bar.info = info;
             bar.group = root.gameObject.AddComponent<CanvasGroup>();
             bar.group.alpha = 0f;
             bar.group.blocksRaycasts = false;
@@ -530,10 +590,11 @@ namespace OJ.Hunting
             float ratio = Mathf.Clamp01(target.HpPercent / 100f);
             fill.anchorMax = new Vector2(ratio, 1f);
             fillImage.color = boss ? WaveThemeUi.Red : new Color(0.72f, 0.3f, 0.78f, 1f);
-            nameText.text = boss ? "BOSS" : "현상금";
+            (string name, float left, float limit) shown = info != null ? info(target) : (boss ? "BOSS" : "현상금", -1f, 0f);
+            nameText.text = shown.name;
             percentText.text = target.HpPercent + "%";
 
-            float left = boss && bossTimeLeft != null ? bossTimeLeft() : -1f;
+            float left = shown.left;
             if (left >= 0f)
             {
                 int seconds = Mathf.CeilToInt(left);
@@ -541,7 +602,7 @@ namespace OJ.Hunting
                 timerRoot.SetActive(true);
                 timerText.text = "남은 시간 " + seconds + "초";
                 timerText.color = urgent ? new Color(1f, 0.3f, 0.25f, 1f) : Color.white;
-                timerFill.anchorMax = new Vector2(Mathf.Clamp01(left / WaveTheme.BossTimeLimitSeconds), 1f);
+                timerFill.anchorMax = new Vector2(shown.limit > 0f ? Mathf.Clamp01(left / shown.limit) : 0f, 1f);
                 timerFillImage.color = urgent ? WaveThemeUi.Red : WaveThemeUi.Gold;
             }
             else
@@ -574,6 +635,10 @@ namespace OJ.Hunting
         }
 
         private Action<int> onChosen;
+        private RectTransform[] optionRects;
+
+        /// <summary>마지막으로 고른 선택지의 화면 좌표. 이벤트 보상이 거기서 날아오른다(없으면 화면 가운데).</summary>
+        public static Vector2 LastChosenScreen { get; private set; } = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
 
         /// <summary>선택지 수. 밸런스 봇이 고를 때 쓴다.</summary>
         public int OptionCount { get; private set; }
@@ -598,6 +663,7 @@ namespace OJ.Hunting
             popup.onChosen = onChosen;
             popup.OptionCount = options.Count;
             popup.Title = title;
+            popup.optionRects = new RectTransform[options.Count];
 
             Image dim = WaveThemeUi.Img("Dim", root, null, new Color(0f, 0f, 0f, 0.7f), raycast: true);
             dim.rectTransform.anchorMin = Vector2.zero;
@@ -624,6 +690,7 @@ namespace OJ.Hunting
                     option.Enabled ? option.Color : new Color(0.3f, 0.3f, 0.34f, 1f), raycast: true);
                 WaveThemeUi.Anchor(button.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, y), new Vector2(800f, buttonHeight));
 
+                popup.optionRects[i] = button.rectTransform;
                 var ui = button.gameObject.AddComponent<Button>();
                 ui.targetGraphic = button;
                 ui.interactable = option.Enabled;
@@ -645,6 +712,11 @@ namespace OJ.Hunting
 
         public void Choose(int index)
         {
+            // 창이 사라지기 전에 고른 버튼의 화면 좌표를 적어 둔다 — 보상이 거기서 날아오른다.
+            LastChosenScreen = optionRects != null && index >= 0 && index < optionRects.Length && optionRects[index] != null
+                ? UIRewardFly.ScreenPointOf(optionRects[index])
+                : new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
             Action<int> callback = onChosen;
             onChosen = null;
             Destroy(gameObject);
