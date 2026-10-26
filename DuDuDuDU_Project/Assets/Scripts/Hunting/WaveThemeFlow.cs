@@ -42,7 +42,8 @@ namespace OJ.Hunting
             this.popupRoot = popupRoot != null ? popupRoot : canvas;
 
             Strip = UIWaveStrip.Create(canvas, font, totalWaves);
-            Banner = UIWaveStartBanner.Create(canvas, font);
+            // 문구는 선택 창과 같은 캔버스에 올린다(기여도 패널 같은 다이얼로그에 가려지지 않게).
+            Banner = UIWaveStartBanner.Create(this.popupRoot, font);
             EnemyBar = UIEnemyBar.Create(canvas, font, battle.Monsters, bossTimeLeft);
             Strip.SetWave(1);
         }

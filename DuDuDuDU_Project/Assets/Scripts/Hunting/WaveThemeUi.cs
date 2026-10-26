@@ -127,7 +127,8 @@ namespace OJ.Hunting
             if (outline)
             {
                 tmp.outlineColor = new Color32(10, 12, 28, 255);
-                tmp.outlineWidth = 0.2f;
+                tmp.outlineWidth = 0.12f;
+                tmp.fontMaterial.EnableKeyword("OUTLINE_ON");
             }
 
             return tmp;
@@ -330,11 +331,19 @@ namespace OJ.Hunting
             RectTransform root = WaveThemeUi.Rect("WaveStartBanner", canvas);
             WaveThemeUi.Anchor(root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 330f), new Vector2(1000f, 220f));
             var banner = root.gameObject.AddComponent<UIWaveStartBanner>();
+            // 기여도 패널 같은 다이얼로그 캔버스에 가려지지 않게 자기 정렬 순서를 쥔다(선택 창 5000 보다는 아래).
+            var sorting = root.gameObject.AddComponent<Canvas>();
+            sorting.overrideSorting = true;
+            sorting.sortingOrder = 4000;
             banner.group = root.gameObject.AddComponent<CanvasGroup>();
             banner.group.alpha = 0f;
             banner.group.blocksRaycasts = false;
             banner.group.interactable = false;
             banner.label = WaveThemeUi.Text("Label", root, font, string.Empty, 128f, WaveThemeUi.Gold);
+            // 큰 글자라 외곽선도 굵게. 어두운 배경에서도 보이게 검정으로.
+            banner.label.outlineColor = new Color32(0, 0, 0, 255);
+            banner.label.outlineWidth = 0.16f;
+            banner.label.fontMaterial.EnableKeyword("OUTLINE_ON");
             WaveThemeUi.Anchor(banner.label.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000f, 220f));
             return banner;
         }
@@ -347,15 +356,25 @@ namespace OJ.Hunting
             if (routine != null)
                 StopCoroutine(routine);
 
-            routine = StartCoroutine(Animate());
+            routine = StartCoroutine(Animate(0.9f, 0.45f));
+        }
+
+        /// <summary>임의의 문구를 같은 연출로 띄운다(스테이지 클리어 등). 전체 길이는 0.25 + hold + fade 초.</summary>
+        public void PlayText(string text, Color color, float hold, float fade)
+        {
+            label.text = text;
+            label.color = color;
+
+            if (routine != null)
+                StopCoroutine(routine);
+
+            routine = StartCoroutine(Animate(hold, fade));
         }
 
         /// <summary>실제 시간으로 돈다 — 배속·일시정지와 상관없이 같은 길이로 보인다.</summary>
-        private IEnumerator Animate()
+        private IEnumerator Animate(float hold, float fade)
         {
             const float popIn = 0.25f;
-            const float hold = 0.9f;
-            const float fade = 0.45f;
 
             float t = 0f;
             while (t < popIn)

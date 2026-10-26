@@ -1536,9 +1536,17 @@ namespace OJ.Hunting
         /// <b>상태는 Wave 로 둔다</b> — 현상금이 필드에 나와야 하고 보드 정리도 열려 있어야 해서다. 대신 <c>interludeActive</c> 가
         /// 이 사이에 웨이브가 또 "끝났다" 로 판정되는 것을 막는다.
         /// </summary>
+        /// <summary>"N웨이브 클리어!" 문구가 보이는 시간. 이 시간이 지나면 보상 창이 뜬다.</summary>
+        private const float WaveClearBannerSeconds = 0.8f;
+
         private IEnumerator CoWaveInterlude(int completedWave)
         {
             interludeActive = true;
+
+            // 웨이브를 깰 때마다 "N웨이브 클리어!" 가 0.8초 뜬 뒤 보상 선택 창이 나온다.
+            themeFlow.Banner?.PlayText(completedWave + "웨이브 클리어!", new Color(0.55f, 1f, 0.55f, 1f), 0.4f, 0.15f);
+            yield return new WaitForSecondsRealtime(WaveClearBannerSeconds);
+
             yield return themeFlow.RunInterlude(completedWave);
             interludeActive = false;
             interludeRoutine = null;
