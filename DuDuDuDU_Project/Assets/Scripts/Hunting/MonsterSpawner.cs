@@ -433,12 +433,13 @@ namespace OJ.Hunting
             monster.transform.rotation = Quaternion.identity;
             // 폴백 1/0 은 GameManager 가 없을 때만 쓰이던 값이다. 전투 씬에서 그 상황은
             // 성립하지 않으므로 폴백을 지운다 — 남기면 스탯 0 짜리 몬스터로 조용히 굴러간다.
-            int monsterHp = battle.Game.GetCurrentWaveMonsterHp();
+            // 웨이브 이벤트가 건 "다음 웨이브" 효과(체력·이동속도). 아무것도 안 걸렸으면 1 이다.
+            int monsterHp = Mathf.Max(1, Mathf.RoundToInt(battle.Game.GetCurrentWaveMonsterHp() * WaveBuffs.MonsterHpMultiplier));
             int monsterDefense = battle.Game.GetCurrentWaveMonsterDefense();
             StageData stage = battle.Game.CurrentStageData;
             monster.SetCombatStats(monsterHp, monsterDefense, stage != null ? stage.monsterScaleMultiplier : 1f);
             // OnSpawn 이 ApplyMoveSpeed 를 되돌려 놓으므로 반드시 그 뒤다.
-            monster.ConfigureStageSpeed(stage != null ? stage.monsterMoveSpeedMultiplier : 1f);
+            monster.ConfigureStageSpeed((stage != null ? stage.monsterMoveSpeedMultiplier : 1f) * WaveBuffs.MonsterSpeedMultiplier);
 
             regularSpawnCount++;
         }

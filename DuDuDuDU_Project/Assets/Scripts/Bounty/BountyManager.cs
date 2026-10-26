@@ -95,6 +95,35 @@ namespace OJ.Bounty
         /// <summary>지금 화면에 살아 있는 현상금 수.</summary>
         public int ActiveCount => active.Count;
 
+        // 웨이브 이벤트(보스전)가 부른 보스. 현상금 몸을 빌리지만 <b>현상금이 아니다</b> — 잡아도 등급 보상·다음 등급 해금이 없고,
+        // 잡았다는 사실만 이벤트에 알린다. 그래서 active(등급 추적)와 따로 든다.
+        private readonly HashSet<Monster> eventBosses = new HashSet<Monster>();
+
+        /// <summary>이벤트 보스를 잡았다. 보상은 이벤트(WaveThemeFlow)가 정한다.</summary>
+        public event Action<Monster> OnEventBossDefeated;
+
+        public bool IsEventBoss(Monster monster)
+        {
+            return monster != null && eventBosses.Contains(monster);
+        }
+
+        /// <summary>
+        /// 웨이브 이벤트의 보스를 그 자리에서 소환한다. 체력·모습은 <paramref name="grade"/> 등급 현상금의 것이다.
+        /// 쿨타임을 건드리지 않는다. 소환하지 못하면 null.
+        /// </summary>
+        public Monster SummonEventBoss(int grade)
+        {
+            if (battle == null || battle.Game == null || battle.Tower.IsActive)
+                return null;
+
+            Monster monster = battle.Spawner.SpawnBountyNow(grade);
+            if (monster == null)
+                return null;
+
+            eventBosses.Add(monster);
+            return monster;
+        }
+
         /// <summary>이번 판에 잡아낸 최고 등급. 해금의 유일한 근거다.</summary>
         public int HighestDefeatedGrade => Run.HighestDefeatedBountyGrade;
 
@@ -224,6 +253,12 @@ namespace OJ.Bounty
         /// </summary>
         public void NotifyDefeated(Monster monster, Vector3 deathWorld)
         {
+            if (monster != null && eventBosses.Remove(monster))
+            {
+                OnEventBossDefeated?.Invoke(monster);
+                return;
+            }
+
             if (monster == null || !active.TryGetValue(monster, out int grade))
                 return;
 
@@ -291,6 +326,9 @@ namespace OJ.Bounty
         /// <summary>잡히지 않고 사라졌다(화면 밖·씬 정리 등 어떤 경로든). 보상은 없다. 벽에 닿아도 사라지지 않고 남아서 때린다.</summary>
         public void NotifyEscaped(Monster monster)
         {
+            if (monster != null)
+                eventBosses.Remove(monster);
+
             if (monster == null || !active.Remove(monster))
                 return;
 
@@ -304,6 +342,7 @@ namespace OJ.Bounty
         public void ResetWaveState()
         {
             active.Clear();
+            eventBosses.Clear();
         }
     }
 }

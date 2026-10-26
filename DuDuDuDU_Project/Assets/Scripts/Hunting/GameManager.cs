@@ -190,6 +190,7 @@ namespace OJ.Hunting
         {
             // 전투 씬이 내려가면 로비·다른 화면은 항상 옛 규칙이다.
             BalanceProfile.Active = false;
+            WaveBuffs.Reset();
 
             // 창구는 스코프가 파괴될 때 비워지는데 그 순서가 정해져 있지 않다.
             // 이미 비었으면 뗄 것도 없으므로 ?. 를 쓴다 — 여기는 사고가 아니라 정리 경로다.
@@ -1089,6 +1090,7 @@ namespace OJ.Hunting
             BalanceProfile.Active = false;
             IsWaveTheme = false;
             bossTimeLeft = -1f;
+            WaveBuffs.Reset();
 
             RelicManager.Instance?.BeginStageRun();
 
@@ -1544,6 +1546,9 @@ namespace OJ.Hunting
         {
             interludeActive = true;
 
+            // 지난 웨이브에 걸렸던 이벤트 효과는 여기서 걷힌다(다음 웨이브 한 번짜리다).
+            WaveBuffs.Reset();
+
             // 웨이브를 깰 때마다 "N웨이브 클리어!" 가 0.8초 뜬 뒤 보상 선택 창이 나온다.
             themeFlow.Banner?.PlayText(completedWave + "웨이브 클리어!", new Color(0.55f, 1f, 0.55f, 1f), 0.4f, 0.15f);
             yield return new WaitForSecondsRealtime(WaveClearBannerSeconds);
@@ -1566,6 +1571,7 @@ namespace OJ.Hunting
 
             interludeRoutine = null;
             interludeActive = false;
+            WaveBuffs.Reset();
             themeFlow?.CloseTransient();
         }
 

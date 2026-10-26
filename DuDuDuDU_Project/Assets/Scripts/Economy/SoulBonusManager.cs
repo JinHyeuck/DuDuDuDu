@@ -173,7 +173,8 @@ namespace OJ.Economy
         // SP 는 소환 버튼으로, 마석은 보유 마석 칸으로 간다. 값은 이미 지급됐고 이 연출은 보기만 한다.
         private const float StoneIconScale = 1.9f;
 
-        private void FlySummonPoint(Vector2 fromScreen, int amount)
+        /// <summary>SP 가 화면 좌표에서 소환 버튼으로 날아간다. 웨이브 이벤트(WaveThemeFlow)도 같은 연출을 쓴다.</summary>
+        public void FlySummonPoint(Vector2 fromScreen, int amount)
         {
             var summon = battle.Summon;
             if (summon == null || summon.summonButton == null)
@@ -184,7 +185,8 @@ namespace OJ.Economy
                 new Color(0.55f, 0.9f, 1f, 1f));
         }
 
-        private void FlyEnhanceStone(Vector2 fromScreen, int amount)
+        /// <summary>마석이 화면 좌표에서 보유 마석 칸으로 날아간다(먼저 <c>HoldStone</c> 으로 쥐어 두어야 숫자가 닿을 때 오른다).</summary>
+        public void FlyEnhanceStone(Vector2 fromScreen, int amount)
         {
             ElementUpgradeManager upgrade = battle.ElementUpgrade;
             if (upgrade == null)

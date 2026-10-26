@@ -502,6 +502,9 @@ namespace OJ.Dice
             float cooldown = baseCooldown * Mathf.Pow(1.2f, star - 1) * CooldownBalanceMultiplier;
             if (BalanceProfile.Active)
                 cooldown *= BalanceProfile.CooldownMultiplier;
+
+            // 웨이브 이벤트의 "다음 웨이브 공격 속도" 효과. 아무것도 안 걸렸으면 1 이다.
+            cooldown *= WaveBuffs.CooldownMultiplier;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(diceType) : 1;
             cooldown *= GetLevelCooldownMultiplier(diceType, level);
 
