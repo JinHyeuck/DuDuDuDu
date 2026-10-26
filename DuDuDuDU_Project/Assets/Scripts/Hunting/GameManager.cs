@@ -1582,6 +1582,7 @@ namespace OJ.Hunting
                 killRect.anchoredPosition = new Vector2(killRect.anchoredPosition.x, -215f);
 
             battle.Board?.ConfigureColumns(8);
+            battle.Board?.DisableSpUnlock();
             StartCoroutine(CoApplyWaveThemeLayout());
         }
 
