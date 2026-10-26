@@ -123,6 +123,10 @@ namespace OJ.UI
             GameObject go = resolver.Instantiate(prefab, parent != null ? parent : EnsureRoot());
             go.name = key;
 
+            // 노치·카메라 구멍에 가리지 않게. 로비 탭 내용물(부모를 받은 것)은 이미 씬 레이아웃 안이라 건드리지 않는다.
+            if (parent == null)
+                SafeAreaFitter.ApplyTree(go.transform as RectTransform);
+
             var dialog = go.GetComponent<T>();
             if (dialog == null)
             {

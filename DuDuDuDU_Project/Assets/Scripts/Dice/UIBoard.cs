@@ -59,6 +59,15 @@ namespace OJ.Dice
         public bool IsSlotLockActive => slotLockActive;
 
         /// <summary>다음 자리를 열 때 드는 SP.</summary>
+        /// <summary>true 면 SP 로 자리를 못 연다(웨이브 테마: 자리는 웨이브 보상으로만 늘어난다).</summary>
+        public bool SpUnlockDisabled { get; private set; }
+
+        public void DisableSpUnlock()
+        {
+            SpUnlockDisabled = true;
+            RefreshSlotLockLabels();
+        }
+
         public int NextSlotUnlockCost => SlotUnlockRules.Cost(purchasedSlotCount);
 
         /// <summary>
@@ -370,7 +379,7 @@ namespace OJ.Dice
         /// </summary>
         public bool TryUnlockSlot(int slotIndex)
         {
-            if (!slotLockActive || IsSlotUnlocked(slotIndex))
+            if (!slotLockActive || IsSlotUnlocked(slotIndex) || SpUnlockDisabled)
                 return false;
 
             if (battle.Game == null || !battle.Game.CanManageBoard)
@@ -802,8 +811,8 @@ namespace OJ.Dice
                 if (slotLockLabels[i] == null || i >= gateStartIndex)
                     continue;
 
-                slotLockLabels[i].text = cost + "\nSP";
-                slotLockLabels[i].color = color;
+                slotLockLabels[i].text = SpUnlockDisabled ? "잠김" : cost + "\nSP";
+                slotLockLabels[i].color = SpUnlockDisabled ? new Color(0.75f, 0.75f, 0.8f) : color;
             }
         }
 

@@ -42,7 +42,8 @@ namespace OJ.Hunting
             this.popupRoot = popupRoot != null ? popupRoot : canvas;
 
             Strip = UIWaveStrip.Create(canvas, font, totalWaves);
-            Banner = UIWaveStartBanner.Create(canvas, font);
+            // 문구는 선택 창과 같은 캔버스에 올린다(기여도 패널 같은 다이얼로그에 가려지지 않게).
+            Banner = UIWaveStartBanner.Create(this.popupRoot, font);
             EnemyBar = UIEnemyBar.Create(canvas, font, battle.Monsters, bossTimeLeft);
             Strip.SetWave(1);
         }
@@ -168,16 +169,16 @@ namespace OJ.Hunting
         {
             while (!game.IsFinished)
             {
-                bool adReady = adUses < WaveTheme.AdBonusLimitPerStage
-                    && (GameContainer.RewardedAds != null && GameContainer.RewardedAds.IsAvailable || Application.isEditor);
+                // 광고 버튼은 늘 보인다. 광고 SDK 가 아직 없어 서비스가 없으면 광고를 본 것으로 친다(아래). 횟수를 다 쓰면 눌리지 않는다.
+                bool adLeft = adUses < WaveTheme.AdBonusLimitPerStage;
                 var options = new List<UIChoicePopup.Option>
                 {
                     new UIChoicePopup.Option("자리 +" + WaveTheme.SlotsPerGrant + "칸", "보드에 놓을 수 있는 자리가 늘어요", new Color(0.86f, 0.6f, 0.12f, 1f)),
                     new UIChoicePopup.Option("영혼 보너스", "SP 또는 마석을 받아요", new Color(0.4f, 0.3f, 0.72f, 1f)),
                 };
-                if (adReady)
-                    options.Add(new UIChoicePopup.Option("광고 보고 둘 다 받기", "남은 횟수 " + (WaveTheme.AdBonusLimitPerStage - adUses) + "/" + WaveTheme.AdBonusLimitPerStage,
-                        new Color(0.2f, 0.62f, 0.4f, 1f)));
+                options.Add(new UIChoicePopup.Option("광고 보고 둘 다 받기",
+                    adLeft ? "남은 횟수 " + (WaveTheme.AdBonusLimitPerStage - adUses) + "/" + WaveTheme.AdBonusLimitPerStage : "이번 스테이지는 다 썼어요",
+                    new Color(0.2f, 0.62f, 0.4f, 1f), adLeft));
 
                 int choice = -1;
                 popup = UIChoicePopup.Open(popupRoot, font, "보상을 골라요", "5웨이브 클리어!", options, i => choice = i);
@@ -187,6 +188,10 @@ namespace OJ.Hunting
                 popup = null;
                 if (game.IsFinished)
                     yield break;
+
+                // 다 쓴 광고 칸은 눌리지 않지만, 밸런스 봇처럼 번호로 고르는 쪽이 와도 영혼 보너스로 돌린다.
+                if (choice == 2 && !adLeft)
+                    choice = 1;
 
                 if (choice == 0)
                 {

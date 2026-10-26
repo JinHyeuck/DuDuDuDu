@@ -118,13 +118,41 @@ namespace OJ.Hunting
             tmp.textWrappingMode = TextWrappingModes.NoWrap;
             tmp.overflowMode = TextOverflowModes.Overflow;
             tmp.raycastTarget = false;
+
+            // 폰트의 기본 머티리얼은 글자를 두껍게(FaceDilate 1) 부풀리고 두꺼운 외곽선을 품고 있어 작은 글자가 번진다.
+            // 보통 굵기 머티리얼에 얇은 외곽선만 얹는다.
+            if (font != null)
+                tmp.fontSharedMaterial = PlainMaterial(font);
+
             if (outline)
             {
                 tmp.outlineColor = new Color32(10, 12, 28, 255);
-                tmp.outlineWidth = 0.08f;
+                tmp.outlineWidth = 0.12f;
+                tmp.fontMaterial.EnableKeyword("OUTLINE_ON");
             }
 
             return tmp;
+        }
+
+        private static readonly Dictionary<TMP_FontAsset, Material> plainMaterials = new Dictionary<TMP_FontAsset, Material>();
+
+        /// <summary>외곽선·부풀림·그림자가 없는 보통 굵기 머티리얼(프로젝트의 "NoneOutLine" 머티리얼과 같은 값).</summary>
+        private static Material PlainMaterial(TMP_FontAsset font)
+        {
+            if (plainMaterials.TryGetValue(font, out Material plain) && plain != null)
+                return plain;
+
+            plain = new Material(font.material) { name = font.name + " (plain)" };
+            plain.SetFloat(ShaderUtilities.ID_FaceDilate, 0f);
+            plain.SetFloat(ShaderUtilities.ID_OutlineWidth, 0f);
+            plain.SetFloat(ShaderUtilities.ID_UnderlayDilate, 0f);
+            plain.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, 0f);
+            plain.SetFloat(ShaderUtilities.ID_ScaleRatio_A, 0.8333333f);
+            plain.SetFloat(ShaderUtilities.ID_ScaleRatio_C, 0.6770833f);
+            plain.DisableKeyword("OUTLINE_ON");
+            plain.DisableKeyword("UNDERLAY_ON");
+            plainMaterials[font] = plain;
+            return plain;
         }
 
         /// <summary>웨이브 보상 아이콘. 칸 하나(약 48px)에 들어간다. 아이콘 에셋 대신 색과 글자로 그린다 — 한눈에 구분되는 것이 목적이다.</summary>
@@ -303,13 +331,20 @@ namespace OJ.Hunting
             RectTransform root = WaveThemeUi.Rect("WaveStartBanner", canvas);
             WaveThemeUi.Anchor(root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 330f), new Vector2(1000f, 220f));
             var banner = root.gameObject.AddComponent<UIWaveStartBanner>();
+            // 기여도 패널 같은 다이얼로그 캔버스에 가려지지 않게 자기 정렬 순서를 쥔다(선택 창 5000 보다는 아래).
+            var sorting = root.gameObject.AddComponent<Canvas>();
+            sorting.overrideSorting = true;
+            sorting.sortingOrder = 4000;
             banner.group = root.gameObject.AddComponent<CanvasGroup>();
             banner.group.alpha = 0f;
             banner.group.blocksRaycasts = false;
             banner.group.interactable = false;
             banner.label = WaveThemeUi.Text("Label", root, font, string.Empty, 128f, WaveThemeUi.Gold);
+            // 큰 글자라 외곽선도 굵게. 어두운 배경에서도 보이게 검정으로.
+            banner.label.outlineColor = new Color32(0, 0, 0, 255);
+            banner.label.outlineWidth = 0.16f;
+            banner.label.fontMaterial.EnableKeyword("OUTLINE_ON");
             WaveThemeUi.Anchor(banner.label.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000f, 220f));
-            banner.label.outlineWidth = 0.3f;
             return banner;
         }
 
@@ -321,15 +356,25 @@ namespace OJ.Hunting
             if (routine != null)
                 StopCoroutine(routine);
 
-            routine = StartCoroutine(Animate());
+            routine = StartCoroutine(Animate(0.9f, 0.45f));
+        }
+
+        /// <summary>임의의 문구를 같은 연출로 띄운다(스테이지 클리어 등). 전체 길이는 0.25 + hold + fade 초.</summary>
+        public void PlayText(string text, Color color, float hold, float fade)
+        {
+            label.text = text;
+            label.color = color;
+
+            if (routine != null)
+                StopCoroutine(routine);
+
+            routine = StartCoroutine(Animate(hold, fade));
         }
 
         /// <summary>실제 시간으로 돈다 — 배속·일시정지와 상관없이 같은 길이로 보인다.</summary>
-        private IEnumerator Animate()
+        private IEnumerator Animate(float hold, float fade)
         {
             const float popIn = 0.25f;
-            const float hold = 0.9f;
-            const float fade = 0.45f;
 
             float t = 0f;
             while (t < popIn)
@@ -388,6 +433,9 @@ namespace OJ.Hunting
         private TMP_Text timerText;
         private RectTransform fill;
         private Image fillImage;
+        private GameObject timerRoot;
+        private RectTransform timerFill;
+        private Image timerFillImage;
 
         public static UIEnemyBar Create(Transform canvas, TMP_FontAsset font, MonsterManager monsters, Func<float> bossTimeLeft)
         {
@@ -420,8 +468,30 @@ namespace OJ.Hunting
             WaveThemeUi.Anchor(bar.nameText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-150f, -10f), new Vector2(300f, 32f));
             bar.percentText = WaveThemeUi.Text("Percent", root, font, "100%", 28f, Color.white, TextAlignmentOptions.Right);
             WaveThemeUi.Anchor(bar.percentText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(150f, -10f), new Vector2(300f, 32f));
-            bar.timerText = WaveThemeUi.Text("Timer", root, font, string.Empty, 44f, Color.white);
-            WaveThemeUi.Anchor(bar.timerText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -66f), new Vector2(600f, 56f));
+
+            // 남은 시간 게이지. 체력바 바로 아래에서 줄어들고, 그 위에 남은 초를 글자로도 보인다.
+            RectTransform timer = WaveThemeUi.Rect("Timer", root);
+            WaveThemeUi.Anchor(timer, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -58f), new Vector2(620f, 36f));
+            bar.timerRoot = timer.gameObject;
+            Image timerBack = WaveThemeUi.Img("Back", timer, WaveThemeUi.Rounded(), new Color(0.05f, 0.06f, 0.12f, 0.9f));
+            timerBack.rectTransform.anchorMin = Vector2.zero;
+            timerBack.rectTransform.anchorMax = Vector2.one;
+            timerBack.rectTransform.offsetMin = timerBack.rectTransform.offsetMax = Vector2.zero;
+            RectTransform timerArea = WaveThemeUi.Rect("FillArea", timer);
+            timerArea.anchorMin = Vector2.zero;
+            timerArea.anchorMax = Vector2.one;
+            timerArea.offsetMin = new Vector2(8f, 6f);
+            timerArea.offsetMax = new Vector2(-8f, -6f);
+            bar.timerFillImage = WaveThemeUi.Img("Fill", timerArea, WaveThemeUi.Rounded(), WaveThemeUi.Gold);
+            bar.timerFill = bar.timerFillImage.rectTransform;
+            bar.timerFill.anchorMin = Vector2.zero;
+            bar.timerFill.anchorMax = Vector2.one;
+            bar.timerFill.offsetMin = bar.timerFill.offsetMax = Vector2.zero;
+            bar.timerText = WaveThemeUi.Text("Label", timer, font, string.Empty, 26f, Color.white);
+            bar.timerText.rectTransform.anchorMin = Vector2.zero;
+            bar.timerText.rectTransform.anchorMax = Vector2.one;
+            bar.timerText.rectTransform.offsetMin = bar.timerText.rectTransform.offsetMax = Vector2.zero;
+            timer.gameObject.SetActive(false);
             return bar;
         }
 
@@ -467,12 +537,16 @@ namespace OJ.Hunting
             if (left >= 0f)
             {
                 int seconds = Mathf.CeilToInt(left);
+                bool urgent = left <= 10f;
+                timerRoot.SetActive(true);
                 timerText.text = "남은 시간 " + seconds + "초";
-                timerText.color = left <= 10f ? new Color(1f, 0.3f, 0.25f, 1f) : Color.white;
+                timerText.color = urgent ? new Color(1f, 0.3f, 0.25f, 1f) : Color.white;
+                timerFill.anchorMax = new Vector2(Mathf.Clamp01(left / WaveTheme.BossTimeLimitSeconds), 1f);
+                timerFillImage.color = urgent ? WaveThemeUi.Red : WaveThemeUi.Gold;
             }
             else
             {
-                timerText.text = string.Empty;
+                timerRoot.SetActive(false);
             }
         }
     }
