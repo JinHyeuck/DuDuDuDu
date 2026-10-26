@@ -538,6 +538,7 @@ namespace OJ.Core.Tests
                 "  },",
                 "  \"contentUnlock\": {",
                 "    \"initialized\": false,",
+                "    \"firstRunEnded\": false,",
                 "    \"announced\": []",
                 "  }",
                 "}",

@@ -18,8 +18,12 @@ namespace OJ.Core
         /// <summary>Lv1 → Lv2 로 올리는 비용(SP).</summary>
         public const int BaseUpgradeCost = 30;
 
+        /// <summary>새 밸런스(<see cref="BalanceProfile"/>)의 확률업 첫 값과 간격. 클릭 수가 줄어든 경제에 맞췄다.</summary>
+        public const int BaseUpgradeCostV2 = 20;
+
         /// <summary>한 레벨 올릴 때마다 다음 비용이 오르는 양(SP).</summary>
         public const int UpgradeCostStep = 30;
+        public const int UpgradeCostStepV2 = 15;
 
         /// <summary>소환될 수 있는 가장 높은 성급.</summary>
         public const int MaxStar = 3;
@@ -58,7 +62,9 @@ namespace OJ.Core
             if (level >= MaxLevel)
                 return -1;
 
-            return BaseUpgradeCost + UpgradeCostStep * (level - MinLevel);
+            return BalanceProfile.Active
+                ? BaseUpgradeCostV2 + UpgradeCostStepV2 * (level - MinLevel)
+                : BaseUpgradeCost + UpgradeCostStep * (level - MinLevel);
         }
 
         /// <summary><paramref name="level"/> 에서 <paramref name="star"/> 성이 나올 확률(퍼센트).</summary>

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System;
 using Cysharp.Threading.Tasks;
 using VContainer;
+using OJ.ContentUnlock;
 using OJ.Core;
 using OJ.Analytics;
 using OJ.Bounty;
@@ -114,6 +115,23 @@ namespace OJ.Hunting
         /// <summary>패배한 순간 살아 있던 보스의 남은 체력(%). 보스가 없었으면 -1.</summary>
         private int defeatBossRemainPercent = -1;
 
+        // ── 웨이브 테마(2026-10-27, 1스테이지 시험) ──────────────────────
+        /// <summary>이 판이 웨이브 테마인가(<c>StageData.waveTheme</c>). 튜토리얼·탑은 언제나 아니다.</summary>
+        public bool IsWaveTheme { get; private set; }
+
+        /// <summary>판이 끝났거나 아직 시작 전인가. 웨이브 사이의 선택 흐름이 "더 기다릴 필요가 없다" 를 가르는 데 쓴다.</summary>
+        public bool IsFinished => isGameOver || inGameState == InGameState.None;
+
+        private WaveThemeFlow themeFlow;
+        private Coroutine interludeRoutine;
+        private bool interludeActive;
+
+        /// <summary>보스를 잡을 남은 시간(초). 보스가 없으면 -1.</summary>
+        private float bossTimeLeft = -1f;
+
+        /// <summary>보스 웨이브에서 남은 제한 시간(보스 체력바가 읽는다). 보스 웨이브가 아니면 -1.</summary>
+        public float BossTimeLeft => bossTimeLeft;
+
         [Header("Stage Theme")]
         [SerializeField] private SpriteRenderer stageBackground;
         public Button PlayUI;
@@ -170,6 +188,9 @@ namespace OJ.Hunting
 
         private void OnDestroy()
         {
+            // 전투 씬이 내려가면 로비·다른 화면은 항상 옛 규칙이다.
+            BalanceProfile.Active = false;
+
             // 창구는 스코프가 파괴될 때 비워지는데 그 순서가 정해져 있지 않다.
             // 이미 비었으면 뗄 것도 없으므로 ?. 를 쓴다 — 여기는 사고가 아니라 정리 경로다.
             if (battle != null && battle.Bounty != null)
@@ -237,8 +258,17 @@ namespace OJ.Hunting
                 // 삭제 버튼 자리의 확률업 버튼과, 소환 버튼 위의 확률 띠.
                 GameContainer.UI?.Show<UIProbabilityUpButton>();
                 GameContainer.UI?.Show<UISummonRateStrip>();
-                GameContainer.UI?.Show<OJ.Economy.UISoulBonusButton>();
-                GameContainer.UI?.Show<OJ.Economy.UILuckyDiceButton>();
+
+                if (IsWaveTheme)
+                {
+                    // 웨이브 테마: 영혼 보너스·현상금은 웨이브가 끝난 뒤 가운데 선택 창으로만 나온다(버튼 없음). 행운 주사위는 임시로 끈다.
+                    BeginWaveThemeUi();
+                }
+                else
+                {
+                    GameContainer.UI?.Show<OJ.Economy.UISoulBonusButton>();
+                    GameContainer.UI?.Show<OJ.Economy.UILuckyDiceButton>();
+                }
 
                 StartCoroutine(CoRealtimeStart());
             }
@@ -307,6 +337,43 @@ namespace OJ.Hunting
         private void OnBossSpawned()
         {
             GameContainer.UI?.Get<UIBattleWarning>()?.Play(BattleWarningKind.Boss);
+
+            // 웨이브 테마: 보스는 제한 시간 안에 잡아야 한다. 못 잡으면 벽이 무너진 것과 같다.
+            if (IsWaveTheme)
+                bossTimeLeft = WaveTheme.BossTimeLimitSeconds;
+        }
+
+        /// <summary>보스가 살아 있는 동안 제한 시간을 줄인다. 게임 시간이라 배속·일시정지를 따른다. 다 쓰면 패배(되돌리기 제안 포함).</summary>
+        private void TickBossTimer()
+        {
+            if (bossTimeLeft < 0f || inGameState != InGameState.Wave || isGameOver)
+                return;
+
+            bool bossAlive = false;
+            List<Monster> list = battle.Monsters.activeMonsters;
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] != null && list[i].IsStageBoss && list[i].HpPercent > 0)
+                {
+                    bossAlive = true;
+                    break;
+                }
+            }
+
+            if (!bossAlive)
+            {
+                bossTimeLeft = -1f;
+                return;
+            }
+
+            bossTimeLeft -= Time.deltaTime;
+            if (bossTimeLeft > 0f)
+                return;
+
+            bossTimeLeft = -1f;
+            Debug.Log("[웨이브 테마] 보스를 제한 시간 안에 못 잡아 패배한다.");
+            if (wall != null)
+                wall.TakeDamage(wall.CurrentHp + 1);
         }
 
         public void OnClick_PlayUI()
@@ -458,7 +525,8 @@ namespace OJ.Hunting
             Speed?.gameObject.SetActive(state == InGameState.Wave && !battle.Tutorial.IsActive);
             RemainMonster?.gameObject.SetActive(state == InGameState.Wave);
             RemainMonsterGauge?.gameObject.SetActive(state == InGameState.Wave);
-            WaveText?.gameObject.SetActive(state == InGameState.Wave || state == InGameState.Setting);
+            // 웨이브 테마는 상단 웨이브 현황(UIWaveStrip)이 이 글자를 대신한다.
+            WaveText?.gameObject.SetActive((state == InGameState.Wave || state == InGameState.Setting) && !IsWaveTheme);
 
             // 경고 띠는 스스로 2초쯤 뒤에 사라지지만, 그 전에 웨이브가 끝나 준비 단계까지 따라 들어오면
             // 남은 시간을 기다리지 않고 여기서 거둔다.
@@ -469,7 +537,7 @@ namespace OJ.Hunting
             // <b>Show/Hide 를 여기 두는 이유.</b> 상태를 아는 곳이 여기 하나뿐이다 — 버튼이 스스로 판단하게 하면
             // 매 프레임 inGameState 를 들여다보게 되고, 그것은 이벤트로 바꿔 놓은 것을 폴링으로 되돌리는 일이다.
             // 튜토리얼에서는 현상금을 가르칠 차례가 오기 전까지 감춘다(TutorialRunManager.IsBountyButtonAllowed).
-            if (state == InGameState.Wave && IsContinuousWave && battle.Tutorial.IsBountyButtonAllowed)
+            if (state == InGameState.Wave && IsContinuousWave && battle.Tutorial.IsBountyButtonAllowed && !IsWaveTheme)
             {
                 GameContainer.UI?.Show<UIBountyButton>();
             }
@@ -511,6 +579,7 @@ namespace OJ.Hunting
                 Run.WaveMonsterCount = GetWaveTargetCount();
                 UpdateWaveText();
                 SetRemainMonster(0);
+                themeFlow?.OnWaveStarted(CurrentWaveIndex);
                 battle.Spawner.PlayWave();
                 Time.timeScale = timeSpeed;
                 WaveMonsterDeadCount = 0;
@@ -563,6 +632,8 @@ namespace OJ.Hunting
             // 현상금 쿨타임은 웨이브 중에만 흐른다. 게임 시간이라 일시정지에서는 멈추고 배속에서는 빨리 흐른다.
             if (inGameState == InGameState.Wave)
                 battle.Bounty.Tick(Time.deltaTime);
+
+            TickBossTimer();
 
 
         }
@@ -660,6 +731,7 @@ namespace OJ.Hunting
             // <b>기여도 패널은 여기서 거두지 않는다.</b> 결과창 앞의 뜸(WaitBeforeResult)
             // 동안 마지막 숫자가 보여야 그 시간이 "볼 것이 있는 시간" 이 된다.
             // 거두는 것은 결과창이 실제로 뜨기 직전이다.
+            StopWaveInterlude();
             GameContainer.UI?.Hide<UIBountyButton>();
             GameContainer.UI?.Hide<UIBountySelectDialog>();
             GameContainer.UI?.Hide<UIBattleWarning>();
@@ -676,7 +748,7 @@ namespace OJ.Hunting
 
         private bool TryCompleteWave()
         {
-            if (inGameState != InGameState.Wave)
+            if (inGameState != InGameState.Wave || interludeActive)
                 return false;
 
             if (WaveMonsterDeadCount < WaveMonsterCount)
@@ -974,9 +1046,12 @@ namespace OJ.Hunting
         /// </summary>
         private int LateHp(int hp)
         {
-            return battle.Tutorial.IsActive
-                ? hp
-                : LateWaveSurge.ApplyHp(hp, CurrentWaveIndex, CurrentStageData.totalWaves);
+            if (battle.Tutorial.IsActive)
+                return hp;
+
+            int surged = LateWaveSurge.ApplyHp(hp, CurrentWaveIndex, CurrentStageData.totalWaves);
+            return MidWaveRamp.Apply(surged, CurrentWaveIndex,
+                CurrentStageData.hpRampStartWave, CurrentStageData.hpRampEndWave, CurrentStageData.hpRampMultiplier);
         }
 
         public int GetCurrentWaveBossDefense()
@@ -1010,6 +1085,11 @@ namespace OJ.Hunting
 
         private void InitializeStage()
         {
+            // 새 밸런스는 판마다 다시 정한다. 튜토리얼·탑은 아래에서 일찍 돌아가므로 꺼진 채로 남는다.
+            BalanceProfile.Active = false;
+            IsWaveTheme = false;
+            bossTimeLeft = -1f;
+
             RelicManager.Instance?.BeginStageRun();
 
             // "게임 플레이" 는 <b>입장</b>으로 센다. 클리어로 세면 못 깨는 스테이지에
@@ -1044,6 +1124,9 @@ namespace OJ.Hunting
             }
 
             ApplyStageTheme();
+
+            BalanceProfile.Active = CurrentStageData.newBalance;
+            IsWaveTheme = CurrentStageData.waveTheme;
 
             runStartBestWave = StageProgressManager.Instance != null
                 ? StageProgressManager.Instance.GetBestClearedWave(CurrentStageData.stageIndex)
@@ -1305,6 +1388,8 @@ namespace OJ.Hunting
         /// </summary>
         public void EnterAfterRewind()
         {
+            StopWaveInterlude();
+            bossTimeLeft = -1f;
             ChangeState(InGameState.Setting);
 
             if (IsContinuousWave)
@@ -1434,11 +1519,103 @@ namespace OJ.Hunting
             // Wave → Wave 진입도 스냅샷·WaveIndex++·현상금·스포너 리셋을 그대로 탄다.
             if (IsContinuousWave)
             {
+                if (IsWaveTheme && themeFlow != null)
+                {
+                    interludeRoutine = StartCoroutine(CoWaveInterlude(CurrentWaveIndex));
+                    return;
+                }
+
                 ChangeState(InGameState.Wave);
                 return;
             }
 
             ChangeState(InGameState.Setting);
+        }
+
+        /// <summary>
+        /// 웨이브 사이: 끝난 웨이브의 보상(영혼 보너스·현상금 도전·자리)을 고르게 하고, 다 끝나면 다음 웨이브를 연다.
+        /// <b>상태는 Wave 로 둔다</b> — 현상금이 필드에 나와야 하고 보드 정리도 열려 있어야 해서다. 대신 <c>interludeActive</c> 가
+        /// 이 사이에 웨이브가 또 "끝났다" 로 판정되는 것을 막는다.
+        /// </summary>
+        /// <summary>"N웨이브 클리어!" 문구가 보이는 시간. 이 시간이 지나면 보상 창이 뜬다.</summary>
+        private const float WaveClearBannerSeconds = 0.8f;
+
+        private IEnumerator CoWaveInterlude(int completedWave)
+        {
+            interludeActive = true;
+
+            // 웨이브를 깰 때마다 "N웨이브 클리어!" 가 0.8초 뜬 뒤 보상 선택 창이 나온다.
+            themeFlow.Banner?.PlayText(completedWave + "웨이브 클리어!", new Color(0.55f, 1f, 0.55f, 1f), 0.4f, 0.15f);
+            yield return new WaitForSecondsRealtime(WaveClearBannerSeconds);
+
+            yield return themeFlow.RunInterlude(completedWave);
+            interludeActive = false;
+            interludeRoutine = null;
+
+            if (isGameOver || inGameState == InGameState.None)
+                yield break;
+
+            ChangeState(InGameState.Wave);
+        }
+
+        /// <summary>웨이브 사이의 흐름을 멈추고 떠 있는 창을 거둔다(판이 끝났거나 되돌렸을 때).</summary>
+        private void StopWaveInterlude()
+        {
+            if (interludeRoutine != null)
+                StopCoroutine(interludeRoutine);
+
+            interludeRoutine = null;
+            interludeActive = false;
+            themeFlow?.CloseTransient();
+        }
+
+        /// <summary>웨이브 테마 화면을 세운다: 상단 웨이브 현황 · 시작 문구 · 체력바 · 8칸 보드 · 하단 버튼 자리.</summary>
+        private void BeginWaveThemeUi()
+        {
+            Canvas canvas = WaveText != null ? WaveText.canvas : null;
+            if (canvas == null)
+                return;
+
+            // 선택 창은 다이얼로그가 사는 캔버스에 올린다(기여도 패널 같은 것이 창 위로 비치지 않게).
+            Transform popupRoot = canvas.rootCanvas.transform;
+            UIDamageContributionPanel anyDialog = GameContainer.UI?.Get<UIDamageContributionPanel>();
+            Canvas dialogCanvas = anyDialog != null ? anyDialog.GetComponentInParent<Canvas>() : null;
+            if (dialogCanvas != null)
+                popupRoot = dialogCanvas.rootCanvas.transform;
+
+            themeFlow = new WaveThemeFlow(this, battle, WaveText.font, canvas.rootCanvas.transform, popupRoot,
+                CurrentStageData.totalWaves, () => bossTimeLeft);
+
+            // 처치 게이지(몇 마리 남았나)는 상단 현황 아래로 내린다.
+            if (RemainMonsterGauge != null && RemainMonsterGauge.parent is RectTransform killRect)
+                killRect.anchoredPosition = new Vector2(killRect.anchoredPosition.x, -215f);
+
+            battle.Board?.ConfigureColumns(8);
+            battle.Board?.DisableSpUnlock();
+            StartCoroutine(CoApplyWaveThemeLayout());
+        }
+
+        /// <summary>
+        /// 하단 정리: 강화 버튼을 왼쪽 아래(현상금·영혼 버튼이 있던 자리)로 옮기고 확률업 버튼을 키운다.
+        /// 버튼 프리팹은 열릴 때 자리를 잡으므로 한 프레임 뒤에 만진다.
+        /// </summary>
+        private IEnumerator CoApplyWaveThemeLayout()
+        {
+            yield return null;
+            yield return null;
+
+            RectTransform upgrade = battle.ElementUpgrade != null ? battle.ElementUpgrade.UpgradeButtonRect : null;
+            if (upgrade != null)
+                WaveThemeLayout.MoveUpgradeButtonToBottomLeft(upgrade);
+
+            UIProbabilityUpButton prob = GameContainer.UI?.Get<UIProbabilityUpButton>();
+            if (prob != null)
+                WaveThemeLayout.EnlargeProbabilityButton(prob.transform as RectTransform);
+
+            // 상단 현황이 높아진 만큼 기여도 패널을 내린다.
+            UIDamageContributionPanel contribution = GameContainer.UI?.Get<UIDamageContributionPanel>();
+            if (contribution != null && contribution.transform is RectTransform contributionRect)
+                contributionRect.anchoredPosition += new Vector2(0f, -110f);
         }
 
         /// <summary>
@@ -1812,6 +1989,8 @@ namespace OJ.Hunting
 
         private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<PointRewardEntry> rewards)
         {
+            // 첫 판이 끝났다(이겼든 졌든) — 로비의 스테이지 보상 가이드가 이것을 기다린다.
+            ContentUnlockManager.Instance?.MarkRunEnded();
             StartCoroutine(CoShowStageResult(isWin, stageIndex, reachedWaveCount, rewards));
         }
 

@@ -59,7 +59,80 @@ namespace OJ.Dice
         public bool IsSlotLockActive => slotLockActive;
 
         /// <summary>다음 자리를 열 때 드는 SP.</summary>
+        /// <summary>true 면 SP 로 자리를 못 연다(웨이브 테마: 자리는 웨이브 보상으로만 늘어난다).</summary>
+        public bool SpUnlockDisabled { get; private set; }
+
+        public void DisableSpUnlock()
+        {
+            SpUnlockDisabled = true;
+            RefreshSlotLockLabels();
+        }
+
         public int NextSlotUnlockCost => SlotUnlockRules.Cost(purchasedSlotCount);
+
+        /// <summary>
+        /// 한 줄의 칸 수를 바꾼다(웨이브 테마: 7 → 8, 옛 강화 버튼 자리까지 쓴다). 보드가 아직 안 만들어졌으면 값만 바꾸고,
+        /// 이미 만들어졌으면(Start 끼리의 순서는 정해져 있지 않다) 칸을 지우고 다시 만든다 — 판 시작 직후라 다이스는 없다.
+        /// <c>rows</c> 는 이름과 달리 <b>한 줄의 칸 수</b>이고 <c>cols</c> 가 줄 수다.
+        /// </summary>
+        public void ConfigureColumns(int columns)
+        {
+            if (columns <= 0 || columns == rows)
+                return;
+
+            rows = columns;
+            if (grid != null)
+            {
+                grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+                grid.constraintCount = columns;
+                // 옛 왼쪽 여백은 강화 버튼 자리였다. 가운데로 모은다.
+                grid.padding = new RectOffset(0, 0, grid.padding.top, grid.padding.bottom);
+            }
+
+            if (slots.Count == 0)
+                return;
+
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i] != null)
+                    Destroy(slots[i]);
+            }
+
+            slots.Clear();
+            for (int i = 0; i < slotLockOverlays?.Length; i++)
+                slotLockOverlays[i] = null;
+
+            CreateBoard();
+        }
+
+        /// <summary>
+        /// 잠긴 자리를 SP 없이 앞에서부터 <paramref name="count"/> 칸 연다(웨이브 보상). 탑에 막힌 칸은 건드리지 않는다.
+        /// 연 칸 수를 돌려준다. 이미 다 열려 있으면 0.
+        /// </summary>
+        public int GrantFreeSlots(int count)
+        {
+            if (!slotLockActive || slotUnlocked == null)
+                return 0;
+
+            int granted = 0;
+            for (int i = 0; i < slotUnlocked.Length && granted < count; i++)
+            {
+                if (slotUnlocked[i] || i < freeSlotCount || IsTowerGated(i))
+                    continue;
+
+                slotUnlocked[i] = true;
+                if (slotLockOverlays[i] != null)
+                    Destroy(slotLockOverlays[i]);
+                slotLockOverlays[i] = null;
+                slotLockLabels[i] = null;
+                granted++;
+            }
+
+            if (granted > 0)
+                RefreshSlotLockLabels();
+
+            return granted;
+        }
 
         private void Start()
         {
@@ -306,7 +379,7 @@ namespace OJ.Dice
         /// </summary>
         public bool TryUnlockSlot(int slotIndex)
         {
-            if (!slotLockActive || IsSlotUnlocked(slotIndex))
+            if (!slotLockActive || IsSlotUnlocked(slotIndex) || SpUnlockDisabled)
                 return false;
 
             if (battle.Game == null || !battle.Game.CanManageBoard)
@@ -329,6 +402,13 @@ namespace OJ.Dice
 
             slotUnlocked[slotIndex] = true;
             purchasedSlotCount++;
+
+            // 사는 순간 돌려받는다: 다음 소환 한 번이 공짜다. 튜토리얼은 SP 를 정확히 맞춰 둔 대본이라 끼우지 않는다.
+            if (BalanceProfile.Active && !battle.Tutorial.IsActive)
+            {
+                battle.Game.Run.FreeSummonCharges++;
+                battle.Summon?.UpdateSPUI();
+            }
 
             if (slotLockOverlays[slotIndex] != null)
                 Destroy(slotLockOverlays[slotIndex]);
@@ -731,8 +811,8 @@ namespace OJ.Dice
                 if (slotLockLabels[i] == null || i >= gateStartIndex)
                     continue;
 
-                slotLockLabels[i].text = cost + "\nSP";
-                slotLockLabels[i].color = color;
+                slotLockLabels[i].text = SpUnlockDisabled ? "잠김" : cost + "\nSP";
+                slotLockLabels[i].color = SpUnlockDisabled ? new Color(0.75f, 0.75f, 0.8f) : color;
             }
         }
 

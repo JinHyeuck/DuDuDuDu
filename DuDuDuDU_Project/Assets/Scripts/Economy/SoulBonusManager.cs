@@ -6,6 +6,9 @@ using OJ.DI;
 using OJ.Dice;
 using OJ.Hunting;
 using OJ.Stage;
+using OJ.Battle;
+using OJ.Element;
+using OJ.UI;
 
 namespace OJ.Economy
 {
@@ -41,6 +44,22 @@ namespace OJ.Economy
 
         /// <summary>팝업이 떠 있는가.</summary>
         public bool IsPopupOpen { get; private set; }
+
+        /// <summary>지금까지 보상을 <b>고른</b> 횟수. 웨이브 테마가 "이번 제안에서 골랐는가" 를 이 값의 증가로 안다(창을 그냥 닫으면 안 오른다).</summary>
+        public int ChoiceCount { get; private set; }
+
+        /// <summary>
+        /// 처치 수와 상관없이 보상 선택 창을 지금 띄운다(웨이브 테마: 웨이브가 끝날 때마다 제안한다). 이미 떠 있으면 거절.
+        /// 값은 처음 한 번 굴려 고정되므로 닫았다 다시 열어도 같다.
+        /// </summary>
+        public bool OfferNow()
+        {
+            if (IsPopupOpen || battle == null || battle.Game == null)
+                return false;
+
+            OpenPopup();
+            return true;
+        }
 
         private int displayKills;
 
@@ -150,6 +169,32 @@ namespace OJ.Economy
             return true;
         }
 
+        // 재화가 날아가는 연출. 현상금 보상(BountyManager)과 같은 도착점·같은 모양이다 —
+        // SP 는 소환 버튼으로, 마석은 보유 마석 칸으로 간다. 값은 이미 지급됐고 이 연출은 보기만 한다.
+        private const float StoneIconScale = 1.9f;
+
+        private void FlySummonPoint(Vector2 fromScreen, int amount)
+        {
+            var summon = battle.Summon;
+            if (summon == null || summon.summonButton == null)
+                return;
+
+            UIRewardFly.Fly(fromScreen, BattlePointUtility.GetIcon(BattlePointType.SummonPoint),
+                summon.summonButton.transform as RectTransform, amount, "+" + amount + " SP", summon.spText,
+                new Color(0.55f, 0.9f, 1f, 1f));
+        }
+
+        private void FlyEnhanceStone(Vector2 fromScreen, int amount)
+        {
+            ElementUpgradeManager upgrade = battle.ElementUpgrade;
+            if (upgrade == null)
+                return;
+
+            UIRewardFly.Fly(fromScreen, BattlePointUtility.GetIcon(BattlePointType.EnhanceStone),
+                upgrade.StoneRect, amount, "+" + amount, battle.Summon != null ? battle.Summon.spText : null,
+                new Color(0.75f, 0.8f, 1f, 1f), upgrade.ReleaseStone, StoneIconScale);
+        }
+
         /// <summary>팝업이 닫혔다(고르지 않고 닫은 경우 포함). 팝업이 알린다.</summary>
         public void NotifyDialogClosed()
         {
@@ -180,15 +225,31 @@ namespace OJ.Economy
         /// 보상을 고른다(true = SP, false = 마석). <b>지급 → 목표 이월 → 다음 목표 → 팝업 닫기</b> 순서다.
         /// 한 번에 목표를 두 번 넘긴 경우 남은 마릿수가 이월되어 저금통이 곧바로 다시 받을 수 있는 상태가 된다.
         /// </summary>
-        public bool Choose(bool sp)
+        /// <param name="from">고른 버튼 위의 아이콘. 재화가 여기서 출발해 날아간다(없으면 화면 가운데).</param>
+        public bool Choose(bool sp, RectTransform from = null)
         {
             if (!IsPopupOpen || battle == null || battle.Game == null)
                 return false;
 
+            // 창이 닫히면 출발 자리를 잴 수 없으니 지급하기 전에 화면 좌표로 바꿔 둔다.
+            Vector2 fromScreen = from != null
+                ? UIRewardFly.ScreenPointOf(from)
+                : new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
             if (sp)
-                battle.Summon.AddSP(Run.SoulOfferSp);
+            {
+                int amount = Run.SoulOfferSp;
+                battle.Summon.AddSP(amount);
+                FlySummonPoint(fromScreen, amount);
+            }
             else
-                battle.BattlePoints?.Add(BattlePointType.EnhanceStone, Run.SoulOfferStones);
+            {
+                int amount = Run.SoulOfferStones;
+                // 먼저 쥐고 나서 넣는다. 데이터는 지금 오르지만 화면 숫자는 아이콘이 닿을 때 오른다(현상금과 같은 연출).
+                battle.ElementUpgrade?.HoldStone(amount);
+                battle.BattlePoints?.Add(BattlePointType.EnhanceStone, amount);
+                FlyEnhanceStone(fromScreen, amount);
+            }
 
             int goal = Goal;
             Run.SoulKills = Mathf.Max(0, Run.SoulKills - goal);
@@ -198,6 +259,7 @@ namespace OJ.Economy
             Run.SoulOfferStones = 0;
 
             IsPopupOpen = false;
+            ChoiceCount++;
             GameContainer.UI?.Hide<UISoulBonusDialog>();
 
             OnChanged?.Invoke();

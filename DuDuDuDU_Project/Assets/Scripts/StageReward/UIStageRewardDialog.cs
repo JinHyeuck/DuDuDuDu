@@ -88,6 +88,9 @@ namespace OJ.StageReward
             Enter();
         }
 
+        /// <summary>받기 버튼. 해금 가이드가 "받아 보세요" 하고 가리키는 데 쓴다(<c>LobbyUnlockDirector</c>).</summary>
+        public Button ClaimButton => claimButton;
+
         private void SelectPrevious()
         {
             SelectIndex(selectedIndex - 1);

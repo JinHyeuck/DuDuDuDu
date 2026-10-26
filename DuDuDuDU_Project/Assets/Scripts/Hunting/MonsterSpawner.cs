@@ -647,11 +647,21 @@ namespace OJ.Hunting
         private float GetSpawnY()
         {
             CacheSpawnCamera();
-            if (spawnCamera == null || !spawnCamera.orthographic)
-                return spawnY;
+            float y = spawnY;
+            if (spawnCamera != null && spawnCamera.orthographic)
+                y = Mathf.Max(spawnY, spawnCamera.transform.position.y + spawnCamera.orthographicSize);
 
-            return Mathf.Max(spawnY, spawnCamera.transform.position.y + spawnCamera.orthographicSize);
+            // 다이스가 칠 수 있는 높이(교전선)보다 화면 위쪽에서 한참 걸어 내려오면 그동안 아무도 못 친다.
+            // 교전선 바로 뒤(0.5)에서 나와 곧장 사정거리에 들어오게 한다. 교전선을 알 수 없으면(무한) 그대로 둔다.
+            float engageLine = battle.Monsters != null ? battle.Monsters.EngageLineY : float.PositiveInfinity;
+            if (!float.IsInfinity(engageLine) && !float.IsNaN(engageLine))
+                y = Mathf.Min(y, engageLine + SpawnBehindEngageLine);
+
+            return y;
         }
+
+        /// <summary>몬스터가 교전선(다이스가 칠 수 있는 높이)보다 이만큼 위에서 나온다.</summary>
+        private const float SpawnBehindEngageLine = 0.5f;
 
         private bool TryGetVisibleSpawnBounds(out float minX, out float maxX)
         {
