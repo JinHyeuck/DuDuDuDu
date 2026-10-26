@@ -38,6 +38,28 @@ namespace OJ.ContentUnlock
         /// </summary>
         private bool pendingBackfill;
 
+        /// <summary>첫 판이 끝났는가(<see cref="ContentUnlockDefinition.requiresRunEnded"/>). 한 번 켜지면 꺼지지 않는다.</summary>
+        private bool firstRunEnded;
+
+        /// <summary>
+        /// 판을 마친 적이 있는가. 첫 판 기록이 없어도 <b>웨이브를 깬 기록이 있으면</b> 마친 것으로 본다(이 기능 이전 세이브).
+        /// </summary>
+        public bool RunEnded => firstRunEnded;
+
+        /// <summary>
+        /// 튜토리얼이 아닌 판이 끝났다(이겼든 졌든). 처음 한 번만 적고 그 자리에서 저장한다 —
+        /// 로비에 돌아와 스테이지 보상 가이드가 나오는 것이 이 기록 덕분이다.
+        /// </summary>
+        public void MarkRunEnded()
+        {
+            if (firstRunEnded)
+                return;
+
+            firstRunEnded = true;
+            GameContainer.SaveService?.SaveAll();
+            OnChanged?.Invoke();
+        }
+
         /// <summary>연출을 봤다고 적었을 때. 로비 입구들이 보임을 다시 맞춘다.</summary>
         public event Action OnChanged;
 
@@ -61,7 +83,7 @@ namespace OJ.ContentUnlock
         public bool IsOpen(ContentId id)
         {
             ContentUnlockDefinition definition = GetDefinition(id);
-            return definition == null || ContentUnlockRules.IsOpen(definition, LastClearedStage, Stage1BestWave);
+            return definition == null || ContentUnlockRules.IsOpen(definition, LastClearedStage, Stage1BestWave, firstRunEnded);
         }
 
         /// <summary>입구를 보이는가. 열렸어도 연출 전이면 숨는다.</summary>
@@ -69,14 +91,14 @@ namespace OJ.ContentUnlock
         {
             ApplyBackfillIfNeeded();
             ContentUnlockDefinition definition = GetDefinition(id);
-            return definition == null || ContentUnlockRules.IsVisible(definition, LastClearedStage, announced, Stage1BestWave);
+            return definition == null || ContentUnlockRules.IsVisible(definition, LastClearedStage, announced, Stage1BestWave, firstRunEnded);
         }
 
         /// <summary>이번 로비 진입에 보여 줄 연출(가이드 하나에서 끊긴다).</summary>
         public List<ContentUnlockDefinition> GetVisitQueue()
         {
             ApplyBackfillIfNeeded();
-            return ContentUnlockRules.VisitQueue(Definitions, LastClearedStage, announced, Stage1BestWave);
+            return ContentUnlockRules.VisitQueue(Definitions, LastClearedStage, announced, Stage1BestWave, firstRunEnded);
         }
 
         /// <summary>
@@ -86,7 +108,7 @@ namespace OJ.ContentUnlock
         public bool HasPending()
         {
             ApplyBackfillIfNeeded();
-            return ContentUnlockRules.HasPending(Definitions, LastClearedStage, announced, Stage1BestWave);
+            return ContentUnlockRules.HasPending(Definitions, LastClearedStage, announced, Stage1BestWave, firstRunEnded);
         }
 
         /// <summary>
@@ -108,6 +130,7 @@ namespace OJ.ContentUnlock
         {
             announced.Clear();
             pendingBackfill = false;
+            firstRunEnded = false;
             GameContainer.SaveService?.SaveAll();
             OnChanged?.Invoke();
         }
@@ -125,7 +148,7 @@ namespace OJ.ContentUnlock
             for (int i = 0; i < definitions.Count; i++)
             {
                 ContentUnlockDefinition d = definitions[i];
-                if (d != null && ContentUnlockRules.IsOpen(d, lastCleared, Stage1BestWave))
+                if (d != null && ContentUnlockRules.IsOpen(d, lastCleared, Stage1BestWave, firstRunEnded))
                     announced.Add(d.contentId);
             }
         }
@@ -138,6 +161,7 @@ namespace OJ.ContentUnlock
             // "기록 없음" 이 그대로 남아야 다음 실행에서 채운다 — 그리고 SaveService 의 왕복 검사가
             // 읽은 것과 다시 쓴 것을 문자열로 대조한다.
             state.ContentUnlock.Initialized = initialized;
+            state.ContentUnlock.FirstRunEnded = firstRunEnded;
 
             state.ContentUnlock.Announced.Clear();
             var names = new List<string>();
@@ -158,6 +182,7 @@ namespace OJ.ContentUnlock
             }
 
             initialized = state.ContentUnlock.Initialized;
+            firstRunEnded = state.ContentUnlock.FirstRunEnded;
             pendingBackfill = ContentUnlockRules.ShouldBackfill(initialized, ContentUnlockRules.LastClearedFromSave(state));
         }
     }

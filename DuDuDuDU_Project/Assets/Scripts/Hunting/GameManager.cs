@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System;
 using Cysharp.Threading.Tasks;
 using VContainer;
+using OJ.ContentUnlock;
 using OJ.Core;
 using OJ.Analytics;
 using OJ.Bounty;
@@ -1988,6 +1989,8 @@ namespace OJ.Hunting
 
         private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<PointRewardEntry> rewards)
         {
+            // 첫 판이 끝났다(이겼든 졌든) — 로비의 스테이지 보상 가이드가 이것을 기다린다.
+            ContentUnlockManager.Instance?.MarkRunEnded();
             StartCoroutine(CoShowStageResult(isWin, stageIndex, reachedWaveCount, rewards));
         }
 

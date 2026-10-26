@@ -559,6 +559,12 @@ namespace OJ.Core
         /// </summary>
         public bool Initialized { get; set; }
 
+        /// <summary>
+        /// 첫 판(튜토리얼이 아닌 판)이 끝났는가. 이겼든 졌든 몇 웨이브든 상관없다 — "한 번 죽고 나서" 열리는 가이드
+        /// (<c>ContentUnlockDefinition.requiresRunEnded</c>)가 본다.
+        /// </summary>
+        public bool FirstRunEnded { get; set; }
+
         /// <summary>연출(또는 가이드)을 끝까지 본 컨텐츠. <c>ContentId</c> 이름, 오름차순.</summary>
         public List<string> Announced { get; } = new List<string>();
     }

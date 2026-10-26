@@ -34,6 +34,12 @@ namespace OJ.Equipment
 
         private EquipmentType equipmentType;
         private System.Action<EquipmentType> clickCallback;
+
+        /// <summary>어떤 부위의 칸인가. 로비 가이드가 무기 칸을 찾는 데 쓴다.</summary>
+        public EquipmentType Type => equipmentType;
+
+        /// <summary>칸을 누르는 버튼. 로비 가이드가 손가락으로 가리키고 눌림을 기다린다.</summary>
+        public Button ClickButton => clickButton;
         private bool isClickBound;
 
         private void Awake()
