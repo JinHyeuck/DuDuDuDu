@@ -58,6 +58,13 @@ namespace OJ.Dice
         [Tooltip("판 위에 붙은 보유 마석 숫자. 이 창이 울타리 위 보유량 칸을 가리기 때문에 여기서도 보여 준다.")]
         [SerializeField] private TMP_Text ownedStoneText;
 
+        [Tooltip("보유 마석 칸. 마석이 모자란 채 진화·교환을 누르면 흔든다.")]
+        [SerializeField] private RectTransform ownedStoneRect;
+
+        [Header("Toast")]
+        [SerializeField] private GameObject toastRoot;
+        [SerializeField] private TMP_Text toastText;
+
         [Header("Dismiss")]
         [SerializeField] private Button outsideButton;
 
@@ -127,6 +134,16 @@ namespace OJ.Dice
             if (battle.BattlePoints != null)
                 battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
 
+            toastRemaining = 0f;
+            if (toastRoot != null)
+                toastRoot.SetActive(false);
+
+            if (ownedStoneRect != null && ownedStoneHomeKnown)
+                ownedStoneRect.anchoredPosition = ownedStoneHome;
+            shakeElapsed = ShakeTime;
+            if (ownedStoneText != null)
+                ownedStoneText.color = Color.white;
+
             // 이 창이 끈 것만 되켠다. 원래 꺼져 있던 칸을 켜면 안 된다.
             for (int i = 0; i < hudBoxes.Length; i++)
             {
@@ -159,6 +176,8 @@ namespace OJ.Dice
             // 따라붙이는 편이 "옮겼더니 말풍선만 남았다"를 막는 가장 싼 방법이다.
             PlaceCardNearDice();
             HideCoveredHudBoxes();
+            AnimateStoneShake();
+            TickToast();
         }
 
         /// <summary>지금 보고 있는 다이스. 닫혀 있으면 의미가 없다.</summary>
@@ -300,7 +319,9 @@ namespace OJ.Dice
                         evolveTargetIcon.color = targetOwned ? Color.white : new Color(0.45f, 0.45f, 0.45f, 1f);
                     }
 
-                    evolveButton.interactable = canAct && starOk && targetOwned && owned >= evolveCost;
+                    // <b>막지 않는다</b>(사용자 지시 2026-10-27). 눌렀을 때 왜 안 되는지를 OnClickEvolve 가 말한다 —
+                    // 마석이 모자라면 보유 마석 칸이 흔들리고, 성급·보유·웨이브는 토스트로 알린다.
+                    evolveButton.interactable = true;
                     if (evolveCostText != null)
                     {
                         evolveCostText.SetText("{0}", evolveCost);
@@ -322,7 +343,7 @@ namespace OJ.Dice
                 exchangeButton.gameObject.SetActive(canExchange);
                 if (canExchange)
                 {
-                    exchangeButton.interactable = canAct && owned >= exchangeCost;
+                    exchangeButton.interactable = true;   // 진화와 같다 — 막는 대신 눌렀을 때 알린다.
                     if (exchangeCostText != null)
                     {
                         exchangeCostText.SetText("{0}", exchangeCost);
@@ -425,7 +446,38 @@ namespace OJ.Dice
 
         private void OnClickEvolve()
         {
-            if (currentDice == null || !battle.Merge.TryEvolve(currentDice))
+            if (currentDice == null)
+                return;
+
+            if (!DiceEvolution.TryGetEvolveTarget(currentDiceType, out DiceType target))
+                return;
+
+            // 순서는 안내 줄(RefreshRequirementText)과 같다 — 고치기 어려운 것부터 하나만 말한다.
+            if (!CanActNow())
+            {
+                ShowToast("웨이브 중에는 바꿀 수 없습니다");
+                return;
+            }
+
+            if (ownership != null && !ownership.IsOwned(target))
+            {
+                ShowToast(NameOf(target) + " 을(를) 아직 보유하지 않았습니다");
+                return;
+            }
+
+            if (!DiceEvolution.CanEvolve(currentDiceType, currentDiceStar))
+            {
+                ShowToast(string.Format("머지해서 {0}성을 만들어 주세요", DiceEvolution.EvolveRequiredStar));
+                return;
+            }
+
+            if (OwnedStone() < DiceEvolution.GetEvolveCost(currentDiceType))
+            {
+                ShakeOwnedStone();
+                return;
+            }
+
+            if (!battle.Merge.TryEvolve(currentDice))
                 return;
 
             // 같은 오브젝트가 타입만 바뀌어 남는다(MergeSystem.ReplaceInPlace). 그래서
@@ -438,7 +490,22 @@ namespace OJ.Dice
 
         private void OnClickExchange()
         {
-            if (currentDice == null || !battle.Merge.TryExchange(currentDice))
+            if (currentDice == null)
+                return;
+
+            if (!CanActNow())
+            {
+                ShowToast("웨이브 중에는 바꿀 수 없습니다");
+                return;
+            }
+
+            if (OwnedStone() < DiceEvolution.GetExchangeCost(currentDiceType))
+            {
+                ShakeOwnedStone();
+                return;
+            }
+
+            if (!battle.Merge.TryExchange(currentDice))
                 return;
 
             currentDiceType = currentDice.Type;
@@ -527,6 +594,76 @@ namespace OJ.Dice
 
         private const float CardGapFromDice = 90f;
 
+        private bool CanActNow()
+        {
+            return battle.Game != null && battle.Game.CanManageBoard;
+        }
+
+        private int OwnedStone()
+        {
+            return battle.BattlePoints != null ? battle.BattlePoints.Get(BattlePointType.EnhanceStone) : 0;
+        }
+
+        // 보유 마석 칸 흔들기 — 울타리 위 보유량 칸(UIBattleCurrencyBox.Shake)과 같은 모양·시간.
+        private const float ShakeTime = 0.3f;
+        private const float ShakeAmplitude = 9f;
+        private float shakeElapsed = ShakeTime;
+        private Vector2 ownedStoneHome;
+        private bool ownedStoneHomeKnown;
+
+        private void ShakeOwnedStone()
+        {
+            if (ownedStoneRect == null)
+                return;
+
+            if (!ownedStoneHomeKnown)
+            {
+                ownedStoneHome = ownedStoneRect.anchoredPosition;
+                ownedStoneHomeKnown = true;
+            }
+
+            shakeElapsed = 0f;
+        }
+
+        private void AnimateStoneShake()
+        {
+            if (shakeElapsed >= ShakeTime || ownedStoneRect == null)
+                return;
+
+            shakeElapsed += Time.unscaledDeltaTime;
+            float k = Mathf.Clamp01(shakeElapsed / ShakeTime);
+            float offset = k >= 1f ? 0f : Mathf.Sin(k * Mathf.PI * 6f) * (1f - k) * ShakeAmplitude;
+            ownedStoneRect.anchoredPosition = ownedStoneHome + new Vector2(offset, 0f);
+
+            // 흔들리는 동안 숫자가 붉다.
+            if (ownedStoneText != null)
+                ownedStoneText.color = k >= 1f ? Color.white : LackingColor;
+        }
+
+        // 토스트 — 정보 상자 위에 잠깐 뜨는 한 줄. 실제 시간으로 잰다(배속과 무관하게 같은 시간 동안 읽힌다).
+        private const float ToastSeconds = 1.6f;
+        private float toastRemaining;
+
+        private void ShowToast(string message)
+        {
+            if (toastRoot == null || toastText == null)
+                return;
+
+            toastText.SetText(message);
+            toastRoot.SetActive(true);
+            toastRemaining = ToastSeconds;
+        }
+
+        private void TickToast()
+        {
+            if (toastRemaining <= 0f)
+                return;
+
+            toastRemaining -= Time.unscaledDeltaTime;
+            if (toastRemaining <= 0f && toastRoot != null)
+                toastRoot.SetActive(false);
+        }
+
         // 울타리 위 보유량 칸(SP · 마석). 판이 반투명이라 그 밑에 깔린 칸의 아이콘·숫자가 판 글자와 겹쳐
         // 비친다. 판에 덮이는 칸만 열려 있는 동안 끈다 — 보유 마석은 판 위 칸이 대신 말한다.
         // 꺼도 RectTransform 은 그대로라 재화가 날아갈 목적지(SpRect · StoneRect)는 안 바뀐다.
@@ -598,16 +735,16 @@ namespace OJ.Dice
         //   진화/교환 Merge_Btn_Bg ffba00 / 04bafe 보이는 229x102 ("머지 때 쓰던 비율 그대로" — 보드 칸과 같은 x2.857)
         //   글자 30pt(버튼 이름 28pt), 성급·비용 78fe04, 공격력 ffea00
         // 시안과 다르게 고친 것 (사용자 지시 2026-10-27):
-        //   판 · 정보 상자를 반투명으로 — 판은 피해 기여도 패널과 같은 불투명도 158. 뒤의 전투가 비친다.
+        //   판은 불투명 — Merge_Bg(가운데 알파 62%)를 세 겹 깐다(→ 95%). 두 겹(86%)이면 밑의 HP 바가 비친다.
+        //   한때 반투명(158)으로 했다가 글자가 안 읽혀 되돌렸다(사용자 지시).
+        //   진화 · 교환 자리를 시안과 서로 바꿨다 — 진화가 오른쪽, 교환이 왼쪽.
         //   판 위 오른쪽에 보유 마석 칸 — 이 창이 울타리 위 보유량 칸을 덮어서, 비용과 견줄 숫자가 사라진다.
 
         private const string FrameSpritePath = "Art/Ingame/Merge_Bg";
         private const string BoxSpritePath = "Art/Ingame/Merge_Btn_Bg";
         private const string StoneSpritePath = "Art/Gem/LevelStone";
 
-        /// <summary>판 색 — 흰색에 불투명도 158(피해 기여도 패널과 같다).</summary>
-        private static readonly Color FrameColor = new Color(1f, 1f, 1f, 158f / 255f);
-        private static readonly Color InfoBoxColor = new Color(0x57 / 255f, 0x5d / 255f, 0x7e / 255f, 200f / 255f);
+        private static readonly Color InfoBoxColor = Hex(0x575d7e);
         private static readonly Color EvolveColor = Hex(0xffba00);
         private static readonly Color ExchangeColor = Hex(0x04bafe);
         private static readonly Color CostTextColor = Hex(0x78fe04);
@@ -674,17 +811,25 @@ namespace OJ.Dice
             Transform c = panel.card;
 
             // 판 — Merge_Bg x2, 보이는 (271,1297)~(937,1720). 그림 여백 7px x2 → +28.
-            Image frame = Sliced("Frame", c, FrameSpritePath, 2f, FrameColor);
-            SetRect(frame.rectTransform, new Vector2(666f + 28f, 423f + 28f), L(604f, 1508.5f));
-            frame.raycastTarget = false;
+            for (int i = 0; i < 3; i++)
+            {
+                Image frame = Sliced(i < 2 ? "FrameUnder" + i : "Frame", c, FrameSpritePath, 2f, Color.white);
+                SetRect(frame.rectTransform, new Vector2(666f + 28f, 423f + 28f), L(604f, 1508.5f));
+                frame.raycastTarget = false;
+            }
 
             // 보유 마석 — 판 위 오른쪽. 판과 같은 그림·불투명도, 마석 아이콘 + 30pt 숫자.
             // 진화·교환 비용과 바로 견주라고 둔다. 울타리 위 보유량 칸은 이 창에 가려진다.
             Vector2 ownedCenter = new Vector2(CardWidth * 0.5f - OwnedStoneSize.x * 0.5f,
                 CardHeight * 0.5f + OwnedStoneGap + OwnedStoneSize.y * 0.5f);
-            Image ownedBack = Sliced("OwnedStone", c, FrameSpritePath, 2f, FrameColor);
+            Image ownedBack = Sliced("OwnedStone", c, FrameSpritePath, 2f, Color.white);
             SetRect(ownedBack.rectTransform, OwnedStoneSize + new Vector2(28f, 28f), ownedCenter);
             ownedBack.raycastTarget = false;
+            panel.ownedStoneRect = ownedBack.rectTransform;
+
+            Image ownedUnder = Sliced("Under", ownedBack.transform, FrameSpritePath, 2f, Color.white);
+            Stretch(ownedUnder.rectTransform);
+            ownedUnder.raycastTarget = false;
 
             Image ownedIcon = CreateImage("Icon", ownedBack.transform, Color.white);
             ownedIcon.sprite = LoadSprite(StoneSpritePath);
@@ -739,19 +884,36 @@ namespace OJ.Dice
             SetRect(panel.requirementText.rectTransform, new Vector2(590f, 64f), L(306f + 295f, 1512f));
             panel.requirementText.textWrappingMode = TextWrappingModes.Normal;
 
-            // 진화 — ffba00, 보이는 (358,1585)~(587,1687). 왼쪽에 진화하면 되는 다이스, 오른쪽에 "진화" + 마석 비용.
-            // 정보 상자 아래 끝(1573)과 판 아래 끝(1720) 사이에 든다.
+            // 진화 — ffba00, 보이는 229x102. 시안의 교환 자리(628~857)로 바꿨다(사용자 지시).
+            // 왼쪽에 진화하면 되는 다이스, 오른쪽에 "진화" + 마석 비용. 정보 상자 아래 끝(1573)과 판 아래 끝(1720) 사이.
             panel.evolveButton = CreateActionButton("EvolveButton", c, "진화", EvolveColor, font,
-                L(472.5f, 1636f), new Vector2(56.5f, 20.5f), new Vector2(28.5f, -20.5f), 59.5f, out panel.evolveCostText);
+                L(742.5f, 1636f), new Vector2(56.5f, 20.5f), new Vector2(28.5f, -20.5f), 59.5f, out panel.evolveCostText);
 
             panel.evolveTargetIcon = CreateImage("TargetIcon", panel.evolveButton.transform, Color.white);
             SetRect(panel.evolveTargetIcon.rectTransform, new Vector2(117f, 117f), new Vector2(-67.5f, 1f));
             panel.evolveTargetIcon.preserveAspect = true;
             panel.evolveTargetIcon.raycastTarget = false;
 
-            // 교환 — 04bafe, 보이는 (628,1587)~(857,1689).
+            // 교환 — 04bafe, 보이는 229x102. 시안의 진화 자리(358~587)로 바꿨다.
             panel.exchangeButton = CreateActionButton("ExchangeButton", c, "교환", ExchangeColor, font,
-                L(742.5f, 1638f), new Vector2(1f, 22.5f), new Vector2(-20.5f, -20.5f), 12.5f, out panel.exchangeCostText);
+                L(472.5f, 1638f), new Vector2(1f, 22.5f), new Vector2(-20.5f, -20.5f), 12.5f, out panel.exchangeCostText);
+
+            // 토스트 — 정보 상자 위에 겹쳐 뜨는 어두운 띠. 처음엔 꺼 둔다. 누르는 것을 막지 않는다.
+            // 밑의 안내 줄이 비치지 않게 같은 띠를 한 겹 더 깐다(그림 가운데가 반투명이다).
+            Image toast = Sliced("Toast", c, BoxSpritePath, BoxScale, new Color(0.08f, 0.09f, 0.14f, 1f));
+            SetRect(toast.rectTransform, new Vector2(600f + BoxMargin, 64f + BoxMargin), L(602f, 1499f));
+            toast.raycastTarget = false;
+            Image toastUnder = Sliced("Under", toast.transform, BoxSpritePath, BoxScale, new Color(0.08f, 0.09f, 0.14f, 1f));
+            Stretch(toastUnder.rectTransform);
+            toastUnder.raycastTarget = false;
+            panel.toastRoot = toast.gameObject;
+            panel.toastText = CreateText("Text", toast.transform, "", 28f, TextAlignmentOptions.Center, Color.white, font);
+            SetRect(panel.toastText.rectTransform, new Vector2(580f, 56f), Vector2.zero);
+            panel.toastText.textWrappingMode = TextWrappingModes.NoWrap;
+            panel.toastText.enableAutoSizing = true;
+            panel.toastText.fontSizeMin = 20f;
+            panel.toastText.fontSizeMax = 28f;
+            toast.gameObject.SetActive(false);
 
             return panel;
         }
