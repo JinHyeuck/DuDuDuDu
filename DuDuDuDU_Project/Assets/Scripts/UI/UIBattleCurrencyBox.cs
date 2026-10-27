@@ -7,7 +7,8 @@ using OJ.Bounty;
 namespace OJ.UI
 {
     /// <summary>
-    /// 전투 화면의 보유 재화 칸(SP · 마석). 시안대로 통나무 울타리 아래 · HP 바 위 한 줄에 왼쪽 SP, 오른쪽 마석.
+    /// 전투 화면의 보유 재화 칸(SP · 마석). 통나무 울타리 아래 · HP 바 위 한 줄에 왼쪽 마석, 오른쪽 SP
+    /// (시안은 왼쪽 SP · 오른쪽 마석인데 사용자 지시로 서로 바꿨다).
     /// 시안 <c>Art/Layout/Ingame_NewLayour.png</c> — Merge_Bg x2 276x86 (31,1130)~(307,1216) · (784,1130)~(1060,1216),
     /// 아이콘 + 35pt 숫자. 한때 울타리 위에 두었다가(그 줄을 도우미 줄이 쓰고 있었다) 도우미 줄을 지우고 시안 자리로 옮겼다.
     ///
@@ -26,9 +27,9 @@ namespace OJ.UI
         /// <summary>칸 줄의 가운데 y(화면 1080x1920, 좌상단 원점). 시안 1130~1216.</summary>
         public const float RowCenterY = 1173f;
 
-        /// <summary>칸 가운데 x. 시안 SP 31~307, 마석 784~1060 — 좌우 대칭이 아니다.</summary>
-        public const float SummonPointCenterX = 169f;
-        public const float EnhanceStoneCenterX = 922f;
+        /// <summary>칸 가운데 x. 시안 자리 31~307 · 784~1060(좌우 대칭이 아니다)에 SP · 마석을 서로 바꿔 놓는다.</summary>
+        public const float SummonPointCenterX = 922f;
+        public const float EnhanceStoneCenterX = 169f;
 
         private const float ShakeTime = 0.3f;
         private const float ShakeAmplitude = 9f;
@@ -65,20 +66,17 @@ namespace OJ.UI
             var box = root.AddComponent<UIBattleCurrencyBox>();
             box.home = rect.anchoredPosition;
 
-            // 판 — Merge_Bg 가운데는 알파 62% 라 한 겹이면 뒤가 비친다. 시안 레이어 불투명도 255 의 짙기에
-            // 맞춰 같은 판을 두 겹 깔아 86% 로 올린다.
+            // 판 — Merge_Bg 한 겹. 가운데 알파 62% 라 뒤가 비친다 — 반투명으로 보이게 하라는 사용자 지시다
+            // (한때 두 겹 86% 로 막았었다).
             Sprite plate = Resources.Load<Sprite>("Art/Ingame/Merge_Bg");
             if (plate == null)
                 Debug.LogError("[보유 재화 칸] Resources/Art/Ingame/Merge_Bg 가 없다. 판 없이 숫자만 뜬다.");
-            for (int i = 0; i < 2; i++)
-            {
-                Image back = UIBountyUIFactory.CreateImage(i == 0 ? "BackUnder" : "Back", root.transform, Color.white);
-                back.sprite = plate;
-                back.type = Image.Type.Sliced;
-                back.pixelsPerUnitMultiplier = 0.5f;
-                UIBountyUIFactory.SetRect(back.rectTransform, VisibleSize + new Vector2(28f, 28f), Vector2.zero);
-                back.raycastTarget = false;
-            }
+            Image back = UIBountyUIFactory.CreateImage("Back", root.transform, Color.white);
+            back.sprite = plate;
+            back.type = Image.Type.Sliced;
+            back.pixelsPerUnitMultiplier = 0.5f;
+            UIBountyUIFactory.SetRect(back.rectTransform, VisibleSize + new Vector2(28f, 28f), Vector2.zero);
+            back.raycastTarget = false;
 
             // 아이콘 — 판 왼쪽 끝에서 37 안쪽이 가운데(시안 SP 코인·마석 모두).
             const float iconX = -138f + 37f;
