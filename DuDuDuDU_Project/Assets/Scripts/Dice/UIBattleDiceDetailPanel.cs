@@ -55,6 +55,9 @@ namespace OJ.Dice
         [SerializeField] private Button exchangeButton;
         [SerializeField] private TMP_Text exchangeCostText;
 
+        [Tooltip("판 위에 붙은 보유 마석 숫자. 이 창이 울타리 위 보유량 칸을 가리기 때문에 여기서도 보여 준다.")]
+        [SerializeField] private TMP_Text ownedStoneText;
+
         [Header("Dismiss")]
         [SerializeField] private Button outsideButton;
 
@@ -112,6 +115,9 @@ namespace OJ.Dice
             // 열어 둔 채로 들어올 수 있으므로 구독해서 그 자리에서 갱신한다.
             if (battle.BattlePoints != null)
                 battle.BattlePoints.OnBattlePointChanged += OnBattlePointChanged;
+
+            hudBoxes[0] = battle.Summon != null ? battle.Summon.SpRect : null;
+            hudBoxes[1] = battle.ElementUpgrade != null ? battle.ElementUpgrade.StoneRect : null;
         }
 
         protected override void OnExit()
@@ -120,6 +126,15 @@ namespace OJ.Dice
                 DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
             if (battle.BattlePoints != null)
                 battle.BattlePoints.OnBattlePointChanged -= OnBattlePointChanged;
+
+            // 이 창이 끈 것만 되켠다. 원래 꺼져 있던 칸을 켜면 안 된다.
+            for (int i = 0; i < hudBoxes.Length; i++)
+            {
+                if (hudBoxes[i] != null && hudBoxHidden[i])
+                    hudBoxes[i].gameObject.SetActive(true);
+                hudBoxes[i] = null;
+                hudBoxHidden[i] = false;
+            }
         }
 
         private void Update()
@@ -143,6 +158,7 @@ namespace OJ.Dice
             // 보드가 움직이지는 않지만 다이스는 드래그로 슬롯을 옮긴다. 매 프레임
             // 따라붙이는 편이 "옮겼더니 말풍선만 남았다"를 막는 가장 싼 방법이다.
             PlaceCardNearDice();
+            HideCoveredHudBoxes();
         }
 
         /// <summary>지금 보고 있는 다이스. 닫혀 있으면 의미가 없다.</summary>
@@ -170,6 +186,7 @@ namespace OJ.Dice
 
             Refresh();
             PlaceCardNearDice();
+            HideCoveredHudBoxes();
         }
 
         public void Refresh()
@@ -254,6 +271,9 @@ namespace OJ.Dice
             int owned = battle.BattlePoints != null
                 ? battle.BattlePoints.Get(BattlePointType.EnhanceStone)
                 : 0;
+
+            if (ownedStoneText != null)
+                ownedStoneText.SetText(owned.ToString("N0", System.Globalization.CultureInfo.InvariantCulture));
 
             bool hasEvolvePath = DiceEvolution.TryGetEvolveTarget(currentDiceType, out DiceType evolveTarget);
             bool starOk = DiceEvolution.CanEvolve(currentDiceType, currentDiceStar);
@@ -480,12 +500,14 @@ namespace OJ.Dice
             Vector2 half = card.rect.size * 0.5f;
 
             // 다이스 위쪽에 띄우고, 위가 모자라면 아래로 내린다.
+            // 판 위로 보유 마석 칸이 OwnedStoneOverhang 만큼 솟아 있다. 위쪽 판정·가두기에 그만큼 더 잡고,
+            // 아래로 뒤집을 때도 그 칸이 누른 다이스를 덮지 않게 더 내린다.
             float above = local.y + half.y + CardGapFromDice;
-            float below = local.y - half.y - CardGapFromDice;
-            float y = above + half.y <= parentBounds.yMax ? above : below;
+            float below = local.y - half.y - CardGapFromDice - OwnedStoneOverhang;
+            float y = above + half.y + OwnedStoneOverhang <= parentBounds.yMax ? above : below;
 
             float x = Mathf.Clamp(local.x, parentBounds.xMin + half.x, parentBounds.xMax - half.x);
-            y = Mathf.Clamp(y, parentBounds.yMin + half.y, parentBounds.yMax - half.y);
+            y = Mathf.Clamp(y, parentBounds.yMin + half.y, parentBounds.yMax - half.y - OwnedStoneOverhang);
 
             card.anchoredPosition = new Vector2(x, y);
         }
@@ -504,6 +526,43 @@ namespace OJ.Dice
         }
 
         private const float CardGapFromDice = 90f;
+
+        // 울타리 위 보유량 칸(SP · 마석). 판이 반투명이라 그 밑에 깔린 칸의 아이콘·숫자가 판 글자와 겹쳐
+        // 비친다. 판에 덮이는 칸만 열려 있는 동안 끈다 — 보유 마석은 판 위 칸이 대신 말한다.
+        // 꺼도 RectTransform 은 그대로라 재화가 날아갈 목적지(SpRect · StoneRect)는 안 바뀐다.
+        private readonly RectTransform[] hudBoxes = new RectTransform[2];
+        private readonly bool[] hudBoxHidden = new bool[2];
+        private static readonly Vector3[] Corners = new Vector3[4];
+
+        private void HideCoveredHudBoxes()
+        {
+            if (card == null)
+                return;
+
+            Rect cardRect = ScreenRectOf(card, popupCanvas);
+            for (int i = 0; i < hudBoxes.Length; i++)
+            {
+                RectTransform box = hudBoxes[i];
+                if (box == null || (!hudBoxHidden[i] && !box.gameObject.activeSelf))
+                    continue;
+
+                bool covered = cardRect.Overlaps(ScreenRectOf(box, box.GetComponentInParent<Canvas>(true)));
+                if (covered == hudBoxHidden[i])
+                    continue;
+
+                hudBoxHidden[i] = covered;
+                box.gameObject.SetActive(!covered);
+            }
+        }
+
+        private static Rect ScreenRectOf(RectTransform rect, Canvas canvas)
+        {
+            Camera camera = EventCameraOf(canvas != null ? canvas.rootCanvas : null);
+            rect.GetWorldCorners(Corners);
+            Vector2 min = RectTransformUtility.WorldToScreenPoint(camera, Corners[0]);
+            Vector2 max = RectTransformUtility.WorldToScreenPoint(camera, Corners[2]);
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+        }
 
         // 캔버스는 다이스마다 바뀌지 않는다. Update 가 매 프레임 부르는 자리라
         // GetComponentInParent 를 거기서 돌리지 않도록 Open 에서 한 번만 찾아 둔다.
@@ -538,12 +597,17 @@ namespace OJ.Dice
         //   정보 상자 Merge_Btn_Bg 575d7e 보이는 622x148
         //   진화/교환 Merge_Btn_Bg ffba00 / 04bafe 보이는 229x102 ("머지 때 쓰던 비율 그대로" — 보드 칸과 같은 x2.857)
         //   글자 30pt(버튼 이름 28pt), 성급·비용 78fe04, 공격력 ffea00
+        // 시안과 다르게 고친 것 (사용자 지시 2026-10-27):
+        //   판 · 정보 상자를 반투명으로 — 판은 피해 기여도 패널과 같은 불투명도 158. 뒤의 전투가 비친다.
+        //   판 위 오른쪽에 보유 마석 칸 — 이 창이 울타리 위 보유량 칸을 덮어서, 비용과 견줄 숫자가 사라진다.
 
         private const string FrameSpritePath = "Art/Ingame/Merge_Bg";
         private const string BoxSpritePath = "Art/Ingame/Merge_Btn_Bg";
         private const string StoneSpritePath = "Art/Gem/LevelStone";
 
-        private static readonly Color InfoBoxColor = Hex(0x575d7e);
+        /// <summary>판 색 — 흰색에 불투명도 158(피해 기여도 패널과 같다).</summary>
+        private static readonly Color FrameColor = new Color(1f, 1f, 1f, 158f / 255f);
+        private static readonly Color InfoBoxColor = new Color(0x57 / 255f, 0x5d / 255f, 0x7e / 255f, 200f / 255f);
         private static readonly Color EvolveColor = Hex(0xffba00);
         private static readonly Color ExchangeColor = Hex(0x04bafe);
         private static readonly Color CostTextColor = Hex(0x78fe04);
@@ -568,6 +632,11 @@ namespace OJ.Dice
 
         private const float ButtonWidth = 229f;
         private const float ButtonHeight = 102f;
+
+        /// <summary>보유 마석 칸(보이는 크기). 판 위 오른쪽 끝에 맞추고 판과 OwnedStoneGap 만큼 띄운다.</summary>
+        private static readonly Vector2 OwnedStoneSize = new Vector2(210f, 64f);
+        private const float OwnedStoneGap = 8f;
+        private const float OwnedStoneOverhang = 64f + OwnedStoneGap;
 
         /// <summary>에디터 굽기 전용. <c>UIBattleDiceDetailPanelBaker</c> 만 부른다.</summary>
         public static UIBattleDiceDetailPanel Create(Transform parent, TMP_FontAsset font)
@@ -605,9 +674,28 @@ namespace OJ.Dice
             Transform c = panel.card;
 
             // 판 — Merge_Bg x2, 보이는 (271,1297)~(937,1720). 그림 여백 7px x2 → +28.
-            Image frame = Sliced("Frame", c, FrameSpritePath, 2f, Color.white);
+            Image frame = Sliced("Frame", c, FrameSpritePath, 2f, FrameColor);
             SetRect(frame.rectTransform, new Vector2(666f + 28f, 423f + 28f), L(604f, 1508.5f));
             frame.raycastTarget = false;
+
+            // 보유 마석 — 판 위 오른쪽. 판과 같은 그림·불투명도, 마석 아이콘 + 30pt 숫자.
+            // 진화·교환 비용과 바로 견주라고 둔다. 울타리 위 보유량 칸은 이 창에 가려진다.
+            Vector2 ownedCenter = new Vector2(CardWidth * 0.5f - OwnedStoneSize.x * 0.5f,
+                CardHeight * 0.5f + OwnedStoneGap + OwnedStoneSize.y * 0.5f);
+            Image ownedBack = Sliced("OwnedStone", c, FrameSpritePath, 2f, FrameColor);
+            SetRect(ownedBack.rectTransform, OwnedStoneSize + new Vector2(28f, 28f), ownedCenter);
+            ownedBack.raycastTarget = false;
+
+            Image ownedIcon = CreateImage("Icon", ownedBack.transform, Color.white);
+            ownedIcon.sprite = LoadSprite(StoneSpritePath);
+            ownedIcon.preserveAspect = true;
+            ownedIcon.raycastTarget = false;
+            float ownedLeft = -(OwnedStoneSize.x * 0.5f);
+            SetRect(ownedIcon.rectTransform, new Vector2(96f, 96f), new Vector2(ownedLeft + 34f, 0f));
+
+            panel.ownedStoneText = CreateText("Count", ownedBack.transform, "0", 30f, TextAlignmentOptions.Center, Color.white, font);
+            SetRect(panel.ownedStoneText.rectTransform, new Vector2(OwnedStoneSize.x - 80f, 44f), new Vector2(ownedLeft + 68f + (OwnedStoneSize.x - 80f) * 0.5f, 0f));
+            panel.ownedStoneText.textWrappingMode = TextWrappingModes.NoWrap;
 
             // 다이스 아이콘 — 보이는 102(그림 64 안에 45 → x2.27).
             panel.iconImage = CreateImage("Icon", c, Color.white);
