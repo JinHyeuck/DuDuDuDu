@@ -32,7 +32,7 @@ namespace OJ.Element
         private static readonly Color CannotPayColor = new Color(1f, 0.35f, 0.3f, 1f);
         private static readonly Color BonusColor = new Color(1f, 0.87f, 0.35f, 1f);
 
-        private UIEnhanceStoneChip chip;
+        private UIBattleCurrencyBox chip;
         private TMP_Text bonusText;
 
         void Awake()
@@ -345,8 +345,10 @@ namespace OJ.Element
             Canvas canvas = button.GetComponentInParent<Canvas>();
             if (chip == null && coinAmountText != null && canvas != null)
             {
-                chip = UIEnhanceStoneChip.Create((RectTransform)canvas.rootCanvas.transform, coinAmountText,
-                    BattlePointUtility.GetIcon(BattlePointType.EnhanceStone));
+                // 보유 마석 칸 — 울타리 위 오른쪽(SP 칸과 대칭). 마석 아이콘은 시안 주석대로 x2.
+                chip = UIBattleCurrencyBox.Create((RectTransform)canvas.rootCanvas.transform, "UIEnhanceStoneBox",
+                    UIBattleCurrencyBox.EnhanceStoneCenterX, BattlePointUtility.GetIcon(BattlePointType.EnhanceStone),
+                    2f, coinAmountText);
             }
         }
 

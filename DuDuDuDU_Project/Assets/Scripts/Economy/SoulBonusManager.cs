@@ -170,19 +170,23 @@ namespace OJ.Economy
         }
 
         // 재화가 날아가는 연출. 현상금 보상(BountyManager)과 같은 도착점·같은 모양이다 —
-        // SP 는 소환 버튼으로, 마석은 보유 마석 칸으로 간다. 값은 이미 지급됐고 이 연출은 보기만 한다.
+        // SP 는 보유 SP 칸으로, 마석은 보유 마석 칸으로 간다(둘 다 울타리 위 한 줄). 값은 이미 지급됐고
+        // 이 연출은 보기만 한다 — 먼저 HoldSp/HoldStone 으로 쥐어 두면 숫자가 닿을 때 오른다.
         private const float StoneIconScale = 1.9f;
 
-        /// <summary>SP 가 화면 좌표에서 소환 버튼으로 날아간다. 웨이브 이벤트(WaveThemeFlow)도 같은 연출을 쓴다.</summary>
+        /// <summary>
+        /// SP 가 화면 좌표에서 보유 SP 칸으로 날아간다(먼저 <c>HoldSp</c> 으로 쥐어 두어야 숫자가 닿을 때 오른다).
+        /// 웨이브 이벤트(WaveThemeFlow)도 같은 연출을 쓴다.
+        /// </summary>
         public void FlySummonPoint(Vector2 fromScreen, int amount)
         {
             var summon = battle.Summon;
-            if (summon == null || summon.summonButton == null)
+            if (summon == null)
                 return;
 
             UIRewardFly.Fly(fromScreen, BattlePointUtility.GetIcon(BattlePointType.SummonPoint),
-                summon.summonButton.transform as RectTransform, amount, "+" + amount + " SP", summon.spText,
-                new Color(0.55f, 0.9f, 1f, 1f));
+                summon.SpRect, amount, "+" + amount + " SP", summon.spText,
+                new Color(0.55f, 0.9f, 1f, 1f), summon.ReleaseSp);
         }
 
         /// <summary>마석이 화면 좌표에서 보유 마석 칸으로 날아간다(먼저 <c>HoldStone</c> 으로 쥐어 두어야 숫자가 닿을 때 오른다).</summary>
@@ -241,6 +245,7 @@ namespace OJ.Economy
             if (sp)
             {
                 int amount = Run.SoulOfferSp;
+                battle.Summon.HoldSp(amount);
                 battle.Summon.AddSP(amount);
                 FlySummonPoint(fromScreen, amount);
             }

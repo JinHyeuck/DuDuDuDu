@@ -121,7 +121,7 @@ namespace OJ.Dice
         // ── 레벨 초기화 버튼 ─────────────────────────────────────────────
         //
         // <b>코드로 만든다.</b> 이 창의 프리팹 YAML 을 건드리지 않고 강화 버튼 왼쪽에 붙이기 위해서다
-        // (<c>UIEnhanceStoneChip</c> 과 같은 방식). 자리는 강화 버튼을 기준으로 잡는다.
+        // (<c>UIBattleCurrencyBox</c> 와 같은 방식). 자리는 강화 버튼을 기준으로 잡는다.
 
         private static readonly Vector2 ResetButtonSize = new Vector2(220f, 110f);
         private const float ResetButtonGap = 24f;

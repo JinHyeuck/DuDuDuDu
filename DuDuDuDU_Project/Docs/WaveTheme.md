@@ -51,7 +51,7 @@
 - 상단 현황의 보상 아이콘: 행운 / 보스전 / 회복 / 다이스.
 - 한 바퀴의 나머지는 그대로다: 3·6·9 현상금 도전, 5 자리/영혼(광고로 둘 다), 10 보스.
 
-**재화 연출.** 이벤트가 마석·SP 를 주면 현상금·영혼 보너스와 같은 **날아가는 연출**을 쓴다(`SoulBonusManager.FlyEnhanceStone` / `FlySummonPoint` — 마석은 먼저 `HoldStone` 으로 쥐어 숫자가 닿을 때 오른다).
+**재화 연출.** 이벤트가 마석·SP 를 주면 현상금·영혼 보너스와 같은 **날아가는 연출**을 쓴다(`SoulBonusManager.FlyEnhanceStone` / `FlySummonPoint` — 마석·SP 둘 다 먼저 `HoldStone` / `HoldSp` 로 쥐어 울타리 위 보유량 칸에 닿을 때 숫자가 오른다 — `IngameHudArtPort.md`).
 출발 자리는 고른 버튼(`UIChoicePopup.LastChosenScreen`), 보스전은 보스가 쓰러진 자리다. 행운 주사위 굴림은 기존 결과 창이 같은 연출을 한다.
 
 ## 이벤트 17종과 판마다 무작위 배치 (2026-10-27 개정)

@@ -211,12 +211,13 @@ namespace OJ.Hunting
             game.SoulBonus?.FlyEnhanceStone(from, amount);
         }
 
-        /// <summary>SP 를 주고 소환 버튼으로 날려 보낸다.</summary>
+        /// <summary>SP 를 주고 보유 SP 칸으로 날려 보낸다. 마석처럼 먼저 쥐고 나서 넣는다.</summary>
         private void AddSp(int amount, Vector2 from)
         {
             if (amount <= 0)
                 return;
 
+            battle.Summon?.HoldSp(amount);
             battle.Summon?.AddSP(amount);
             game.SoulBonus?.FlySummonPoint(from, amount);
         }
