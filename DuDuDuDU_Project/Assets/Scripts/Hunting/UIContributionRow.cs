@@ -43,10 +43,9 @@ namespace OJ.Hunting
                 icon.color = iconSprite != null ? Color.white : DiceMetaDataProvider.GetColor(share.DiceType);
             }
 
+            // 막대 색은 굽는 시점의 초록(시안) 하나다. 어느 다이스인지는 아이콘이 말한다.
             if (gaugeFill != null)
             {
-                gaugeFill.color = DiceMetaDataProvider.GetColor(share.DiceType);
-
                 RectTransform rect = gaugeFill.rectTransform;
                 Vector2 offset = rect.offsetMax;
                 offset.x = gaugeWidth * Mathf.Clamp01(share.Ratio);
@@ -63,13 +62,20 @@ namespace OJ.Hunting
         // 에디터 굽기 전용.
         // ──────────────────────────────────────────────────────────────
 
-        internal const float IconSize = 56f;
-        internal const float GaugeHeight = 28f;
+        // 시안(인게임관련.psd 피해 기여도): 아이콘 가운데 패널 왼쪽 +53, 보이는 54(그림 64 안에 45 → x1.17).
+        // 막대는 패널 왼쪽 +89 ~ +247 (158x34), 바탕 3c4057 · 채움 78fe04 · 검정 테두리.
 
-        private static readonly Color TrackColor = new Color(0.20f, 0.23f, 0.38f, 1f);
+        internal const float IconSize = 75f;
+        internal const float GaugeHeight = 34f;
+        private const float IconFromLeft = 53f;
+        private const float GaugeFromLeft = 89f;
+        private const float GaugeLength = 158f;
+
+        private static readonly Color TrackColor = UIDamageContributionPanel.UIColor(0x3c4057);
+        private static readonly Color FillColor = UIDamageContributionPanel.UIColor(0x78fe04);
 
         /// <summary>
-        /// <paramref name="parent"/> 밑에 한 줄을 만든다.
+        /// <paramref name="parent"/> 밑에 한 줄을 만든다. <paramref name="size"/> 의 가로는 패널 폭이다.
         /// <b>폰트를 받지 않는다</b> — 이 줄에는 글자가 없다(이름·퍼센트를 뺐다).
         /// </summary>
         internal static UIContributionRow Create(
@@ -81,11 +87,10 @@ namespace OJ.Hunting
             var row = root.AddComponent<UIContributionRow>();
 
             float left = -size.x * 0.5f;
-            float gaugeWidth = size.x - IconSize - 10f;
 
             row.icon = UIDamageContributionPanel.CreateImage("Icon", root.transform, Color.white);
             UIDamageContributionPanel.SetRect(row.icon.rectTransform,
-                new Vector2(IconSize, IconSize), new Vector2(left + IconSize * 0.5f, 0f));
+                new Vector2(IconSize, IconSize), new Vector2(left + IconFromLeft, 0f));
             row.icon.preserveAspect = true;
             row.icon.raycastTarget = false;
 
@@ -93,11 +98,14 @@ namespace OJ.Hunting
             // 고정해야 너비 하나로 조절된다 — 형제로 두면 둘의 위치를 같이 맞춰야 한다.
             Image track = UIDamageContributionPanel.CreateImage("Gauge", root.transform, TrackColor);
             UIDamageContributionPanel.SetRect(track.rectTransform,
-                new Vector2(gaugeWidth, GaugeHeight),
-                new Vector2(left + IconSize + 10f + gaugeWidth * 0.5f, 0f));
+                new Vector2(GaugeLength, GaugeHeight),
+                new Vector2(left + GaugeFromLeft + GaugeLength * 0.5f, 0f));
             track.raycastTarget = false;
+            Outline edge = track.gameObject.AddComponent<Outline>();
+            edge.effectColor = Color.black;
+            edge.effectDistance = new Vector2(3f, -3f);
 
-            Image fill = UIDamageContributionPanel.CreateImage("Fill", track.transform, Color.white);
+            Image fill = UIDamageContributionPanel.CreateImage("Fill", track.transform, FillColor);
             fill.raycastTarget = false;
 
             RectTransform fillRect = fill.rectTransform;
@@ -105,10 +113,10 @@ namespace OJ.Hunting
             fillRect.anchorMax = new Vector2(0f, 1f);
             fillRect.pivot = new Vector2(0f, 0.5f);
             fillRect.offsetMin = Vector2.zero;
-            fillRect.offsetMax = new Vector2(gaugeWidth, 0f);
+            fillRect.offsetMax = new Vector2(GaugeLength, 0f);
 
             row.gaugeFill = fill;
-            row.gaugeWidth = gaugeWidth;
+            row.gaugeWidth = GaugeLength;
 
             // 굽는 시점에는 꺼 둔다. 채울 내용이 생겼을 때 Bind 가 켠다.
             row.Hide();
