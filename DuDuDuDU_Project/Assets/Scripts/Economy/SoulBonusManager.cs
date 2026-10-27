@@ -214,7 +214,7 @@ namespace OJ.Economy
                     : 0;
 
                 Run.SoulOfferSp = SoulBonusRules.RollSp(
-                    total, UnityEngine.Random.Range(0, 1000), battle.Game.WaveSpMultiplierPercent(battle.Game.CurrentWaveIndex));
+                    total, UnityEngine.Random.Range(0, 1000), battle.Game.WaveSpMultiplierPercent(battle.Game.CurrentWaveIndex)) / 2;
                 Run.SoulOfferStones = SoulBonusRules.RollStones(UnityEngine.Random.Range(0, 1000));
             }
 
