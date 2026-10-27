@@ -22,6 +22,7 @@ namespace OJ.EditorTools
         private const string LobbyScenePath = "Assets/Scenes/LobbyScene.unity";
 
         private const string FontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
+        private const string PlainMaterialPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF Material_NoneOutLine.mat";
 
         /// <summary>멤버십 입구에서 아래로 얼마나 띄우나. 입구 높이(190)와 같다 — 이름 줄 아래에 바로 붙는다.</summary>
         private const float BelowMembership = 200f;
@@ -33,7 +34,11 @@ namespace OJ.EditorTools
             if (font == null)
                 return;
 
-            if (!BakePrefab(DialogPath, "UISpecialSevenDaysDialog", t => UISpecialSevenDaysDialog.Create(t, font).gameObject))
+            var plain = AssetDatabase.LoadAssetAtPath<Material>(PlainMaterialPath);
+            if (plain == null)
+                Debug.LogWarning("[특별한 7일] 외곽선 없는 재질을 못 찾았다: " + PlainMaterialPath + " — 진행 숫자·상태 글자에 외곽선이 붙는다.");
+
+            if (!BakePrefab(DialogPath, "UISpecialSevenDaysDialog", t => UISpecialSevenDaysDialog.Create(t, font, plain).gameObject))
                 return;
 
             AssetDatabase.SaveAssets();
