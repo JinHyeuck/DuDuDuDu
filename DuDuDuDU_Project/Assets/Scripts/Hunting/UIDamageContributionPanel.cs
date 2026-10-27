@@ -30,11 +30,11 @@ namespace OJ.Hunting
     public class UIDamageContributionPanel : DialogBase
     {
         /// <summary>
-        /// 한 번에 보여 주는 다이스 수. 편성이 최대 7개(탑)이고 본편 보드도 종류가
-        /// 그 언저리라, 넘치는 일은 드물다. 그래도 상한을 두는 것은 <b>세로로 무한히
-        /// 자라지 않게</b> 하기 위해서다 — 왼쪽을 다 덮으면 전투가 안 보인다.
+        /// 한 번에 보여 주는 다이스 수 — 많이 때린 순서로 위에서부터. 시안 판(보이는 높이 358)에
+        /// 60 간격으로 다섯 줄이 든다. 상한을 두는 것은 <b>세로로 무한히 자라지 않게</b> 하기 위해서다 —
+        /// 왼쪽을 다 덮으면 전투가 안 보인다.
         /// </summary>
-        private const int MaxRows = 8;
+        private const int MaxRows = 5;
 
         /// <summary>
         /// 다시 그리는 주기(초).
@@ -236,36 +236,41 @@ namespace OJ.Hunting
         // 값을 아는 것은 코드이므로 인스펙터에 좌표를 옮겨 적지 않는다.
         // ──────────────────────────────────────────────────────────────
 
-        private static readonly Color PanelColor = new Color(0.06f, 0.07f, 0.14f, 0.82f);
-        private static readonly Color CloseColor = new Color(0.42f, 0.20f, 0.24f, 0.95f);
-        private static readonly Color OpenColor = new Color(0.20f, 0.23f, 0.42f, 0.92f);
+        // 시안 Art/Layout/Ingame_NewLayour.png · Art/0PSD/인게임관련.psd (2026-10-27).
+        // 판 Merge_Bg x2 보이는 276x358(레이어 불투명도 158), 제목 26pt, 접기 버튼 BigBox 961b55,
+        // 줄 간격 60 · 아이콘 54 · 막대 158x34. 좌표는 패널 가운데 기준(위가 +).
+
+        private const string PanelSpritePath = "Art/Ingame/Merge_Bg";
+        private const string CloseSpritePath = "Art/Upgrade/Ui_Popup_BigBox";
+
+        /// <summary>판 색 — 흰색에 PSD 레이어 불투명도 158. 뒤의 전투가 비쳐 보인다.</summary>
+        private static readonly Color PanelColor = new Color(1f, 1f, 1f, 158f / 255f);
+        private static readonly Color CloseColor = UIColor(0x961b55);
         private static readonly Color MutedText = new Color(0.70f, 0.76f, 0.88f, 1f);
 
-        /// <summary>
-        /// 패널 가로. 이름과 퍼센트를 뺐으므로 아이콘 + 막대만 들어가면 된다 —
-        /// 좁을수록 전투를 덜 가린다.
-        /// </summary>
-        private const float PanelWidth = 300f;
+        private const float PanelWidth = 276f;
+        private const float PanelHeight = 358f;
 
-        private const float RowHeight = 62f;
-        private const float HeaderHeight = 44f;
-        private const float Padding = 10f;
+        /// <summary>Merge_Bg(32) 의 투명 여백 7px x2 — 그림은 보이는 판보다 이만큼 크다.</summary>
+        private const float PanelSpriteMargin = 28f;
 
-        /// <summary>
-        /// 왼쪽 가장자리에서 얼마나 띄울지. 1080 폭 기준이고, 패널이 보드(가운데)와
-        /// 겹치지 않는 자리다.
-        /// </summary>
-        private const float LeftMargin = 16f;
+        /// <summary>패널 왼쪽 끝(1080 폭 기준). 시안 x 31.</summary>
+        private const float LeftMargin = 31f;
 
         /// <summary>
-        /// 화면 <b>아래</b>에서 패널 세로 중심까지 캔버스 단위로 얼마인지 (1080x1920 에서 중심 +430).
+        /// 패널 <b>윗선</b>이 화면 아래에서 캔버스 단위로 얼마 위인가.
         ///
-        /// 위로는 웨이브 게이지, 아래로는 다이스 보드가 있다. 그 사이의 빈 왼쪽
-        /// 영역이 이 자리다 — 현상금 선택 창(중심 +300)과 겹치지 않게 조금 더 위로 올렸다.
-        /// 다이스 보드가 아래에 붙어 있으므로 패널도 아래를 기준으로 삼는다 — 중심 기준이면
-        /// 22:9 처럼 세로가 긴 기기에서 보드와의 간격이 벌어진다.
+        /// <b>시안(위 끝 y 153)이 아니라 예전 높이(y 250)를 지킨다.</b> 몬스터를 쏘기 시작하는 높이
+        /// (<see cref="OJ.Core.EngageLine"/>)가 이 선을 따라가므로, 시안대로 올리면 교전선이 100px 위로 올라가
+        /// 전투 밸런스가 바뀐다. 또 시안 높이는 웨이브 이벤트 트랙(y 34~224)과 겹친다.
+        /// 다이스 보드가 아래에 붙어 있으므로 패널도 아래를 기준으로 삼는다 — 22:9 에서도 보드와의 간격이 같다.
         /// </summary>
-        private const float CenterFromBottom = 1390f;
+        private const float TopFromBottom = 1670f;
+
+        private const float RowPitch = 60f;
+
+        /// <summary>첫 줄 가운데가 패널 윗선에서 얼마 아래인가(시안 248 − 153).</summary>
+        private const float FirstRowFromTop = 95f;
 
         /// <summary>에디터 굽기 전용.</summary>
         public static UIDamageContributionPanel Create(Transform parent, TMP_FontAsset font)
@@ -277,9 +282,9 @@ namespace OJ.Hunting
             // 보드 클릭을 통째로 먹는다. 왼쪽 가장자리에 붙여 패널 크기만 차지한다.
             rootRect.anchorMin = new Vector2(0f, 0f);
             rootRect.anchorMax = new Vector2(0f, 0f);
-            rootRect.pivot = new Vector2(0f, 0.5f);
-            rootRect.sizeDelta = new Vector2(PanelWidth, BodyHeight);
-            rootRect.anchoredPosition = new Vector2(LeftMargin, CenterFromBottom);
+            rootRect.pivot = new Vector2(0f, 1f);
+            rootRect.sizeDelta = new Vector2(PanelWidth, PanelHeight);
+            rootRect.anchoredPosition = new Vector2(LeftMargin, TopFromBottom);
 
             GameObject view = CreateRect("DialogView", root.transform);
             RectTransform viewRect = view.GetComponent<RectTransform>();
@@ -301,14 +306,12 @@ namespace OJ.Hunting
             return panel;
         }
 
-        private static float BodyHeight => HeaderHeight + MaxRows * RowHeight + Padding * 2f;
-
         /// <summary>
         /// 패널 윗선이 화면 아래에서 캔버스 단위로 얼마 위인가. 몬스터를 쏘기 시작하는
         /// 높이(<see cref="OJ.Core.EngageLine"/>)가 이 선을 따라간다 — 패널 크기나 자리를 바꾸면
         /// 교전선도 같이 움직여야 하므로 숫자를 따로 적지 않고 같은 상수에서 읽는다.
         /// </summary>
-        public static float TopFromScreenBottom => CenterFromBottom + BodyHeight * 0.5f;
+        public static float TopFromScreenBottom => TopFromBottom;
 
         private static void BuildExpanded(
             UIDamageContributionPanel panel, Transform parent, TMP_FontAsset font)
@@ -317,50 +320,53 @@ namespace OJ.Hunting
             Stretch(expanded.GetComponent<RectTransform>());
             panel.expandedRoot = expanded;
 
-            // 배경이 곧 "영역을 누르면 접힌다" 의 그 영역이다. 투명도를 조금 남겨
-            // 뒤의 전투가 비쳐 보이게 한다 — 왼쪽을 완전히 막으면 몬스터가 안 보인다.
-            Image background = CreateImage("Background", expanded.transform, PanelColor);
-            Stretch(background.rectTransform);
+            // 배경이 곧 "영역을 누르면 접힌다" 의 그 영역이다. 반투명이라 뒤의 전투가 비친다 —
+            // 왼쪽을 완전히 막으면 몬스터가 안 보인다.
+            Image background = Sliced("Background", expanded.transform, PanelSpritePath, 2f, PanelColor);
+            SetRect(background.rectTransform,
+                new Vector2(PanelWidth + PanelSpriteMargin, PanelHeight + PanelSpriteMargin), Vector2.zero);
 
             panel.collapseArea = background.gameObject.AddComponent<Button>();
             panel.collapseArea.targetGraphic = background;
             panel.collapseArea.transition = Selectable.Transition.None;
 
-            float top = BodyHeight * 0.5f;
+            float top = PanelHeight * 0.5f;
+            float left = -PanelWidth * 0.5f;
 
-            TMP_Text title = CreateText("Title", expanded.transform, "피해 기여도", 22f,
+            // 제목 — 시안 왼쪽 끝 61(패널 +30), 가운데 y 194(윗선 −41).
+            TMP_Text title = CreateText("Title", expanded.transform, "피해 기여도", 26f,
                 TextAlignmentOptions.Left, Color.white, font);
-            SetRect(title.rectTransform,
-                new Vector2(PanelWidth - Padding * 2f - 44f, HeaderHeight),
-                new Vector2(-22f, top - HeaderHeight * 0.5f));
+            SetRect(title.rectTransform, new Vector2(170f, 40f), new Vector2(left + 30f + 85f, top - 41f));
 
-            // 작은 X. 영역 전체가 이미 닫기지만, <b>닫을 수 있다는 사실</b>을 알리는 것이
-            // 이 버튼의 일이다 — 영역 클릭만 두면 아무도 그것을 모른다.
-            Image close = CreateImage("CloseButton", expanded.transform, CloseColor);
-            SetRect(close.rectTransform, new Vector2(34f, 34f),
-                new Vector2(PanelWidth * 0.5f - Padding - 17f, top - Padding - 17f));
+            // 접기 버튼 — BigBox 961b55 보이는 52x46, 가운데 (263, 192). 영역 전체가 이미 접기지만
+            // <b>접을 수 있다는 사실</b>을 알리는 것이 이 버튼의 일이다. 글자 대신 흰 막대를 그린다 —
+            // BM HANNA 에는 "×" 가 없어 빈칸으로 찍힌다(Tools/ui/PORTING.md).
+            Image close = Sliced("CloseButton", expanded.transform, CloseSpritePath, 2f, CloseColor);
+            SetRect(close.rectTransform, new Vector2(52f, 46f), new Vector2(left + 232f, top - 39f));
 
             panel.closeButton = close.gameObject.AddComponent<Button>();
             panel.closeButton.targetGraphic = close;
 
-            TMP_Text closeLabel = CreateText("Label", close.transform, "×", 24f,
-                TextAlignmentOptions.Center, Color.white, font);
-            SetRect(closeLabel.rectTransform, new Vector2(34f, 34f), Vector2.zero);
+            Image minus = CreateImage("Minus", close.transform, Color.white);
+            SetRect(minus.rectTransform, new Vector2(23f, 10f), Vector2.zero);
+            minus.raycastTarget = false;
+            Outline minusEdge = minus.gameObject.AddComponent<Outline>();
+            minusEdge.effectColor = Color.black;
+            minusEdge.effectDistance = new Vector2(2f, -2f);
 
-            float rowTop = top - HeaderHeight - Padding * 0.5f;
-            var rowSize = new Vector2(PanelWidth - Padding * 2f, RowHeight);
+            float firstRowY = top - FirstRowFromTop;
+            var rowSize = new Vector2(PanelWidth, RowPitch);
 
-            panel.emptyText = CreateText("Empty", expanded.transform, "아직 피해 없음", 20f,
+            panel.emptyText = CreateText("Empty", expanded.transform, "아직 피해 없음", 24f,
                 TextAlignmentOptions.Center, MutedText, font);
-            SetRect(panel.emptyText.rectTransform, rowSize,
-                new Vector2(0f, rowTop - RowHeight * 0.5f));
+            SetRect(panel.emptyText.rectTransform, rowSize, new Vector2(0f, firstRowY));
 
             for (int i = 0; i < MaxRows; i++)
             {
                 UIContributionRow row = UIContributionRow.Create(
                     expanded.transform,
                     rowSize,
-                    new Vector2(0f, rowTop - RowHeight * 0.5f - i * RowHeight));
+                    new Vector2(0f, firstRowY - i * RowPitch));
 
                 panel.rows.Add(row);
             }
@@ -370,7 +376,7 @@ namespace OJ.Hunting
             UIDamageContributionPanel panel, Transform parent, TMP_FontAsset font)
         {
             const float ButtonWidth = 180f;
-            const float ButtonHeight = 52f;
+            const float ButtonHeight = 60f;
 
             GameObject collapsed = CreateRect("Collapsed", parent);
             RectTransform collapsedRect = collapsed.GetComponent<RectTransform>();
@@ -385,15 +391,36 @@ namespace OJ.Hunting
 
             panel.collapsedRoot = collapsed;
 
-            Image background = CreateImage("Background", collapsed.transform, OpenColor);
-            Stretch(background.rectTransform);
+            // 펼친 판과 같은 그림 — 접힌 것이 같은 패널이라는 게 보이게.
+            Image background = Sliced("Background", collapsed.transform, PanelSpritePath, 2f, PanelColor);
+            SetRect(background.rectTransform,
+                new Vector2(ButtonWidth + PanelSpriteMargin, ButtonHeight + PanelSpriteMargin), Vector2.zero);
 
             panel.openButton = background.gameObject.AddComponent<Button>();
             panel.openButton.targetGraphic = background;
 
-            TMP_Text label = CreateText("Label", collapsed.transform, "기여도 확인", 22f,
+            TMP_Text label = CreateText("Label", collapsed.transform, "기여도 확인", 26f,
                 TextAlignmentOptions.Center, Color.white, font);
             Stretch(label.rectTransform);
+        }
+
+        /// <summary>9슬라이스 그림. 테두리는 스프라이트 .meta 의 것, 여기서는 배율만 준다. 그림이 없으면 멈춘다.</summary>
+        private static Image Sliced(string name, Transform parent, string path, float pixelScale, Color color)
+        {
+            Sprite sprite = Resources.Load<Sprite>(path);
+            if (sprite == null)
+                throw new System.InvalidOperationException("[기여도 굽기] 스프라이트가 없다: Resources/" + path);
+
+            Image image = CreateImage(name, parent, color);
+            image.sprite = sprite;
+            image.type = Image.Type.Sliced;
+            image.pixelsPerUnitMultiplier = 1f / pixelScale;
+            return image;
+        }
+
+        internal static Color UIColor(int rgb)
+        {
+            return new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
         }
 
         // ── 조립 도구 ───────────────────────────────────────────────────

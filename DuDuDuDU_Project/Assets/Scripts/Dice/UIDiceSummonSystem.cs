@@ -10,11 +10,15 @@ using OJ.DI;
 using OJ.Hunting;
 using OJ.Relic;
 using OJ.Tutorial;
+using OJ.UI;
 
 namespace OJ.Dice
 {
     public class UIDiceSummonSystem : MonoBehaviour
     {
+        /// <summary>SP 가 모자랄 때 필요 SP 숫자 색. 소환 버튼과 확률업 버튼이 같이 쓴다.</summary>
+        public static readonly Color LackingSpColor = new Color(1f, 0.25f, 0.22f, 1f);
+
         // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
         // 단 Awake 시점에는 아직 비어 있다 — 스코프는 씬의 모든 Awake 뒤에 빌드된다.
         [Inject] private IBattleRefs battle;
@@ -47,6 +51,35 @@ namespace OJ.Dice
         public int currentSP => battle != null && battle.BattlePoints != null
             ? battle.BattlePoints.Get(BattlePointType.SummonPoint)
             : 0;
+
+        /// <summary>
+        /// 보유 SP 칸(울타리 위 왼쪽). 시작할 때 코드로 만든다. SP 가 날아와 닿는 자리라
+        /// <see cref="SpRect"/> 를 내놓고, 날아오는 동안은 <see cref="HoldSp"/> 로 숫자를 쥐어 둔다.
+        /// 소환 버튼은 이제 보유량이 아니라 비용만 보인다 — 보유량은 이 칸이 말한다.
+        /// </summary>
+        private UIBattleCurrencyBox spBox;
+
+        /// <summary>시안 실측 — SP 코인(Gem_Money, 보이는 28px)이 칸 안에서 약 39px.</summary>
+        private const float SpIconScale = 1.4f;
+
+        /// <summary>보유 SP 칸. SP 가 날아와 닿는 자리다. 칸을 못 만들었으면 null.</summary>
+        public RectTransform SpRect => spBox != null ? spBox.Rect : null;
+
+        /// <summary>
+        /// 날아오는 SP 를 화면 숫자에 넣지 않고 쥐어 둔다. 지급(<see cref="AddSP"/>)보다 먼저 부른다.
+        /// 아이콘이 닿을 때 <see cref="ReleaseSp"/> 로 푼다. 데이터는 이미 올랐고, 바뀌는 것은 보이는 숫자뿐이다.
+        /// </summary>
+        public void HoldSp(int amount)
+        {
+            if (spBox != null)
+                spBox.Hold(amount);
+        }
+
+        public void ReleaseSp(int amount)
+        {
+            if (spBox != null)
+                spBox.Release(amount);
+        }
 
         /// <summary>다음 소환 비용. <see cref="currentSP"/> 와 같은 이유로 여기 값이 없다.</summary>
         public int summonCost => battle != null && battle.Game != null
@@ -81,6 +114,15 @@ namespace OJ.Dice
         {
             summonButton.onClick.AddListener(OnSummonButton);
 
+            // 칸의 자리는 화면 비율로 정해지므로 부모는 전투 HUD 캔버스의 뿌리여야 한다.
+            Canvas canvas = summonButton.GetComponentInParent<Canvas>();
+            if (spBox == null && canvas != null)
+            {
+                spBox = UIBattleCurrencyBox.Create((RectTransform)canvas.rootCanvas.transform, "UISummonPointBox",
+                    UIBattleCurrencyBox.SummonPointCenterX, BattlePointUtility.GetIcon(BattlePointType.SummonPoint),
+                    SpIconScale, spText);
+            }
+
             // SP 가 이 컴포넌트 밖(RunState)에 살게 되면서, 숫자가 바뀌는 것을 여기서
             // 항상 볼 수는 없게 됐다 — 현상금 지급과 되돌리기가 창구를 거쳐 고친다.
             // 그래서 구독한다. 안 걸면 되돌린 직후에 옛 숫자가 그대로 남는다.
@@ -112,6 +154,10 @@ namespace OJ.Dice
             // "새 SP / 옛 비용" 이 뜬다.
             battle.BattlePoints?.Set(BattlePointType.SummonPoint, Mathf.Max(0, startSp));
 
+            // 날아오던 SP 가 있었다면 그 연출은 새 판·되돌린 판에서 의미가 없다. 쥔 채로 두면 숫자가 영영 모자란다.
+            if (spBox != null)
+                spBox.ReleaseAll();
+
             UpdateSPUI();
         }
 
@@ -121,11 +167,14 @@ namespace OJ.Dice
         /// </summary>
         public void UpdateSPUI()
         {
-            if (spText == null)
-                return;
-
             int sp = currentSP;
             int cost = summonCost;
+
+            if (spBox != null)
+                spBox.SetOwned(sp);
+
+            if (spText == null)
+                return;
 
             int free = battle != null && battle.Game != null ? battle.Game.Run.FreeSummonCharges : 0;
             if (free > 0)
@@ -136,8 +185,9 @@ namespace OJ.Dice
                 return;
             }
 
-            spText.text = $"{sp} / {cost}";
-            spText.color = sp >= cost ? Color.white : Color.red;
+            // 보유량은 SP 칸이 보이므로 버튼은 비용만. 모자라면 붉다.
+            spText.text = cost.ToString();
+            spText.color = sp >= cost ? Color.white : LackingSpColor;
         }
 
         // SummonSnapshot · CaptureSnapshot · RestoreSnapshot 이 여기 있었다.
@@ -171,7 +221,9 @@ namespace OJ.Dice
             bool useFree = battle.Game.Run.FreeSummonCharges > 0;
             if (!useFree && currentSP < summonCost)
             {
-                Debug.Log("SP 부족!");
+                // 마석이 모자랄 때 마석 칸이 흔들리는 것과 같다 — 무엇이 모자란지 그 칸이 말한다.
+                if (spBox != null)
+                    spBox.Shake();
                 return;
             }
 

@@ -168,14 +168,14 @@ namespace OJ.EditorTools
                 return;
             }
 
-            // 위 그라데이션·몬스터 처치 바는 위에, 나머지(아래 그라데이션·보드·우물·도우미·강화)는 아래에 붙인다.
+            // 위 그라데이션·몬스터 처치 바는 위에, 나머지(아래 그라데이션·보드·우물·강화)는 아래에 붙인다.
+            // 도우미 줄(Helper)은 2026-10-27 씬에서 지웠다. 우물(HP 바)이 그 자리로 올라갔다.
             var moves = new (string name, float anchorY)[]
             {
                 ("Image (1)", Top),
                 ("MonsterKill", Top),
                 ("Image (3)", Bottom),
                 ("Well", Bottom),
-                ("Helper", Bottom),
                 ("UIBoard", Bottom),
                 ("Upgrade", Bottom),
             };

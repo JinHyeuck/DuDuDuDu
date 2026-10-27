@@ -1614,9 +1614,8 @@ namespace OJ.Hunting
             if (upgrade != null)
                 WaveThemeLayout.MoveUpgradeButtonToBottomLeft(upgrade);
 
-            UIProbabilityUpButton prob = GameContainer.UI?.Get<UIProbabilityUpButton>();
-            if (prob != null)
-                WaveThemeLayout.EnlargeProbabilityButton(prob.transform as RectTransform);
+            // 확률업 버튼은 예전에 1.3배로 키웠다(글자 버튼이 작다는 평). 시안 아이콘 버튼으로 바뀌어
+            // 이미 크고, 키우면 위 끝이 보드 아래 칸을 덮는다 — 그래서 키우지 않는다.
 
             // 상단 현황이 높아진 만큼 기여도 패널을 내린다.
             UIDamageContributionPanel contribution = GameContainer.UI?.Get<UIDamageContributionPanel>();

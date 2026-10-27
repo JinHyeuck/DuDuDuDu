@@ -55,17 +55,5 @@ namespace OJ.Hunting
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
         }
-
-        /// <summary>확률업 버튼을 키운다(작아서 잘 안 보인다는 평). 자리는 오른쪽 아래 그대로이고 오른쪽 아래 모서리를 기준으로 커진다.</summary>
-        public static void EnlargeProbabilityButton(RectTransform button)
-        {
-            if (button == null)
-                return;
-
-            // 오른쪽 아래 모서리가 화면 밖으로 나가지 않게 키운 만큼 안쪽으로 당긴다(크기 230 → 약 300).
-            const float scale = 1.3f;
-            button.localScale = Vector3.one * scale;
-            button.anchoredPosition = new Vector2(-(20f + button.sizeDelta.x * scale * 0.5f), button.anchoredPosition.y + 10f);
-        }
     }
 }

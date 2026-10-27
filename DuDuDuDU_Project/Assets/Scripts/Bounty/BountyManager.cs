@@ -279,6 +279,8 @@ namespace OJ.Bounty
             switch (definition.rewardKind)
             {
                 case BattlePointType.SummonPoint:
+                    // 마석과 같다 — 먼저 쥐고 나서 넣어야 보유 SP 칸 숫자가 아이콘이 닿을 때 오른다.
+                    battle.Summon.HoldSp(definition.rewardAmount);
                     battle.Summon.AddSP(definition.rewardAmount);
                     FlySummonPoint(deathWorld, definition.rewardAmount);
                     break;
@@ -296,16 +298,16 @@ namespace OJ.Bounty
             OnChanged?.Invoke();
         }
 
-        // SP 는 소환 버튼으로 날아간다. 버튼의 SP 글자(spText)는 창구 이벤트로 이미 올랐고, 닿으면 버튼이 튕긴다.
+        // SP 는 보유 SP 칸(울타리 위 왼쪽)으로 날아간다. 칸이 없으면 Fly 가 쥐고 있던 숫자를 바로 풀어 준다.
         private void FlySummonPoint(Vector3 deathWorld, int amount)
         {
             var summon = battle.Summon;
-            if (summon == null || summon.summonButton == null)
+            if (summon == null)
                 return;
 
             UIRewardFly.FlyFromWorld(deathWorld, BattlePointUtility.GetIcon(BattlePointType.SummonPoint),
-                summon.summonButton.transform as RectTransform, amount, "+" + amount + " SP", summon.spText,
-                new Color(0.55f, 0.9f, 1f, 1f));
+                summon.SpRect, amount, "+" + amount + " SP", summon.spText,
+                new Color(0.55f, 0.9f, 1f, 1f), summon.ReleaseSp);
         }
 
         // 마석 그림은 64 칸 안에 작게 들어 있어 같은 크기로 날리면 코인보다 훨씬 작아 보인다.
