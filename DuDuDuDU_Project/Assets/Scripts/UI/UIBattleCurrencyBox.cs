@@ -7,9 +7,9 @@ using OJ.Bounty;
 namespace OJ.UI
 {
     /// <summary>
-    /// 전투 화면의 보유 재화 칸(SP · 마석). 울타리 위 한 줄에 왼쪽 SP, 오른쪽 마석으로 선다.
-    /// 시안 <c>Art/Layout/Ingame_NewLayour.png</c> — Merge_Bg x2 보이는 276x86, 아이콘 + 35pt 숫자.
-    /// 시안은 울타리 아래에 두었지만 울타리 위로 올렸다(사용자 결정 2026-10-27). 울타리 아래 줄은 HP 바가 쓴다.
+    /// 전투 화면의 보유 재화 칸(SP · 마석). 시안대로 통나무 울타리 아래 · HP 바 위 한 줄에 왼쪽 SP, 오른쪽 마석.
+    /// 시안 <c>Art/Layout/Ingame_NewLayour.png</c> — Merge_Bg x2 276x86 (31,1130)~(307,1216) · (784,1130)~(1060,1216),
+    /// 아이콘 + 35pt 숫자. 한때 울타리 위에 두었다가(그 줄을 도우미 줄이 쓰고 있었다) 도우미 줄을 지우고 시안 자리로 옮겼다.
     ///
     /// <b>코드로 만든다.</b> 전투 씬 YAML 을 고치지 않고 붙이기 위해서다(<c>UpgradeRedDot</c> 와 같은 방식).
     /// 재화가 날아와 닿는 자리이기도 해서 <see cref="Rect"/> 를 내놓는다.
@@ -23,12 +23,12 @@ namespace OJ.UI
         /// <summary>보이는 판 크기(시안). 그림 Merge_Bg 는 32 안에 7px 여백이 있어 x2 로 +28.</summary>
         private static readonly Vector2 VisibleSize = new Vector2(276f, 86f);
 
-        /// <summary>울타리 위 한 줄의 가운데 y(화면 1080x1920, 좌상단 원점). 시안 x2 배속 버튼 줄(930~1020)이다.</summary>
-        public const float RowCenterY = 975f;
+        /// <summary>칸 줄의 가운데 y(화면 1080x1920, 좌상단 원점). 시안 1130~1216.</summary>
+        public const float RowCenterY = 1173f;
 
-        /// <summary>SP 칸 가운데 x(왼쪽 끝 37). 마석 칸은 그 좌우 대칭.</summary>
-        public const float SummonPointCenterX = 37f + 138f;
-        public const float EnhanceStoneCenterX = 1080f - SummonPointCenterX;
+        /// <summary>칸 가운데 x. 시안 SP 31~307, 마석 784~1060 — 좌우 대칭이 아니다.</summary>
+        public const float SummonPointCenterX = 169f;
+        public const float EnhanceStoneCenterX = 922f;
 
         private const float ShakeTime = 0.3f;
         private const float ShakeAmplitude = 9f;
@@ -65,8 +65,8 @@ namespace OJ.UI
             var box = root.AddComponent<UIBattleCurrencyBox>();
             box.home = rect.anchoredPosition;
 
-            // 판 — Merge_Bg 가운데는 알파 62% 라 울타리 위로 몰려든 몬스터가 숫자 뒤로 비친다(시안의 자리는
-            // 울타리 아래라 비칠 것이 없었다). 같은 판을 두 겹 깔아 86% 로 올린다.
+            // 판 — Merge_Bg 가운데는 알파 62% 라 한 겹이면 뒤가 비친다. 시안 레이어 불투명도 255 의 짙기에
+            // 맞춰 같은 판을 두 겹 깔아 86% 로 올린다.
             Sprite plate = Resources.Load<Sprite>("Art/Ingame/Merge_Bg");
             if (plate == null)
                 Debug.LogError("[보유 재화 칸] Resources/Art/Ingame/Merge_Bg 가 없다. 판 없이 숫자만 뜬다.");

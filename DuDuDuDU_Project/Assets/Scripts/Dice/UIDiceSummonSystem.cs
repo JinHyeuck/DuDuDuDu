@@ -16,6 +16,9 @@ namespace OJ.Dice
 {
     public class UIDiceSummonSystem : MonoBehaviour
     {
+        /// <summary>SP 가 모자랄 때 필요 SP 숫자 색. 소환 버튼과 확률업 버튼이 같이 쓴다.</summary>
+        public static readonly Color LackingSpColor = new Color(1f, 0.25f, 0.22f, 1f);
+
         // 8.3b: 배틀 스코프가 채운다. BattleScene 안에서는 null 이 아니다.
         // 단 Awake 시점에는 아직 비어 있다 — 스코프는 씬의 모든 Awake 뒤에 빌드된다.
         [Inject] private IBattleRefs battle;
@@ -184,7 +187,7 @@ namespace OJ.Dice
 
             // 보유량은 SP 칸이 보이므로 버튼은 비용만. 모자라면 붉다.
             spText.text = cost.ToString();
-            spText.color = sp >= cost ? Color.white : Color.red;
+            spText.color = sp >= cost ? Color.white : LackingSpColor;
         }
 
         // SummonSnapshot · CaptureSnapshot · RestoreSnapshot 이 여기 있었다.
