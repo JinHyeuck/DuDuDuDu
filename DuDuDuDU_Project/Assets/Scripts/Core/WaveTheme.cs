@@ -92,7 +92,7 @@ namespace OJ.Core
         public const int AdBonusLimitPerStage = 2;
 
         /// <summary>이벤트가 주는 SP(행운 주사위의 "SP 받기", 벽 회복의 "SP 받기").</summary>
-        public const int EventSp = 100;
+        public const int EventSp = 50;
 
         /// <summary>보스전 이벤트: 도전하지 않고 지나가면 받는 마석.</summary>
         public const int EventBossPassStones = 10;

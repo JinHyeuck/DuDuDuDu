@@ -232,7 +232,7 @@ namespace OJ.Hunting
 
         // ── 행운 주사위 ───────────────────────────────────────────────
 
-        /// <summary>100 SP 를 받는 대신 행운 주사위를 굴려 마석 5~15개를 받을 수 있다.</summary>
+        /// <summary>50 SP 를 받는 대신 행운 주사위를 굴려 마석 5~15개를 받을 수 있다.</summary>
         private IEnumerator LuckyDiceEvent()
         {
             var options = new List<UIChoicePopup.Option>
@@ -351,7 +351,7 @@ namespace OJ.Hunting
 
         // ── 벽 회복 ───────────────────────────────────────────────────
 
-        /// <summary>벽 체력 10% 를 회복하거나 100 SP 를 받는다.</summary>
+        /// <summary>벽 체력 10% 를 회복하거나 50 SP 를 받는다.</summary>
         private IEnumerator WallHealEvent()
         {
             Wall wall = game.wall;
@@ -616,22 +616,22 @@ namespace OJ.Hunting
         private const int WeakenPercent = 25;
         private const int RiskyHpPercent = 30;
         private const int RiskyStones = 15;
-        private const int SpGambleSure = 100;
-        private const int SpGambleWin = 250;
+        private const int SpGambleSure = 50;
+        private const int SpGambleWin = 125;
         private const int StoneGambleSure = 6;
         private const int StoneGambleWin = 18;
         private const int FreeSummonCount = 3;
         private const int WallUpgradePercent = 15;
         private const int WallRepairPercent = 25;
-        private const int ExchangeSp = 100;
+        private const int ExchangeSp = 50;
         private const int ExchangeStones = 6;
-        private const int MerchantSp = 70;
+        private const int MerchantSp = 35;
         private const int MerchantStones = 7;
         private const int MerchantWallPercent = 7;
 
         private static readonly Color SpToast = new Color(0.55f, 0.9f, 1f, 1f);
 
-        /// <summary>SP 도박: 100 SP 확정 / 50% 로 250 SP.</summary>
+        /// <summary>SP 도박: 50 SP 확정 / 50% 로 125 SP.</summary>
         private IEnumerator SpGambleEvent()
         {
             var options = new List<UIChoicePopup.Option>
@@ -697,7 +697,7 @@ namespace OJ.Hunting
             }
         }
 
-        /// <summary>무료 소환 3회 / 100 SP.</summary>
+        /// <summary>무료 소환 3회 / 50 SP.</summary>
         private IEnumerator FreeSummonsEvent()
         {
             var options = new List<UIChoicePopup.Option>
@@ -723,7 +723,7 @@ namespace OJ.Hunting
             }
         }
 
-        /// <summary>확률업 +1레벨(무료) / 100 SP. 이미 최고 레벨이면 앞의 것은 못 고른다.</summary>
+        /// <summary>확률업 +1레벨(무료) / 50 SP. 이미 최고 레벨이면 앞의 것은 못 고른다.</summary>
         private IEnumerator ProbUpEvent()
         {
             bool canUpgrade = battle.Summon != null && battle.Summon.NextProbUpgradeCost >= 0;
@@ -779,7 +779,7 @@ namespace OJ.Hunting
             }
         }
 
-        /// <summary>환전: 100 SP 를 내고 마석 6개 / 지나가기.</summary>
+        /// <summary>환전: 50 SP 를 내고 마석 6개 / 지나가기.</summary>
         private IEnumerator ExchangeEvent()
         {
             bool canPay = battle.BattlePoints != null && battle.BattlePoints.Get(BattlePointType.SummonPoint) >= ExchangeSp;
@@ -803,7 +803,7 @@ namespace OJ.Hunting
 
         /// <summary>
         /// "다음 웨이브 한 번" 효과 / 보상. 효과는 <paramref name="apply"/> 가 건다(<see cref="WaveBuffs"/>).
-        /// <paramref name="stonesInstead"/> 가 참이면 다른 쪽이 마석 6개, 아니면 100 SP 다.
+        /// <paramref name="stonesInstead"/> 가 참이면 다른 쪽이 마석 6개, 아니면 50 SP 다.
         /// </summary>
         private IEnumerator BuffEvent(string title, string buffLabel, string buffSub, System.Action apply, bool stonesInstead)
         {

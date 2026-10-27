@@ -44,7 +44,7 @@ namespace OJ.Bounty
         /// </summary>
         public BattlePointType rewardKind = BattlePointType.SummonPoint;
 
-        [Min(1)] public int rewardAmount = 60;
+        [Min(1)] public int rewardAmount = 30;
 
         [Header("연출")]
         [Tooltip("일반 몬스터 이동속도의 배수. 느리게 내려와야 때릴 시간이 생긴다.")]
