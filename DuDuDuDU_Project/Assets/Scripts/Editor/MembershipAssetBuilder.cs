@@ -25,9 +25,6 @@ namespace OJ.EditorTools
 
         private const string FontPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF.asset";
 
-        /// <summary>외곽선 없는 글자 재질 — 밝은 혜택 줄 위의 어두운 글자에 쓴다.</summary>
-        private const string PlainMaterialPath = "Assets/BMHANNAProOTF/BMHANNAProOTF SDF Material_NoneOutLine.mat";
-
         /// <summary>
         /// 로비 좌상단 — 메뉴(≡) 버튼(화면 x 22~162, y 199~325) 바로 아래. 캔버스 좌상단 기준.
         /// 마음에 안 들면 씬에서 옮기면 된다(다시 설치해도 이미 있으면 건드리지 않는다).
@@ -41,11 +38,7 @@ namespace OJ.EditorTools
             if (font == null)
                 return;
 
-            var plain = AssetDatabase.LoadAssetAtPath<Material>(PlainMaterialPath);
-            if (plain == null)
-                Debug.LogWarning("[멤버십] 외곽선 없는 재질을 못 찾았다: " + PlainMaterialPath + " — 혜택 줄 글자에 외곽선이 붙는다.");
-
-            if (!BakePrefab(DialogPath, "UIMembershipDialog", t => UIMembershipDialog.Create(t, font, plain).gameObject))
+            if (!BakePrefab(DialogPath, "UIMembershipDialog", t => UIMembershipDialog.Create(t, font).gameObject))
                 return;
 
             AssetDatabase.SaveAssets();

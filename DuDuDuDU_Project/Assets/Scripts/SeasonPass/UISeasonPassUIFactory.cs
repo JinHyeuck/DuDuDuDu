@@ -241,5 +241,27 @@ namespace OJ.SeasonPass
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
         }
+
+        /// <summary>
+        /// 1080x1920 판을 화면 위·가운데·아래(<paramref name="anchorY"/> 1·0.5·0)에 붙인다.
+        /// 판 안은 <see cref="Pos"/> 좌표 그대로 — 1920 화면에서는 판들이 겹쳐 PSD 와 같고, 긴 화면(22:9)에서만 벌어진다.
+        /// </summary>
+        internal static Transform AnchoredGroup(string name, Transform parent, float anchorY)
+        {
+            GameObject group = CreateRect(name, parent);
+            var rect = group.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, anchorY);
+            rect.anchorMax = new Vector2(0.5f, anchorY);
+            rect.pivot = new Vector2(0.5f, anchorY);
+            rect.sizeDelta = new Vector2(1080f, 1920f);
+            rect.anchoredPosition = Vector2.zero;
+            return group.transform;
+        }
+
+        /// <summary>TMP 색 태그로 감싼다 — 한 줄 안에서 일부 글자만 포인트 색을 줄 때.</summary>
+        internal static string Colored(string text, Color color)
+        {
+            return "<color=#" + ColorUtility.ToHtmlStringRGB(color) + ">" + text + "</color>";
+        }
     }
 }

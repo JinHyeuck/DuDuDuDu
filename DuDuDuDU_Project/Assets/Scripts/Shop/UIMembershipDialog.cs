@@ -16,7 +16,7 @@ namespace OJ.Shop
     ///
     /// <b>산 뒤의 모습</b>: 카드는 <b>내리지 않는다</b>(사용자 피드백 2026-10-06 — 기획서 5.2-3 의
     /// "카드를 내린다" 를 뒤집음. 산 것이 화면에서 사라지면 산 기록이 없어진 것처럼 읽힌다).
-    /// 광고제거권은 가격 버튼 자리에 "보유 중", 고기 멤버십은 "잔여 n일" 을 띄우고
+    /// 광고제거권은 가격 버튼 자리에 "보유 중", 고기 멤버십은 카드 아래 "잔여 n일" + 버튼 자리 "이용 중" 을 띄우고
     /// 만료 3일 전부터 다시 가격 버튼을 연다 — 그때 사면 만료일 뒤로 붙는다.
     ///
     /// <b>결제는 아직 없다.</b> 두 버튼 모두 <see cref="ShopPurchaseManager.TryBuyCashProduct"/> 를 지난다 —
@@ -35,8 +35,8 @@ namespace OJ.Shop
 
         [SerializeField] private Button meatBuyButton;
         [SerializeField] private TMP_Text meatPriceText;
-        [SerializeField] private TMP_Text meatRemainingText;
         [SerializeField] private TMP_Text meatDaysText;
+        [SerializeField] private GameObject meatActiveMark;
 
         [SerializeField] private Button adBuyButton;
         [SerializeField] private GameObject adOwnedMark;
@@ -94,14 +94,14 @@ namespace OJ.Shop
             bool active = entitlements.MeatMembershipActive;
             bool canBuy = entitlements.CanRebuyMeatMembership(offers.rebuyWindowDays);
 
+            // 카드 아래 기간 — 사기 전엔 상품 기간, 산 뒤엔 남은 날.
             if (meatDaysText != null)
-                meatDaysText.SetText("(" + offers.meatMembershipDays + "일)");
+                meatDaysText.SetText(active
+                    ? "잔여 " + entitlements.MeatMembershipRemainingDays + "일"
+                    : offers.meatMembershipDays + "일");
 
-            if (meatRemainingText != null)
-            {
-                meatRemainingText.gameObject.SetActive(active);
-                meatRemainingText.SetText("잔여 " + entitlements.MeatMembershipRemainingDays + "일");
-            }
+            if (meatActiveMark != null)
+                meatActiveMark.SetActive(active && !canBuy);
 
             // 3일 전까지는 버튼을 숨기고 남은 기간만 보인다. 그 전에 사게 두면 "언제 사도 손해 없음" 이
             // 맞더라도 화면이 계속 결제를 권하는 꼴이 된다(기획서 5.2-4).
@@ -159,26 +159,31 @@ namespace OJ.Shop
 
         // ── 굽기 ───────────────────────────────────────────────────────
         //
-        // PSD 가 없다. 레퍼런스(카드 두 장 · 왼쪽 혜택 줄 · 오른쪽 이름·엠블럼·가격)를 시즌 패스와
-        // 같은 그림·색으로 옮겼다. 좌표는 1080x1920 화면 픽셀(좌상단 원점). 기록: Docs/MembershipUI.md
+        // 시안 Art/Layout/MemberShip_Layout.png · Art/0PSD/멤버십.psd (2026-10-27).
+        // 좌표는 1080x1920 PSD 픽셀(좌상단 원점) 그대로. 기록: Docs/MembershipUI.md
+        //
+        // 긴 화면(22:9 등)은 위 묶음(배너·제목·띠)을 위에, 뒤로 버튼을 아래에 붙이고 상품 상자 둘은 가운데 둔다.
 
-        private static readonly Color CardOutline = Color.black;
-        private static readonly Color MeatCardColor = UISeasonPassUIFactory.Hex(0xffb21e);
-        private static readonly Color MeatPillColor = UISeasonPassUIFactory.Hex(0xe0730a);
-        private static readonly Color MeatRowColor = UISeasonPassUIFactory.Hex(0xffe9a8);
-        private static readonly Color AdCardColor = UISeasonPassUIFactory.Hex(0x23223a);
-        private static readonly Color AdCardOutline = UISeasonPassUIFactory.Hex(0x9fd8ff);
-        private static readonly Color AdPillColor = UISeasonPassUIFactory.Hex(0x6b4ce0);
-        private static readonly Color AdRowColor = UISeasonPassUIFactory.Hex(0x3a3960);
-        private static readonly Color AdIconColor = UISeasonPassUIFactory.Hex(0x2f7bff);
-        private static readonly Color SlashColor = UISeasonPassUIFactory.Hex(0xff2d2d);
-        private static readonly Color DarkText = UISeasonPassUIFactory.Hex(0x4a2a00);
+        private static readonly Color BackgroundColor = UISeasonPassUIFactory.Hex(0x1e1828);
+        private static readonly Color TitleColor = UISeasonPassUIFactory.Hex(0xf6ff00);
+        private static readonly Color SubPointColor = UISeasonPassUIFactory.Hex(0xfeb514);
+        private static readonly Color BenefitPointColor = UISeasonPassUIFactory.Hex(0x2aff00);
+        private static readonly Color DaysColor = UISeasonPassUIFactory.Hex(0xff8484);
 
-        /// <summary>
-        /// 창 하나를 조립한다. 에디터 굽기 경로에서만 부른다.
-        /// <paramref name="plainMaterial"/> 은 외곽선 없는 글자 재질 — 밝은 줄 위의 어두운 글자에 쓴다.
-        /// </summary>
-        public static UIMembershipDialog Create(Transform parent, TMP_FontAsset font, Material plainMaterial)
+        private static readonly Color MeatStripColor = UISeasonPassUIFactory.Hex(0xfe9e14);
+        private static readonly Color MeatHeaderColor = UISeasonPassUIFactory.Hex(0xe13d3e);
+        private static readonly Color AdStripColor = UISeasonPassUIFactory.Hex(0x7134be);
+        private static readonly Color AdHeaderColor = UISeasonPassUIFactory.Hex(0xfd53f7);
+        private static readonly Color AdGlowColor = UISeasonPassUIFactory.Hex(0xff8efb);
+
+        /// <summary>혜택 줄 판 — SmallBox 검정 알파 30%(PSD 불투명도 77).</summary>
+        private static readonly Color BenefitRowColor = new Color(0f, 0f, 0f, 77f / 255f);
+
+        /// <summary>카드 기울기(시안 주석 "10도"). 오른쪽이 내려가므로 z 는 음수.</summary>
+        private const float CardTilt = -10f;
+
+        /// <summary>창 하나를 조립한다. 에디터 굽기 경로에서만 부른다. 시안의 글자는 전부 검정 외곽선이다.</summary>
+        public static UIMembershipDialog Create(Transform parent, TMP_FontAsset font)
         {
             GameObject root = UISeasonPassUIFactory.CreateRect("UIMembershipDialog", parent);
             UISeasonPassUIFactory.Stretch(root.GetComponent<RectTransform>());
@@ -190,32 +195,21 @@ namespace OJ.Shop
             UISeasonPassUIFactory.Stretch(view.GetComponent<RectTransform>());
             dialog.dialogView = view;
 
-            Transform p = view.transform;
-
-            // 바탕 — 시즌 패스 무료 트랙과 같은 색·무늬. 클릭을 먹어 뒤의 로비가 안 눌리게 한다.
-            Image background = UISeasonPassUIFactory.CreateImage("Background", p, UISeasonPassUIFactory.FreeTrackColor);
+            // 바탕 — 화면 전체. 클릭을 먹어 뒤의 로비가 안 눌리게 한다.
+            Image background = UISeasonPassUIFactory.CreateImage("Background", view.transform, BackgroundColor);
             UISeasonPassUIFactory.Stretch(background.rectTransform);
-            foreach (Vector2 c in new[] { new Vector2(270f, 480f), new Vector2(810f, 480f), new Vector2(270f, 1260f), new Vector2(810f, 1260f) })
-            {
-                Image pattern = UISeasonPassUIFactory.Picture(p, "Pattern", "Pass/Pass_Pattern",
-                    new Vector2(1024f, 1024f), UISeasonPassUIFactory.Pos(c.x, c.y));
-                pattern.color = UISeasonPassUIFactory.FreePatternTint;
-            }
 
-            // 제목 띠 — 패스 프리미엄 버튼 그림 x3, 보이는 880x102
-            Image banner = UISeasonPassUIFactory.Sliced(p, "TitleBanner", "Pass/Pass_premium_Btn", 3f,
-                new Vector2(952f, 384f), UISeasonPassUIFactory.Pos(540f, 200f), Color.white);
-            banner.raycastTarget = false;
-            TMP_Text title = UISeasonPassUIFactory.CreateText("Title", banner.transform, "멤버십", 60f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(title.rectTransform, new Vector2(700f, 90f), new Vector2(0f, 2f));
+            Transform middle = UISeasonPassUIFactory.AnchoredGroup("Middle", view.transform, 0.5f);
+            Transform top = UISeasonPassUIFactory.AnchoredGroup("Top", view.transform, 1f);
+            Transform bottom = UISeasonPassUIFactory.AnchoredGroup("Bottom", view.transform, 0f);
 
-            BakeMeatCard(dialog, p, font, plainMaterial);
-            BakeAdCard(dialog, p, font);
+            BakeTop(top, font);
+            BakeMeatCard(dialog, middle, font);
+            BakeAdCard(dialog, middle, font);
 
-            // 뒤로 — 시즌 패스 창과 같은 자리·그림
-            Image back = UISeasonPassUIFactory.Sliced(p, "MembershipBackButton", "Ingame/Btn_Gray", 5f,
-                new Vector2(204f, 209f), UISeasonPassUIFactory.Pos(87f, 1813.5f), Color.white);
+            // 뒤로 — Btn_Gray x5, 보이는 (14,1741) 164x169. 아이콘 Icon_Back x4. 특별한 7일 창과 같은 자리.
+            Image back = UISeasonPassUIFactory.Sliced(bottom, "MembershipBackButton", "Ingame/Btn_Gray", 5f,
+                new Vector2(204f, 209f), UISeasonPassUIFactory.Pos(96f, 1815.5f), Color.white);
             dialog.AddExitButton(UISeasonPassUIFactory.SpriteButton(back));
             UISeasonPassUIFactory.Picture(back.transform, "Icon", "Main/Icon_Back",
                 new Vector2(128f, 128f), new Vector2(2f, -1.5f));
@@ -223,154 +217,185 @@ namespace OJ.Shop
             return dialog;
         }
 
-        private static void BakeMeatCard(UIMembershipDialog dialog, Transform p, TMP_FontAsset font, Material plainMaterial)
+        /// <summary>배너·"멤버십" 제목·부제 + "특별 멤버십" 띠. 띠는 특별한 7일 창과 같다(시안 주석 "멤버십이랑 같음").</summary>
+        private static void BakeTop(Transform p, TMP_FontAsset font)
         {
-            // 카드 — 보이는 x 40~1040, y 330~930
-            GameObject card = Panel(p, "MeatCard", 40f, 330f, 1040f, 930f, MeatCardColor, CardOutline).gameObject;
-            Transform c = card.transform;
+            // 배너 — 시안 주석은 MemberShop_Baneer x2 인데 그러면 왼쪽 88px 이 빈다. PSD 의 넓은 원본(레이어 2130, 1:1)을
+            // 화면 폭으로 잘라 넣었다. 겹치는 곳은 Baneer x2 와 픽셀 대조 오차 6.8 로 같은 그림이다.
+            UISeasonPassUIFactory.Picture(p, "Banner", "MemberShip/MemberShip_Banner_Wide",
+                new Vector2(1080f, 489f), UISeasonPassUIFactory.Pos(540f, 239.5f));
 
-            Pill(c, "Header", "고기 멤버십 혜택", 300f, 400f, MeatPillColor, font);
-            BenefitRow(c, "EntryBenefit", "Gem/Gem_GamePlay", "스테이지 입장 고기 면제", 500f, MeatRowColor, DarkText, plainMaterial, font);
-            BenefitRow(c, "SweepBenefit", "Main/Icon_Battle", "소탕 횟수 무제한", 600f, MeatRowColor, DarkText, plainMaterial, font);
+            UISeasonPassUIFactory.Solid(p, "BandOutline", Color.black, 0f, 478f, 1080f, 570f);
+            UISeasonPassUIFactory.Solid(p, "BandLine", UISeasonPassUIFactory.Hex(0xfecf0d), 0f, 483f, 1080f, 565f);
+            UISeasonPassUIFactory.Solid(p, "Band", UISeasonPassUIFactory.Hex(0xa94800), 0f, 488f, 1080f, 560f);
 
-            TMP_Text name = UISeasonPassUIFactory.CreateText("Name", c, "고기 멤버십", 55f, TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(name.rectTransform, new Vector2(460f, 70f), Local(790f, 405f, 540f, 630f));
-
-            dialog.meatDaysText = UISeasonPassUIFactory.CreateText("Days", c, "(30일)", 40f, TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(dialog.meatDaysText.rectTransform, new Vector2(300f, 56f), Local(790f, 465f, 540f, 630f));
-
-            // 엠블럼 — 고기 x5 위에 왕관 x3
-            UISeasonPassUIFactory.Picture(c, "EmblemMeat", "Gem/Gem_GamePlay", new Vector2(320f, 320f), Local(790f, 640f, 540f, 630f));
-            UISeasonPassUIFactory.Picture(c, "EmblemCrown", "Pass/Pass_Crown", new Vector2(128f, 128f), Local(790f, 525f, 540f, 630f));
-
-            // 흰 글자 — 노란 글자는 금색 카드 위에서 묻혔다.
-            dialog.meatRemainingText = UISeasonPassUIFactory.CreateText("Remaining", c, "잔여 30일", 44f,
+            // 띠 위 제목 판 — Pass_premium_Btn x3, 보이는 701x102. 여백(좌우 12, 위아래 47) x3.
+            Image header = UISeasonPassUIFactory.Sliced(p, "HeaderPlate", "Pass/Pass_premium_Btn", 3f,
+                new Vector2(773f, 384f), UISeasonPassUIFactory.Pos(545.5f, 483f), Color.white);
+            header.raycastTarget = false;
+            TMP_Text headerText = UISeasonPassUIFactory.CreateText("Label", header.transform, "특별 멤버십", 45f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(dialog.meatRemainingText.rectTransform, new Vector2(420f, 60f), Local(790f, 770f, 540f, 630f));
+            UISeasonPassUIFactory.SetRect(headerText.rectTransform, new Vector2(600f, 60f), new Vector2(0f, 1f));
 
-            // 가격 — Big_Btn_Green x4, 보이는 420x110 (y 795~905). 여백 좌우 4 · 위 6 · 아래 2 px x4
-            Image buy = UISeasonPassUIFactory.Sliced(c, "MeatBuyButton", "Ingame/Big_Btn_Green", 4f,
-                new Vector2(452f, 142f), Local(790f, 842f, 540f, 630f), Color.white);
-            dialog.meatBuyButton = UISeasonPassUIFactory.SpriteButton(buy);
-            dialog.meatPriceText = UISeasonPassUIFactory.CreateFittedText("Price", buy.transform, "5,000원", 50f, 32f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(dialog.meatPriceText.rectTransform, new Vector2(400f, 70f), new Vector2(0f, 8f));
+            TMP_Text title = UISeasonPassUIFactory.CreateText("Title", p, "멤버십", 95f,
+                TextAlignmentOptions.Left, TitleColor, font);
+            title.textWrappingMode = TextWrappingModes.NoWrap;
+            UISeasonPassUIFactory.SetRect(title.rectTransform, new Vector2(500f, 110f), UISeasonPassUIFactory.Pos(35f + 250f, 86.5f));
+
+            TMP_Text sub = UISeasonPassUIFactory.CreateText("Headline", p,
+                "매일 받는 " + UISeasonPassUIFactory.Colored("특별 혜택!", SubPointColor), 50f,
+                TextAlignmentOptions.Left, Color.white, font);
+            sub.textWrappingMode = TextWrappingModes.NoWrap;
+            UISeasonPassUIFactory.SetRect(sub.rectTransform, new Vector2(600f, 64f), UISeasonPassUIFactory.Pos(41f + 300f, 169.5f));
+        }
+
+        private static void BakeMeatCard(UIMembershipDialog dialog, Transform p, TMP_FontAsset font)
+        {
+            // 상자 — 보이는 (30,582)~(1048,1141). 상단 제목 줄은 왼쪽에서 오른쪽으로 사라지는 주황.
+            Box(p, "MeatBox", "MemberShip/MemberShip_Meet", 582f, 1141f);
+            Strip(p, "MeatTitleStrip", MeatStripColor, 908f, 597f);
+            Name(p, "고기 멤버십", 637.5f, font);
+
+            Header(p, "MeatHeader", "고기 멤버십 혜택", 727f, MeatHeaderColor, font);
+            BenefitRow(p, "EntryBenefit", "Gem/Gem_GamePlay", new Vector2(108f, 853f), new Vector2(128f, 128f),
+                "스테이지 입장 " + UISeasonPassUIFactory.Colored("고기 면제", BenefitPointColor), 817f, 173f, font);
+            BenefitRow(p, "SweepBenefit", "Main/Icon_Battle", new Vector2(108f, 947f), new Vector2(128f, 128f),
+                "소탕 횟수 " + UISeasonPassUIFactory.Colored("무제한", BenefitPointColor), 910f, 179f, font);
+
+            // 카드 — 흰 원판 x6.5 뒤에 고기 카드 x5 를 10도 기울이고, 그 위에 고기 x4(안 기울인다).
+            // 배율·각도는 PSD 레이어와 그림을 돌려 맞춘 실측(카드 오차 4.9, 고기 0.8).
+            UISeasonPassUIFactory.Picture(p, "CardGlow", "MemberShip/MemberShip_Card_Bg",
+                new Vector2(832f, 832f), UISeasonPassUIFactory.Pos(792.75f, 861.75f));
+            Tilted(UISeasonPassUIFactory.Picture(p, "Card", "MemberShip/MemberShip_Meet_Card",
+                new Vector2(640f, 640f), UISeasonPassUIFactory.Pos(795.5f, 849f)), CardTilt);
+            UISeasonPassUIFactory.Picture(p, "CardIcon", "Gem/Gem_GamePlay",
+                new Vector2(256f, 256f), UISeasonPassUIFactory.Pos(794f, 844.5f));
+
+            // 기간 — 카드 아래 테두리에 비스듬히(PSD 회전 6.6도). 산 뒤에는 남은 날.
+            dialog.meatDaysText = UISeasonPassUIFactory.CreateText("Days", p, "30일", 45f,
+                TextAlignmentOptions.Center, DaysColor, font);
+            UISeasonPassUIFactory.SetRect(dialog.meatDaysText.rectTransform, new Vector2(240f, 60f), UISeasonPassUIFactory.Pos(756.5f, 972.5f));
+            Tilted(dialog.meatDaysText, -6.6f);
+
+            // 가격 — Big_Btn_Yellow x3, 보이는 (667,1014) 323x100. 여백 x3 → +24, 그림이 6 아래로 치우쳐 위로 6.
+            dialog.meatBuyButton = PriceButton(p, "MeatBuyButton", 828.5f, 1064f, "5,000원", font, out dialog.meatPriceText);
+
+            // 이용 중 — 재구매 창(만료 3일 전)이 열리기 전까지 가격 버튼 자리에.
+            dialog.meatActiveMark = StateText(p, "Active", "이용 중", 828.5f, 1064f, font);
         }
 
         private static void BakeAdCard(UIMembershipDialog dialog, Transform p, TMP_FontAsset font)
         {
-            // 카드 — 보이는 x 40~1040, y 980~1460. 짙은 남색 + 밝은 하늘색 테두리(레퍼런스의 영구 상품 카드)
-            Image card = Panel(p, "AdCard", 40f, 980f, 1040f, 1460f, AdCardColor, AdCardOutline);
-            Transform c = card.transform;
-            const float cy = 1220f;
-
-            Pill(c, "Header", "광고제거권 혜택", 300f, 1050f, AdPillColor, font, cy);
+            Box(p, "AdBox", "MemberShip/MemberShip_AD", 1163f, 1722f);
+            Strip(p, "AdTitleStrip", AdStripColor, 806f, 1178f);
+            Name(p, "광고 제거 카드", 1217.5f, font);
 
             // 혜택은 한 줄뿐이다(기획서 5.2-1). 여기에 줄을 더하지 말 것.
-            Image row = UISeasonPassUIFactory.Sliced(c, "AdBenefit", "Upgrade/Ui_Popup_SmallBox", 4f,
-                new Vector2(492f, 136f), Local(302f, 1152f, 540f, cy), AdRowColor);
-            row.raycastTarget = false;
-            AdIcon(row.transform, new Vector2(-150f, 0f), 0.6f, font);
-            TMP_Text label = UISeasonPassUIFactory.CreateText("Label", row.transform, "광고 제거", 36f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(label.rectTransform, new Vector2(280f, 56f), new Vector2(50f, 0f));
+            Header(p, "AdHeader", "광고 제거 카드 혜택", 1308f, AdHeaderColor, font);
+            BenefitRow(p, "AdBenefit", "Shop/Icon_AD", new Vector2(124f, 1426f), new Vector2(128f, 128f),
+                "영구 광고 제거 특권", 1398f, 193f, font);
 
-            TMP_Text name = UISeasonPassUIFactory.CreateText("Name", c, "광고제거권", 55f, TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(name.rectTransform, new Vector2(460f, 70f), Local(790f, 1050f, 540f, cy));
-            TMP_Text days = UISeasonPassUIFactory.CreateText("Days", c, "(영구)", 40f, TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(days.rectTransform, new Vector2(300f, 56f), Local(790f, 1110f, 540f, cy));
+            Image glow = UISeasonPassUIFactory.Picture(p, "CardGlow", "MemberShip/MemberShip_Card_Bg",
+                new Vector2(832f, 832f), UISeasonPassUIFactory.Pos(792.75f, 1460.75f));
+            glow.color = AdGlowColor;
+            Tilted(UISeasonPassUIFactory.Picture(p, "Card", "MemberShip/MemberShip_AD_Card",
+                new Vector2(640f, 640f), UISeasonPassUIFactory.Pos(789.5f, 1457f)), CardTilt);
 
-            AdIcon(c, Local(790f, 1235f, 540f, cy), 1.4f, font);
+            // 광고 그림은 고기와 달리 카드와 같이 기울어 있다(x1.8, 오차 6.0).
+            Tilted(UISeasonPassUIFactory.Picture(p, "CardIcon", "Shop/Icon_AD",
+                new Vector2(230f, 230f), UISeasonPassUIFactory.Pos(792.5f, 1455.5f)), CardTilt);
 
-            Image buy = UISeasonPassUIFactory.Sliced(c, "AdBuyButton", "Ingame/Big_Btn_Green", 4f,
-                new Vector2(452f, 142f), Local(790f, 1372f, 540f, cy), Color.white);
-            dialog.adBuyButton = UISeasonPassUIFactory.SpriteButton(buy);
-            dialog.adPriceText = UISeasonPassUIFactory.CreateFittedText("Price", buy.transform, "3,000원", 50f, 32f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(dialog.adPriceText.rectTransform, new Vector2(400f, 70f), new Vector2(0f, 8f));
+            dialog.adBuyButton = PriceButton(p, "AdBuyButton", 811.5f, 1645f, "3,000원", font, out dialog.adPriceText);
 
-            // 산 뒤 — 가격 버튼 자리에 "보유 중". 고기 멤버십의 "잔여 n일" 과 같은 크기·색이다.
-            TMP_Text owned = UISeasonPassUIFactory.CreateText("Owned", c, "보유 중", 44f,
-                TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(owned.rectTransform, new Vector2(420f, 60f), Local(790f, 1372f, 540f, cy));
-            dialog.adOwnedMark = owned.gameObject;
-            dialog.adOwnedMark.SetActive(false);
+            // 산 뒤 — 가격 버튼 자리에 "보유 중". 카드는 내리지 않는다.
+            dialog.adOwnedMark = StateText(p, "Owned", "보유 중", 811.5f, 1645f, font);
         }
 
         // ── 조립 도우미 ───────────────────────────────────────────────
 
         /// <summary>
-        /// 카드 판 — 테두리용 SmallBox 위에 색 SmallBox(x4, 여백 6/7px). 반환값은 색 판이고,
-        /// 둘을 묶는 부모가 그 위에 있다(카드를 통째로 끄고 켤 때 부모를 쓴다).
+        /// 상품 상자 — 보이는 x 30~1048, y <paramref name="y0"/>~<paramref name="y1"/>. 그림(보이는 340x190)을
+        /// 그 칸에 맞춰 늘린다(가로 x2.994 · 세로 x2.942, 시안 주석 "x3"). 무늬가 있어 9슬라이스로 늘리지 않는다.
         /// </summary>
-        private static Image Panel(Transform parent, string name, float x0, float y0, float x1, float y1, Color fill, Color outline)
+        private static void Box(Transform p, string name, string path, float y0, float y1)
         {
-            GameObject group = UISeasonPassUIFactory.CreateRect(name, parent);
-            UISeasonPassUIFactory.Stretch(group.GetComponent<RectTransform>());
+            float sx = 1018f / 340f;
+            float sy = (y1 - y0) / 190f;
 
-            const float edge = 8f;
-            UISeasonPassUIFactory.Sliced(group.transform, "Outline", "Upgrade/Ui_Popup_SmallBox", 4f,
-                new Vector2(x1 - x0 + edge * 2f + 52f, y1 - y0 + edge * 2f + 52f),
-                UISeasonPassUIFactory.Pos((x0 + x1) * 0.5f + 2f, (y0 + y1) * 0.5f + 2f), outline);
-
-            return UISeasonPassUIFactory.Sliced(group.transform, "Fill", "Upgrade/Ui_Popup_SmallBox", 4f,
-                new Vector2(x1 - x0 + 52f, y1 - y0 + 52f),
-                UISeasonPassUIFactory.Pos((x0 + x1) * 0.5f + 2f, (y0 + y1) * 0.5f + 2f), fill);
+            // 그림 512 안에서 보이는 곳이 (86,163)~(426,353) — 가운데보다 2px 아래다.
+            UISeasonPassUIFactory.Picture(p, name, path, new Vector2(512f * sx, 512f * sy),
+                UISeasonPassUIFactory.Pos(539f, (y0 + y1) * 0.5f - 2f * sy));
         }
 
-        /// <summary>화면 좌표(x, y) → 카드 판(중심 cx, cy) 안의 anchoredPosition.</summary>
-        private static Vector2 Local(float x, float y, float cx, float cy)
+        /// <summary>상자 위 제목 줄 — 왼쪽은 꽉 찬 색, 가운데부터 오른쪽 끝 <paramref name="x1"/> 까지 사라진다. 높이 85.</summary>
+        private static void Strip(Transform p, string name, Color color, float x1, float y0)
         {
-            return new Vector2(x - cx - 2f, cy - y + 2f);
+            const float x0 = 40f;
+            Image strip = UISeasonPassUIFactory.Picture(p, name, "MemberShip/MemberShip_Title_Fade",
+                new Vector2(x1 - x0, 85f), UISeasonPassUIFactory.Pos((x0 + x1) * 0.5f, y0 + 42.5f));
+            strip.color = color;
         }
 
-        private static void Pill(Transform card, string name, string text, float x, float y, Color color, TMP_FontAsset font, float cy = 630f)
+        private static void Name(Transform p, string text, float centerY, TMP_FontAsset font)
         {
-            Image pill = UISeasonPassUIFactory.Sliced(card, name, "Upgrade/Ui_Popup_SmallBox", 4f,
-                new Vector2(452f, 116f), Local(x + 2f, y + 2f, 540f, cy), color);
+            TMP_Text name = UISeasonPassUIFactory.CreateText("Name", p, text, 70f, TextAlignmentOptions.Left, Color.white, font);
+            name.textWrappingMode = TextWrappingModes.NoWrap;
+            UISeasonPassUIFactory.SetRect(name.rectTransform, new Vector2(500f, 80f), UISeasonPassUIFactory.Pos(80f + 250f, centerY));
+        }
+
+        /// <summary>혜택 머리 줄 — SmallBox x4 불투명, 보이는 x 58~571 (513x76). 여백(좌·위 6, 우·아래 7) x4 → +52.</summary>
+        private static void Header(Transform p, string name, string text, float y0, Color color, TMP_FontAsset font)
+        {
+            Image pill = UISeasonPassUIFactory.Sliced(p, name, "Upgrade/Ui_Popup_SmallBox", 4f,
+                new Vector2(565f, 128f), UISeasonPassUIFactory.Pos(316.5f, y0 + 40f), color);
             pill.raycastTarget = false;
-            TMP_Text label = UISeasonPassUIFactory.CreateText("Label", pill.transform, text, 36f,
+            TMP_Text label = UISeasonPassUIFactory.CreateText("Label", pill.transform, text, 45f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(label.rectTransform, new Vector2(400f, 56f), new Vector2(-2f, 2f));
-        }
-
-        private static void BenefitRow(Transform card, string name, string iconPath, string text, float y,
-            Color color, Color textColor, Material plainMaterial, TMP_FontAsset font)
-        {
-            Image row = UISeasonPassUIFactory.Sliced(card, name, "Upgrade/Ui_Popup_SmallBox", 4f,
-                new Vector2(492f, 136f), Local(302f, y + 2f, 540f, 630f), color);
-            row.raycastTarget = false;
-
-            UISeasonPassUIFactory.Picture(row.transform, "Icon", iconPath, new Vector2(100f, 100f), new Vector2(-172f, 0f));
-
-            TMP_Text label = UISeasonPassUIFactory.CreateFittedText("Label", row.transform, text, 34f, 24f,
-                TextAlignmentOptions.Center, textColor, font);
-            UISeasonPassUIFactory.SetRect(label.rectTransform, new Vector2(330f, 56f), new Vector2(40f, 0f));
-            if (plainMaterial != null)
-                label.fontSharedMaterial = plainMaterial;
+            UISeasonPassUIFactory.SetRect(label.rectTransform, new Vector2(480f, 60f), new Vector2(-2f, 3f));
         }
 
         /// <summary>
-        /// 광고 아이콘 — 파란 판에 "AD", 빨간 사선. 프로젝트에 광고 그림이 없어 조립한다(그림이 오면 교체).
+        /// 혜택 한 줄 — SmallBox x4 검정 30%, 보이는 x 58~571 · y <paramref name="y0"/>~+76.
+        /// 아이콘은 재화 그림 x2(PSD 위치 그대로), 글자는 왼쪽 끝 <paramref name="textLeft"/> 40pt.
         /// </summary>
-        private static void AdIcon(Transform parent, Vector2 position, float scale, TMP_FontAsset font)
+        private static void BenefitRow(Transform p, string name, string iconPath, Vector2 iconCenter, Vector2 iconSize,
+            string text, float y0, float textLeft, TMP_FontAsset font)
         {
-            GameObject root = UISeasonPassUIFactory.CreateRect("AdIcon", parent);
-            UISeasonPassUIFactory.SetRect(root.GetComponent<RectTransform>(), new Vector2(150f, 110f), position);
-            root.transform.localScale = new Vector3(scale, scale, 1f);
+            Image row = UISeasonPassUIFactory.Sliced(p, name, "Upgrade/Ui_Popup_SmallBox", 4f,
+                new Vector2(565f, 128f), UISeasonPassUIFactory.Pos(316.5f, y0 + 40f), BenefitRowColor);
+            row.raycastTarget = false;
 
-            Image box = UISeasonPassUIFactory.Sliced(root.transform, "Box", "Upgrade/Ui_Popup_SmallBox", 2f,
-                new Vector2(150f, 110f), Vector2.zero, AdIconColor);
-            box.raycastTarget = false;
+            UISeasonPassUIFactory.Picture(p, name + "Icon", iconPath, iconSize, UISeasonPassUIFactory.Pos(iconCenter.x, iconCenter.y));
 
-            TMP_Text ad = UISeasonPassUIFactory.CreateText("Label", root.transform, "AD", 64f,
+            const float right = 560f;
+            TMP_Text label = UISeasonPassUIFactory.CreateFittedText(name + "Label", p, text, 40f, 28f,
+                TextAlignmentOptions.Left, Color.white, font);
+            UISeasonPassUIFactory.SetRect(label.rectTransform, new Vector2(right - textLeft, 56f),
+                UISeasonPassUIFactory.Pos((textLeft + right) * 0.5f, y0 + 36f));
+        }
+
+        private static Button PriceButton(Transform p, string name, float x, float y, string text, TMP_FontAsset font, out TMP_Text price)
+        {
+            Image buy = UISeasonPassUIFactory.Sliced(p, name, "Ingame/Big_Btn_Yellow", 3f,
+                new Vector2(347f, 124f), UISeasonPassUIFactory.Pos(x, y - 6f), Color.white);
+            Button button = UISeasonPassUIFactory.SpriteButton(buy);
+            price = UISeasonPassUIFactory.CreateFittedText("Price", buy.transform, text, 45f, 30f,
                 TextAlignmentOptions.Center, Color.white, font);
-            UISeasonPassUIFactory.SetRect(ad.rectTransform, new Vector2(150f, 100f), new Vector2(0f, 2f));
+            UISeasonPassUIFactory.SetRect(price.rectTransform, new Vector2(290f, 60f), new Vector2(5.5f, -1f));
+            return button;
+        }
 
-            Image slash = UISeasonPassUIFactory.CreateImage("Slash", root.transform, SlashColor);
-            slash.raycastTarget = false;
-            UISeasonPassUIFactory.SetRect(slash.rectTransform, new Vector2(190f, 14f), Vector2.zero);
-            slash.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 28f);
+        private static GameObject StateText(Transform p, string name, string text, float x, float y, TMP_FontAsset font)
+        {
+            TMP_Text label = UISeasonPassUIFactory.CreateText(name, p, text, 45f, TextAlignmentOptions.Center, Color.white, font);
+            UISeasonPassUIFactory.SetRect(label.rectTransform, new Vector2(323f, 70f), UISeasonPassUIFactory.Pos(x, y));
+            label.gameObject.SetActive(false);
+            return label.gameObject;
+        }
+
+        private static void Tilted(Graphic graphic, float degrees)
+        {
+            graphic.rectTransform.localRotation = Quaternion.Euler(0f, 0f, degrees);
         }
     }
 }

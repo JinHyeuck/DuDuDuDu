@@ -176,9 +176,9 @@ namespace OJ.Shop
             Image background = UISeasonPassUIFactory.CreateImage("Background", view.transform, BackgroundColor);
             UISeasonPassUIFactory.Stretch(background.rectTransform);
 
-            Transform middle = Group("Middle", view.transform, 0.5f);
-            Transform top = Group("Top", view.transform, 1f);
-            Transform bottom = Group("Bottom", view.transform, 0f);
+            Transform middle = UISeasonPassUIFactory.AnchoredGroup("Middle", view.transform, 0.5f);
+            Transform top = UISeasonPassUIFactory.AnchoredGroup("Top", view.transform, 1f);
+            Transform bottom = UISeasonPassUIFactory.AnchoredGroup("Bottom", view.transform, 0f);
 
             // 티켓 무늬 — PSD 불투명도 15. 원본 1254px 를 x0.5.
             foreach (Vector2 c in new[]
@@ -233,11 +233,11 @@ namespace OJ.Shop
                 new Vector2(1024f, 1024f), UISeasonPassUIFactory.Pos(300f, 112f));
 
             TMP_Text title = UISeasonPassUIFactory.CreateText("Title", p,
-                "특별한 " + Colored("7일!", PointColor), 70f, TextAlignmentOptions.Center, Color.white, font);
+                "특별한 " + UISeasonPassUIFactory.Colored("7일!", PointColor), 70f, TextAlignmentOptions.Center, Color.white, font);
             UISeasonPassUIFactory.SetRect(title.rectTransform, new Vector2(480f, 90f), UISeasonPassUIFactory.Pos(299.5f, 116.5f));
 
             TMP_Text headline = UISeasonPassUIFactory.CreateText("Headline", p,
-                Colored("7일", PointColor) + " 접속하고 " + Colored("풍성한 보상", PointColor) + " 받자!", 50f,
+                UISeasonPassUIFactory.Colored("7일", PointColor) + " 접속하고 " + UISeasonPassUIFactory.Colored("풍성한 보상", PointColor) + " 받자!", 50f,
                 TextAlignmentOptions.Left, Color.white, font);
             headline.textWrappingMode = TextWrappingModes.NoWrap;
             UISeasonPassUIFactory.SetRect(headline.rectTransform, new Vector2(700f, 64f), UISeasonPassUIFactory.Pos(33f + 350f, 231.5f));
@@ -275,27 +275,6 @@ namespace OJ.Shop
             dialog.AddExitButton(UISeasonPassUIFactory.SpriteButton(back));
             UISeasonPassUIFactory.Picture(back.transform, "Icon", "Main/Icon_Back",
                 new Vector2(128f, 128f), new Vector2(2f, -1.5f));
-        }
-
-        /// <summary>
-        /// 1080x1920 판을 화면 위·가운데·아래(<paramref name="anchorY"/> 1·0.5·0)에 붙인다.
-        /// 판 안은 <c>Pos()</c> 좌표 그대로 — 1920 화면에서는 세 판이 겹쳐 PSD 와 같고, 긴 화면에서만 벌어진다.
-        /// </summary>
-        private static Transform Group(string name, Transform parent, float anchorY)
-        {
-            GameObject group = UISeasonPassUIFactory.CreateRect(name, parent);
-            var rect = group.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, anchorY);
-            rect.anchorMax = new Vector2(0.5f, anchorY);
-            rect.pivot = new Vector2(0.5f, anchorY);
-            rect.sizeDelta = new Vector2(1080f, 1920f);
-            rect.anchoredPosition = Vector2.zero;
-            return group.transform;
-        }
-
-        private static string Colored(string text, Color color)
-        {
-            return "<color=#" + ColorUtility.ToHtmlStringRGB(color) + ">" + text + "</color>";
         }
     }
 }
