@@ -47,7 +47,7 @@ MonoBehaviour:
     bossContactDamagePerSecond: 6
   - stageIndex: 2
     theme: 1
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 34
     wallHp: 600
     initialSP: 20
@@ -66,9 +66,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.8
     monsterScaleMultiplier: 0.85
     spawnIntervalMultiplier: 0.6
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 3
     theme: 2
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 6
     wallHp: 300
     initialSP: 20
@@ -87,9 +98,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.75
     monsterScaleMultiplier: 1.35
     spawnIntervalMultiplier: 3
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 4
     theme: 3
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 14
     wallHp: 400
     initialSP: 20
@@ -108,9 +130,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 1.5
     monsterScaleMultiplier: 0.9
     spawnIntervalMultiplier: 1.2
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 5
     theme: 4
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -129,9 +162,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.9
     monsterScaleMultiplier: 1
     spawnIntervalMultiplier: 1
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 6
     theme: 0
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 16
     wallHp: 400
     initialSP: 20
@@ -150,9 +194,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.7
     monsterScaleMultiplier: 1.1
     spawnIntervalMultiplier: 1.1
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 7
     theme: 1
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 40
     wallHp: 600
     initialSP: 20
@@ -171,9 +226,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.85
     monsterScaleMultiplier: 0.85
     spawnIntervalMultiplier: 0.58
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 8
     theme: 2
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 7
     wallHp: 500
     initialSP: 20
@@ -192,9 +258,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 0.8
     monsterScaleMultiplier: 1.35
     spawnIntervalMultiplier: 2.8
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 9
     theme: 3
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 18
     wallHp: 700
     initialSP: 20
@@ -213,9 +290,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 1.6
     monsterScaleMultiplier: 0.9
     spawnIntervalMultiplier: 1.1
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 10
     theme: 4
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 24
     wallHp: 500
     initialSP: 20
@@ -234,9 +322,20 @@ MonoBehaviour:
     monsterMoveSpeedMultiplier: 1
     monsterScaleMultiplier: 1.05
     spawnIntervalMultiplier: 0.9
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 11
     theme: 0
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -250,9 +349,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 12
     theme: 1
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -266,9 +376,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 13
     theme: 2
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -282,9 +403,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 14
     theme: 3
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -298,9 +430,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 15
     theme: 4
-    totalWaves: 10
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 117
@@ -314,9 +457,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 16
     theme: 0
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -330,9 +484,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 17
     theme: 1
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -346,9 +511,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 18
     theme: 2
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -362,9 +538,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 19
     theme: 3
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -378,6 +565,17 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 20
     theme: 4
     totalWaves: 20
@@ -394,9 +592,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 21
     theme: 0
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -410,9 +619,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 22
     theme: 1
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -426,9 +646,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 23
     theme: 2
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -442,9 +673,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 24
     theme: 3
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -458,9 +700,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 25
     theme: 4
-    totalWaves: 10
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 117
@@ -474,9 +727,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 26
     theme: 0
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -490,9 +754,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 27
     theme: 1
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -506,9 +781,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 28
     theme: 2
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -522,9 +808,20 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 29
     theme: 3
-    totalWaves: 15
+    totalWaves: 20
     monstersPerWave: 20
     wallHp: 500
     initialSP: 20
@@ -538,6 +835,17 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
   - stageIndex: 30
     theme: 4
     totalWaves: 20
@@ -554,3 +862,14 @@ MonoBehaviour:
     bossHpMultiplier: 6.4
     bossDefenseMultiplier: 2.5
     bossScaleMultiplier: 1.45
+    waveTheme: 1
+    newBalance: 1
+    hpRampStartWave: 6
+    hpRampEndWave: 14
+    hpRampMultiplier: 3.8
+    bossWaveInterval: 10
+    bossWaveHpFactors:
+    - 1
+    - 3.5
+    - 1.5
+    bossContactDamagePerSecond: 6
