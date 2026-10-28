@@ -411,6 +411,11 @@ namespace OJ.Dice
             if (RelicManager.Instance != null)
                 relicDamageMultiplier = RelicManager.Instance.GetDamageMultiplier(diceType);
 
+            // 시너지 버프(공격력·속성·다이스). 유물과 같은 "합산 뒤 한 번 곱" 층이라 같은 칸에 곱한다.
+            // 걸린 게 없으면 1 이라 골든 기준선이 그대로다.
+            relicDamageMultiplier *= SynergyBuffs.DamageMultiplier(
+                (int)diceType, OJ.Synergy.SynergyRunManager.ElementsOf(diceType, meta));
+
             return new DamageInputs
             {
                 DiceBaseAttackPercent = meta.baseAttackPercent,

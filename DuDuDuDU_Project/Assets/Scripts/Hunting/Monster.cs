@@ -420,6 +420,9 @@ namespace OJ.Hunting
                     // 현상금도 함께 센다(현상금 처치 업적은 BountyManager 가 따로 올린다).
                     MissionManager.Instance?.Notify(MissionAction.MonsterKill);
 
+                    // 시너지 전투계(처치·보스·현상금). 발동은 다음 프레임에 하므로 여기서 재진입하지 않는다.
+                    battle.Game?.Synergy?.NotifyKilled(this);
+
                     battle.Spawner.PoolMonster(this);
                 }
             }
@@ -672,8 +675,9 @@ namespace OJ.Hunting
                     continue;
                 }
 
-                int damage = _contactDamage;
+                int damage = SynergyBuffs.ApplyWallGuard(_contactDamage);
                 wall.TakeDamage(damage);
+                battle.Game?.Synergy?.NotifyWallHit();
 
                 GameObject dtObj = battle.DamageTexts.GetDamageText();
                 dtObj.transform.position = transform.position;

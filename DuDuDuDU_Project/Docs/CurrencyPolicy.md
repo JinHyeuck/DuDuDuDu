@@ -284,6 +284,7 @@ flow 하루치와 견줘 "대박"으로 읽혀야 한다(3.2).
 | DiceScroll | 3 | StageClear | IdleReward | DiceEnhance |
 | Gold | 2 | StageClear | IdleReward, Pinball_Base | DiceEnhance, EquipmentEnhance |
 | PinballTicket | 2 | StageClear | IdleReward | Pinball |
+| SynergyTicket | 2 | Pinball_Base | | Synergy(옵션 리롤) |
 | Stamina | 1 | MeetRoasting | IdleReward, **Pinball_Base** | Stage, Sweep |
 
 **Jewelry(보석)는 이 표에 없다.** 상점 뽑기로만 나오며 콘텐츠 보상이 아니다(6.2 참조).

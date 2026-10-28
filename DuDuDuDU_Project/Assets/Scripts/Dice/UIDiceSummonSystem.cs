@@ -287,6 +287,15 @@ namespace OJ.Dice
             int rolledStar = SummonStarRules.RollStar(ProbLevel, Random.Range(0, 100));
             int relicStar = relicsApply ? RelicManager.Instance.RollSummonStar() : 1;
             int star = Mathf.Max(rolledStar, relicStar);
+
+            // 시너지 행동계 "다음 소환 N성". 예약이 없으면 0 이라 그대로다. 최고 성급(3)은 넘지 않는다.
+            OJ.Synergy.SynergyRunManager synergy = battle.Game.Synergy;
+            if (synergy != null)
+            {
+                star = Mathf.Max(star, Mathf.Min(SummonStarRules.MaxStar, synergy.ConsumeSummonStar()));
+                synergy.NotifySummon();
+            }
+
             battle.DiceStars.OnDiceSpawn(type, star);
             board.SpawnDice(type, star, slotIndex);
             if (relicsApply)

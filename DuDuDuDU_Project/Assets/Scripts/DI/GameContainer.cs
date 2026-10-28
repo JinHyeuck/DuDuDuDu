@@ -9,6 +9,7 @@ using OJ.Mission;
 using OJ.Pinball;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Synergy;
 using OJ.SeasonPass;
 using OJ.Rewind;
 using OJ.Save;
@@ -239,6 +240,11 @@ namespace OJ.DI
                 .AsSelf()
                 .As<ISaveStateOwner>();
 
+            // 시너지 프리셋·리롤 누적. 의존은 정적 다리(PointManager 등)뿐이라 순서 제약은 없다.
+            builder.Register<SynergyManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 일일 미션·업적. 의존은 PointManager 하나뿐이라 순서 제약은 없고, 상점·핀볼
             // 뒤에 둔 것은 세이브 파일에서 "날짜가 바뀌면 달라지는 것"끼리 붙여 두려는 것뿐이다.
             builder.Register<MissionManager>(Lifetime.Singleton)
@@ -336,6 +342,7 @@ namespace OJ.DI
             SeasonPassManager.Instance = container.Resolve<SeasonPassManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
+            SynergyManager.Instance = container.Resolve<SynergyManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();
             AOSBackBtnManager.Instance = container.Resolve<AOSBackBtnManager>();
 

@@ -63,6 +63,12 @@ namespace OJ.Hunting
         public OJ.Economy.LuckyDiceManager LuckyDice { get; private set; }
 
         /// <summary>
+        /// 이 판의 시너지. <b>null 이 아니다</b>(Start 에서 만든다). 튜토리얼·탑이거나 장착한 계열이 없으면
+        /// <c>IsActive</c> 가 거짓이라 통지가 전부 그냥 돌아간다.
+        /// </summary>
+        public OJ.Synergy.SynergyRunManager Synergy { get; private set; }
+
+        /// <summary>
         /// 이 판이 <b>실시간 진행</b>인가. 웨이브가 끝나도 준비 단계로 내려가지 않고 곧바로 다음 웨이브가
         /// 시작되며, 웨이브 중에도 소환·머지·진화·교환·속성강화·자리구매가 열려 있다.
         /// 판에 들어오면 3초 카운트다운 뒤 첫 웨이브가 저절로 열린다.
@@ -191,6 +197,8 @@ namespace OJ.Hunting
             // 전투 씬이 내려가면 로비·다른 화면은 항상 옛 규칙이다.
             BalanceProfile.Active = false;
             WaveBuffs.Reset();
+            Synergy?.End();
+            SynergyBuffs.Reset();
 
             // 창구는 스코프가 파괴될 때 비워지는데 그 순서가 정해져 있지 않다.
             // 이미 비었으면 뗄 것도 없으므로 ?. 를 쓴다 — 여기는 사고가 아니라 정리 경로다.
@@ -217,8 +225,13 @@ namespace OJ.Hunting
 
             SoulBonus = new OJ.Economy.SoulBonusManager(battle);
             LuckyDice = new OJ.Economy.LuckyDiceManager(battle);
+            Synergy = new OJ.Synergy.SynergyRunManager(battle);
 
             InitializeStage();
+
+            // 시너지는 본편에서만 켠다. 튜토리얼은 대본이, 탑은 로비 편성이 판을 정해 두었다(유물과 같은 관례).
+            if (!battle.Tower.IsActive && !battle.Tutorial.IsActive)
+                Synergy.Begin();
 
             // 기여도 패널은 본편·탑 둘 다에서 뜬다. 접어 둔 사람에게는 접힌 채로
             // 나타난다(그 상태는 UIDamageContributionPanel 이 세션 동안 기억한다).
@@ -581,6 +594,7 @@ namespace OJ.Hunting
                 UpdateWaveText();
                 SetRemainMonster(0);
                 themeFlow?.OnWaveStarted(CurrentWaveIndex);
+                Synergy?.NotifyWaveEntered();
                 battle.Spawner.PlayWave();
                 Time.timeScale = timeSpeed;
                 WaveMonsterDeadCount = 0;
@@ -629,6 +643,7 @@ namespace OJ.Hunting
         private void Update()
         {
             battle.Tower.Tick(Time.deltaTime);
+            Synergy?.Tick(Time.deltaTime);
 
             // 현상금 쿨타임은 웨이브 중에만 흐른다. 게임 시간이라 일시정지에서는 멈추고 배속에서는 빨리 흐른다.
             if (inGameState == InGameState.Wave)
@@ -1391,6 +1406,7 @@ namespace OJ.Hunting
         public void EnterAfterRewind()
         {
             StopWaveInterlude();
+            Synergy?.ResetForRewind();
             bossTimeLeft = -1f;
             ChangeState(InGameState.Setting);
 

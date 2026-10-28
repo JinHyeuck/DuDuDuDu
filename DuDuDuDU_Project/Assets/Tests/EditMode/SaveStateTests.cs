@@ -540,6 +540,10 @@ namespace OJ.Core.Tests
                 "    \"initialized\": false,",
                 "    \"firstRunEnded\": false,",
                 "    \"announced\": []",
+                "  },",
+                "  \"synergy\": {",
+                "    \"totalFires\": 0,",
+                "    \"categories\": {}",
                 "  }",
                 "}",
             })));

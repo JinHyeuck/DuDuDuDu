@@ -116,6 +116,12 @@ namespace OJ
         /// </summary>
         PinballTicket = 6,
 
+        /// <summary>
+        /// 시너지 티켓. 시너지 옵션 리롤에 쓴다(<c>OJ.Synergy.SynergyManager</c>). 핀볼 베이스에서 들어온다.
+        /// <see cref="PinballTicket"/> 과 같은 이유로 <see cref="Max"/> 앞이어야 한다.
+        /// </summary>
+        SynergyTicket = 7,
+
         NormalScroll = 100,
         FireScroll = 101,
         IceScroll = 102,

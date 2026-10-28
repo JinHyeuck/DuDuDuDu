@@ -9,6 +9,7 @@ using OJ.Equipment;
 using OJ.IdleReward;
 using OJ.Point;
 using OJ.Relic;
+using OJ.Synergy;
 using OJ.Pinball;
 using OJ.Shop;
 using OJ.Stage;
@@ -157,6 +158,7 @@ namespace OJ.Save
             Collect(owners, PinballManager.Instance);
             Collect(owners, BonusDiceManager.Instance);
             Collect(owners, EntitlementManager.Instance);
+            Collect(owners, SynergyManager.Instance);
 
             sb.AppendLine("  세이브 조각 소유자 " + owners.Count + "개");
 

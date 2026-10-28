@@ -182,6 +182,14 @@ namespace OJ.Core
         /// </summary>
         public ContentUnlockSave ContentUnlock { get; } = new ContentUnlockSave();
 
+        /// <summary>
+        /// 시너지 프리셋·리롤 누적. (<c>OJ.Synergy.SynergyManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> 필드를 <i>더하는</i> 것이라 예전 세이브에는 이 키가 없고,
+        /// 그 상태는 "시너지를 한 번도 안 굴려 본 사람"과 같다.
+        /// </summary>
+        public SynergySave Synergy { get; } = new SynergySave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -567,5 +575,50 @@ namespace OJ.Core
 
         /// <summary>연출(또는 가이드)을 끝까지 본 컨텐츠. <c>ContentId</c> 이름, 오름차순.</summary>
         public List<string> Announced { get; } = new List<string>();
+    }
+
+    /// <summary>시너지 저장분.</summary>
+    public sealed class SynergySave
+    {
+        /// <summary>전투에서 시너지가 발동한 누적 횟수(통합계 효과로 일어난 것은 빼고). 행동계 개방 조건이다.</summary>
+        public int TotalFires { get; set; }
+
+        /// <summary><c>SynergyCategory</c> 이름 → 계열 저장분.</summary>
+        public SortedDictionary<string, SynergyCategorySave> Categories { get; }
+            = new SortedDictionary<string, SynergyCategorySave>(StringComparer.Ordinal);
+    }
+
+    /// <summary>시너지 계열 하나.</summary>
+    public sealed class SynergyCategorySave
+    {
+        /// <summary>장착한 프리셋 번호(0~3).</summary>
+        public int EquippedPreset { get; set; }
+
+        /// <summary>Best 보정 누적 — 마지막 Best 이후 이 계열에 쓴 티켓.</summary>
+        public int BestSpent { get; set; }
+
+        /// <summary>이 계열에서 리롤한 누적 횟수. 다이스계의 것이 전투계 개방 조건이다.</summary>
+        public int Rerolls { get; set; }
+
+        /// <summary>프리셋. 위치가 곧 프리셋 번호다.</summary>
+        public List<SynergyPresetSave> Presets { get; } = new List<SynergyPresetSave>();
+    }
+
+    /// <summary>시너지 프리셋 하나 — 조건 1줄 + 효과 줄.</summary>
+    public sealed class SynergyPresetSave
+    {
+        public SynergyLineSave Condition { get; set; } = new SynergyLineSave();
+
+        /// <summary>효과 줄. 위치가 곧 줄 번호다. 빈 줄도 빼지 않는다.</summary>
+        public List<SynergyLineSave> Effects { get; } = new List<SynergyLineSave>();
+    }
+
+    /// <summary>시너지 옵션 한 줄. 옵션·대상은 enum 이름이고, 빈 줄은 빈 문자열이다.</summary>
+    public sealed class SynergyLineSave
+    {
+        public string Option { get; set; } = string.Empty;
+        public string Target { get; set; } = string.Empty;
+        public int Value { get; set; }
+        public bool Locked { get; set; }
     }
 }

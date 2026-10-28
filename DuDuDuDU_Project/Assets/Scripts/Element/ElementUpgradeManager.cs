@@ -151,6 +151,7 @@ namespace OJ.Element
                     SetLevel(elementType, next);
             }
 
+            battle.Game?.Synergy?.NotifyUpgrade();
             return true;
         }
 
