@@ -104,6 +104,7 @@ namespace OJ.Dice
             // 머지만 센다. 진화(TryEvolve)·교환(TryExchange)은 같은 파일에 있지만
             // 기획의 "다이스 머지 n회" 가 가리키는 행동이 아니다.
             MissionManager.Instance?.Notify(MissionAction.DiceMerge);
+            battle.Game?.Synergy?.NotifyMerge();
 
             return true;
         }
@@ -183,6 +184,7 @@ namespace OJ.Dice
             // baseAttack 으로 올렸다 — DiceMetaDataDatabase 에셋 참조.
             const int evolvedStar = 1;
             ReplaceInPlace(dice, target, evolvedStar);
+            battle.Game?.Synergy?.NotifyEvolve();
 
             if (DiceEvolution.GetTier(target) == DiceTier.King)
             {
@@ -265,6 +267,7 @@ namespace OJ.Dice
 
             DiceType target = exchangeBuffer[Random.Range(0, exchangeBuffer.Count)];
             ReplaceInPlace(dice, target, dice.Star);
+            battle.Game?.Synergy?.NotifyExchange();
             return true;
         }
 

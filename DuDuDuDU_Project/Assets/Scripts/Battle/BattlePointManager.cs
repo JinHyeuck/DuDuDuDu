@@ -31,6 +31,13 @@ namespace OJ.Battle
         /// <summary>재화가 바뀌었다. 인자는 (종류, 바뀐 뒤의 보유량).</summary>
         public event Action<BattlePointType, int> OnBattlePointChanged;
 
+        /// <summary>
+        /// 실제로 쓴 양. <see cref="OnBattlePointChanged"/> 는 총량만 줘서 "얼마를 썼나" 를 알 수 없다.
+        /// 소모는 전부 <see cref="TrySpend"/> 를 지나므로(소환·확률업·칸 구매·진화·교환·강화·행운 주사위) 여기 하나면 새지 않는다.
+        /// 시너지 행동계(SP·마석 소모)가 듣는다.
+        /// </summary>
+        public event Action<BattlePointType, int> OnSpent;
+
         public BattlePointManager(RunState run)
         {
             this.run = run ?? throw new ArgumentNullException(nameof(run));
@@ -90,6 +97,8 @@ namespace OJ.Battle
                 return false;
 
             Set(battlePointType, Get(battlePointType) - amount);
+            if (amount > 0)
+                OnSpent?.Invoke(battlePointType, amount);
             return true;
         }
 

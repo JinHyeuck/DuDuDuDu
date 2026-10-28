@@ -151,6 +151,12 @@ namespace OJ.Pinball
         /// 칸 수는 현재 판(5칸)에 맞췄다 — 판이 바뀌면 <see cref="Validate"/> 가 어긋남을 말한다.
         /// 특수 핀 둘은 <c>PinballBoard.asset</c> 의 중앙 범퍼 두 개(태그 1·2)와 짝이다.
         /// </summary>
+        /// <summary>
+        /// 칸별 시너지 티켓(초안 2026-10-28). 리롤 1번이 10장이라 발당 기댓값 약 2.2장 → 하루 96발이면 리롤 약 20번이다.
+        /// 고기와 같은 잭팟 모양(가운데 1% 칸만 크다). 에셋에 없으면 시너지 설치 메뉴가 같은 값으로 보충한다.
+        /// </summary>
+        public static readonly int[] SynergyTicketsPerSlot = { 2, 2, 20, 2, 2 };
+
         public void PopulateDefaults()
         {
             ticketCost = 1;
@@ -182,10 +188,12 @@ namespace OJ.Pinball
                 var slot = new PinballSlotReward
                 {
                     label = (jackpot ? "대박! " : string.Empty) +
-                            golds[i].ToString("N0") + " 골드 + 고기 " + stamina[i],
+                            golds[i].ToString("N0") + " 골드 + 고기 " + stamina[i] +
+                            " + 시너지 티켓 " + SynergyTicketsPerSlot[i],
                 };
                 slot.rewards.Add(new PinballReward(PointType.Gold, golds[i]));
                 slot.rewards.Add(new PinballReward(PointType.Stamina, stamina[i]));
+                slot.rewards.Add(new PinballReward(PointType.SynergyTicket, SynergyTicketsPerSlot[i]));
                 slotRewards.Add(slot);
             }
 

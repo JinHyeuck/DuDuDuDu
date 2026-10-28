@@ -114,6 +114,8 @@ namespace OJ.Hunting
 
         public void HitMonster(Monster target, DiceType diceType, int damage)
         {
+            // 시너지 보스 대미지 버프. 걸린 게 없으면 그대로라 골든 기준선이 안 움직인다.
+            damage = SynergyBuffs.ApplyBoss(damage, target.IsStageBoss);
             int appliedDamage = target.TakeDamage(damage);
 
             // 다이스별 기여도. <b>이 한 줄이 전부인 것이 요점이다</b> — 다이스 효과
@@ -144,6 +146,9 @@ namespace OJ.Hunting
             hitmonsters.Clear();
             hitmonsters.Add(rootTarget);
             diceEffect?.BuildTargets(this, rootTarget, hitmonsters);
+
+            // 시너지 다이스계는 "N회 공격" 을 샷 단위로 센다(범위·연쇄로 여러 마리를 쳐도 1회).
+            battle.Game?.Synergy?.NotifyShot(attackType);
 
             int myDicePip = Mathf.Max(1, shotDicePip);
             int diceLevel = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(attackType) : 1;
