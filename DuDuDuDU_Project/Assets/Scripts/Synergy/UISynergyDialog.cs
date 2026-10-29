@@ -73,6 +73,14 @@ namespace OJ.Synergy
         private TMP_Text toastText;
         private float toastLeft;
 
+        // ── 가이드가 짚는 자리 ─────────────────────────────────
+
+        /// <summary>그 계열 카드의 리롤 버튼. 로비 가이드(<c>LobbyUnlockDirector</c>)가 가리킨다.</summary>
+        public Button RerollButtonOf(SynergyCategory category) => cards[(int)category]?.RerollButton;
+
+        /// <summary>그 계열 카드 전체.</summary>
+        public RectTransform CardRectOf(SynergyCategory category) => cards[(int)category]?.Root;
+
         // ── 수명 ───────────────────────────────────────────────
 
         protected override void OnLoad()

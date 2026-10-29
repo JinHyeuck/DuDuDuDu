@@ -300,7 +300,8 @@ namespace OJ.Hunting
             }
         }
 
-        public int TakeDamage(int dmg)
+        /// <param name="isFixed">true 면 방어력 · 받는 피해 증가를 모두 건너뛰고 <paramref name="dmg"/> 그 숫자만큼만 들어간다(시너지 고정 피해).</param>
+        public int TakeDamage(int dmg, bool isFixed = false)
         {
             if (!gameObject.activeInHierarchy || CharacterState == CharacterState.Dead)
                 return 0;
@@ -341,7 +342,7 @@ namespace OJ.Hunting
                 _windDamageTakenBonusPercent,
                 _relicDamageTakenBonusPercent,
                 stateBonusPercent);
-            int appliedDamage = IncomingDamageFormula.AppliedDamage(dmg, defense, totalBonusPercent);
+            int appliedDamage = isFixed ? dmg : IncomingDamageFormula.AppliedDamage(dmg, defense, totalBonusPercent);
 
             // 탑의 보호막. <b>피해가 아니라 타격 한 번을 통째로 먹는다.</b>
             // 기획서 6.2 가 보호막의 대응으로 "다단 공격" 을 적어 둔 것이 이 뜻이다 —

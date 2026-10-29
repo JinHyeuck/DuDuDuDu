@@ -573,6 +573,9 @@ namespace OJ.Core
         /// </summary>
         public bool FirstRunEnded { get; set; }
 
+        /// <summary>시작 고기(<c>ContentUnlockRules.StarterMeat</c>)를 이미 줬는가. 고기 축제가 1스테이지 클리어로 뒤로 빠져서 처음에 미리 준다.</summary>
+        public bool StarterMeatGranted { get; set; }
+
         /// <summary>연출(또는 가이드)을 끝까지 본 컨텐츠. <c>ContentId</c> 이름, 오름차순.</summary>
         public List<string> Announced { get; } = new List<string>();
     }

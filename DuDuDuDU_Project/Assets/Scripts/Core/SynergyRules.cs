@@ -66,6 +66,7 @@ namespace OJ.Core
         AllPercentDamage = 103,
         ExecuteBelowHp = 104,
         BossDamageBuff = 105,
+        RepeatFixedDamage = 106,
 
         OpenSlot = 200,
         HealWall = 201,
@@ -112,14 +113,18 @@ namespace OJ.Core
         /// <summary>최대 중첩. 버프가 아니면 0, 중첩 없는 버프는 1.</summary>
         public readonly int MaxStacks;
 
-        /// <summary>문구. <c>{v}</c> 수치, <c>{t}</c> 대상 이름, <c>{s}</c> 초, <c>{c}</c> 중첩.</summary>
+        /// <summary>시간을 나눠 때리는 효과의 타수. 한 번에 끝나는 효과는 0.</summary>
+        public readonly int Hits;
+
+        /// <summary>문구. <c>{v}</c> 수치, <c>{t}</c> 대상 이름, <c>{s}</c> 초, <c>{c}</c> 중첩, <c>{n}</c> 타수.</summary>
         public readonly string Format;
 
         private readonly int categoryMask;
 
         public SynergyOption(bool isCondition, int id, int categoryMask, SynergyTargetKind target,
-            int worst, int best, string format, float seconds = 0f, int maxStacks = 0)
+            int worst, int best, string format, float seconds = 0f, int maxStacks = 0, int hits = 0)
         {
+            Hits = hits;
             IsCondition = isCondition;
             Id = id;
             this.categoryMask = categoryMask;
@@ -184,6 +189,7 @@ namespace OJ.Core
             Effect(SynergyEffectId.AllFixedDamage, DiceMask, SynergyTargetKind.None, 20, 150, "적 전체에게 {v} 고정 피해"),
             Effect(SynergyEffectId.AllPercentDamage, DiceMask | ActionMask, SynergyTargetKind.None, 100, 500, "적 전체에게 공격력의 {v}% 피해"),
             Effect(SynergyEffectId.ExecuteBelowHp, DiceMask, SynergyTargetKind.None, 5, 20, "HP {v}% 미만 적 1마리 처치(보스 제외)"),
+            Effect(SynergyEffectId.RepeatFixedDamage, DiceMask, SynergyTargetKind.None, 200, 400, "{s}초간 맨 앞 적에게 {v} 고정 피해 {n}회", 5f, 0, 5),
             Effect(SynergyEffectId.BossDamageBuff, DiceMask | UnifiedMask, SynergyTargetKind.None, 5, 25, "{s}초간 보스 대미지 {v}% 증가({c}회 중첩)", 8f, 5),
 
             Effect(SynergyEffectId.OpenSlot, CombatMask, SynergyTargetKind.None, 1, 2, "자리 {v}개 오픈"),
@@ -246,9 +252,9 @@ namespace OJ.Core
         }
 
         private static SynergyOption Effect(SynergyEffectId id, int mask, SynergyTargetKind target, int worst, int best,
-            string format, float seconds = 0f, int maxStacks = 0)
+            string format, float seconds = 0f, int maxStacks = 0, int hits = 0)
         {
-            return new SynergyOption(false, (int)id, mask, target, worst, best, format, seconds, maxStacks);
+            return new SynergyOption(false, (int)id, mask, target, worst, best, format, seconds, maxStacks, hits);
         }
     }
 
@@ -323,6 +329,18 @@ namespace OJ.Core
         public const int CombatUnlockDiceRerolls = 30;
         public const int ActionUnlockTotalFires = 2000;
         public const int UnifiedUnlockTowerFloor = 100;
+
+        /// <summary>
+        /// 로비 시너지 가이드가 보여 주는 리롤 결과 — "노멀 속성 다이스 11회 공격 시 → 5초간 맨 앞 적에게 357 고정 피해 5회".
+        /// 리롤은 무작위지만 가이드에서는 이 값으로 고정한다. 노멀 속성 다이스는 처음부터 보유한 기본 다이스다.
+        /// </summary>
+        /// <summary><c>ElementType.Normal</c> 의 정수. Core 는 게임 enum 을 못 쓴다(헤드리스 러너).</summary>
+        public const int GuideConditionTarget = 0;
+        public const int GuideConditionValue = 11;
+        public const int GuideEffectValue = 357;
+
+        /// <summary>가이드가 미리 채워 두는 티켓. 첫 리롤 비용(<see cref="BaseRerollCost"/>)과 같다.</summary>
+        public const int GuideTicketCount = BaseRerollCost;
 
         /// <summary>한 번의 통지로 터질 수 있는 최대 발동 수. SP 를 한 번에 크게 쓰면 여러 번 넘기 때문이다.</summary>
         public const int MaxFiresPerNotify = 5;
@@ -456,6 +474,30 @@ namespace OJ.Core
             return result;
         }
 
+        /// <summary>
+        /// 가이드용 리롤. 무작위 대신 정해진 조건 1줄 + 효과 1줄을 채운다(나머지 효과 줄은 비운다).
+        /// 비용 누적(Best 보정)은 일반 리롤과 같이 쌓되 Best 는 터뜨리지 않는다.
+        /// </summary>
+        public static SynergyRerollResult GuideReroll(SynergyPreset preset, int cost, ref int spentTickets)
+        {
+            preset.Condition.OptionId = (int)SynergyConditionId.ElementAttack;
+            preset.Condition.Target = GuideConditionTarget;
+            preset.Condition.Value = GuideConditionValue;
+            preset.Condition.Locked = false;
+
+            for (int i = 0; i < preset.Effects.Length; i++)
+            {
+                SynergyLine line = preset.Effects[i];
+                line.OptionId = i == 0 ? (int)SynergyEffectId.RepeatFixedDamage : 0;
+                line.Target = -1;
+                line.Value = i == 0 ? GuideEffectValue : 0;
+                line.Locked = false;
+            }
+
+            spentTickets = Math.Max(0, spentTickets) + Math.Max(0, cost);
+            return new SynergyRerollResult { Rolled = true, BestLine = -2 };
+        }
+
         /// <summary>줄 하나를 새로 굴린다 — 옵션, 대상, 수치(Worst~Best 균등).</summary>
         public static void RollLine(SynergyLine line, IReadOnlyList<SynergyOption> pool, Func<int, int> next,
             Func<SynergyTargetKind, IReadOnlyList<int>> targets)
@@ -502,7 +544,8 @@ namespace OJ.Core
                 .Replace("{v}", value.ToString())
                 .Replace("{t}", targetName ?? string.Empty)
                 .Replace("{s}", option.Seconds.ToString("0.#"))
-                .Replace("{c}", option.MaxStacks.ToString());
+                .Replace("{c}", option.MaxStacks.ToString())
+                .Replace("{n}", option.Hits.ToString());
         }
 
         /// <summary>Best 확률을 화면용으로. 1234 → "12.34%".</summary>

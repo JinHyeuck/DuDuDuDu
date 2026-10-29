@@ -33,6 +33,20 @@ namespace OJ.Hunting
         {
             gameObject.SetActive(true);
 
+            if (share.IsSynergy)
+            {
+                // 시너지는 다이스가 아니라 아이콘이 없다. 시너지 입구와 같은 보라 사각형으로 구분한다.
+                if (icon != null)
+                {
+                    icon.enabled = true;
+                    icon.sprite = null;
+                    icon.color = SynergyColor;
+                }
+
+                SetGauge(share.Ratio);
+                return;
+            }
+
             Sprite iconSprite = DiceMetaDataProvider.GetIcon(share.DiceType);
             if (icon != null)
             {
@@ -43,14 +57,22 @@ namespace OJ.Hunting
                 icon.color = iconSprite != null ? Color.white : DiceMetaDataProvider.GetColor(share.DiceType);
             }
 
-            // 막대 색은 굽는 시점의 초록(시안) 하나다. 어느 다이스인지는 아이콘이 말한다.
-            if (gaugeFill != null)
-            {
-                RectTransform rect = gaugeFill.rectTransform;
-                Vector2 offset = rect.offsetMax;
-                offset.x = gaugeWidth * Mathf.Clamp01(share.Ratio);
-                rect.offsetMax = offset;
-            }
+            SetGauge(share.Ratio);
+        }
+
+        /// <summary>시너지 줄의 아이콘 색. 로비 시너지 입구(<c>UISynergyEntryButton</c>)의 보라와 같다.</summary>
+        private static readonly Color SynergyColor = new Color(0.5f, 0.3f, 0.75f, 1f);
+
+        // 막대 색은 굽는 시점의 초록(시안) 하나다. 어느 다이스인지는 아이콘이 말한다.
+        private void SetGauge(float ratio)
+        {
+            if (gaugeFill == null)
+                return;
+
+            RectTransform rect = gaugeFill.rectTransform;
+            Vector2 offset = rect.offsetMax;
+            offset.x = gaugeWidth * Mathf.Clamp01(ratio);
+            rect.offsetMax = offset;
         }
 
         public void Hide()

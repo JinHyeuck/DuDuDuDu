@@ -11,6 +11,7 @@ using OJ.Hunting;
 using OJ.IdleReward;
 using OJ.Lobby;
 using OJ.Point;
+using OJ.Synergy;
 using OJ.StageReward;
 using OJ.Tower;
 using OJ.DI;
@@ -73,12 +74,22 @@ namespace OJ.ContentUnlock
             if (manager == null || gate == null)
                 return;
 
+            // 시작 고기(고기 축제가 1스테이지 클리어 뒤로 빠졌다). 한 번만 준다.
+            manager.GrantStarterMeat();
+
             List<ContentUnlockDefinition> queue = manager.GetVisitQueue();
             if (queue.Count == 0)
             {
-                // 연출이 남아 있지 않은 진입에서만 킹 다이스 강화 안내를 한다.
+                // 연출이 남아 있지 않은 진입에서만 킹 다이스 강화 안내를 한다. 시너지 가이드는 그다음 차례다 —
+                // 해금 연출 위에 겹치지 않고, 킹 다이스 안내와도 한 진입에 둘이 나오지 않는다.
                 if (ShouldGuideKingUpgrade())
                     await KingUpgradeGuideAsync();
+                else if (ShouldGuideSynergy())
+                {
+                    await SynergyGuideUntilDoneAsync(manager);
+                    if (!token.IsCancellationRequested && !ShouldGuideSynergy())
+                        await StageEntryNudgeAsync();
+                }
 
                 return;
             }
@@ -115,6 +126,15 @@ namespace OJ.ContentUnlock
 
                     float rest = Time.unscaledTime + ChainRestSeconds;
                     await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
+                }
+
+                // 첫 판을 지고 나온 로비는 스테이지 보상 가이드 다음에 시너지 가이드가 이어진다(홈으로 돌아온 뒤).
+                if (ShouldGuideSynergy())
+                {
+                    await UniTask.WaitUntil(() => LobbyLayoutController.CurrentTab == LobbyTab.Home,
+                        PlayerLoopTiming.Update, token);
+                    await SynergyGuideUntilDoneAsync(manager);
+                    guidesThisVisit++;
                 }
 
                 // 가이드를 한 뒤에는 스테이지 입장을 약하게 이끈다(딤드 없이 손가락만).
@@ -741,6 +761,179 @@ namespace OJ.ContentUnlock
             }
 
             return null;
+        }
+
+        // ── 시너지 가이드: 다이스계 리롤 한 번 ─────────────────────────
+
+        /// <summary>
+        /// 첫 판을 마친 뒤(<c>RunEnded</c>) 다이스계 시너지가 열려 있고(처음부터 열려 있다) 한 번도 굴려 본 적이 없을 때 —
+        /// 스테이지 보상 가이드 다음에 나온다. 그 전까지는 입장 버튼이 가려져 있다(<c>ContentUnlockManager.IsStageEntryHeld</c>). 굴려 본 적이 있으면(가이드를 마쳤거나 스스로 굴렸으면) 다시 안 나온다.
+        /// 끝까지 안 보고 나가면 리롤 횟수가 0 이라 다음 진입에 처음부터 다시 나온다 — 별도 기록이 없다.
+        /// </summary>
+        private bool ShouldGuideSynergy()
+        {
+            // 첫 판을 마친(지고 나온) 로비에서만 — 튜토리얼 직후 다이스 가이드에 겹치지 않는다.
+            SynergyManager synergy = SynergyManager.Instance;
+            if (ContentUnlockManager.Instance == null || !ContentUnlockManager.Instance.RunEnded)
+                return false;
+
+            if (synergy == null || !synergy.IsOpen(SynergyCategory.Dice) || synergy.GetRerolls(SynergyCategory.Dice) > 0)
+                return false;
+
+            UISynergyEntryButton entry = UnityEngine.Object.FindFirstObjectByType<UISynergyEntryButton>();
+            return entry != null && entry.isActiveAndEnabled && entry.Button != null;
+        }
+
+        /// <summary>
+        /// 가이드가 리롤에 쓰는 티켓을 <b>모자란 만큼 얹어 둔다</b>(장비 가이드와 같은 판단 — 티켓이 없어 버튼이 안 눌리면 멈춘다).
+        /// 이미 충분히 가졌으면 더 주지 않는다 — 중간에 나가 다시 시작해도 티켓이 불어나지 않는다.
+        /// </summary>
+        private static void EnsureSynergyTickets()
+        {
+            PointManager points = PointManager.Instance;
+            if (points == null)
+                return;
+
+            int lack = SynergyRules.GuideTicketCount - points.Get(PointType.SynergyTicket);
+            if (lack > 0)
+                points.Add(PointType.SynergyTicket, lack);
+        }
+
+        /// <summary>
+        /// 입장 버튼이 가려진 채라면(첫 판을 지고 나온 뒤) 가이드를 끝까지 볼 때까지 되풀이한다 — 창을 닫고 나가도 버튼이 영영 안 돌아오는 일이 없게.
+        /// 가려지지 않은 일반 진입은 한 번만 보여 주고 다음 진입으로 넘긴다.
+        /// </summary>
+        private async UniTask SynergyGuideUntilDoneAsync(ContentUnlockManager manager)
+        {
+            try
+            {
+                await SynergyGuideAsync();
+
+                while (manager.IsStageEntryHeld)
+                {
+                    float rest = Time.unscaledTime + ChainRestSeconds;
+                    await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
+                    if (!ShouldGuideSynergy())
+                        break;
+
+                    await SynergyGuideAsync();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 로비가 내려갔다. 리롤을 안 했으면 다음 진입에 다시 나온다.
+            }
+        }
+
+        private async UniTask SynergyGuideAsync()
+        {
+            SynergyManager synergy = SynergyManager.Instance;
+            UISynergyEntryButton entry = UnityEngine.Object.FindFirstObjectByType<UISynergyEntryButton>();
+            if (synergy == null || entry == null || entry.Button == null)
+                return;
+
+            var target = entry.transform as RectTransform;
+            Button entryButton = entry.Button;
+
+            try
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+
+                overlay = GameContainer.UI?.Get<UITutorialOverlay>();
+                if (overlay == null)
+                    return;
+
+                overlay.Enter();
+                EnsureSynergyTickets();
+
+                // 1) 시너지 입구를 눌러 창을 연다.
+                bool opened = false;
+                void OnEntryClick() => opened = true;
+                entryButton.onClick.AddListener(OnEntryClick);
+                try
+                {
+                    overlay.SetDim(target);
+                    overlay.SetFinger(target);
+                    overlay.SetTalk("<b>시너지</b>로 다이스에\n특별한 효과를 붙여 봐요!");
+                    await UniTask.WaitUntil(() => opened, PlayerLoopTiming.Update, token);
+                }
+                finally
+                {
+                    if (entryButton != null)
+                        entryButton.onClick.RemoveListener(OnEntryClick);
+                }
+
+                overlay.SetFinger(null);
+                overlay.SetDim();
+                overlay.SetTalk(null);
+
+                UISynergyDialog dialog = GameContainer.UI?.Get<UISynergyDialog>();
+                if (dialog == null)
+                {
+                    Debug.LogError("[해금] 시너지 창을 못 찾아 시너지 가이드를 건너뛴다.");
+                    return;
+                }
+
+                await UniTask.WaitUntil(() => dialog.isEnter, PlayerLoopTiming.Update, token);
+                float settle = Time.unscaledTime + SettleSeconds;
+                await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
+
+                Button reroll = dialog.RerollButtonOf(SynergyCategory.Dice);
+                RectTransform rerollRect = reroll != null ? reroll.transform as RectTransform : null;
+                if (rerollRect == null)
+                {
+                    Debug.LogError("[해금] 시너지 창에서 다이스계 리롤 버튼을 못 찾아 가이드를 건너뛴다.");
+                    return;
+                }
+
+                // 2) 리롤을 눌러 보게 한다. 이 한 번은 무작위가 아니라 가이드 결과로 고정된다.
+                synergy.BeginGuideRoll();
+                overlay.SetDim(rerollRect);
+                overlay.SetFinger(rerollRect);
+                overlay.SetTalk("<b>리롤</b>을 눌러\n옵션을 뽑아 봐요!");
+                await UniTask.WaitUntil(() => synergy.GetRerolls(SynergyCategory.Dice) > 0 || !dialog.isEnter,
+                    PlayerLoopTiming.Update, token);
+
+                // 창을 닫고 나갔으면 끝까지 본 것이 아니다 — 다음 진입에 다시 나온다.
+                if (synergy.GetRerolls(SynergyCategory.Dice) == 0)
+                    return;
+
+                // 3) 나온 옵션을 읽어 준다. 문구는 실제 줄에서 만든다 — 가이드와 표기가 갈라지지 않는다.
+                SynergyPreset preset = synergy.GetEquipped(SynergyCategory.Dice);
+                string condition = SynergyText.Describe(preset.Condition, true);
+                string effect = SynergyText.Describe(preset.Effects[0], false);
+
+                RectTransform card = dialog.CardRectOf(SynergyCategory.Dice);
+                overlay.SetFinger(null);
+                if (card != null)
+                    overlay.SetDim(card);
+                else
+                    overlay.SetDim();
+
+                overlay.SetTalk(null);
+                float rest = Time.unscaledTime + SettleSeconds;
+                await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
+
+                overlay.SetTalk("<b>" + condition + "</b>\n" + effect + "\n조건을 채울 때마다 자동으로 발동해요!",
+                    tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
+                await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
+
+                // 창은 닫아 준다 — 열린 채로 두면 아래 하단 탭이 가려진다.
+                dialog.Exit();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                synergy.EndGuideRoll();
+
+                if (overlay != null)
+                {
+                    overlay.ClearAll();
+                    overlay.Exit();
+                }
+            }
         }
 
         // ── 탑 1층: 킹 썬더 장착 ────────────────────────────────────────

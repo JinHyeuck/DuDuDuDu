@@ -46,6 +46,39 @@ namespace OJ.ContentUnlock
         /// </summary>
         public bool RunEnded => firstRunEnded;
 
+        /// <summary>시작 고기를 줬는가(<see cref="ContentUnlockRules.StarterMeat"/>).</summary>
+        private bool starterMeatGranted;
+
+        /// <summary>
+        /// 시작 고기를 한 번만 준다. 이미 판을 해 본 세이브(이 기능 이전)는 주지 않고 기록만 한다.
+        /// 고기 축제가 1스테이지 클리어 뒤로 빠져서, 그 전에는 이것으로 입장료를 낸다.
+        /// </summary>
+        public void GrantStarterMeat()
+        {
+            if (starterMeatGranted)
+                return;
+
+            starterMeatGranted = true;
+            if (LastClearedStage == 0 && !firstRunEnded)
+                OJ.Point.PointManager.Instance?.Add(PointType.Stamina, ContentUnlockRules.StarterMeat);
+
+            GameContainer.SaveService?.SaveAll();
+        }
+
+        /// <summary>
+        /// 시너지 가이드를 보기 전까지 입장 버튼을 가린다(<see cref="ContentUnlockRules.IsStageEntryHeldForSynergyGuide"/>).
+        /// 가이드를 끝까지 보면 다이스계 리롤이 1이 되어 풀린다.
+        /// </summary>
+        public bool IsStageEntryHeld
+        {
+            get
+            {
+                OJ.Synergy.SynergyManager synergy = OJ.Synergy.SynergyManager.Instance;
+                return synergy != null && ContentUnlockRules.IsStageEntryHeldForSynergyGuide(
+                    firstRunEnded, synergy.IsOpen(SynergyCategory.Dice), synergy.GetRerolls(SynergyCategory.Dice));
+            }
+        }
+
         /// <summary>
         /// 튜토리얼이 아닌 판이 끝났다(이겼든 졌든). 처음 한 번만 적고 그 자리에서 저장한다 —
         /// 로비에 돌아와 스테이지 보상 가이드가 나오는 것이 이 기록 덕분이다.
@@ -70,9 +103,9 @@ namespace OJ.ContentUnlock
         public int LastClearedStage =>
             StageProgressManager.Instance != null ? StageProgressManager.Instance.GetLastClearedStageIndex() : 0;
 
-        /// <summary>1스테이지에서 깬 가장 높은 웨이브. 웨이브로 여는 컨텐츠(<c>requiredWave</c>)가 본다.</summary>
-        public int Stage1BestWave =>
-            StageProgressManager.Instance != null ? StageProgressManager.Instance.GetBestClearedWave(1) : 0;
+        /// <summary>그 스테이지에서 깬 가장 높은 웨이브. 웨이브로 여는 컨텐츠(<c>requiredWave</c>)가 본다.</summary>
+        private static int BestWaveOf(int stage) =>
+            StageProgressManager.Instance != null ? StageProgressManager.Instance.GetBestClearedWave(stage) : 0;
 
         public ContentUnlockDefinition GetDefinition(ContentId id)
         {
@@ -83,7 +116,7 @@ namespace OJ.ContentUnlock
         public bool IsOpen(ContentId id)
         {
             ContentUnlockDefinition definition = GetDefinition(id);
-            return definition == null || ContentUnlockRules.IsOpen(definition, LastClearedStage, Stage1BestWave, firstRunEnded);
+            return definition == null || ContentUnlockRules.IsOpen(definition, LastClearedStage, BestWaveOf, firstRunEnded);
         }
 
         /// <summary>입구를 보이는가. 열렸어도 연출 전이면 숨는다.</summary>
@@ -91,14 +124,14 @@ namespace OJ.ContentUnlock
         {
             ApplyBackfillIfNeeded();
             ContentUnlockDefinition definition = GetDefinition(id);
-            return definition == null || ContentUnlockRules.IsVisible(definition, LastClearedStage, announced, Stage1BestWave, firstRunEnded);
+            return definition == null || ContentUnlockRules.IsVisible(definition, LastClearedStage, announced, BestWaveOf, firstRunEnded);
         }
 
         /// <summary>이번 로비 진입에 보여 줄 연출(가이드 하나에서 끊긴다).</summary>
         public List<ContentUnlockDefinition> GetVisitQueue()
         {
             ApplyBackfillIfNeeded();
-            return ContentUnlockRules.VisitQueue(Definitions, LastClearedStage, announced, Stage1BestWave, firstRunEnded);
+            return ContentUnlockRules.VisitQueue(Definitions, LastClearedStage, announced, BestWaveOf, firstRunEnded);
         }
 
         /// <summary>
@@ -108,7 +141,7 @@ namespace OJ.ContentUnlock
         public bool HasPending()
         {
             ApplyBackfillIfNeeded();
-            return ContentUnlockRules.HasPending(Definitions, LastClearedStage, announced, Stage1BestWave, firstRunEnded);
+            return ContentUnlockRules.HasPending(Definitions, LastClearedStage, announced, BestWaveOf, firstRunEnded);
         }
 
         /// <summary>
@@ -148,7 +181,7 @@ namespace OJ.ContentUnlock
             for (int i = 0; i < definitions.Count; i++)
             {
                 ContentUnlockDefinition d = definitions[i];
-                if (d != null && ContentUnlockRules.IsOpen(d, lastCleared, Stage1BestWave, firstRunEnded))
+                if (d != null && ContentUnlockRules.IsOpen(d, lastCleared, BestWaveOf, firstRunEnded))
                     announced.Add(d.contentId);
             }
         }
@@ -162,6 +195,7 @@ namespace OJ.ContentUnlock
             // 읽은 것과 다시 쓴 것을 문자열로 대조한다.
             state.ContentUnlock.Initialized = initialized;
             state.ContentUnlock.FirstRunEnded = firstRunEnded;
+            state.ContentUnlock.StarterMeatGranted = starterMeatGranted;
 
             state.ContentUnlock.Announced.Clear();
             var names = new List<string>();
@@ -183,6 +217,7 @@ namespace OJ.ContentUnlock
 
             initialized = state.ContentUnlock.Initialized;
             firstRunEnded = state.ContentUnlock.FirstRunEnded;
+            starterMeatGranted = state.ContentUnlock.StarterMeatGranted;
             pendingBackfill = ContentUnlockRules.ShouldBackfill(initialized, ContentUnlockRules.LastClearedFromSave(state));
         }
     }

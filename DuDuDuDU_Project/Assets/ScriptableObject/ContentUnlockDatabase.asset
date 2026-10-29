@@ -16,27 +16,29 @@ MonoBehaviour:
   - contentId: 4
     requiredClear: 0
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 0
     displayName: "\uBCC4\uC758 \uCD95\uC81C"
     description: "\uBCC4\uC744 \uBAA8\uC73C\uBA74 \uBCF4\uC0C1\uC744 \uBC1B\uC544\uC694."
     guideTapText: 
     guideDetailText: 
-  - contentId: 5
+  - contentId: 0
     requiredClear: 0
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 2
-    displayName: "\uACE0\uAE30 \uCD95\uC81C"
-    description: "\uC2DC\uAC04\uC774 \uC9C0\uB098\uBA74 \uACE0\uAE30\uAC00 \uAD6C\uC6CC\uC838\uC694.\n\uB20C\uB7EC\uC11C
-      \uBC1B\uC544\uC694!"
-    guideTapText: "\uACE0\uAE30\uAC00 \uAD6C\uC6CC\uC84C\uC5B4\uC694! \uB20C\uB7EC
-      \uBCF4\uC138\uC694."
-    guideDetailText: "\uACE0\uAE30\uB294 \uC2DC\uAC04\uC774 \uC9C0\uB098\uBA74 \uC313\uC5EC\uC694.\n\uAC00\uB4DD
-      \uCC28\uAE30 \uC804\uC5D0 \uBC1B\uC544 \uAC00\uC694."
+    displayName: "\uB2E4\uC774\uC2A4"
+    description: "\uB2E4\uC774\uC2A4\uB97C \uAC15\uD654\uD558\uBA74\n\uC804\uD22C\uC5D0\uC11C
+      \uB354 \uAC15\uD574\uC838\uC694."
+    guideTapText: "\uB2E4\uC774\uC2A4\uAC00 \uC5F4\uB838\uC5B4\uC694!\n\uAC15\uD654\uD574 \uBD10\uC694."
+    guideDetailText: "\uC5EC\uAE30\uC11C \uB2E4\uC774\uC2A4\uB97C \uAC15\uD654\uD558\uACE0\n\uC0C8
+      \uB2E4\uC774\uC2A4\uB97C \uC5F4 \uC218 \uC788\uC5B4\uC694."
   - contentId: 2
     requiredClear: 1
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 1
     presentation: 2
     displayName: "\uD074\uB9AC\uC5B4 \uBCF4\uC0C1"
@@ -46,33 +48,10 @@ MonoBehaviour:
       \uD655\uC778\uD574 \uBD10\uC694."
     guideDetailText: "\uC6E8\uC774\uBE0C\uB97C \uB9CE\uC774 \uAE70\uC218\uB85D\n\uB354
       \uC88B\uC740 \uBCF4\uC0C1\uC774 \uC5F4\uB824\uC694."
-  - contentId: 1
-    requiredClear: 1
-    requiredWave: 5
-    requiresRunEnded: 0
-    presentation: 2
-    displayName: "\uC7A5\uBE44"
-    description: "\uC7A5\uBE44\uB97C \uAC15\uD654\uD558\uBA74 \uB2E4\uC774\uC2A4\uAC00
-      \uB354 \uC138\uC838\uC694."
-    guideTapText: "5\uC6E8\uC774\uBE0C\uB97C \uB118\uC5C8\uC5B4\uC694!\n\uC7A5\uBE44\uAC00
-      \uC5F4\uB838\uC5B4\uC694. \uB20C\uB7EC \uBCF4\uC138\uC694."
-    guideDetailText: "\uACE8\uB4DC\uB85C \uC7A5\uBE44\uB97C \uAC15\uD654\uD558\uBA74\n\uBAA8\uB4E0
-      \uB2E4\uC774\uC2A4\uC758 \uACF5\uACA9\uB825\uC774 \uC62C\uB77C\uC694."
-  - contentId: 0
-    requiredClear: 1
-    requiredWave: 10
-    requiresRunEnded: 0
-    presentation: 2
-    displayName: "\uB2E4\uC774\uC2A4"
-    description: "\uB2E4\uC774\uC2A4\uB97C \uAC15\uD654\uD558\uBA74\n\uC804\uD22C\uC5D0\uC11C
-      \uB354 \uAC15\uD574\uC838\uC694."
-    guideTapText: "10\uC6E8\uC774\uBE0C\uB97C \uB118\uC5C8\uC5B4\uC694!\n\uB2E4\uC774\uC2A4\uB97C
-      \uAC15\uD654\uD574 \uBD10\uC694."
-    guideDetailText: "\uC5EC\uAE30\uC11C \uB2E4\uC774\uC2A4\uB97C \uAC15\uD654\uD558\uACE0\n\uC0C8
-      \uB2E4\uC774\uC2A4\uB97C \uC5F4 \uC218 \uC788\uC5B4\uC694."
   - contentId: 3
     requiredClear: 1
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 1
     displayName: "\uBC29\uCE58 \uBCF4\uC0C1"
@@ -80,9 +59,36 @@ MonoBehaviour:
       \uBC1B\uC73C\uB7EC \uC640\uC694!"
     guideTapText: 
     guideDetailText: 
+  - contentId: 5
+    requiredClear: 1
+    requiredWave: 0
+    requiredWaveStage: 1
+    requiresRunEnded: 0
+    presentation: 2
+    displayName: "\uACE0\uAE30 \uCD95\uC81C"
+    description: "\uC2DC\uAC04\uC774 \uC9C0\uB098\uBA74 \uACE0\uAE30\uAC00 \uAD6C\uC6CC\uC838\uC694.\n\uB20C\uB7EC\uC11C
+      \uBC1B\uC544\uC694!"
+    guideTapText: "\uACE0\uAE30\uAC00 \uAD6C\uC6CC\uC84C\uC5B4\uC694! \uB20C\uB7EC
+      \uBCF4\uC138\uC694."
+    guideDetailText: "\uACE0\uAE30\uB294 \uC2DC\uAC04\uC774 \uC9C0\uB098\uBA74 \uC313\uC5EC\uC694.\n\uAC00\uB4DD
+      \uCC28\uAE30 \uC804\uC5D0 \uBC1B\uC544 \uAC00\uC694."
+  - contentId: 1
+    requiredClear: 2
+    requiredWave: 10
+    requiredWaveStage: 2
+    requiresRunEnded: 0
+    presentation: 2
+    displayName: "\uC7A5\uBE44"
+    description: "\uC7A5\uBE44\uB97C \uAC15\uD654\uD558\uBA74 \uB2E4\uC774\uC2A4\uAC00
+      \uB354 \uC138\uC838\uC694."
+    guideTapText: "2\uC2A4\uD14C\uC774\uC9C0 10\uC6E8\uC774\uBE0C\uB97C \uB118\uC5C8\uC5B4\uC694!\n\uC7A5\uBE44\uAC00
+       \uC5F4\uB838\uC5B4\uC694. \uB20C\uB7EC \uBCF4\uC138\uC694."
+    guideDetailText: "\uACE8\uB4DC\uB85C \uC7A5\uBE44\uB97C \uAC15\uD654\uD558\uBA74\n\uBAA8\uB4E0
+      \uB2E4\uC774\uC2A4\uC758 \uACF5\uACA9\uB825\uC774 \uC62C\uB77C\uC694."
   - contentId: 9
     requiredClear: 2
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 2
     displayName: "\uD540\uBCFC"
@@ -94,6 +100,7 @@ MonoBehaviour:
   - contentId: 8
     requiredClear: 3
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 1
     displayName: "\uD018\uC2A4\uD2B8"
@@ -103,6 +110,7 @@ MonoBehaviour:
   - contentId: 14
     requiredClear: 3
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 2
     displayName: "\uBB34\uD55C\uC758 \uD0D1"
@@ -116,6 +124,7 @@ MonoBehaviour:
   - contentId: 11
     requiredClear: 4
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 0
     displayName: "\uBA64\uBC84\uC2ED"
@@ -125,6 +134,7 @@ MonoBehaviour:
   - contentId: 7
     requiredClear: 4
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 0
     displayName: "\uD2B9\uBCC4\uD55C 7\uC77C"
@@ -134,6 +144,7 @@ MonoBehaviour:
   - contentId: 6
     requiredClear: 4
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 2
     displayName: "\uC18C\uD0D5"
@@ -145,6 +156,7 @@ MonoBehaviour:
   - contentId: 12
     requiredClear: 5
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 0
     displayName: "\uC2DC\uC98C \uD328\uC2A4"
@@ -155,6 +167,7 @@ MonoBehaviour:
   - contentId: 10
     requiredClear: 5
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 2
     displayName: "\uC0C1\uC810"
@@ -165,6 +178,7 @@ MonoBehaviour:
   - contentId: 13
     requiredClear: 6
     requiredWave: 0
+    requiredWaveStage: 1
     requiresRunEnded: 0
     presentation: 2
     displayName: "\uC720\uBB3C"

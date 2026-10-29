@@ -89,7 +89,8 @@ namespace OJ.Synergy
                 .Replace("{v}", range)
                 .Replace("{t}", target)
                 .Replace("{s}", option.Seconds.ToString("0.#"))
-                .Replace("{c}", option.MaxStacks.ToString());
+                .Replace("{c}", option.MaxStacks.ToString())
+                .Replace("{n}", option.Hits.ToString());
         }
 
         /// <summary>

@@ -119,6 +119,41 @@ namespace OJ.Core.Tests
             Assert.LessOrEqual(done, 100);
         }
 
+        /// <summary>소환 비용은 초반(14 미만) +1, 중반(24 미만) +2, 후반 +3 씩 오른다. 꺼져 있으면 항상 +1.</summary>
+        [TestCase(10, 1)]
+        [TestCase(13, 1)]
+        [TestCase(14, 2)]
+        [TestCase(23, 2)]
+        [TestCase(24, 3)]
+        [TestCase(60, 3)]
+        public void SummonCostStepGrowsWithCost(int cost, int expected)
+        {
+            Assert.AreEqual(expected, BalanceProfile.SummonCostStep(cost));
+
+            BalanceProfile.Active = false;
+            Assert.AreEqual(1, BalanceProfile.SummonCostStep(cost));
+        }
+
+        /// <summary>두 번 소환마다 오른다고 보면 스무 번째 소환은 예전(20)보다 한참 비싸고, 첫 두 번은 그대로 20 SP 다.</summary>
+        [Test]
+        public void SummonCostIsSteeperInMidAndLateGame()
+        {
+            int cost = 10;
+            int firstTwo = 0;
+            int twentieth = 0;
+            for (int n = 1; n <= 40; n++)
+            {
+                if (n <= 2) firstTwo += cost;
+                if (n == 20) twentieth = cost;
+                if (n % 2 == 0)
+                    cost += BalanceProfile.SummonCostStep(cost);
+            }
+
+            Assert.AreEqual(20, firstTwo);
+            Assert.GreaterOrEqual(twentieth, 24, "스무 번째 소환 비용(예전 19)");
+            Assert.GreaterOrEqual(cost, 50, "마흔 번째 소환 뒤 비용");
+        }
+
         [Test]
         public void CooldownIsShorterOnlyWhenOn()
         {
