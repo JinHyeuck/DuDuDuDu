@@ -1,3 +1,4 @@
+using OJ.ContentUnlock;
 using OJ.Core;
 using OJ.DI;
 using TMPro;
@@ -36,6 +37,8 @@ namespace OJ.Synergy
         {
             if (SynergyManager.Instance != null)
                 SynergyManager.Instance.OnChanged += Refresh;
+            if (ContentUnlockManager.Instance != null)
+                ContentUnlockManager.Instance.OnChanged += Refresh;
 
             Refresh();
         }
@@ -44,10 +47,32 @@ namespace OJ.Synergy
         {
             if (SynergyManager.Instance != null)
                 SynergyManager.Instance.OnChanged -= Refresh;
+            if (ContentUnlockManager.Instance != null)
+                ContentUnlockManager.Instance.OnChanged -= Refresh;
+        }
+
+        /// <summary>첫 판을 마치기(지고 나오기) 전에는 입구를 보이지도 눌리지도 않게 한다(사용자 지시 2026-10-29).</summary>
+        private void ApplyLock()
+        {
+            bool open = ContentUnlockManager.Instance == null || ContentUnlockManager.Instance.RunEnded;
+            CanvasGroup group = GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                if (open)
+                    return;
+
+                group = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            group.alpha = open ? 1f : 0f;
+            group.interactable = open;
+            group.blocksRaycasts = open;
         }
 
         private void Refresh()
         {
+            ApplyLock();
+
             if (titleText != null)
                 titleText.SetText("시너지");
 

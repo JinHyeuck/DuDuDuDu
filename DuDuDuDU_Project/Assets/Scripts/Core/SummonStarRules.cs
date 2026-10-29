@@ -19,7 +19,7 @@ namespace OJ.Core
         public const int BaseUpgradeCost = 30;
 
         /// <summary>새 밸런스(<see cref="BalanceProfile"/>)의 확률업 첫 값과 간격. 클릭 수가 줄어든 경제에 맞췄다.</summary>
-        public const int BaseUpgradeCostV2 = 20;
+        public const int BaseUpgradeCostV2 = 25;
 
         /// <summary>한 레벨 올릴 때마다 다음 비용이 오르는 양(SP).</summary>
         public const int UpgradeCostStep = 30;

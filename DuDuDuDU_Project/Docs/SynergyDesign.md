@@ -70,6 +70,8 @@
 
 ## 로비 가이드 (2026-10-29)
 
+**첫 판을 마치기 전에는 시너지 입구 버튼 자체가 보이지도 눌리지도 않는다**(`UISynergyEntryButton` 이 `ContentUnlockManager.RunEnded` 를 보고 CanvasGroup 으로 막는다, 2026-10-29).
+
 **첫 판을 마친(지고 나온) 뒤**(`ContentUnlockManager.RunEnded`) 다이스계 시너지가 열려 있고 **한 번도 굴려 본 적이 없으면**(`SynergyManager.GetRerolls(Dice) == 0`),
 스테이지 보상 가이드 다음에 나온다(`LobbyUnlockDirector.SynergyGuideUntilDoneAsync`). 별도 저장은 없다 — 가이드를 끝까지 보면 리롤 횟수가 1 이 되어 다시 안 나온다.
 **그때까지 스테이지 입장 버튼은 가려진다**(`ContentUnlockManager.IsStageEntryHeld`) — 창을 닫고 나가도 버튼이 돌아오지 않으므로 가이드를 되풀이해 끝까지 보게 한다.
