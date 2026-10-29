@@ -8,6 +8,10 @@ namespace OJ.Hunting
     public struct DiceDamageShare
     {
         public DiceType DiceType;
+
+        /// <summary>참이면 다이스가 아니라 <b>시너지</b>의 몫이다(<see cref="DiceType"/> 은 뜻이 없다).</summary>
+        public bool IsSynergy;
+
         public long Damage;
 
         /// <summary>전체 대비 비율(0~1).</summary>
@@ -51,11 +55,15 @@ namespace OJ.Hunting
         private readonly Dictionary<DiceType, long> damageByDice = new Dictionary<DiceType, long>();
         private long totalDamage;
 
+        /// <summary>시너지 효과가 이 웨이브에서 넣은 피해. 다이스가 아니라서 딕셔너리 밖에 따로 든다.</summary>
+        private long synergyDamage;
+
         /// <summary>웨이브를 새로 연다. <c>GameManager.ChangeState</c> 가 부른다.</summary>
         public void BeginWave()
         {
             damageByDice.Clear();
             totalDamage = 0;
+            synergyDamage = 0;
             OnChanged?.Invoke();
         }
 
@@ -86,6 +94,21 @@ namespace OJ.Hunting
         }
 
         /// <summary>
+        /// 시너지 효과가 넣은 피해를 기록한다(<c>SynergyRunManager.Hit</c> 한 곳). 다이스와 같은 전체에 들어가
+        /// 한 줄("시너지")로 나란히 서므로, 시너지 효과가 커 가는 본체 대비 얼마나 약한지(또는 센지)가 막대 길이로 보인다.
+        /// </summary>
+        public void RecordSynergy(int appliedDamage)
+        {
+            if (appliedDamage <= 0)
+                return;
+
+            synergyDamage += appliedDamage;
+            totalDamage += appliedDamage;
+
+            OnChanged?.Invoke();
+        }
+
+        /// <summary>
         /// 기여도를 큰 순서로 채운다. <b>목록을 넘겨받아 채우는 것이 요점이다</b> —
         /// 실시간 패널이 초당 여러 번 부르므로, 매번 새 <c>List</c> 를 만들면
         /// 그만큼 GC 가 돈다.
@@ -106,6 +129,16 @@ namespace OJ.Hunting
                     DiceType = pair.Key,
                     Damage = pair.Value,
                     Ratio = (float)pair.Value / totalDamage,
+                });
+            }
+
+            if (synergyDamage > 0)
+            {
+                buffer.Add(new DiceDamageShare
+                {
+                    IsSynergy = true,
+                    Damage = synergyDamage,
+                    Ratio = (float)synergyDamage / totalDamage,
                 });
             }
 
@@ -130,7 +163,13 @@ namespace OJ.Hunting
             if (byDamage != 0)
                 return byDamage;
 
-            return ((int)left.DiceType).CompareTo((int)right.DiceType);
+            return SortKey(left).CompareTo(SortKey(right));
+        }
+
+        /// <summary>시너지는 같은 값의 다이스 뒤에 선다.</summary>
+        private static int SortKey(DiceDamageShare share)
+        {
+            return share.IsSynergy ? int.MaxValue : (int)share.DiceType;
         }
     }
 }

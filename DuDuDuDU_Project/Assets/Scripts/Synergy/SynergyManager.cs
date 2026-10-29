@@ -37,6 +37,9 @@ namespace OJ.Synergy
         private readonly CategoryState[] categories = NewCategories();
         private int totalFires;
 
+        /// <summary>로비 가이드가 켠다. 켜져 있는 동안의 첫 리롤은 무작위 대신 가이드 결과로 고정된다(<see cref="SynergyRules.GuideReroll"/>).</summary>
+        private bool guideRollPending;
+
         public int TotalFires => totalFires;
 
         // ── 개방 ───────────────────────────────────────────────
@@ -142,6 +145,14 @@ namespace OJ.Synergy
             return IsOpen(category) && SynergyRules.CanReroll(GetPreset(category, presetIndex), OpenEffectLines);
         }
 
+        /// <summary>
+        /// 가이드의 다음 다이스계 리롤을 고정 결과로 바꾼다. 가이드가 끝나거나 끊기면 <see cref="EndGuideRoll"/> 로 끈다 —
+        /// 켜진 채 남으면 유저가 나중에 굴리는 첫 리롤이 이유 없이 고정된다. 저장하지 않는다.
+        /// </summary>
+        public void BeginGuideRoll() => guideRollPending = true;
+
+        public void EndGuideRoll() => guideRollPending = false;
+
         /// <summary>티켓을 내고 굴린다. 티켓이 모자라거나 굴릴 줄이 없으면 아무것도 안 한다.</summary>
         public SynergyRerollResult Reroll(SynergyCategory category, int presetIndex)
         {
@@ -158,7 +169,12 @@ namespace OJ.Synergy
                 return none;
 
             CategoryState state = Get(category);
-            SynergyRerollResult result = SynergyRules.Reroll(preset, category, lines, cost, ref state.BestSpent, Next, Targets);
+            SynergyRerollResult result = guideRollPending && category == SynergyCategory.Dice
+                ? SynergyRules.GuideReroll(preset, cost, ref state.BestSpent)
+                : SynergyRules.Reroll(preset, category, lines, cost, ref state.BestSpent, Next, Targets);
+            if (guideRollPending && category == SynergyCategory.Dice)
+                guideRollPending = false;
+
             if (result.Rolled)
                 state.Rerolls++;
 

@@ -93,6 +93,10 @@ namespace OJ.Lobby
             if (OJ.Point.PointManager.Instance != null)
                 OJ.Point.PointManager.Instance.OnPointChanged += OnPointChanged;
 
+            // 시너지 가이드를 보기 전까지 입장 버튼을 가린다 — 가이드가 끝나(리롤이 일어나) 풀릴 때 다시 그린다.
+            if (OJ.Synergy.SynergyManager.Instance != null)
+                OJ.Synergy.SynergyManager.Instance.OnChanged += RefreshStageUI;
+
             selectedStageIndex = StageProgressManager.Instance != null ? StageProgressManager.Instance.GetHighestUnlockedStageIndex() : 1;
             ShowTab(defaultTab);
             RefreshStageUI();
@@ -105,6 +109,9 @@ namespace OJ.Lobby
 
             if (OJ.Point.PointManager.Instance != null)
                 OJ.Point.PointManager.Instance.OnPointChanged -= OnPointChanged;
+
+            if (OJ.Synergy.SynergyManager.Instance != null)
+                OJ.Synergy.SynergyManager.Instance.OnChanged -= RefreshStageUI;
         }
 
         private void OnPointChanged(PointType pointType, int value)
@@ -218,7 +225,7 @@ namespace OJ.Lobby
             OJ.Core.ContentUnlockDefinition definition = ContentUnlockManager.Instance?.GetDefinition(id);
             string name = definition != null ? definition.displayName : tab.ToString();
             string message = definition != null && definition.requiredWave > 0
-                ? "1스테이지 " + definition.requiredWave + "웨이브를 클리어하면 열려요."
+                ? definition.requiredWaveStage + "스테이지 " + definition.requiredWave + "웨이브를 클리어하면 열려요."
                 : definition != null && definition.requiredClear > 0
                     ? definition.requiredClear + "스테이지를 클리어하면 열려요."
                     : "곧 열려요.";
@@ -293,7 +300,14 @@ namespace OJ.Lobby
             int cost = CurrentEntryCost();
 
             if (enterStageButton != null)
+            {
                 enterStageButton.interactable = isUnlocked && ownedStamina >= cost;
+
+                // 첫 판에서 지고 나왔는데 시너지 가이드를 아직 안 봤으면 입장 버튼을 가린다(가이드가 풀어 준다).
+                bool held = ContentUnlockManager.Instance != null && ContentUnlockManager.Instance.IsStageEntryHeld;
+                if (enterStageButton.gameObject.activeSelf == held)
+                    enterStageButton.gameObject.SetActive(!held);
+            }
 
             if (enterCostText != null)
                 enterCostText.SetText(cost > 0 ? "x" + cost : "무료");

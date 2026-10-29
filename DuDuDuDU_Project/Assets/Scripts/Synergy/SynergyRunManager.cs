@@ -54,6 +54,19 @@ namespace OJ.Synergy
             public int Total => IsOn ? ValuePerStack * Stacks : 0;
         }
 
+        /// <summary>
+        /// 시간을 나눠 때리는 효과 하나(<see cref="SynergyEffectId.RepeatFixedDamage"/>). 발동할 때마다 하나씩 쌓이고
+        /// 첫 타는 바로, 나머지는 <see cref="Interval"/> 간격으로 나간다. 맞출 때마다 맨 앞 적을 새로 고른다.
+        /// </summary>
+        private sealed class RepeatStrike
+        {
+            public SynergyCategory Category;
+            public int Damage;
+            public int HitsLeft;
+            public float Interval;
+            public float Timer;
+        }
+
         private struct PendingFire
         {
             public SynergyCategory Category;
@@ -78,6 +91,7 @@ namespace OJ.Synergy
         private readonly Slot[] slots = new Slot[SynergyRules.CategoryCount];
         private readonly Queue<PendingFire> pending = new Queue<PendingFire>();
         private readonly List<Monster> targetBuffer = new List<Monster>();
+        private readonly List<RepeatStrike> repeatStrikes = new List<RepeatStrike>();
         private int pendingSummonStar;
 
         public bool IsActive { get; private set; }
@@ -151,6 +165,7 @@ namespace OJ.Synergy
 
             IsActive = false;
             pending.Clear();
+            repeatStrikes.Clear();
             SynergyBuffs.Reset();
         }
 
@@ -161,6 +176,7 @@ namespace OJ.Synergy
                 return;
 
             pending.Clear();
+            repeatStrikes.Clear();
             pendingSummonStar = 0;
             foreach (Slot slot in slots)
             {
@@ -196,6 +212,8 @@ namespace OJ.Synergy
                 changed = true;
             }
 
+            TickRepeatStrikes(deltaTime);
+
             bool buffsChanged = false;
             foreach (Slot slot in slots)
             {
@@ -222,6 +240,41 @@ namespace OJ.Synergy
 
             if (changed || buffsChanged)
                 OnStateChanged?.Invoke();
+        }
+
+        /// <summary>쌓인 반복 타격의 시간을 깎고 때릴 때가 된 것을 때린다. 한 프레임이 길면 밀린 타를 몰아서 낸다.</summary>
+        private void TickRepeatStrikes(float deltaTime)
+        {
+            for (int i = repeatStrikes.Count - 1; i >= 0; i--)
+            {
+                RepeatStrike strike = repeatStrikes[i];
+                strike.Timer -= deltaTime;
+                while (strike.HitsLeft > 0 && strike.Timer <= 0f)
+                {
+                    StrikeFront(strike.Category, strike.Damage, true);
+                    strike.HitsLeft--;
+                    strike.Timer += strike.Interval;
+                }
+
+                if (strike.HitsLeft <= 0)
+                    repeatStrikes.RemoveAt(i);
+            }
+        }
+
+        private void StartRepeatStrike(SynergyCategory category, SynergyOption option, int damage)
+        {
+            if (option.Hits <= 0)
+                return;
+
+            // Timer 0 이면 같은 Tick 의 TickRepeatStrikes 가 바로 첫 타를 낸다(발동 → 즉시 1타, 이후 간격마다).
+            repeatStrikes.Add(new RepeatStrike
+            {
+                Category = category,
+                Damage = damage,
+                HitsLeft = option.Hits,
+                Interval = option.Seconds / option.Hits,
+                Timer = 0f,
+            });
         }
 
         // ── 통지 (한 줄씩 꽂힌 자리에서 부른다) ─────────────────
@@ -359,13 +412,16 @@ namespace OJ.Synergy
             switch ((SynergyEffectId)option.Id)
             {
                 case SynergyEffectId.SingleFixedDamage:
-                    StrikeFront(slot.Category, value);
+                    StrikeFront(slot.Category, value, true);
                     break;
                 case SynergyEffectId.SinglePercentDamage:
                     StrikeFront(slot.Category, AttackDamage(value));
                     break;
+                case SynergyEffectId.RepeatFixedDamage:
+                    StartRepeatStrike(slot.Category, option, value);
+                    break;
                 case SynergyEffectId.AllFixedDamage:
-                    StrikeAll(value);
+                    StrikeAll(value, true);
                     break;
                 case SynergyEffectId.AllPercentDamage:
                     StrikeAll(AttackDamage(value));
@@ -560,23 +616,23 @@ namespace OJ.Synergy
             return front;
         }
 
-        private void StrikeFront(SynergyCategory category, int damage)
+        private void StrikeFront(SynergyCategory category, int damage, bool isFixed = false)
         {
             Monster target = FrontMonster();
             if (target == null)
                 return;
 
             OnStrike?.Invoke(category, target);
-            Hit(target, damage);
+            Hit(target, damage, isFixed);
         }
 
-        private void StrikeAll(int damage)
+        private void StrikeAll(int damage, bool isFixed = false)
         {
             // 목록을 복사한다. 때리는 중에 죽은 몬스터가 원본에서 빠진다.
             targetBuffer.Clear();
             targetBuffer.AddRange(battle.Monsters.EngagedMonsters);
             foreach (Monster m in targetBuffer)
-                Hit(m, damage);
+                Hit(m, damage, isFixed);
         }
 
         private void ExecuteBelow(SynergyCategory category, int belowPercent)
@@ -591,15 +647,23 @@ namespace OJ.Synergy
                 return;
 
             OnStrike?.Invoke(category, target);
-            Hit(target, int.MaxValue / 4);
+            Hit(target, int.MaxValue / 4, true);
         }
 
-        private void Hit(Monster target, int damage)
+        /// <param name="isFixed">고정 피해 — 방어력도 보스 대미지 버프도 받지 않고 숫자 그대로 들어간다.</param>
+        private void Hit(Monster target, int damage, bool isFixed = false)
         {
             if (target == null || damage <= 0 || target.HpPercent <= 0)
                 return;
 
-            int applied = target.TakeDamage(SynergyBuffs.ApplyBoss(damage, target.IsStageBoss));
+            int hpBefore = target._hp;
+            int applied = isFixed
+                ? target.TakeDamage(damage, true)
+                : target.TakeDamage(SynergyBuffs.ApplyBoss(damage, target.IsStageBoss));
+
+            // 딜미터기에 시너지 몫으로 올린다. 처치 효과(int.MaxValue/4)가 미터를 억 단위로 부풀리지 않게
+            // 몬스터 남은 체력까지만 센다.
+            battle.Contribution?.RecordSynergy(Mathf.Min(applied, hpBefore));
             if (applied <= 0 || battle.DamageTexts == null)
                 return;
 

@@ -17,6 +17,9 @@ namespace OJ.Synergy
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text progressText;
 
+        /// <summary>로비 가이드가 "눌렀는가" 를 듣는 버튼.</summary>
+        public Button Button => button;
+
         private void Awake()
         {
             if (button != null)

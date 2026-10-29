@@ -60,11 +60,14 @@ namespace OJ.Core
         public int requiredClear;
 
         /// <summary>
-        /// 0 보다 크면 <b>1스테이지의 이 웨이브를 깨는 것</b>으로도 열린다(<see cref="requiredClear"/> 를 못 채웠어도).
-        /// 1스테이지 시험 모드의 "5웨이브 → 다이스, 10웨이브 → 장비" 해금이다. 스테이지를 통째로 깨면 어차피 열리므로
-        /// <see cref="requiredClear"/> 는 그대로 1 이다(여는 쪽이 둘이 아니라 빠른 길 하나가 더 있는 것).
+        /// 0 보다 크면 <b>[<see cref="requiredWaveStage"/>]스테이지의 이 웨이브를 깨는 것</b>으로도 열린다(<see cref="requiredClear"/> 를 못 채웠어도).
+        /// 다이스는 1-10, 장비는 2-10 이다. 스테이지를 통째로 깨면 어차피 열리므로
+        /// <see cref="requiredClear"/> 는 그 스테이지 번호 그대로다(여는 쪽이 둘이 아니라 빠른 길 하나가 더 있는 것).
         /// </summary>
         public int requiredWave;
+
+        /// <summary><see cref="requiredWave"/> 를 세는 스테이지. 웨이브 조건이 없으면 뜻이 없다.</summary>
+        public int requiredWaveStage = 1;
 
         /// <summary>
         /// 참이면 <b>첫 판이 끝난 뒤</b>(이겼든 졌든, 몇 웨이브든) 열린다. 스테이지 보상 가이드처럼 "한 번 죽어 봐야 의미가 있는" 것.
@@ -93,9 +96,11 @@ namespace OJ.Core
         public ContentUnlockDefinition(
             ContentId contentId, int requiredClear, UnlockPresentation presentation,
             string displayName, string description,
-            string guideTapText = "", string guideDetailText = "", int requiredWave = 0, bool requiresRunEnded = false)
+            string guideTapText = "", string guideDetailText = "", int requiredWave = 0, bool requiresRunEnded = false,
+            int requiredWaveStage = 1)
         {
             this.requiredWave = requiredWave;
+            this.requiredWaveStage = requiredWaveStage;
             this.requiresRunEnded = requiresRunEnded;
             this.contentId = contentId;
             this.requiredClear = requiredClear;
@@ -116,7 +121,22 @@ namespace OJ.Core
     /// </summary>
     public static class ContentUnlockRules
     {
-        public static bool IsOpen(ContentUnlockDefinition definition, int lastClearedStage, int stage1BestWave = 0, bool runEnded = false)
+        /// <summary>
+        /// 시작할 때 미리 주는 고기. 고기 축제가 1스테이지 클리어로 뒤로 빠졌으므로(그 전에는 고기를 받을 길이 없다)
+        /// 입장료(<c>StageEntryRules.StaminaCost</c> 5)로 여섯 판을 할 만큼 쥐여 준다.
+        /// </summary>
+        public const int StarterMeat = 30;
+
+        /// <summary>
+        /// 시너지 가이드를 보기 전까지 스테이지 입장 버튼을 가리는가. 첫 판에서 지고 나왔는데(<paramref name="runEnded"/>)
+        /// 다이스계 시너지가 열려 있고 한 번도 안 굴렸으면(<paramref name="diceRerolls"/> 0) 가이드를 먼저 보게 한다.
+        /// </summary>
+        public static bool IsStageEntryHeldForSynergyGuide(bool runEnded, bool diceSynergyOpen, int diceRerolls)
+        {
+            return runEnded && diceSynergyOpen && diceRerolls <= 0;
+        }
+
+        public static bool IsOpen(ContentUnlockDefinition definition, int lastClearedStage, Func<int, int> bestWaveOf = null, bool runEnded = false)
         {
             if (definition == null)
                 return false;
@@ -124,11 +144,17 @@ namespace OJ.Core
             if (lastClearedStage >= definition.requiredClear)
                 return true;
 
-            if (definition.requiredWave > 0 && stage1BestWave >= definition.requiredWave)
+            if (definition.requiredWave > 0 && BestWave(bestWaveOf, definition.requiredWaveStage) >= definition.requiredWave)
                 return true;
 
-            // 웨이브를 하나라도 깬 기록이 있으면 판을 마친 것이다(이 기능 이전 세이브).
-            return definition.requiresRunEnded && (runEnded || stage1BestWave >= 1);
+            // 1스테이지에서 웨이브를 하나라도 깬 기록이 있으면 판을 마친 것이다(이 기능 이전 세이브).
+            return definition.requiresRunEnded && (runEnded || BestWave(bestWaveOf, 1) >= 1);
+        }
+
+        /// <summary>그 스테이지에서 깬 가장 높은 웨이브. 조회가 없으면 0 이다.</summary>
+        private static int BestWave(Func<int, int> bestWaveOf, int stage)
+        {
+            return bestWaveOf != null ? bestWaveOf(stage) : 0;
         }
 
         /// <summary>
@@ -136,10 +162,10 @@ namespace OJ.Core
         /// 튀어나오게 하는데, 이미 보이고 있으면 무엇이 새로 생겼는지 알 수 없다.
         /// </summary>
         public static bool IsVisible(
-            ContentUnlockDefinition definition, int lastClearedStage, ICollection<ContentId> announced, int stage1BestWave = 0,
+            ContentUnlockDefinition definition, int lastClearedStage, ICollection<ContentId> announced, Func<int, int> bestWaveOf = null,
             bool runEnded = false)
         {
-            if (!IsOpen(definition, lastClearedStage, stage1BestWave, runEnded))
+            if (!IsOpen(definition, lastClearedStage, bestWaveOf, runEnded))
                 return false;
 
             return definition.presentation == UnlockPresentation.Quiet || announced.Contains(definition.contentId);
@@ -147,10 +173,10 @@ namespace OJ.Core
 
         /// <summary>열렸는데 연출을 아직 안 본 것이 있는가.</summary>
         public static bool HasPending(
-            IReadOnlyList<ContentUnlockDefinition> definitions, int lastClearedStage, ICollection<ContentId> announced, int stage1BestWave = 0,
+            IReadOnlyList<ContentUnlockDefinition> definitions, int lastClearedStage, ICollection<ContentId> announced, Func<int, int> bestWaveOf = null,
             bool runEnded = false)
         {
-            return VisitQueue(definitions, lastClearedStage, announced, stage1BestWave, runEnded).Count > 0;
+            return VisitQueue(definitions, lastClearedStage, announced, bestWaveOf, runEnded).Count > 0;
         }
 
         /// <summary>
@@ -162,7 +188,7 @@ namespace OJ.Core
         /// </summary>
         public static List<ContentUnlockDefinition> VisitQueue(
             IReadOnlyList<ContentUnlockDefinition> definitions, int lastClearedStage, ICollection<ContentId> announced,
-            int stage1BestWave = 0, bool runEnded = false)
+            Func<int, int> bestWaveOf = null, bool runEnded = false)
         {
             var queue = new List<ContentUnlockDefinition>();
             if (definitions == null)
@@ -174,7 +200,7 @@ namespace OJ.Core
                 if (d == null || d.presentation == UnlockPresentation.Quiet)
                     continue;
 
-                if (!IsOpen(d, lastClearedStage, stage1BestWave, runEnded) || announced.Contains(d.contentId))
+                if (!IsOpen(d, lastClearedStage, bestWaveOf, runEnded) || announced.Contains(d.contentId))
                     continue;
 
                 queue.Add(d);
@@ -261,6 +287,14 @@ namespace OJ.Core
                 else if (d.requiredWave > 0 && d.requiredClear < 1)
                     problems.Add(at + ": 요구 웨이브가 있는데 요구 클리어가 0 이다 — 처음부터 열려 있어 웨이브 조건이 뜻이 없다.");
 
+                if (d.requiredWave > 0)
+                {
+                    if (d.requiredWaveStage < 1)
+                        problems.Add(at + ": 요구 웨이브의 스테이지가 1 보다 작다.");
+                    else if (d.requiredWaveStage > d.requiredClear)
+                        problems.Add(at + ": 요구 웨이브의 스테이지 " + d.requiredWaveStage + " 가 요구 클리어 " + d.requiredClear + " 보다 크다 — 그 스테이지를 깨기 전에 이미 열려 웨이브 조건이 뜻이 없다.");
+                }
+
                 if (d.requiresRunEnded && d.requiredClear < 1)
                     problems.Add(at + ": 판 종료 조건이 있는데 요구 클리어가 0 이다 — 처음부터 열려 있어 조건이 뜻이 없다.");
 
@@ -297,44 +331,36 @@ namespace OJ.Core
         {
             return new List<ContentUnlockDefinition>
             {
-                // 0클리어 — 튜토리얼 직후는 고기 축제 가이드 하나뿐이다.
+                // 0클리어 — 튜토리얼 직후는 다이스 강화 가이드 하나뿐이다(예전 고기 축제 자리).
                 new ContentUnlockDefinition(ContentId.StageStar, 0, UnlockPresentation.Quiet,
                     "별의 축제", "별을 모으면 보상을 받아요."),
-                new ContentUnlockDefinition(ContentId.MeatFestival, 0, UnlockPresentation.Guide,
-                    "고기 축제", "시간이 지나면 고기가 구워져요.\n눌러서 받아요!",
-                    "고기가 구워졌어요! 눌러 보세요.",
-                    "고기는 시간이 지나면 쌓여요.\n가득 차기 전에 받아 가요."),
+                new ContentUnlockDefinition(ContentId.Dice, 0, UnlockPresentation.Guide,
+                    "다이스", "다이스를 강화하면\n전투에서 더 강해져요.",
+                    "다이스가 열렸어요!\n강화해 봐요.",
+                    "여기서 다이스를 강화하고\n새 다이스를 열 수 있어요."),
 
-                // 1스테이지의 가이드 세 개 — <b>이 순서가 곧 나오는 순서다</b>(표 순서 = VisitQueue 순서).
-                // 첫 판이 끝난 뒤 몇 웨이브에서 죽었든 스테이지 보상 → 장비 → 다이스 순으로만 나온다. 웨이브 조건은 단조 증가(0 → 5 → 10)라
-                // 앞의 것이 안 열렸는데 뒤의 것이 먼저 열리는 일이 없다(ContentUnlockRulesTests 가 못박는다).
-
-                // 첫 판이 끝난 뒤 — 스테이지 보상. 몇 웨이브에서 죽었든 나온다.
+                // 1스테이지 — <b>이 순서가 곧 나오는 순서다</b>(표 순서 = VisitQueue 순서).
+                // 첫 판이 끝난 뒤(몇 웨이브에서 죽었든) 스테이지 보상 가이드가 나오고, 시너지 가이드가 이어진다(표 밖, 디렉터가 건다).
+                // 고기 축제는 1스테이지를 <b>클리어</b>해야 나온다 — 그 전 고기는 시작할 때 미리 준 30개로 쓴다.
+                // 연출(방치 보상)을 가이드(고기 축제)보다 앞에 둔다. 장비는 2스테이지 10웨이브라 요구 클리어 2 줄에 있다.
                 new ContentUnlockDefinition(ContentId.StageReward, 1, UnlockPresentation.Guide,
                     "클리어 보상", "웨이브를 깰수록\n보상을 받아요.",
                     "웨이브를 깨면 보상을 받아요!\n눌러서 확인해 봐요.",
                     "웨이브를 많이 깰수록\n더 좋은 보상이 열려요.",
                     requiresRunEnded: true),
-
-                // 1스테이지 5웨이브 — 장비. 무기를 눌러 강화해 보는 데까지 간다.
-                new ContentUnlockDefinition(ContentId.Equipment, 1, UnlockPresentation.Guide,
-                    "장비", "장비를 강화하면 다이스가 더 세져요.",
-                    "5웨이브를 넘었어요!\n장비가 열렸어요. 눌러 보세요.",
-                    "골드로 장비를 강화하면\n모든 다이스의 공격력이 올라요.",
-                    requiredWave: 5),
-
-                // 1스테이지 10웨이브 — 다이스. (1스테이지를 통째로 깨도 열린다.) 가이드는 노멀 다이스를 3레벨까지 올리게 한다.
-                new ContentUnlockDefinition(ContentId.Dice, 1, UnlockPresentation.Guide,
-                    "다이스", "다이스를 강화하면\n전투에서 더 강해져요.",
-                    "10웨이브를 넘었어요!\n다이스를 강화해 봐요.",
-                    "여기서 다이스를 강화하고\n새 다이스를 열 수 있어요.",
-                    requiredWave: 10),
-
-                // 1클리어 — 방치 보상.
                 new ContentUnlockDefinition(ContentId.IdleReward, 1, UnlockPresentation.Announce,
                     "방치 보상", "게임을 꺼 둬도 보상이 쌓여요.\n자주 받으러 와요!"),
+                new ContentUnlockDefinition(ContentId.MeatFestival, 1, UnlockPresentation.Guide,
+                    "고기 축제", "시간이 지나면 고기가 구워져요.\n눌러서 받아요!",
+                    "고기가 구워졌어요! 눌러 보세요.",
+                    "고기는 시간이 지나면 쌓여요.\n가득 차기 전에 받아 가요."),
 
-                // 2클리어
+                // 2클리어 — 장비는 2스테이지 10웨이브(2-10)를 깨도 열린다. 무기를 눌러 강화해 보는 데까지 간다.
+                new ContentUnlockDefinition(ContentId.Equipment, 2, UnlockPresentation.Guide,
+                    "장비", "장비를 강화하면 다이스가 더 세져요.",
+                    "2스테이지 10웨이브를 넘었어요!\n장비가 열렸어요. 눌러 보세요.",
+                    "골드로 장비를 강화하면\n모든 다이스의 공격력이 올라요.",
+                    requiredWave: 10, requiredWaveStage: 2),
                 new ContentUnlockDefinition(ContentId.Pinball, 2, UnlockPresentation.Guide,
                     "핀볼", "티켓으로 핀볼을 굴려\n고기와 보상을 받아요.",
                     "핀볼이 열렸어요! 눌러 보세요.",

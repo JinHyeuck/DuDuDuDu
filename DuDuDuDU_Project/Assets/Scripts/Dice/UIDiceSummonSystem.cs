@@ -276,7 +276,7 @@ namespace OJ.Dice
                 run.SummonsSinceLastCostIncrease++;
                 if (run.SummonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
                 {
-                    run.SummonCost++;
+                    run.SummonCost += BalanceProfile.SummonCostStep(run.SummonCost);
                     run.SummonsSinceLastCostIncrease = 0;
                 }
             }
