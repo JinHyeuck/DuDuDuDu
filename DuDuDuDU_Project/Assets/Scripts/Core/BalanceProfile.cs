@@ -30,23 +30,30 @@ namespace OJ.Core
         /// </summary>
         public const float CooldownMultiplier = 0.6f;
 
-        /// <summary>소환 비용이 한 번 오를 때 +1 인 구간의 끝(이 비용 미만). 초반 "20 SP 로 두 개" 는 그대로 둔다.</summary>
-        public const int SummonCostSlowBelow = 14;
+        /// <summary>새 밸런스에서 소환 비용이 두 번 소환마다 오르는 양.</summary>
+        public const int SummonCostStepOn = 2;
 
-        /// <summary>+2 씩 오르는 구간의 끝(이 비용 미만). 이 비용부터는 +3 씩 오른다.</summary>
-        public const int SummonCostMidBelow = 24;
+        /// <summary>비용이 이 값(시작 비용) 이하인 동안만 소환 <c>basePerIncrease</c> 번마다 오른다. 그 뒤로는 매 소환마다 오른다.</summary>
+        public const int SummonCostStartPhase = 10;
 
         /// <summary>
-        /// 소환 비용이 오를 때 더하는 값(2026-10-29, 사용자 지시 "중후반에 다이스 소환이 더 비싸야 한다").
-        /// 꺼져 있으면 예전처럼 항상 1. 켜지면 초반(비용 14 미만)은 +1 그대로, 중반(24 미만)은 +2, 후반은 +3 이다.
+        /// 다음 비용 상승까지 필요한 소환 횟수. 꺼져 있으면 <paramref name="basePerIncrease"/> 그대로.
+        /// 켜지면 처음 두 번(비용 10)만 같은 값이고, 그 뒤로는 소환할 때마다 오른다 — 10 · 10 · 12 · 14 · 16 …
+        /// </summary>
+        public static int SummonsPerCostIncrease(int currentCost, int basePerIncrease)
+        {
+            int baseCount = basePerIncrease < 1 ? 1 : basePerIncrease;
+            return Active && currentCost > SummonCostStartPhase ? 1 : baseCount;
+        }
+
+        /// <summary>
+        /// 소환 비용이 오를 때 더하는 값(2026-10-29, 사용자 지시 "처음 10 10 만 유지, 이후 1번마다 +2").
+        /// 꺼져 있으면 예전처럼 항상 1. 켜지면 늘 <see cref="SummonCostStepOn"/> 이다 — 10 · 10 · 12 · 14 · 16 …
         /// SP 수급 곡선(<see cref="WaveSpCurve"/>)은 건드리지 않았다 — 후반에 소환 횟수가 줄고 한 번이 무거워진다.
         /// </summary>
         public static int SummonCostStep(int currentCost)
         {
-            if (!Active || currentCost < SummonCostSlowBelow)
-                return 1;
-
-            return currentCost < SummonCostMidBelow ? 2 : 3;
+            return Active ? SummonCostStepOn : 1;
         }
 
         /// <summary>다이스 등급(0 일반 · 1 레어 · 2 킹)별 배수. 꺼져 있으면 1.</summary>

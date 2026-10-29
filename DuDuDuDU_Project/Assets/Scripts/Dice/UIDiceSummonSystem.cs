@@ -274,7 +274,7 @@ namespace OJ.Dice
             {
                 RunState run = battle.Game.Run;
                 run.SummonsSinceLastCostIncrease++;
-                if (run.SummonsSinceLastCostIncrease >= Mathf.Max(1, summonsPerCostIncrease))
+                if (run.SummonsSinceLastCostIncrease >= BalanceProfile.SummonsPerCostIncrease(run.SummonCost, summonsPerCostIncrease))
                 {
                     run.SummonCost += BalanceProfile.SummonCostStep(run.SummonCost);
                     run.SummonsSinceLastCostIncrease = 0;

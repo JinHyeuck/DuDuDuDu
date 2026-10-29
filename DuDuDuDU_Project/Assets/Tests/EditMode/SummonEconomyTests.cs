@@ -119,13 +119,10 @@ namespace OJ.Core.Tests
             Assert.LessOrEqual(done, 100);
         }
 
-        /// <summary>소환 비용은 초반(14 미만) +1, 중반(24 미만) +2, 후반 +3 씩 오른다. 꺼져 있으면 항상 +1.</summary>
-        [TestCase(10, 1)]
-        [TestCase(13, 1)]
-        [TestCase(14, 2)]
-        [TestCase(23, 2)]
-        [TestCase(24, 3)]
-        [TestCase(60, 3)]
+        /// <summary>소환 비용은 오를 때마다 +2 다. 꺼져 있으면 항상 +1.</summary>
+        [TestCase(10, 2)]
+        [TestCase(24, 2)]
+        [TestCase(60, 2)]
         public void SummonCostStepGrowsWithCost(int cost, int expected)
         {
             Assert.AreEqual(expected, BalanceProfile.SummonCostStep(cost));
@@ -134,24 +131,29 @@ namespace OJ.Core.Tests
             Assert.AreEqual(1, BalanceProfile.SummonCostStep(cost));
         }
 
-        /// <summary>두 번 소환마다 오른다고 보면 스무 번째 소환은 예전(20)보다 한참 비싸고, 첫 두 번은 그대로 20 SP 다.</summary>
+        /// <summary>처음 두 번은 10 SP 씩이고, 그 뒤로는 소환할 때마다 +2 다.</summary>
         [Test]
-        public void SummonCostIsSteeperInMidAndLateGame()
+        public void SummonCostIsFlatTwiceThenRisesEverySummon()
         {
             int cost = 10;
-            int firstTwo = 0;
-            int twentieth = 0;
+            int sinceIncrease = 0;
+            var paid = new System.Collections.Generic.List<int>();
             for (int n = 1; n <= 40; n++)
             {
-                if (n <= 2) firstTwo += cost;
-                if (n == 20) twentieth = cost;
-                if (n % 2 == 0)
+                paid.Add(cost);
+                sinceIncrease++;
+                if (sinceIncrease >= BalanceProfile.SummonsPerCostIncrease(cost, 2))
+                {
                     cost += BalanceProfile.SummonCostStep(cost);
+                    sinceIncrease = 0;
+                }
             }
 
-            Assert.AreEqual(20, firstTwo);
-            Assert.GreaterOrEqual(twentieth, 24, "스무 번째 소환 비용(예전 19)");
-            Assert.GreaterOrEqual(cost, 50, "마흔 번째 소환 뒤 비용");
+            CollectionAssert.AreEqual(new[] { 10, 10, 12, 14, 16, 18 }, paid.GetRange(0, 6));
+            Assert.AreEqual(86, paid[39], "마흔 번째 소환 비용");
+
+            BalanceProfile.Active = false;
+            Assert.AreEqual(2, BalanceProfile.SummonsPerCostIncrease(30, 2));
         }
 
         [Test]
@@ -174,8 +176,8 @@ namespace OJ.Core.Tests
         public void OnLowersCostsAndBoostsRareAndKing()
         {
             Assert.AreEqual(30, SlotUnlockRules.Cost(0));
-            Assert.AreEqual(20, SummonStarRules.UpgradeCost(1));
-            Assert.AreEqual(35, SummonStarRules.UpgradeCost(2));
+            Assert.AreEqual(25, SummonStarRules.UpgradeCost(1));
+            Assert.AreEqual(40, SummonStarRules.UpgradeCost(2));
             Assert.AreEqual(1f, BalanceProfile.TierMultiplier(0));
             Assert.AreEqual(3f, BalanceProfile.TierMultiplier(1));
             Assert.AreEqual(2.55f, BalanceProfile.TierMultiplier(2));

@@ -44,6 +44,7 @@
 - 한 방문에 이어 붙이는 가이드의 상한은 **3개**(`MaxChainedGuides`)다(탭 가이드는 홈을 거치지 않고 이어진다).
 - **시작 고기.** 고기 축제가 뒤로 빠져서 로비에 처음 들어올 때 **한 번** 고기 30개를 준다(`ContentUnlockRules.StarterMeat`, `ContentUnlockManager.GrantStarterMeat`,
   `SaveState.ContentUnlock.StarterMeatGranted`). 이미 판을 해 본 세이브(클리어 기록·첫 판 종료)는 주지 않고 기록만 한다.
+- **시너지 입구 잠금.** 첫 판을 마치기(지고 나오기) 전에는 로비의 시너지 입구 버튼도 보이지 않고 눌리지 않는다(`UISynergyEntryButton`, `RunEnded`).
 - **입장 버튼 가리기.** 첫 판 종료(`FirstRunEnded`) 뒤 다이스계 시너지가 열려 있고 리롤이 0 이면 입장 버튼을 숨긴다
   (`ContentUnlockRules.IsStageEntryHeldForSynergyGuide`, `LobbyLayoutController.RefreshStageUI`). 시너지 리롤이 일어나면 풀린다.
 - **판 종료 기록.** `ContentUnlockDefinition.requiresRunEnded`. 튜토리얼이 아닌 판의 결과창이 뜰 때 `ContentUnlockManager.MarkRunEnded()` 가 적는다
