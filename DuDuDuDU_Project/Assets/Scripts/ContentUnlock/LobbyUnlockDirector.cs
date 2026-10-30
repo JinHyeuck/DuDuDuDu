@@ -772,9 +772,9 @@ namespace OJ.ContentUnlock
         /// </summary>
         private bool ShouldGuideSynergy()
         {
-            // 첫 판을 마친(지고 나온) 로비에서만 — 튜토리얼 직후 다이스 가이드에 겹치지 않는다.
+            // 첫 판에서 진 뒤의 로비에서만(이기고 나온 로비에는 안 나온다) — 튜토리얼 직후 다이스 가이드에 겹치지 않는다.
             SynergyManager synergy = SynergyManager.Instance;
-            if (ContentUnlockManager.Instance == null || !ContentUnlockManager.Instance.RunEnded)
+            if (ContentUnlockManager.Instance == null || !ContentUnlockManager.Instance.Defeated)
                 return false;
 
             if (synergy == null || !synergy.IsOpen(SynergyCategory.Dice) || synergy.GetRerolls(SynergyCategory.Dice) > 0)

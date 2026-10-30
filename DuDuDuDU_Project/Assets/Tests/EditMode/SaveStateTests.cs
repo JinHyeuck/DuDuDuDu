@@ -540,6 +540,7 @@ namespace OJ.Core.Tests
                 "    \"initialized\": false,",
                 "    \"firstRunEnded\": false,",
                 "    \"starterMeatGranted\": false,",
+                "    \"firstDefeated\": false,",
                 "    \"announced\": []",
                 "  },",
                 "  \"synergy\": {",

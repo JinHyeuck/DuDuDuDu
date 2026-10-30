@@ -46,6 +46,11 @@ namespace OJ.ContentUnlock
         /// </summary>
         public bool RunEnded => firstRunEnded;
 
+        private bool firstDefeated;
+
+        /// <summary>첫 판에서 진 적이 있는가. 시너지 가이드는 이긴 판이 아니라 <b>진 판</b> 뒤에 나온다.</summary>
+        public bool Defeated => firstDefeated;
+
         /// <summary>시작 고기를 줬는가(<see cref="ContentUnlockRules.StarterMeat"/>).</summary>
         private bool starterMeatGranted;
 
@@ -75,7 +80,7 @@ namespace OJ.ContentUnlock
             {
                 OJ.Synergy.SynergyManager synergy = OJ.Synergy.SynergyManager.Instance;
                 return synergy != null && ContentUnlockRules.IsStageEntryHeldForSynergyGuide(
-                    firstRunEnded, synergy.IsOpen(SynergyCategory.Dice), synergy.GetRerolls(SynergyCategory.Dice));
+                    firstDefeated, synergy.IsOpen(SynergyCategory.Dice), synergy.GetRerolls(SynergyCategory.Dice));
             }
         }
 
@@ -83,12 +88,14 @@ namespace OJ.ContentUnlock
         /// 튜토리얼이 아닌 판이 끝났다(이겼든 졌든). 처음 한 번만 적고 그 자리에서 저장한다 —
         /// 로비에 돌아와 스테이지 보상 가이드가 나오는 것이 이 기록 덕분이다.
         /// </summary>
-        public void MarkRunEnded()
+        public void MarkRunEnded(bool defeated = false)
         {
-            if (firstRunEnded)
+            if (firstRunEnded && (firstDefeated || !defeated))
                 return;
 
             firstRunEnded = true;
+            if (defeated)
+                firstDefeated = true;
             GameContainer.SaveService?.SaveAll();
             OnChanged?.Invoke();
         }
@@ -164,6 +171,7 @@ namespace OJ.ContentUnlock
             announced.Clear();
             pendingBackfill = false;
             firstRunEnded = false;
+            firstDefeated = false;
             GameContainer.SaveService?.SaveAll();
             OnChanged?.Invoke();
         }
@@ -196,6 +204,7 @@ namespace OJ.ContentUnlock
             state.ContentUnlock.Initialized = initialized;
             state.ContentUnlock.FirstRunEnded = firstRunEnded;
             state.ContentUnlock.StarterMeatGranted = starterMeatGranted;
+            state.ContentUnlock.FirstDefeated = firstDefeated;
 
             state.ContentUnlock.Announced.Clear();
             var names = new List<string>();
@@ -218,6 +227,7 @@ namespace OJ.ContentUnlock
             initialized = state.ContentUnlock.Initialized;
             firstRunEnded = state.ContentUnlock.FirstRunEnded;
             starterMeatGranted = state.ContentUnlock.StarterMeatGranted;
+            firstDefeated = state.ContentUnlock.FirstDefeated;
             pendingBackfill = ContentUnlockRules.ShouldBackfill(initialized, ContentUnlockRules.LastClearedFromSave(state));
         }
     }

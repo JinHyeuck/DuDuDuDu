@@ -2010,8 +2010,8 @@ namespace OJ.Hunting
 
         private void ShowStageResult(bool isWin, int stageIndex, int reachedWaveCount, IReadOnlyList<PointRewardEntry> rewards)
         {
-            // 첫 판이 끝났다(이겼든 졌든) — 로비의 스테이지 보상 가이드가 이것을 기다린다.
-            ContentUnlockManager.Instance?.MarkRunEnded();
+            // 첫 판이 끝났다(이겼든 졌든) — 로비의 스테이지 보상 가이드가 이것을 기다린다. 졌는지도 따로 적는다(시너지 가이드).
+            ContentUnlockManager.Instance?.MarkRunEnded(!isWin);
             StartCoroutine(CoShowStageResult(isWin, stageIndex, reachedWaveCount, rewards));
         }
 
