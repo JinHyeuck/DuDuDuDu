@@ -55,17 +55,26 @@ namespace OJ.Synergy
         }
 
         /// <summary>
-        /// 시간을 나눠 때리는 효과 하나(<see cref="SynergyEffectId.RepeatFixedDamage"/>). 발동할 때마다 하나씩 쌓이고
-        /// 첫 타는 바로, 나머지는 <see cref="Interval"/> 간격으로 나간다. 맞출 때마다 맨 앞 적을 새로 고른다.
+        /// 장전된 총알 하나. 피해를 주는 효과는 발동하면 바로 때리지 않고 총알로 쌓였다가, 맞출 몬스터가 있을 때
+        /// <see cref="BulletInterval"/> 초에 한 발씩 나간다(몬스터가 없을 때 발동해도 기회가 사라지지 않는다).
+        /// 공격력 % 피해는 쏘는 순간의 공격력으로 계산한다.
         /// </summary>
-        private sealed class RepeatStrike
+        private struct Bullet
         {
             public SynergyCategory Category;
-            public int Damage;
-            public int HitsLeft;
-            public float Interval;
-            public float Timer;
+            public int Value;
+            public bool IsPercent;
+            public bool IsAll;
+
+            /// <summary>처치 효과. Value 는 HP 퍼센트 기준이고, 조건에 맞는 적(보스 제외, HP 미만)이 있을 때만 나간다.</summary>
+            public bool IsExecute;
         }
+
+        /// <summary>총알이 나가는 간격(초).</summary>
+        private const float BulletInterval = 1f;
+
+        /// <summary>쌓아 둘 수 있는 총알 수. 몬스터가 오래 없을 때 끝없이 불어나지 않게 한다.</summary>
+        private const int AmmoCap = 200;
 
         private struct PendingFire
         {
@@ -91,7 +100,8 @@ namespace OJ.Synergy
         private readonly Slot[] slots = new Slot[SynergyRules.CategoryCount];
         private readonly Queue<PendingFire> pending = new Queue<PendingFire>();
         private readonly List<Monster> targetBuffer = new List<Monster>();
-        private readonly List<RepeatStrike> repeatStrikes = new List<RepeatStrike>();
+        private readonly List<Bullet> ammo = new List<Bullet>();
+        private float bulletTimer;
         private int pendingSummonStar;
 
         public bool IsActive { get; private set; }
@@ -165,7 +175,8 @@ namespace OJ.Synergy
 
             IsActive = false;
             pending.Clear();
-            repeatStrikes.Clear();
+            ammo.Clear();
+            bulletTimer = 0f;
             SynergyBuffs.Reset();
         }
 
@@ -176,7 +187,8 @@ namespace OJ.Synergy
                 return;
 
             pending.Clear();
-            repeatStrikes.Clear();
+            ammo.Clear();
+            bulletTimer = 0f;
             pendingSummonStar = 0;
             foreach (Slot slot in slots)
             {
@@ -212,7 +224,8 @@ namespace OJ.Synergy
                 changed = true;
             }
 
-            TickRepeatStrikes(deltaTime);
+            if (TickAmmo(deltaTime))
+                changed = true;
 
             bool buffsChanged = false;
             foreach (Slot slot in slots)
@@ -242,39 +255,51 @@ namespace OJ.Synergy
                 OnStateChanged?.Invoke();
         }
 
-        /// <summary>쌓인 반복 타격의 시간을 깎고 때릴 때가 된 것을 때린다. 한 프레임이 길면 밀린 타를 몰아서 낸다.</summary>
-        private void TickRepeatStrikes(float deltaTime)
+        /// <summary>
+        /// 총알 간격을 깎고 한 발 쏜다. 맞출 몬스터가 없으면 간격을 0 에 붙여 두었다가 몬스터가 나타나는 즉시 쏜다.
+        /// 한 프레임에 한 발만 나간다(간격이 길어도 몰아서 쏘지 않는다). 쐈으면 true.
+        /// </summary>
+        private bool TickAmmo(float deltaTime)
         {
-            for (int i = repeatStrikes.Count - 1; i >= 0; i--)
+            bulletTimer = Mathf.Max(0f, bulletTimer - deltaTime);
+            if (ammo.Count == 0 || bulletTimer > 0f)
+                return false;
+
+            // 앞에서부터 쏠 수 있는 첫 총알을 쏜다 — 처치 총알은 맞는 적이 없으면 뒤에 선 총알을 막지 않고 기다린다.
+            for (int i = 0; i < ammo.Count; i++)
             {
-                RepeatStrike strike = repeatStrikes[i];
-                strike.Timer -= deltaTime;
-                while (strike.HitsLeft > 0 && strike.Timer <= 0f)
+                Bullet bullet = ammo[i];
+                if (bullet.IsExecute)
                 {
-                    StrikeFront(strike.Category, strike.Damage, true);
-                    strike.HitsLeft--;
-                    strike.Timer += strike.Interval;
+                    Monster target = ExecuteTarget(bullet.Value);
+                    if (target == null)
+                        continue;
+
+                    ammo.RemoveAt(i);
+                    bulletTimer = BulletInterval;
+                    OnStrike?.Invoke(bullet.Category, target);
+                    Hit(target, int.MaxValue / 4, true);
+                    return true;
                 }
 
-                if (strike.HitsLeft <= 0)
-                    repeatStrikes.RemoveAt(i);
+                ammo.RemoveAt(i);
+                bulletTimer = BulletInterval;
+                int damage = bullet.IsPercent ? AttackDamage(bullet.Value) : bullet.Value;
+                bool isFixed = !bullet.IsPercent;
+                if (bullet.IsAll)
+                    StrikeAll(bullet.Category, damage, isFixed);
+                else
+                    StrikeFront(bullet.Category, damage, isFixed);
+                return true;
             }
+
+            return false;
         }
 
-        private void StartRepeatStrike(SynergyCategory category, SynergyOption option, int damage)
+        private void Load(SynergyCategory category, int value, bool isPercent, bool isAll, int count = 1, bool isExecute = false)
         {
-            if (option.Hits <= 0)
-                return;
-
-            // Timer 0 이면 같은 Tick 의 TickRepeatStrikes 가 바로 첫 타를 낸다(발동 → 즉시 1타, 이후 간격마다).
-            repeatStrikes.Add(new RepeatStrike
-            {
-                Category = category,
-                Damage = damage,
-                HitsLeft = option.Hits,
-                Interval = option.Seconds / option.Hits,
-                Timer = 0f,
-            });
+            for (int i = 0; i < count && ammo.Count < AmmoCap; i++)
+                ammo.Add(new Bullet { Category = category, Value = value, IsPercent = isPercent, IsAll = isAll, IsExecute = isExecute });
         }
 
         // ── 통지 (한 줄씩 꽂힌 자리에서 부른다) ─────────────────
@@ -411,23 +436,24 @@ namespace OJ.Synergy
 
             switch ((SynergyEffectId)option.Id)
             {
+                // 피해 효과는 바로 때리지 않고 총알로 장전한다(TickAmmo).
                 case SynergyEffectId.SingleFixedDamage:
-                    StrikeFront(slot.Category, value, true);
+                    Load(slot.Category, value, false, false);
                     break;
                 case SynergyEffectId.SinglePercentDamage:
-                    StrikeFront(slot.Category, AttackDamage(value));
+                    Load(slot.Category, value, true, false);
                     break;
                 case SynergyEffectId.RepeatFixedDamage:
-                    StartRepeatStrike(slot.Category, option, value);
+                    Load(slot.Category, value, false, false, option.Hits);
                     break;
                 case SynergyEffectId.AllFixedDamage:
-                    StrikeAll(value, true);
+                    Load(slot.Category, value, false, true);
                     break;
                 case SynergyEffectId.AllPercentDamage:
-                    StrikeAll(AttackDamage(value));
+                    Load(slot.Category, value, true, true);
                     break;
                 case SynergyEffectId.ExecuteBelowHp:
-                    ExecuteBelow(slot.Category, value);
+                    Load(slot.Category, value, false, false, 1, true);
                     break;
 
                 case SynergyEffectId.OpenSlot:
@@ -626,28 +652,27 @@ namespace OJ.Synergy
             Hit(target, damage, isFixed);
         }
 
-        private void StrikeAll(int damage, bool isFixed = false)
+        private void StrikeAll(SynergyCategory category, int damage, bool isFixed = false)
         {
             // 목록을 복사한다. 때리는 중에 죽은 몬스터가 원본에서 빠진다.
             targetBuffer.Clear();
             targetBuffer.AddRange(battle.Monsters.EngagedMonsters);
             foreach (Monster m in targetBuffer)
+            {
+                // 단일 타격처럼 맞는 몬스터마다 공격선을 낸다.
+                if (m != null && m.gameObject.activeInHierarchy && m.HpPercent > 0)
+                    OnStrike?.Invoke(category, m);
                 Hit(m, damage, isFixed);
+            }
         }
 
-        private void ExecuteBelow(SynergyCategory category, int belowPercent)
+        /// <summary>처치 총알이 맞출 몬스터 — 맨 앞의 HP 퍼센트 미만 비보스. 없으면 null(총알은 기다린다).</summary>
+        private Monster ExecuteTarget(int belowPercent)
         {
-            Monster target = FrontMonster(m =>
+            return FrontMonster(m =>
                 !m.IsStageBoss
                 && (battle.Bounty == null || !battle.Bounty.IsEventBoss(m))
                 && m.HpPercent < belowPercent);
-
-            // 조건에 맞는 몬스터가 없으면 꽝(사용자 결정).
-            if (target == null)
-                return;
-
-            OnStrike?.Invoke(category, target);
-            Hit(target, int.MaxValue / 4, true);
         }
 
         /// <param name="isFixed">고정 피해 — 방어력도 보스 대미지 버프도 받지 않고 숫자 그대로 들어간다.</param>

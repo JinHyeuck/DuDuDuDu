@@ -113,7 +113,7 @@ namespace OJ.Core
         /// <summary>최대 중첩. 버프가 아니면 0, 중첩 없는 버프는 1.</summary>
         public readonly int MaxStacks;
 
-        /// <summary>시간을 나눠 때리는 효과의 타수. 한 번에 끝나는 효과는 0.</summary>
+        /// <summary>장전하는 효과의 총알 수. 한 번에 끝나는 효과는 0.</summary>
         public readonly int Hits;
 
         /// <summary>문구. <c>{v}</c> 수치, <c>{t}</c> 대상 이름, <c>{s}</c> 초, <c>{c}</c> 중첩, <c>{n}</c> 타수.</summary>
@@ -189,7 +189,7 @@ namespace OJ.Core
             Effect(SynergyEffectId.AllFixedDamage, DiceMask, SynergyTargetKind.None, 20, 150, "적 전체에게 {v} 고정 피해"),
             Effect(SynergyEffectId.AllPercentDamage, DiceMask | ActionMask, SynergyTargetKind.None, 100, 500, "적 전체에게 공격력의 {v}% 피해"),
             Effect(SynergyEffectId.ExecuteBelowHp, DiceMask, SynergyTargetKind.None, 5, 20, "HP {v}% 미만 적 1마리 처치(보스 제외)"),
-            Effect(SynergyEffectId.RepeatFixedDamage, DiceMask, SynergyTargetKind.None, 200, 400, "{s}초간 맨 앞 적에게 {v} 고정 피해 {n}회", 5f, 0, 5),
+            Effect(SynergyEffectId.RepeatFixedDamage, DiceMask, SynergyTargetKind.None, 200, 400, "맨 앞 적에게 {v} 고정 피해 {n}발 장전", 0f, 0, 5),
             Effect(SynergyEffectId.BossDamageBuff, DiceMask | UnifiedMask, SynergyTargetKind.None, 5, 25, "{s}초간 보스 대미지 {v}% 증가({c}회 중첩)", 8f, 5),
 
             Effect(SynergyEffectId.OpenSlot, CombatMask, SynergyTargetKind.None, 1, 2, "자리 {v}개 오픈"),
@@ -331,7 +331,7 @@ namespace OJ.Core
         public const int UnifiedUnlockTowerFloor = 100;
 
         /// <summary>
-        /// 로비 시너지 가이드가 보여 주는 리롤 결과 — "노멀 속성 다이스 11회 공격 시 → 5초간 맨 앞 적에게 357 고정 피해 5회".
+        /// 로비 시너지 가이드가 보여 주는 리롤 결과 — "노멀 속성 다이스 11회 공격 시 → 맨 앞 적에게 357 고정 피해 5발 장전".
         /// 리롤은 무작위지만 가이드에서는 이 값으로 고정한다. 노멀 속성 다이스는 처음부터 보유한 기본 다이스다.
         /// </summary>
         /// <summary><c>ElementType.Normal</c> 의 정수. Core 는 게임 enum 을 못 쓴다(헤드리스 러너).</summary>
