@@ -128,12 +128,12 @@ namespace OJ.Core
         public const int StarterMeat = 30;
 
         /// <summary>
-        /// 시너지 가이드를 보기 전까지 스테이지 입장 버튼을 가리는가. 첫 판에서 지고 나왔는데(<paramref name="runEnded"/>)
+        /// 시너지 가이드를 보기 전까지 스테이지 입장 버튼을 가리는가. 첫 판에서 지고 나왔는데(<paramref name="defeated"/>)
         /// 다이스계 시너지가 열려 있고 한 번도 안 굴렸으면(<paramref name="diceRerolls"/> 0) 가이드를 먼저 보게 한다.
         /// </summary>
-        public static bool IsStageEntryHeldForSynergyGuide(bool runEnded, bool diceSynergyOpen, int diceRerolls)
+        public static bool IsStageEntryHeldForSynergyGuide(bool defeated, bool diceSynergyOpen, int diceRerolls)
         {
-            return runEnded && diceSynergyOpen && diceRerolls <= 0;
+            return defeated && diceSynergyOpen && diceRerolls <= 0;
         }
 
         public static bool IsOpen(ContentUnlockDefinition definition, int lastClearedStage, Func<int, int> bestWaveOf = null, bool runEnded = false)

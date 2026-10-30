@@ -193,9 +193,9 @@ namespace OJ.Core.Tests
             }
         }
 
-        /// <summary>5초간 맨 앞 적에게 200~400 고정 피해를 5회. 다이스계에만 있고 버프가 아니다.</summary>
+        /// <summary>맨 앞 적에게 200~400 고정 피해 5발 장전(1초에 한 발). 다이스계에만 있고 버프가 아니다.</summary>
         [Test]
-        public void Catalog_RepeatFixedDamage_IsADiceEffectWithFiveHitsOverFiveSeconds()
+        public void Catalog_RepeatFixedDamage_IsADiceEffectWithFiveLoadedBullets()
         {
             SynergyOption option = SynergyCatalog.GetEffect(SynergyEffectId.RepeatFixedDamage);
             Assert.IsNotNull(option);
@@ -204,9 +204,9 @@ namespace OJ.Core.Tests
             Assert.IsFalse(option.IsBuff);
             Assert.AreEqual(200, option.Worst);
             Assert.AreEqual(400, option.Best);
-            Assert.AreEqual(5f, option.Seconds);
+            Assert.AreEqual(0f, option.Seconds);
             Assert.AreEqual(5, option.Hits);
-            Assert.AreEqual("5초간 맨 앞 적에게 300 고정 피해 5회", SynergyRules.Describe(option, 300, string.Empty));
+            Assert.AreEqual("맨 앞 적에게 300 고정 피해 5발 장전", SynergyRules.Describe(option, 300, string.Empty));
         }
 
         /// <summary>로비 가이드: 노멀 속성 다이스 11회 공격 시 → 5초간 5회 고정 피해(357). 무작위가 아니고 Best 도 안 터진다.</summary>
