@@ -31,6 +31,9 @@ namespace OJ.Mission
     {
         [SerializeField] private TMP_Text titleText;
 
+        /// <summary>메달 위 숫자 — 오늘 깬 미션 수. 게이지는 이 메달에서 오른쪽으로 찬다.</summary>
+        [SerializeField] private TMP_Text tierClearedText;
+
         /// <summary>남은 시간 글자. <see cref="resetTimerRoot"/> 의 자식이다.</summary>
         [SerializeField] private TMP_Text resetTimerText;
 
@@ -59,6 +62,12 @@ namespace OJ.Mission
         [SerializeField] private Button achievementTabButton;
         [SerializeField] private Image dailyTabImage;
         [SerializeField] private Image achievementTabImage;
+        [SerializeField] private TMP_Text dailyTabText;
+        [SerializeField] private TMP_Text achievementTabText;
+
+        /// <summary>선택된 탭 그림(Popup_Select_Btn_Prs)과 선택 안 된 탭 그림(_Normal).</summary>
+        [SerializeField] private Sprite tabOnSprite;
+        [SerializeField] private Sprite tabOffSprite;
         [SerializeField] private GameObject achievementTabDot;
 
         [SerializeField] private TMP_Text emptyText;
@@ -66,27 +75,31 @@ namespace OJ.Mission
         /// <summary>
         /// 추가 보상 게이지 트랙의 너비. <b>칸 배치에서 역산한 값이라 임의로 못 바꾼다.</b>
         ///
-        /// 칸 4개가 120 폭 + 24 간격으로 놓이므로 중심이 -216·-72·+72·+216 이고,
-        /// 게이지는 눈금 4개(1/4·2/4·3/4·4/4)가 그 중심에 정확히 떨어져야 한다.
-        /// 눈금 간격 = 너비/4 = 144 → 너비 576, 왼쪽 끝 -360, 오른쪽 끝 +216
-        /// (그래서 트랙 중심이 0 이 아니라 -72 다 — <see cref="TierGaugeCenterX"/>).
+        /// 칸 4개의 슬롯 중심이 PSD 에서 338·509·681·852 (간격 171.3)이다.
+        /// 게이지는 눈금 4개(1/4·2/4·3/4·4/4)가 그 중심에 정확히 떨어져야 하므로
+        /// 눈금 간격 = 너비/4 = 171.3 → 너비 685.2, 왼쪽 끝 338 - 171.3 = 166.7(메달 뒤에 가려진다),
+        /// 오른쪽 끝 852(마지막 슬롯 뒤에 가려진다). 가운데 x = 509.35.
         ///
         /// 이 둘이 어긋나면 "3개 깼는데 게이지가 첫 상자에 안 닿는다" 가 된다.
+        /// 칸 폭(<see cref="UIMissionTierItem.ItemSize"/>)을 바꾸면 이 값도 같이 바꾼다.
         /// </summary>
-        private const float TierGaugeWidth = 576f;
-
-        /// <summary>게이지 트랙의 가로 중심. 위 주석의 역산 결과다.</summary>
-        private const float TierGaugeCenterX = -72f;
+        private const float TierGaugeWidth = 685.2f;
 
         /// <summary>
-        /// 목록 사각형. 탭마다 다르다 — 일일 탭은 추가 보상 줄(아래끝 315) 밑에서 시작하고,
-        /// 업적 탭은 그 줄이 없으므로 제목 바로 아래(570)까지 올라온다.
-        /// 둘 다 아래끝은 탭 버튼 위(-545)다.
+        /// 목록 사각형(PSD 좌표). 일일 탭은 안쪽 판 위에서 추가 보상 줄(아래끝 784) 밑,
+        /// 업적 탭은 그 줄이 없으므로 탭 바로 아래(440)까지 올라온다. 둘 다 아래끝은 안쪽 판 안(1797)이다.
+        /// 폭은 안쪽 판(857)과 같다.
         /// </summary>
-        private static readonly Vector2 DailyListSize = new Vector2(880f, 840f);
-        private static readonly Vector2 DailyListPosition = new Vector2(0f, -122f);
-        private static readonly Vector2 AchievementListSize = new Vector2(880f, 1110f);
-        private static readonly Vector2 AchievementListPosition = new Vector2(0f, 10f);
+        private static readonly Vector2 DailyListSize = new Vector2(857f, 996f);
+        private static readonly Vector2 DailyListPosition = new Vector2(537.5f - 540f, 960f - 1299f);
+        private static readonly Vector2 AchievementListSize = new Vector2(857f, 1357f);
+        private static readonly Vector2 AchievementListPosition = new Vector2(537.5f - 540f, 960f - 1118.5f);
+
+        /// <summary>줄 사이 간격 — 판 높이 184 + 15 = 시안 줄 간격 약 199.</summary>
+        private const float RowSpacing = 15f;
+
+        /// <summary>목록 맨 위 여백 — 시안에서 첫 판이 안쪽 판 위끝에서 8 떨어져 시작한다.</summary>
+        private const int ListTopPadding = 8;
 
         private readonly List<UIMissionRow> rows = new List<UIMissionRow>();
         private readonly List<UIMissionTierItem> tierItems = new List<UIMissionTierItem>();
@@ -199,22 +212,26 @@ namespace OJ.Mission
 
         private void RefreshTabs()
         {
-            if (dailyTabImage != null)
-            {
-                dailyTabImage.color = tab == QuestTab.Daily
-                    ? UIMissionUIFactory.TabOnColor
-                    : UIMissionUIFactory.TabOffColor;
-            }
-
-            if (achievementTabImage != null)
-            {
-                achievementTabImage.color = tab == QuestTab.Achievement
-                    ? UIMissionUIFactory.TabOnColor
-                    : UIMissionUIFactory.TabOffColor;
-            }
+            bool daily = tab == QuestTab.Daily;
+            ApplyTab(dailyTabImage, dailyTabText, daily);
+            ApplyTab(achievementTabImage, achievementTabText, !daily);
 
             if (achievementTabDot != null)
                 achievementTabDot.SetActive(HasClaimableAchievement());
+        }
+
+        /// <summary>선택은 눌린 그림(어두움)+흰 글자, 안 선택은 평평한 그림+c3c4e2 글자(시안 주석).</summary>
+        private void ApplyTab(Image image, TMP_Text label, bool selected)
+        {
+            if (image != null)
+            {
+                Sprite sprite = selected ? tabOnSprite : tabOffSprite;
+                if (sprite != null)
+                    image.sprite = sprite;
+            }
+
+            if (label != null)
+                label.color = selected ? Color.white : UIMissionUIFactory.TabOffTextColor;
         }
 
         private bool HasClaimableAchievement()
@@ -245,7 +262,7 @@ namespace OJ.Mission
                 resetTimerRoot.SetActive(show);
 
             if (show && resetTimerText != null)
-                resetTimerText.SetText(MissionText.ResetCountdown(missions.TimeUntilReset));
+                resetTimerText.SetText("갱신까지 " + MissionText.ResetCountdown(missions.TimeUntilReset));
         }
 
         /// <summary>
@@ -283,7 +300,7 @@ namespace OJ.Mission
                 // id 를 지역 변수로 떼어 낸다. 대리자가 view 를 통째로 잡으면 다음 갱신의
                 // 값을 보게 되고, 그러면 <b>엉뚱한 미션의 보상을 받는다.</b>
                 string missionId = view.Definition.id;
-                rows[i].Bind(view, () => Claim(missionId));
+                rows[i].Bind(view, () => Claim(missionId), Exit);
             }
 
             SetEmpty(views.Count == 0 ? "오늘의 미션이 없다." : null);
@@ -294,6 +311,9 @@ namespace OJ.Mission
         {
             IReadOnlyList<DailyMissionTier> tiers = DailyMissionDatabaseProvider.Database.Tiers;
             int cleared = missions.DailyClearedCount;
+
+            if (tierClearedText != null)
+                tierClearedText.SetText(cleared.ToString());
 
             List<int> thresholds = DailyMissionDatabaseProvider.Database.GetTierThresholds();
             UIMissionUIFactory.SetGauge(
@@ -340,7 +360,7 @@ namespace OJ.Mission
                 rows[i].gameObject.SetActive(true);
 
                 string achievementId = view.Definition.id;
-                rows[i].Bind(view, () => ClaimAchievement(achievementId));
+                rows[i].Bind(view, () => ClaimAchievement(achievementId), Exit);
             }
 
             SetEmpty(views.Count == 0 ? "업적 데이터가 없다." : null);
@@ -410,6 +430,9 @@ namespace OJ.Mission
         }
 
         // ── 굽기 ───────────────────────────────────────────────────────
+        //
+        // 좌표는 PSD(Art/0PSD/퀘스트.psd, 1080x1920) bbox 그대로 적고 Pos() 로 화면 중심 기준으로 옮긴다.
+        // Image 크기 = 보이는 크기 + 스프라이트 투명 여백 x 배율(Tools/ui/PORTING.md).
 
         /// <summary>창 하나를 조립한다. 에디터 굽기 경로에서만 부른다.</summary>
         public static UIQuestDialog Create(Transform parent, TMP_FontAsset font)
@@ -425,87 +448,122 @@ namespace OJ.Mission
             GameObject view = UIMissionUIFactory.CreateRect("View", root.transform);
             UIMissionUIFactory.Stretch(view.GetComponent<RectTransform>());
             dialog.dialogView = view;
+            Transform p = view.transform;
 
-            Image backdrop = UIMissionUIFactory.CreateImage("Backdrop", view.transform, UIMissionUIFactory.Backdrop);
+            Image backdrop = UIMissionUIFactory.CreateImage("Backdrop", p, UIMissionUIFactory.Backdrop);
             UIMissionUIFactory.Stretch(backdrop.rectTransform);
 
             // 바깥을 눌러도 닫힌다. 전체 화면 창이라 닫기 버튼 하나뿐이면
             // 누를 곳을 못 찾는 사람이 생긴다.
             var backdropButton = backdrop.gameObject.AddComponent<Button>();
             backdropButton.targetGraphic = backdrop;
+            backdropButton.transition = Selectable.Transition.None;
             dialog.AddExitButton(backdropButton);
 
-            Image panel = UIMissionUIFactory.CreateImage("Panel", view.transform, UIMissionUIFactory.PanelColor);
-            UIMissionUIFactory.SetRect(panel.rectTransform, new Vector2(960f, 1420f), Vector2.zero);
+            // 팝업 판 — Ui_Popup_Bg x4, 보이는 924x1678 (75,164) + 여백 3px x4.
+            // 판 위의 빈 곳을 눌러도 바깥으로 안 새게 레이캐스트를 받는다(딤 버튼이 닫아 버리면 안 된다).
+            Image panel = UIMissionUIFactory.Sliced(p, "Panel", "Upgrade/Ui_Popup_Bg", 4f,
+                new Vector2(948f, 1702f), UIMissionUIFactory.Pos(537f, 1003f), Color.white);
+            panel.raycastTarget = true;
 
             dialog.titleText = UIMissionUIFactory.CreateText(
-                "Title", panel.transform, "퀘스트", 64f,
-                TextAlignmentOptions.Center, UIMissionUIFactory.DarkText, font);
+                "Title", p, "퀘스트", 45f,
+                TextAlignmentOptions.Center, Color.white, font);
             UIMissionUIFactory.SetRect(
-                dialog.titleText.rectTransform, new Vector2(600f, 80f), new Vector2(0f, 630f));
+                dialog.titleText.rectTransform, new Vector2(600f, 60f), UIMissionUIFactory.Pos(538f, 229f));
 
-            Button close = UIMissionUIFactory.CreateButton(
-                "CloseButton", panel.transform, "X", new Vector2(96f, 96f), new Vector2(430f, 640f),
-                UIMissionUIFactory.ClaimColor, UIMissionUIFactory.DarkText, 48f, font);
-            dialog.AddExitButton(close);
+            // 닫기 — PSD 에서 잘라 온 버튼 한 장(오프라인 보상 창과 같은 그림).
+            Image close = UIMissionUIFactory.Picture(p, "CloseButton", "OffLineReward/FromPsd/FromPsd_CloseButton",
+                new Vector2(112f, 111f), UIMissionUIFactory.Pos(911f, 180.5f));
+            Button closeButton = UIMissionUIFactory.SpriteButton(close);
+            dialog.AddExitButton(closeButton);
 
-            dialog.resetTimerText = UIMissionUIFactory.CreateText(
-                "ResetTimer", panel.transform, "0분", 40f,
-                TextAlignmentOptions.Center, UIMissionUIFactory.LightText, font);
-            Image timerBg = UIMissionUIFactory.CreateImage(
-                "ResetTimerBg", panel.transform, UIMissionUIFactory.TrackColor);
-            UIMissionUIFactory.SetRect(timerBg.rectTransform, new Vector2(460f, 72f), new Vector2(0f, 530f));
-            timerBg.raycastTarget = false;
-            dialog.resetTimerText.transform.SetParent(timerBg.transform, false);
-            UIMissionUIFactory.SetRect(
-                dialog.resetTimerText.rectTransform, new Vector2(460f, 72f), Vector2.zero);
-            dialog.resetTimerRoot = timerBg.gameObject;
+            // 안쪽 큰 판 — SmallBox x4 #636481, 보이는 857x1372 (107,428). SmallBox 여백 6/6/7/7 px x4.
+            UIMissionUIFactory.Sliced(p, "InnerBox", "Upgrade/Ui_Popup_SmallBox", 4f,
+                new Vector2(909f, 1424f), UIMissionUIFactory.Pos(537.5f, 1116f), UIMissionUIFactory.InnerBoxColor);
 
-            BakeTierRow(dialog, panel.transform, font);
+            BakeTimer(dialog, p, font);
+            BakeTierRow(dialog, p, font);
 
             // 일일 탭 크기로 굽는다. 업적 탭으로 넘어가면 RefreshListRect 가 늘린다 —
-            // 추가 보상 줄과 겹치면 첫 줄이 선물 상자 밑으로 들어가는데, 스크롤은 되기 때문에
+            // 추가 보상 줄과 겹치면 첫 줄이 보상 상자 밑으로 들어가는데, 스크롤은 되기 때문에
             // 고장으로 안 보인다.
             dialog.listContent = UIMissionUIFactory.CreateScrollList(
-                "List", panel.transform, DailyListSize, DailyListPosition, 14f);
+                "List", p, DailyListSize, DailyListPosition, RowSpacing, ListTopPadding);
             dialog.listViewport = dialog.listContent.parent as RectTransform;
             dialog.rowTemplate = UIMissionRow.Create(dialog.listContent, font);
 
-            BakeTabs(dialog, panel.transform, font);
+            // 탭은 목록 뒤(위)에 그린다 — 목록이 탭 밑으로 스크롤돼 들어가는 일은 없지만,
+            // 겹침이 생겨도 탭이 눌리게 하려는 것이다.
+            BakeTabs(dialog, p, font);
 
             dialog.emptyText = UIMissionUIFactory.CreateText(
-                "Empty", panel.transform, string.Empty, 40f,
-                TextAlignmentOptions.Center, UIMissionUIFactory.MutedText, font);
+                "Empty", p, string.Empty, 40f,
+                TextAlignmentOptions.Center, Color.white, font);
             UIMissionUIFactory.SetRect(
-                dialog.emptyText.rectTransform, new Vector2(700f, 80f), new Vector2(0f, -105f));
+                dialog.emptyText.rectTransform, new Vector2(700f, 80f), UIMissionUIFactory.Pos(537.5f, 1000f));
             dialog.emptyText.gameObject.SetActive(false);
 
             return dialog;
         }
 
+        /// <summary>
+        /// 갱신 타이머 — SmallBox x4 #45465f, 보이는 397x79 (339,447). 글자 35pt.
+        /// <b>상자를 통째로 끄고 켜기 위해</b> 글자를 그 자식으로 둔다(<see cref="resetTimerRoot"/> 주석).
+        /// </summary>
+        private static void BakeTimer(UIQuestDialog dialog, Transform p, TMP_FontAsset font)
+        {
+            Image timerBg = UIMissionUIFactory.Sliced(p, "ResetTimerBg", "Upgrade/Ui_Popup_SmallBox", 4f,
+                new Vector2(449f, 131f), UIMissionUIFactory.Pos(539.5f, 488.5f), UIMissionUIFactory.DarkBoxColor);
+            dialog.resetTimerRoot = timerBg.gameObject;
+
+            dialog.resetTimerText = UIMissionUIFactory.CreateText(
+                "ResetTimer", timerBg.transform, "갱신까지 0분", 35f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIMissionUIFactory.SetRect(
+                dialog.resetTimerText.rectTransform, new Vector2(390f, 50f), new Vector2(-2.5f, 0f));
+        }
+
         private static void BakeTierRow(UIQuestDialog dialog, Transform parent, TMP_FontAsset font)
         {
+            // 추가 보상 줄 전체를 한 묶음으로 둔다 — 업적 탭에서 통째로 끈다.
+            // 묶음은 화면 전체 크기이고 안은 PSD 좌표(Pos)라서 어디에 놓든 시안과 같다.
             GameObject tierRoot = UIMissionUIFactory.CreateRect("TierRoot", parent);
-            UIMissionUIFactory.SetRect(
-                tierRoot.GetComponent<RectTransform>(), new Vector2(880f, 210f), new Vector2(0f, 420f));
+            UIMissionUIFactory.Stretch(tierRoot.GetComponent<RectTransform>());
             dialog.tierRoot = tierRoot;
+            Transform t = tierRoot.transform;
 
-            // 게이지는 상자(위)와 숫자(아래) <b>사이</b>를 가로지른다. 셋의 세로 범위가
-            // 겹치면 숫자가 바 위에 찍혀 둘 다 안 읽힌다 — 첫 굽기에서 그랬다.
-            // 상자 아래끝 -14 · 게이지 -41..-19 · 숫자 위끝 -46 으로 5px 씩 띄워 뒀다.
+            // 보라 상자 — Mission_Reward x2, 보이는 828x244(시안 823x238) (126,546). 512 그림 한가운데에 보인다.
+            UIMissionUIFactory.Picture(t, "RewardBox", "Mission/Mission_Reward",
+                new Vector2(1024f, 1024f), UIMissionUIFactory.Pos(537.5f, 665f));
+
+            // 게이지는 상자(위)와 칸(위) <b>사이 뒤</b>를 가로지른다 — 칸·메달이 위에 그려져 양 끝이 가려진다.
             dialog.tierGaugeFill = UIMissionUIFactory.CreateGauge(
-                "TierGauge", tierRoot.transform, new Vector2(TierGaugeWidth, 22f),
-                new Vector2(TierGaugeCenterX, -30f), UIMissionUIFactory.FillColor);
+                "TierGauge", t, new Vector2(TierGaugeWidth, 48f), UIMissionUIFactory.Pos(509.35f, 646f),
+                UIMissionUIFactory.LimeColor, UIMissionUIFactory.DarkBoxColor, 0f);
 
-            GameObject itemRoot = UIMissionUIFactory.CreateRect("TierItems", tierRoot.transform);
+            // 메달 — Icon_Medal x4, 보이는 96x128 (148,581). 안의 숫자 35pt.
+            UIMissionUIFactory.Picture(t, "Medal", "Mission/Icon_Medal",
+                new Vector2(128f, 128f), UIMissionUIFactory.Pos(196f, 645f));
+            dialog.tierClearedText = UIMissionUIFactory.CreateText(
+                "MedalCount", t, "0", 35f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIMissionUIFactory.SetRect(
+                dialog.tierClearedText.rectTransform, new Vector2(90f, 44f), UIMissionUIFactory.Pos(195.5f, 659f));
+
+            GameObject itemRoot = UIMissionUIFactory.CreateRect("TierItems", t);
             RectTransform itemRect = itemRoot.GetComponent<RectTransform>();
-            UIMissionUIFactory.SetRect(itemRect, new Vector2(880f, 210f), Vector2.zero);
+
+            // 칸 넷이 가운데 595(슬롯 중심 338~852의 한가운데), 슬롯 중심 높이 644 에 놓인다.
+            UIMissionUIFactory.SetRect(
+                itemRect, new Vector2(UIMissionTierItem.ItemSize.x * 4f, UIMissionTierItem.ItemSize.y),
+                UIMissionUIFactory.Pos(595f, 644f));
 
             // 가로로 고르게 편다. 문턱 간격이 3·5·7·9 처럼 고르지 않아도 칸은 등간격이고,
             // 게이지의 눈금도 그 칸 중심에 떨어진다(TierGaugeWidth 주석의 역산).
-            // <b>칸 폭·간격을 바꾸면 TierGaugeWidth 도 같이 바꿔야 한다.</b>
+            // <b>칸 폭을 바꾸면 TierGaugeWidth 도 같이 바꿔야 한다.</b>
             var layout = itemRoot.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = 24f;
+            layout.spacing = 0f;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
@@ -518,21 +576,38 @@ namespace OJ.Mission
 
         private static void BakeTabs(UIQuestDialog dialog, Transform parent, TMP_FontAsset font)
         {
-            dialog.dailyTabButton = UIMissionUIFactory.CreateButton(
-                "DailyTab", parent, "일일 퀘스트", new Vector2(430f, 110f), new Vector2(-225f, -620f),
-                UIMissionUIFactory.TabOnColor, UIMissionUIFactory.LightText, 42f, font);
-            dialog.dailyTabImage = dialog.dailyTabButton.GetComponent<Image>();
+            dialog.tabOnSprite = UIMissionUIFactory.LoadSprite("OffLineReward/Popup_Select_Btn_Prs");
+            dialog.tabOffSprite = UIMissionUIFactory.LoadSprite("OffLineReward/Popup_Select_Btn_Normal");
 
-            dialog.achievementTabButton = UIMissionUIFactory.CreateButton(
-                "AchievementTab", parent, "업적", new Vector2(430f, 110f), new Vector2(225f, -620f),
-                UIMissionUIFactory.TabOffColor, UIMissionUIFactory.LightText, 42f, font);
-            dialog.achievementTabImage = dialog.achievementTabButton.GetComponent<Image>();
+            // Popup_Select_Btn x4, 보이는 360x110. 그림 여백 좌우 3·위 7·아래 3 x4 → 384x150,
+            // 그림이 아래로 치우쳐 있어 중심이 보이는 중심보다 8 위다.
+            dialog.dailyTabButton = BakeTab(parent, "DailyTab", "일일 퀘스트", dialog.tabOnSprite,
+                UIMissionUIFactory.Pos(324f, 346f), font, out dialog.dailyTabImage, out dialog.dailyTabText);
+
+            dialog.achievementTabButton = BakeTab(parent, "AchievementTab", "업적", dialog.tabOffSprite,
+                UIMissionUIFactory.Pos(749.5f, 345f), font, out dialog.achievementTabImage, out dialog.achievementTabText);
 
             Image dot = UIMissionUIFactory.CreateImage(
                 "Dot", dialog.achievementTabButton.transform, UIMissionUIFactory.RedDotColor);
-            UIMissionUIFactory.SetRect(dot.rectTransform, new Vector2(30f, 30f), new Vector2(190f, 42f));
+            UIMissionUIFactory.SetRect(dot.rectTransform, new Vector2(30f, 30f), new Vector2(165f, 40f));
             dot.raycastTarget = false;
             dialog.achievementTabDot = dot.gameObject;
+        }
+
+        private static Button BakeTab(
+            Transform parent, string name, string label, Sprite sprite, Vector2 position,
+            TMP_FontAsset font, out Image image, out TMP_Text text)
+        {
+            image = UIMissionUIFactory.Sliced(parent, name, "OffLineReward/Popup_Select_Btn_Normal", 4f,
+                new Vector2(384f, 150f), position, Color.white);
+            image.sprite = sprite;
+            Button button = UIMissionUIFactory.SpriteButton(image);
+
+            text = UIMissionUIFactory.CreateText(
+                "Label", image.transform, label, 45f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIMissionUIFactory.SetRect(text.rectTransform, new Vector2(340f, 60f), new Vector2(1.5f, -5f));
+            return button;
         }
     }
 }
