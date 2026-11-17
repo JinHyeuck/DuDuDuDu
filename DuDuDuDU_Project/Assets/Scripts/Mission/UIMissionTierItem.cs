@@ -7,22 +7,27 @@ using OJ.Point;
 namespace OJ.Mission
 {
     /// <summary>
-    /// 추가 보상 한 칸. 게이지 위에 놓인 선물 상자 하나다.
+    /// 추가 보상 한 칸. 게이지 위에 놓인 보상 칸 하나다 — 칸(아이템 슬롯) 안에 보상 아이콘과 수량,
+    /// 칸 밑에 문턱 숫자가 있다.
     ///
-    /// <b>상태가 셋이다.</b> 못 연 것(어두움) · 받을 수 있는 것(밝음 + 버튼) ·
-    /// 이미 받은 것(완료 표시). 셋을 색 하나로만 가르면 "받을 수 있는데 안 받은" 칸이
+    /// <b>상태가 셋이다.</b> 못 연 것(어두움, 숫자 흰색) · 받을 수 있는 것(밝음 + 노란 숫자 + 버튼) ·
+    /// 이미 받은 것(눌러 둠 + 완료 표시). 셋을 색 하나로만 가르면 "받을 수 있는데 안 받은" 칸이
     /// 눈에 안 띄어 그대로 자정을 넘긴다.
     /// </summary>
     public sealed class UIMissionTierItem : MonoBehaviour
     {
         /// <summary>
-        /// 칸 하나의 크기. <b>세로가 넉넉해야 한다</b> — 상자·게이지·숫자를 위에서 아래로
-        /// 겹치지 않게 놓아야 하는데, 가운데를 게이지가 가로지른다.
+        /// 칸 하나의 크기. 폭은 칸 중심 간격(시안 171.3)이고, 세로는 슬롯(134)과 밑 숫자까지 들어가는 높이다.
+        /// <b>폭을 바꾸면 <see cref="UIQuestDialog"/> 의 게이지 폭도 같이 바꿔야 한다</b> — 눈금이 칸 중심에 떨어져야 한다.
         /// </summary>
-        internal static readonly Vector2 ItemSize = new Vector2(120f, 180f);
+        internal static readonly Vector2 ItemSize = new Vector2(171.3f, 240f);
+
+        private static readonly Color LockedTint = new Color(0.78f, 0.78f, 0.82f, 1f);
+        private static readonly Color ClaimableTint = new Color(1f, 0.93f, 0.62f, 1f);
 
         [SerializeField] private Image box;
         [SerializeField] private Image rewardIcon;
+        [SerializeField] private TMP_Text rewardAmountText;
         [SerializeField] private TMP_Text countText;
         [SerializeField] private Button claimButton;
         [SerializeField] private GameObject doneMark;
@@ -53,15 +58,20 @@ namespace OJ.Mission
             claimAction = onClaim;
 
             if (countText != null)
+            {
                 countText.SetText(MissionText.TierLabel(tier.requiredClearCount));
+
+                // 문턱을 넘긴 칸 밑 숫자는 노랑(시안 주석 fcf900), 못 넘긴 것은 흰색.
+                countText.color = unlocked ? UIMissionUIFactory.ReachedNumberColor : Color.white;
+            }
 
             bool claimable = unlocked && !claimed;
 
             if (box != null)
             {
                 box.color = claimed
-                    ? UIMissionUIFactory.DisabledColor
-                    : (unlocked ? UIMissionUIFactory.ClaimColor : UIMissionUIFactory.RowColor);
+                    ? UIMissionUIFactory.DoneTint
+                    : (claimable ? ClaimableTint : LockedTint);
             }
 
             if (claimButton != null)
@@ -70,14 +80,24 @@ namespace OJ.Mission
             if (doneMark != null)
                 doneMark.SetActive(claimed);
 
+            bool has = tier.rewards != null && tier.rewards.Count > 0;
+
             if (rewardIcon != null)
             {
-                bool has = tier.rewards != null && tier.rewards.Count > 0;
                 Sprite icon = has ? PointRewardUtility.GetPointIcon(tier.rewards[0].pointType) : null;
                 rewardIcon.sprite = icon;
+                rewardIcon.color = claimed ? UIMissionUIFactory.DoneTint : Color.white;
                 rewardIcon.enabled = icon != null;
             }
+
+            if (rewardAmountText != null)
+                rewardAmountText.SetText(has ? tier.rewards[0].amount.ToString() : string.Empty);
         }
+
+        // ── 굽기 ───────────────────────────────────────────────────────
+        //
+        // 좌표는 칸 슬롯 중심 기준, 위가 +. PSD(Art/0PSD/퀘스트.psd)의 첫 칸 — 슬롯 중심 (338, 644),
+        // 밑 숫자 중심 y 732, 수량 중심 (368, 676) — 에서 옮겼다.
 
         internal static UIMissionTierItem Create(Transform parent, TMP_FontAsset font)
         {
@@ -87,37 +107,44 @@ namespace OJ.Mission
 
             var item = root.AddComponent<UIMissionTierItem>();
 
-            // 상자는 위, 게이지는 가운데(TierRoot 가 그린다), 숫자는 아래다.
-            // 셋의 세로 범위가 겹치지 않도록 5px 씩 띄워 뒀다.
-            Image box = UIMissionUIFactory.CreateImage("Box", root.transform, UIMissionUIFactory.RowColor);
-            UIMissionUIFactory.SetRect(box.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 38f));
-            box.raycastTarget = false;
+            // 슬롯 — Itme_Slot_0 x3, 보이는 135(시안 134).
+            Image box = UIMissionUIFactory.Picture(
+                root.transform, "Slot", "ItemSlot/Itme_Slot_0", new Vector2(192f, 192f), Vector2.zero);
             item.box = box;
 
-            Image icon = UIMissionUIFactory.CreateImage("RewardIcon", box.transform, Color.white);
-            UIMissionUIFactory.SetRect(icon.rectTransform, new Vector2(72f, 72f), Vector2.zero);
+            Image icon = UIMissionUIFactory.CreateImage("RewardIcon", root.transform, Color.white);
+            UIMissionUIFactory.SetRect(icon.rectTransform, new Vector2(96f, 96f), new Vector2(0f, 4f));
             icon.raycastTarget = false;
             icon.preserveAspect = true;
+            icon.enabled = false;
             item.rewardIcon = icon;
 
-            item.countText = UIMissionUIFactory.CreateText(
-                "Count", root.transform, "0", 34f,
-                TextAlignmentOptions.Center, UIMissionUIFactory.DarkText, font);
+            // 수량은 슬롯 오른쪽 아래(시안 35pt). 자릿수가 데이터에 달려 자동 축소를 건다.
+            item.rewardAmountText = UIMissionUIFactory.CreateFittedText(
+                "RewardAmount", root.transform, "0", 35f, 20f,
+                TextAlignmentOptions.Right, Color.white, font);
             UIMissionUIFactory.SetRect(
-                item.countText.rectTransform, new Vector2(120f, 40f), new Vector2(0f, -66f));
+                item.rewardAmountText.rectTransform, new Vector2(100f, 44f), new Vector2(15f, -32f));
 
-            // 버튼은 상자 전체를 덮는다. 작은 칸이라 따로 그린 버튼을 얹으면
-            // 상자가 가려지고, 누를 곳도 더 작아진다.
+            // 문턱 숫자는 슬롯 밑(시안 35pt).
+            item.countText = UIMissionUIFactory.CreateText(
+                "Count", root.transform, "0", 35f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIMissionUIFactory.SetRect(
+                item.countText.rectTransform, new Vector2(150f, 48f), new Vector2(-4f, -88f));
+
+            // 버튼은 슬롯 전체를 덮는 투명 판이다. 작은 칸이라 따로 그린 버튼을 얹으면
+            // 슬롯이 가려지고 누를 곳도 더 작아진다.
             Image hit = UIMissionUIFactory.CreateImage("ClaimButton", root.transform, new Color(1f, 1f, 1f, 0f));
-            UIMissionUIFactory.SetRect(hit.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 38f));
+            UIMissionUIFactory.SetRect(hit.rectTransform, new Vector2(135f, 135f), Vector2.zero);
             var button = hit.gameObject.AddComponent<Button>();
             button.targetGraphic = hit;
             item.claimButton = button;
 
             TMP_Text done = UIMissionUIFactory.CreateText(
-                "DoneMark", root.transform, "✓", 56f,
-                TextAlignmentOptions.Center, UIMissionUIFactory.LightText, font);
-            UIMissionUIFactory.SetRect(done.rectTransform, new Vector2(104f, 104f), new Vector2(0f, 38f));
+                "DoneMark", root.transform, MissionText.CompleteLabel, 30f,
+                TextAlignmentOptions.Center, Color.white, font);
+            UIMissionUIFactory.SetRect(done.rectTransform, new Vector2(135f, 40f), new Vector2(0f, 34f));
             item.doneMark = done.gameObject;
 
             return item;

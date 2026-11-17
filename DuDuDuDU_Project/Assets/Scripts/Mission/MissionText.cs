@@ -9,6 +9,12 @@ namespace OJ.Mission
     /// </summary>
     public static class MissionText
     {
+        /// <summary>게이지가 가득 찬 줄에 적는 말(시안 "완료").</summary>
+        public const string CompleteLabel = "완료";
+
+        /// <summary>이미 받은 줄의 버튼 자리에 적는 말.</summary>
+        public const string ClaimedLabel = "수령 완료";
+
         /// <summary>
         /// 제목. <c>{0}</c> 자리에 요구 횟수가 들어간다.
         ///

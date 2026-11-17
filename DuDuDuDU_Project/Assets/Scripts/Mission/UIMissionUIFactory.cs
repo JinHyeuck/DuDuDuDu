@@ -34,6 +34,86 @@ namespace OJ.Mission
         internal static readonly Color TabOffColor = new Color(0.74f, 0.70f, 0.64f, 1f);
         internal static readonly Color RedDotColor = new Color(0.92f, 0.22f, 0.22f, 1f);
 
+        // ── 창 색. 전부 PSD(Art/0PSD/퀘스트.psd) 실측·주석이다 ──────────────
+
+        /// <summary>안쪽 큰 판(SmallBox x4)의 색.</summary>
+        internal static readonly Color InnerBoxColor = Hex(0x636481);
+
+        /// <summary>갱신 타이머 칸·진행 게이지 바탕의 색.</summary>
+        internal static readonly Color DarkBoxColor = Hex(0x45465f);
+
+        /// <summary>게이지 채움(시안 78fe04 근처의 연두).</summary>
+        internal static readonly Color LimeColor = Hex(0x78fe04);
+
+        /// <summary>선택 안 된 탭의 글자색(시안 주석 c3c4e2).</summary>
+        internal static readonly Color TabOffTextColor = Hex(0xc3c4e2);
+
+        /// <summary>문턱을 넘긴 칸 밑 숫자(시안 주석 fcf900).</summary>
+        internal static readonly Color ReachedNumberColor = Hex(0xfcf900);
+
+        /// <summary>줄 아이콘 뒤 Mail_Mark 틴트(시안 주석 c4b5e3).</summary>
+        internal static readonly Color MailMarkTint = Hex(0xc4b5e3);
+
+        internal static readonly Color Black = new Color(0f, 0f, 0f, 1f);
+
+        /// <summary>받은 줄·칸을 눌러 두는 색.</summary>
+        internal static readonly Color DoneTint = new Color(0.62f, 0.62f, 0.66f, 1f);
+
+        private const string ArtRoot = "Art/";
+
+        internal static Color Hex(int rgb)
+        {
+            return new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
+        }
+
+        /// <summary>PSD 좌표(좌상단 원점, 1080x1920) → 화면 중앙 기준 anchoredPosition.</summary>
+        internal static Vector2 Pos(float x, float y)
+        {
+            return new Vector2(x - 540f, 960f - y);
+        }
+
+        /// <summary>스프라이트를 읽는다. <b>없으면 멈춘다</b> — null 로 구우면 흰 사각형이 조용히 저장된다.</summary>
+        internal static Sprite LoadSprite(string pathUnderArt)
+        {
+            Sprite sprite = Resources.Load<Sprite>(ArtRoot + pathUnderArt);
+            if (sprite == null)
+                throw new System.InvalidOperationException("[퀘스트 굽기] 스프라이트가 없다: Resources/" + ArtRoot + pathUnderArt);
+            return sprite;
+        }
+
+        internal static Image Picture(Transform parent, string name, string path, Vector2 size, Vector2 position)
+        {
+            Image image = CreateImage(name, parent, Color.white);
+            image.sprite = LoadSprite(path);
+            image.raycastTarget = false;
+            SetRect(image.rectTransform, size, position);
+            return image;
+        }
+
+        /// <summary>9슬라이스 판. 테두리는 스프라이트 .meta 의 것을 쓰고 여기서는 배율만 준다.</summary>
+        internal static Image Sliced(Transform parent, string name, string path, float pixelScale,
+            Vector2 size, Vector2 position, Color color)
+        {
+            Image image = Picture(parent, name, path, size, position);
+            image.type = Image.Type.Sliced;
+            image.pixelsPerUnitMultiplier = 1f / pixelScale;
+            image.color = color;
+            return image;
+        }
+
+        /// <summary>그림 버튼. 꺼졌을 때 어둡게 덮지 않는다 — 글자까지 같이 어두워져 안 읽힌다.</summary>
+        internal static Button SpriteButton(Image image)
+        {
+            image.raycastTarget = true;
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            ColorBlock colors = button.colors;
+            colors.disabledColor = Color.white;
+            button.colors = colors;
+            return button;
+        }
+
         internal static GameObject CreateRect(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform));
@@ -116,7 +196,30 @@ namespace OJ.Mission
         internal static Image CreateGauge(
             string name, Transform parent, Vector2 size, Vector2 position, Color fillColor)
         {
-            Image track = CreateImage(name, parent, TrackColor);
+            return CreateGauge(name, parent, size, position, fillColor, TrackColor, 0f);
+        }
+
+        /// <summary>
+        /// 테두리가 있는 게이지. <paramref name="border"/> 가 0 보다 크면 바깥에 검은 틀이 서고
+        /// 트랙·채움은 그 안쪽에 앉는다 — <b>채움이 달릴 폭은 size.x - 2 x border</b> 이므로
+        /// 비율을 먹일 때(<see cref="SetGauge"/>)는 그 안쪽 폭을 넘겨야 한다.
+        /// </summary>
+        internal static Image CreateGauge(
+            string name, Transform parent, Vector2 size, Vector2 position,
+            Color fillColor, Color trackColor, float border)
+        {
+            Transform trackParent = parent;
+            if (border > 0f)
+            {
+                Image frame = CreateImage(name + "Frame", parent, Black);
+                SetRect(frame.rectTransform, size, position);
+                frame.raycastTarget = false;
+                trackParent = frame.transform;
+                position = Vector2.zero;
+                size = new Vector2(size.x - 2f * border, size.y - 2f * border);
+            }
+
+            Image track = CreateImage(name, trackParent, trackColor);
             SetRect(track.rectTransform, size, position);
             track.raycastTarget = false;
 
@@ -154,7 +257,7 @@ namespace OJ.Mission
         /// <b>버그로 보이지 않는다</b>.
         /// </summary>
         internal static RectTransform CreateScrollList(
-            string name, Transform parent, Vector2 size, Vector2 position, float spacing)
+            string name, Transform parent, Vector2 size, Vector2 position, float spacing, int topPadding = 0)
         {
             GameObject viewport = CreateRect(name, parent);
             RectTransform viewportRect = viewport.GetComponent<RectTransform>();
@@ -181,6 +284,7 @@ namespace OJ.Mission
 
             var layout = content.AddComponent<VerticalLayoutGroup>();
             layout.spacing = spacing;
+            layout.padding = new RectOffset(0, 0, topPadding, 0);
             layout.childControlWidth = true;
             layout.childControlHeight = false;
             layout.childForceExpandWidth = true;
