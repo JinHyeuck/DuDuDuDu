@@ -320,6 +320,7 @@ namespace OJ.Stage
 
             PointRewardUtility.GrantRewards(rewards);
             OJ.Save.EntitlementManager.Instance?.RecordSweeps(count);
+            OJ.Dice.PromotionManager.Instance?.Notify(OJ.Core.PromotionMission.Sweeps, count);
 
             Debug.Log($"Sweep Stage {targetStageIndex} x{count} | 고기 -{cost} | " +
                       $"{PointRewardUtility.BuildRewardSummary(rewards)}");

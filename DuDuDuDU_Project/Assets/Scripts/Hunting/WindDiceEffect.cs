@@ -82,6 +82,7 @@ namespace OJ.Hunting
             int damage = DiceMetaDataProvider.CalculateDamage(DiceType, Mathf.Max(1, shotDicePip), level);
 
             bool castAny = false;
+            int windTier = OJ.Dice.PromotionManager.TierOf(DiceType);
             for (int i = 0; i < castCount; i++)
             {
                 Monster monster = candidates[i];
@@ -94,8 +95,23 @@ namespace OJ.Hunting
                 if (Random.value * 100f > chancePercent)
                     continue;
 
+                // 승급 T1: 밀려난 적 주변의 적 2명도 절반 거리로 함께 밀린다(밀기 전 위치로 찾는다).
+                List<Monster> neighbours = windTier >= 1
+                    ? PromotionCombat.Around(battle, monster.transform.position, OJ.Core.PromotionEffectRules.WindSplashRadius, monster)
+                    : null;
+
                 monster.PushBy(Vector2.up, distance);
-                if (level >= 6)
+
+                if (neighbours != null)
+                {
+                    for (int n = 0; n < neighbours.Count && n < OJ.Core.PromotionEffectRules.WindSplashCount; n++)
+                        neighbours[n].PushBy(Vector2.up, distance * OJ.Core.PromotionEffectRules.WindSplashDistanceRatio);
+                }
+
+                // 승급 T3: 밀친 직후 짧은 기절.
+                if (windTier >= 3)
+                    monster.ApplyStun(OJ.Core.PromotionEffectRules.WindStunSecondsT3, DiceType);
+                if (level >= OJ.Core.DiceMilestoneLevels.First)
                     monster.ApplyWindDamageTakenBonus(10, 3f, DiceType);
                 if (RelicManager.Instance != null)
                     monster.ApplyRelicDamageTakenBonus(RelicManager.Instance.GetWindDamageTakenBonusPercent(), 3f);
@@ -115,7 +131,8 @@ namespace OJ.Hunting
             Collider2D wallCollider = wall != null ? wall.GetComponent<Collider2D>() : null;
             Bounds bounds = wallCollider != null ? wallCollider.bounds : new Bounds(wall.transform.position, new Vector3(3f, 1f, 0f));
             Vector2 origin = GetWallFrontAreaCenter(wall);
-            float halfLength = 0.6f;
+            // 승급 T2: 밀치기 범위(벽 앞 띠 길이) +50%.
+            float halfLength = 0.6f * (OJ.Dice.PromotionManager.TierOf(DiceType.Wind) >= 2 ? OJ.Core.PromotionEffectRules.WindRangeMultiplierT2 : 1f);
             float halfWidth = Mathf.Max(0.8f, bounds.extents.x * 0.6f);
 
             attackContent.SetWindRangeGizmo(bounds.min.x, bounds.max.x, origin.y, halfLength);

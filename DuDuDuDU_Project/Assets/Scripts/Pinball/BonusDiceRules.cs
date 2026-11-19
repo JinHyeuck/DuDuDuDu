@@ -172,6 +172,47 @@ namespace OJ.Pinball
             return required > 0 && count >= required;
         }
 
+        // ── 핀 보상 추첨 ────────────────────────────────────────
+
+        /// <summary>
+        /// 가중치 표에서 하나를 뽑는다. <paramref name="roll01"/> 은 0 이상 1 미만의 난수.
+        ///
+        /// 가중치가 0 이하인 줄은 뽑히지 않는다. 합이 0 이면(표가 비었거나 전부 0) <b>-1</b> 을 돌려준다 —
+        /// 호출부가 "추첨할 표가 없다"를 알아야 폴백 보상으로 내려갈 수 있다.
+        /// 난수가 범위를 벗어나도 끝 줄로 붙인다(1.0 이 들어와도 죽지 않는다).
+        /// </summary>
+        public static int PickWeightedIndex(IReadOnlyList<int> weights, float roll01)
+        {
+            if (weights == null || weights.Count == 0)
+                return -1;
+
+            long total = 0;
+            for (int i = 0; i < weights.Count; i++)
+            {
+                if (weights[i] > 0)
+                    total += weights[i];
+            }
+
+            if (total <= 0)
+                return -1;
+
+            double target = (roll01 < 0f ? 0f : roll01) * total;
+            long running = 0;
+            int lastPositive = -1;
+            for (int i = 0; i < weights.Count; i++)
+            {
+                if (weights[i] <= 0)
+                    continue;
+
+                lastPositive = i;
+                running += weights[i];
+                if (target < running)
+                    return i;
+            }
+
+            return lastPositive;
+        }
+
         // ── 락 ─────────────────────────────────────────────
 
         /// <summary>

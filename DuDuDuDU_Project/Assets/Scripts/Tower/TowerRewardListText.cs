@@ -36,7 +36,7 @@ namespace OJ.Tower
 
                 sb.Append("  ").Append(lastFloor).Append("층: 다이아 ")
                     .Append(TowerFormula.BandRewardDia(lastFloor))
-                    .Append(", 신화 스크롤 ")
+                    .Append(", 킹 카피 ")
                     .Append(TowerFormula.BandRewardMaterial(lastFloor))
                     .AppendLine();
             }

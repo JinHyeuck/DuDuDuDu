@@ -42,32 +42,29 @@ namespace OJ.IdleReward
         public const double SecondsPerAutoBattleClear = 60d * 60d;
 
         /// <summary>
-        /// 고기 한 세트가 구워지는 데 걸리는 시간. <b>2시간</b>이다.
+        /// 고기 한 세트가 구워지는 데 걸리는 시간. <b>2분</b>이다(2026-11 개편).
         ///
-        /// 예전에는 6시간이었다. 짧게 바꾼 것은 수급량 때문이 아니라 <b>로비 연출</b> 때문이다 —
-        /// 모닥불 위의 고기가 익어 가는 것이 곧 이 타이머이고, 6시간짜리는 한 번 보고 나면
-        /// 다시 볼 이유가 없다. 2시간이면 하루에 열두 번 익는다.
+        /// 2시간에 30개를 기다리는 것이 플레이해 보니 너무 빡빡해서, 세트를 "고기 1개"로 잘게 쪼개
+        /// 2분에 1개씩 쌓이게 했다. 하루 720개로 이전(360)의 두 배다.
         /// </summary>
-        public const double MeatSetIntervalSeconds = 2d * 60d * 60d;
+        public const double MeatSetIntervalSeconds = 2d * 60d;
 
         /// <summary>
-        /// 세트당 고기. <b>하루 360개</b>(2시간마다 30 x 12)다.
+        /// 세트당 고기. <b>하루 720개</b>(2분마다 1개 x 720)다.
         ///
-        /// 소탕 1회가 고기 5 이므로(<c>SweepRules.StaminaCostPerSweep</c>) 하루 72회고,
-        /// 방치 24회와 합쳐 96회다. 예전에는 방치가 72회·소탕이 24회여서 공급의 1/4 에만
-        /// 고기가 붙었는데, 총량은 그대로 두고 <b>구성을 뒤집었다</b> —
-        /// 이제 3/4 이 고기를 먹으므로 루프 r 이 전체에 작용한다.
+        /// 소탕 1회가 고기 5 이므로(<c>SweepRules.StaminaCostPerSweep</c>) 하루 144회고,
+        /// 방치 24회와 합쳐 168회다. 이 값이 고기 루프(<c>SweepEconomy</c>)와 핀볼 발수의 기준이다.
         /// </summary>
-        public const int MeatPerSet = 30;
+        public const int MeatPerSet = 1;
 
         /// <summary>
-        /// 저장 가능한 세트 수. 60세트 x 30개 = <b>1,800개</b>이고, 소탕으로 치면 360회다.
+        /// 저장 가능한 세트 수. 3,600세트 x 1개 = <b>3,600개</b>이고, 소탕으로 치면 720회다.
         ///
-        /// 2시간 주기이므로 <b>5일</b>치다. 이 값의 뜻은 양이 아니라 "며칠 안 들어와도
+        /// 2분 주기이므로 <b>5일</b>치다. 이 값의 뜻은 양이 아니라 "며칠 안 들어와도
         /// 넘치지 않는가"다. 넘치면 그 뒤로는 버려지므로 <b>화면이 가득 찼음을 알려야 한다</b> —
         /// 로비 모닥불의 세트 뱃지가 그 자리다.
         /// </summary>
-        public const int MaxMeatSetCount = 60;
+        public const int MaxMeatSetCount = 3600;
 
         /// <summary>
         /// 과도기 다리. <b>대입은 <see cref="GameContainer"/> 에서만 한다.</b>

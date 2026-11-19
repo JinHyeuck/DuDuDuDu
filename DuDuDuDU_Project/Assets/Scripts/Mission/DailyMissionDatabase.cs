@@ -234,7 +234,7 @@ namespace OJ.Mission
                     new MissionReward(PointType.FreeGem, 100)),
 
                 Make("daily_dice_level", MissionAction.DiceLevelUp, 3, "다이스 레벨업 {0}회",
-                    new MissionReward(PointType.NormalScroll, 5)),
+                    new MissionReward(PointType.NormalScroll, 1)),
 
                 Make("daily_equipment_level", MissionAction.EquipmentLevelUp, 3, "장비 레벨업 {0}회",
                     new MissionReward(PointType.WeaponScroll, 5)),

@@ -18,7 +18,7 @@ namespace OJ.IdleReward
         /// <summary>
         /// 저장이 가득 찼는가. <b>가득 차면 그 뒤로 구워지는 고기는 버려진다.</b>
         ///
-        /// 2시간에 한 세트이므로 60세트는 5일이다 — 주말을 한 번 건너뛰면 닿는 거리라
+        /// 2분에 한 세트이므로 3,600세트는 5일이다 — 주말을 한 번 건너뛰면 닿는 거리라
         /// 화면이 반드시 알려야 한다.
         /// </summary>
         public static bool IsFull(int storedSetCount, int maxSetCount)
@@ -37,7 +37,7 @@ namespace OJ.IdleReward
 
         /// <summary>
         /// 그 고기로 돌 수 있는 소탕 횟수. 버튼에 "소탕 N회분"으로 적어 주면
-        /// 유저가 숫자를 환산하지 않아도 된다 — 고기 1,800 보다 소탕 360회가 바로 읽힌다.
+        /// 유저가 숫자를 환산하지 않아도 된다 — 고기 3,600 보다 소탕 720회가 바로 읽힌다.
         /// </summary>
         public static int SweepCount(int totalMeat, int staminaCostPerSweep)
         {

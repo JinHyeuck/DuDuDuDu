@@ -8,20 +8,17 @@ namespace OJ.Game.Tests
 {
     /// <summary>
     /// 1~10스테이지 클리어 보상이 "그 레벨까지 올릴 수 있는 재화" 인지 잠근다.
-    /// 장비는 <see cref="EquipmentUpgradeFormula"/>, 기본 다이스는 에셋 값(골드 130+55/레벨, 두루마리 10+20/레벨)으로 비용을 다시 계산한다.
-    /// 에셋의 다이스 비용을 바꾸면 여기 상수도 같이 고친다 — 안 그러면 뉴비가 보상을 받고도 강화를 못 한다.
+    /// 장비는 <see cref="EquipmentUpgradeFormula"/>(골드 + 두루마리), 다이스는 <see cref="DiceCopyCurve"/>(카피 장수만, 골드 없음)로
+    /// 비용을 다시 계산한다. 카피 곡선이나 장비 규칙을 바꾸면 여기가 깨진다 — 안 그러면 뉴비가 보상을 받고도 강화를 못 한다.
     /// </summary>
     public sealed class StageRewardPlanTests
     {
-        private const int DiceBaseGold = 130, DiceGoldPerLevel = 55, DiceBaseScroll = 10, DiceScrollPerLevel = 20;
-
         // 스테이지별 목표 레벨(그 스테이지를 깬 뒤 이 레벨까지). 키 = 장비 인덱스 / 다이스 종류.
         // 노멀 다이스는 1스테이지 5웨이브에서 다이스 가이드가 3레벨까지 올려 준다(재화를 채워 주며 직접 누르게 한다).
-        // 그래서 시작 레벨을 3 으로 본다. 2스테이지의 "노멀 3" 몫은 이미 올라 있어 보너스다 — 값은 건드리지 않고 아래 StageTwoNormalBonusGold 로 허용한다.
-        private const int StageTwoNormalBonusGold = 185;
+        // 그래서 시작 레벨을 3 으로 본다. 2스테이지의 "노멀 3" 몫은 이미 올라 있어 노멀 2장은 보너스다(필요량 0).
 
-        // 1스테이지 15웨이브 레어석: 레어 다이스 두 개를 3레벨까지(150+62/레벨 골드, 3+5/레벨 레어석).
-        private const int RareDiceCount = 2, RareDiceGold = 150 + 212, RareDiceStones = 11;
+        // 1스테이지 15웨이브: 레어 다이스 두 개를 3레벨까지 — 한 개당 1+2 = 3장, 합 6장(랜덤 레어 카피).
+        private const int RareDiceCount = 2, RareDiceCopies = 3;
         private static readonly (int[] equip, (PointType scroll, int level)[] dice)[] Plan =
         {
             (new[] { 3, 2, 2, 2, 2, 2 }, new[] { (PointType.ThunderScroll, 2), (PointType.FireScroll, 2) }),
@@ -80,12 +77,12 @@ namespace OJ.Game.Tests
                     equipLevel[i] = System.Math.Max(equipLevel[i], plan.equip[i]);
                 }
 
+                // 다이스는 카피 장수만 든다(골드 없음). 한 레벨 비용은 "다음 레벨로 가는 값" 이다.
                 foreach ((PointType scroll, int level) in plan.dice)
                 {
                     for (int l = diceLevel[scroll]; l < level; l++)
                     {
-                        gold += DiceBaseGold + (l - 1) * DiceGoldPerLevel;
-                        need[scroll] = (need.TryGetValue(scroll, out int v) ? v : 0) + DiceBaseScroll + (l - 1) * DiceScrollPerLevel;
+                        need[scroll] = (need.TryGetValue(scroll, out int v) ? v : 0) + DiceCopyCurve.CopiesToLevelUp(l);
                     }
 
                     diceLevel[scroll] = System.Math.Max(diceLevel[scroll], level);
@@ -98,10 +95,9 @@ namespace OJ.Game.Tests
                     Assert.AreEqual(pair.Value, have, stage + "스테이지 " + pair.Key + " 은 강화 비용과 같아야 한다.");
                 }
 
-                int kingGold = stage >= 4 ? 300 : 0;
-                int extraGold = stage == 1 ? RareDiceCount * RareDiceGold : stage == 2 ? StageTwoNormalBonusGold : 0;
-                Assert.GreaterOrEqual(got[PointType.Gold], gold + kingGold + extraGold, stage + "스테이지 골드가 강화 비용보다 적다.");
-                Assert.LessOrEqual(got[PointType.Gold], gold + kingGold + extraGold + 9, stage + "스테이지 골드가 비용보다 10 넘게 많다(올림 한도).");
+                // 골드는 장비 강화 비용만 맞춘다(다이스 골드 비용 삭제). 올림 한도 9.
+                Assert.GreaterOrEqual(got[PointType.Gold], gold, stage + "스테이지 골드가 장비 강화 비용보다 적다.");
+                Assert.LessOrEqual(got[PointType.Gold], gold + 9, stage + "스테이지 골드가 비용보다 10 넘게 많다(올림 한도).");
             }
         }
 
@@ -119,20 +115,21 @@ namespace OJ.Game.Tests
             foreach (PointType scroll in EquipScroll)
                 Assert.IsTrue(tier1.Contains(scroll), "10웨이브 보상에 " + scroll + " 이 없다.");
 
-            // 15웨이브: 레어석이 레어 다이스 두 개를 3레벨까지 올릴 만큼.
-            int stones = 0;
+            // 15웨이브: 랜덤 레어 카피가 레어 다이스 두 개를 3레벨까지 올릴 만큼.
+            int copies = 0;
             foreach (StageRewardEntry e in StageRewardPlan.Build(1, 2))
-                if (e.pointType == PointType.RareStone)
-                    stones += e.amount;
-            Assert.AreEqual(RareDiceCount * RareDiceStones, stones);
+                if (e.pointType == PointType.RandomRareCopy)
+                    copies += e.amount;
+            Assert.AreEqual(RareDiceCount * RareDiceCopies, copies);
+            Assert.AreEqual(DiceCopyCurve.CumulativeCopies(3), RareDiceCopies, "레어 다이스 하나를 Lv3 까지 올리는 장수");
         }
 
         [Test]
-        public void FirstThreeStages_GiveOnlyEquipmentDiceMeatTicketsAndRareStones()
+        public void FirstThreeStages_GiveOnlyEquipmentDiceMeatTicketsAndRareCopies()
         {
             var allowed = new HashSet<PointType>
             {
-                PointType.Gold, PointType.Stamina, PointType.PinballTicket, PointType.RareStone,
+                PointType.Gold, PointType.Stamina, PointType.PinballTicket, PointType.RandomRareCopy,
                 PointType.WeaponScroll, PointType.HelmetScroll, PointType.ArmorScroll, PointType.RingScroll,
                 PointType.ShoesScroll, PointType.NecklaceScroll,
                 PointType.NormalScroll, PointType.FireScroll, PointType.IceScroll, PointType.PoisonScroll, PointType.ThunderScroll,
@@ -144,22 +141,34 @@ namespace OJ.Game.Tests
         }
 
         [Test]
-        public void UserSpec_Stages1To3_MeatTicketsAndRareStones()
+        public void UserSpec_Stages1To3_MeatTicketsAndRareCopies()
         {
             Assert.AreEqual(30, Totals(1)[PointType.Stamina]);
             Assert.IsFalse(Totals(1).ContainsKey(PointType.PinballTicket));
             Assert.AreEqual(30, Totals(2)[PointType.Stamina]);
             Assert.AreEqual(30, Totals(2)[PointType.PinballTicket]);
-            Assert.AreEqual(3, Totals(2)[PointType.RareStone]);
-            Assert.AreEqual(3, Totals(3)[PointType.RareStone]);
+            Assert.AreEqual(1, Totals(2)[PointType.RandomRareCopy]);
+            Assert.AreEqual(1, Totals(3)[PointType.RandomRareCopy]);
         }
 
         [Test]
-        public void KingStonesStartAtStageFour()
+        public void KingCopiesStartAtStageFour()
         {
-            Assert.IsFalse(Totals(3).ContainsKey(PointType.MythicStone));
+            Assert.IsFalse(Totals(3).ContainsKey(PointType.RandomKingCopy));
             for (int stage = 4; stage <= 10; stage++)
-                Assert.AreEqual(10, Totals(stage)[PointType.MythicStone]);
+                Assert.AreEqual(2, Totals(stage)[PointType.RandomKingCopy]);
+        }
+
+        /// <summary>옛 등급 공용 재화(레어석·신화석)는 보상표에서 완전히 빠졌다.</summary>
+        [Test]
+        public void NoLegacyStonesRemainInThePlan()
+        {
+            for (int stage = 1; stage <= StageRewardPlan.LastPlannedStage; stage++)
+            {
+                Dictionary<PointType, int> totals = Totals(stage);
+                Assert.IsFalse(totals.ContainsKey(PointType.RareStone), stage + "스테이지에 레어석이 남았다.");
+                Assert.IsFalse(totals.ContainsKey(PointType.MythicStone), stage + "스테이지에 신화석이 남았다.");
+            }
         }
 
         [Test]

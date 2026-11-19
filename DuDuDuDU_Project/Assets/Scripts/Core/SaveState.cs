@@ -190,6 +190,14 @@ namespace OJ.Core
         /// </summary>
         public SynergySave Synergy { get; } = new SynergySave();
 
+        /// <summary>
+        /// 다이스 승급 저장분. (<c>OJ.Dice.PromotionManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> 필드를 <i>더하는</i> 것이라 예전 세이브에는 이 키가 없고,
+        /// 그 상태는 "승급을 한 번도 안 해 본 사람"과 같다.
+        /// </summary>
+        public PromotionSave Promotion { get; } = new PromotionSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -455,6 +463,17 @@ namespace OJ.Core
         /// </summary>
         public SortedDictionary<string, int> PinCounts { get; }
             = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 핀마다 이번 라운드에 걸린 보상의 <b>추첨 결과</b>(보상 풀의 인덱스). 키는 <c>tag:1</c> 꼴이다.
+        ///
+        /// 라운드를 열 때 한 번 뽑아 굳힌다 — 앱이 죽었다 돌아와도 핀 위의 보상이 바뀌면 안 되기 때문이다.
+        /// 필드를 <i>더하는</i> 것이라 버전은 올리지 않았다: 예전 세이브에는 이 키가 없고, 그 상태는
+        /// "라운드가 안 열렸거나, 열렸어도 아직 안 뽑은" 것과 같다(매니저가 첫 조회에 뽑는다).
+        /// 라운드가 끝나면 비운다.
+        /// </summary>
+        public SortedDictionary<string, int> PinDraws { get; }
+            = new SortedDictionary<string, int>(StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -581,6 +600,30 @@ namespace OJ.Core
 
         /// <summary>연출(또는 가이드)을 끝까지 본 컨텐츠. <c>ContentId</c> 이름, 오름차순.</summary>
         public List<string> Announced { get; } = new List<string>();
+    }
+
+    /// <summary>
+    /// 다이스 승급 저장분.
+    ///
+    /// <b>큐는 1칸이다.</b> 등록한 다이스·목표 단계·등록 시각·진행도가 한 벌이고,
+    /// 다른 다이스로 교체하면 이 한 벌이 통째로 새로 시작한다(진행도 초기화).
+    /// </summary>
+    public sealed class PromotionSave
+    {
+        /// <summary><c>DiceType</c> 이름 → 지금까지 오른 승급 단계(1~3). 안 오른 다이스는 키가 없다.</summary>
+        public SortedDictionary<string, int> Tiers { get; } = SaveState.NewIntMap();
+
+        /// <summary>큐에 올라 있는 <c>DiceType</c> 이름. 빈 문자열이면 큐가 비었다.</summary>
+        public string QueuedDice { get; set; } = string.Empty;
+
+        /// <summary>큐의 목표 단계(1~3). 큐가 비었으면 0.</summary>
+        public int QueuedTargetTier { get; set; }
+
+        /// <summary>등록 시각(UTC ticks). 교체 24시간 잠금의 기준이다.</summary>
+        public long RegisteredUtcTicks { get; set; }
+
+        /// <summary>미션 이름(<c>PromotionMission</c>) → 등록 뒤 쌓은 진행도. 큐가 바뀌면 비운다.</summary>
+        public SortedDictionary<string, int> Progress { get; } = SaveState.NewIntMap();
     }
 
     /// <summary>시너지 저장분.</summary>

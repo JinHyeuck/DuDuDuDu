@@ -85,6 +85,17 @@ namespace OJ.Game.Tests
             Assert.AreEqual(48, SweepEconomy.DailyShots(24, 72, 1, 2), "발당 티켓이 2장이면 절반이다.");
         }
 
+        /// <summary>가치 장부가 하루 2,000발을 기준으로 잡혀 있다 — 실제 공급이 크게 벗어나지 않는지.</summary>
+        [Test]
+        public void 하루_발수가_장부의_2천발_근처다()
+        {
+            int shots = SweepEconomy.DailyShots(
+                SweepEconomy.DailyIdleClears, SweepEconomy.DailySweepClears,
+                OJ.Stage.StageRewardCalculator.PinballTicketPerClear, SweepEconomy.DeclaredTicketCost);
+
+            Assert.That(shots, Is.EqualTo(2000).Within(50));
+        }
+
         [Test]
         public void 하루_고기_소모는_소탕_횟수에서_나온다()
         {
@@ -95,17 +106,29 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 발당 고기는 칸 확률의 가중 평균이다. 바닥값이 0 이 아니어야 한다 —
-        /// 잭팟이 안 터져도 조금씩 쌓여야 한다는 정책 5.1 이다.
+        /// 발당 고기는 칸 확률의 가중 평균이다. 하루 2,016발이라 발당 0.11 — 가운데 칸만 준다.
+        /// 가장자리 칸에 정수 1 이라도 걸리면 발당 0.99 가 돼 r 이 상한을 넘는다.
         /// </summary>
         [Test]
         public void 발당_고기는_칸_확률의_가중평균이다()
         {
             float perShot = SweepEconomy.StaminaPerShot();
-            Assert.That(perShot, Is.EqualTo(1.24f).Within(0.001f));
+            Assert.That(perShot, Is.EqualTo(0.11f).Within(0.001f));
 
-            foreach (int stamina in SweepEconomy.DeclaredSlotStamina)
-                Assert.Greater(stamina, 0, "바닥값을 0 으로 두면 꽝 칸이 생긴다 (정책 5.1).");
+            for (int i = 0; i < SweepEconomy.DeclaredSlotStamina.Length; i++)
+            {
+                if (i == SweepEconomy.JackpotSlotIndex)
+                    continue;
+
+                Assert.AreEqual(0, SweepEconomy.DeclaredSlotStamina[i], $"{i}번 칸 — 가장자리 칸에 걸면 r 이 발산한다.");
+            }
+        }
+
+        /// <summary>핀볼 보상표(PinballRewardDatabase)의 고기 칸이 이 선언값과 같아야 한다 — 어긋나면 r 이 어긋난다.</summary>
+        [Test]
+        public void 핀볼_보상표의_고기가_선언값과_같다()
+        {
+            CollectionAssert.AreEqual(SweepEconomy.DeclaredSlotStamina, OJ.Pinball.PinballRewardDatabase.StaminaPerSlot);
         }
 
         [Test]
@@ -121,9 +144,8 @@ namespace OJ.Game.Tests
         /// <summary>
         /// 잭팟 칸은 <b>확률이 가장 낮고 고기가 가장 많아야</b> 한다.
         ///
-        /// 이 둘이 뒤집히면 정책 5.1 의 "평소 조금 + 가끔 왕창"이 "자주 왕창"이 되고,
-        /// 회수율이 바로 상한을 넘는다 — 잭팟 25개를 확률 0.2475 칸에 두면
-        /// 기댓값이 1.24 에서 6.9 로 뛰어 r 이 1.8 이 된다(발산).
+        /// 이 둘이 뒤집히면 회수율이 바로 상한을 넘는다 — 잭팟 5개를 확률 0.2475 칸에 두면
+        /// 기댓값이 0.11 에서 2.64 로 뛰어 r 이 6 을 넘는다(발산).
         /// </summary>
         [Test]
         public void 잭팟_칸은_가장_드물고_가장_크다()
@@ -143,14 +165,14 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 잭팟 한 방이 <b>소탕 몇 회분</b>인지 잠근다. 이것이 체감의 크기다 —
-        /// 소탕 1회가 고기 5 이므로 25개면 5회분이고, 하루 96발에 1% 면 약 하루 한 번이다.
+        /// 잭팟 한 방이 <b>소탕 몇 회분</b>인지 잠근다. 소탕 1회가 고기 5 이므로 11개면 2회분(+1)이고,
+        /// 하루 2,016발에 1% 면 하루 20번 정도 터진다.
         /// </summary>
         [Test]
-        public void 잭팟_한_방이_소탕_5회분이다()
+        public void 잭팟_한_방이_소탕_2회분이다()
         {
             int jackpotStamina = SweepEconomy.DeclaredSlotStamina[SweepEconomy.JackpotSlotIndex];
-            Assert.AreEqual(5, jackpotStamina / SweepRules.StaminaCostPerSweep);
+            Assert.AreEqual(2, jackpotStamina / SweepRules.StaminaCostPerSweep);
         }
 
         [Test]
@@ -182,8 +204,6 @@ namespace OJ.Game.Tests
         public void 상위_재화_일일_페이스가_고정돼_있다()
         {
             Assert.AreEqual(300, SweepEconomy.DailyFromBonus(SweepEconomy.BonusFreeGemPerRound), "무료젬");
-            Assert.AreEqual(50, SweepEconomy.DailyFromBonus(SweepEconomy.BonusRareStonePerRound), "레어석");
-            Assert.AreEqual(40, SweepEconomy.DailyFromBonus(SweepEconomy.BonusMythicStonePerRound), "신화석");
             Assert.AreEqual(4, SweepEconomy.DailyFromBonus(SweepEconomy.BonusRelicTicketPerRound), "유물권");
         }
 

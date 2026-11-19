@@ -6,17 +6,17 @@ using OJ.Tower;
 
 namespace OJ.Game.Tests
 {
-    /// <summary>탑 1층 첫 클리어는 신화석 10개를 준다(킹 썬더 강화 유도, 2026-10-20).</summary>
+    /// <summary>탑 1층 첫 클리어는 킹 썬더 카피 3장을 준다(킹 썬더 강화 유도, 2026-10-20 신화석 10 → 2026-11 카피 개편).</summary>
     public sealed class TowerFirstClearRewardTests
     {
         [Test]
-        public void FirstFloorFirstClearGivesMythicStone()
+        public void FirstFloorFirstClearGivesKingThunderCopies()
         {
             var rewards = TowerRunManager.BuildClearRewards(1, firstClear: true);
-            var mythic = rewards.Where(r => r.PointType == PointType.MythicStone).ToList();
+            var copies = rewards.Where(r => r.PointType == PointType.KingThunderCopy).ToList();
 
-            Assert.AreEqual(1, mythic.Count);
-            Assert.AreEqual(10, mythic[0].Amount);
+            Assert.AreEqual(1, copies.Count);
+            Assert.AreEqual(3, copies[0].Amount);
         }
 
         [Test]
@@ -29,7 +29,7 @@ namespace OJ.Game.Tests
         public void SecondFloorHasNoFirstFloorBonus()
         {
             var rewards = TowerRunManager.BuildClearRewards(2, firstClear: true);
-            Assert.IsFalse(rewards.Any(r => r.PointType == PointType.MythicStone));
+            Assert.IsFalse(rewards.Any(r => r.PointType == PointType.KingThunderCopy));
         }
     }
 }

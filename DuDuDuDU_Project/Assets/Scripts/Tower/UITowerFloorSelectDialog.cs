@@ -199,7 +199,7 @@ namespace OJ.Tower
                                     + TowerFormula.FloorsPerBand - 1;
                 bandLastFloor = TowerFormula.ClampFloor(bandLastFloor);
                 bandRewardText.SetText(bandLastFloor + "층 · 다이아 " +
-                                       TowerFormula.BandRewardDia(bandLastFloor) + " · 신화 스크롤 " +
+                                       TowerFormula.BandRewardDia(bandLastFloor) + " · 킹 카피 " +
                                        TowerFormula.BandRewardMaterial(bandLastFloor));
             }
         }

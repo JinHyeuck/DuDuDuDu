@@ -120,6 +120,25 @@ namespace OJ.Point
             if (amount <= 0)
                 return;
 
+            // "랜덤 카피" 는 지급용 표지라 보관하지 않는다. 장수마다 후보 중 하나로 풀어서 그
+            // 구체적인 카피들을 넣는다 — 지급 경로가 전부 이 함수를 지나므로 호출부는 모른다.
+            if (DiceCopyRewards.IsRandom(pointType))
+            {
+                foreach (KeyValuePair<PointType, int> pair in
+                         DiceCopyRewards.Distribute(pointType, amount, n => UnityEngine.Random.Range(0, n)))
+                {
+                    Set(pair.Key, Get(pair.Key) + pair.Value, false);
+                }
+
+                if (saveNow)
+                    Save();
+
+                return;
+            }
+
+            // "열린 이벤트 재화" 도 지급용 표지다 — 그 순간 열린 이벤트의 재화로 바꿔 넣는다.
+            pointType = EventCurrencyRules.ResolveReward(pointType, DateTime.UtcNow);
+
             Set(pointType, Get(pointType) + amount, saveNow);
         }
 
@@ -220,6 +239,11 @@ namespace OJ.Point
             return TrySpend(costs);
         }
 
+        /// <summary>
+        /// 이 다이스의 <b>카피</b> 재화. 이름이 스크롤인 것은 예전 이름이 남은 것이다.
+        /// 기본 5종은 속성 스크롤을, 레어·킹 10종은 다이스별 카피를 쓴다.
+        /// 레벨업·초기화 환급·킹 해금 가격이 전부 이 함수를 따라간다.
+        /// </summary>
         public static PointType ToScrollType(DiceType diceType)
         {
             switch (diceType)
@@ -235,25 +259,25 @@ namespace OJ.Point
                 case DiceType.Thunder:
                     return PointType.ThunderScroll;
                 case DiceType.KingNormal:
-                    return PointType.MythicStone;
+                    return PointType.KingNormalCopy;
                 case DiceType.KingFire:
-                    return PointType.MythicStone;
+                    return PointType.KingFireCopy;
                 case DiceType.KingIce:
-                    return PointType.MythicStone;
+                    return PointType.KingIceCopy;
                 case DiceType.KingPoison:
-                    return PointType.MythicStone;
+                    return PointType.KingPoisonCopy;
                 case DiceType.KingThunder:
-                    return PointType.MythicStone;
+                    return PointType.KingThunderCopy;
                 case DiceType.Tornado:
-                    return PointType.RareStone;
+                    return PointType.TornadoCopy;
                 case DiceType.Stun:
-                    return PointType.RareStone;
+                    return PointType.StunCopy;
                 case DiceType.ArmorBreak:
-                    return PointType.RareStone;
+                    return PointType.ArmorBreakCopy;
                 case DiceType.Wind:
-                    return PointType.RareStone;
+                    return PointType.WindCopy;
                 case DiceType.Time:
-                    return PointType.RareStone;
+                    return PointType.TimeCopy;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(diceType), diceType, "Unsupported dice type.");
             }

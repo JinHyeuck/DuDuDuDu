@@ -129,7 +129,7 @@ namespace OJ.Dice
                         builder.AppendLine();
                         builder.AppendFormat("둔화: 적의 이동 속도를 {0:0.#}초 동안 낮춘다",
                             DiceMetaDataProvider.GetSlowDuration(diceType, level));
-                        if (level >= 9)
+                        if (level >= OJ.Core.DiceMilestoneLevels.Second)
                         {
                             builder.AppendLine();
                             builder.Append("빙결: 명중한 적을 1.0초 동안 멈춰 세운다");

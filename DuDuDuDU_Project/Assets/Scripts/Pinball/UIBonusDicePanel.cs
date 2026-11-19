@@ -631,10 +631,13 @@ namespace OJ.Pinball
             holder.anchoredPosition = PegAnchored(pegIndex);
 
             // 핀 반지름이 20px 안팎이라 그 위로 올려야 핀을 가리지 않는다.
-            bool hasReward = pin.rewards != null && pin.rewards.Count > 0;
+            // 핀 위에 적는 보상은 라운드를 열 때 풀에서 뽑힌 것이다(manager.GetPinRewards) — 지급과 같은 함수를 지난다.
+            IReadOnlyList<PinballReward> pinRewards =
+                manager != null ? manager.GetPinRewards(tag) : (IReadOnlyList<PinballReward>)pin.rewards;
+            bool hasReward = pinRewards != null && pinRewards.Count > 0;
             if (hasReward)
             {
-                Sprite icon = PointRewardUtility.GetPointIcon(pin.rewards[0].pointType);
+                Sprite icon = PointRewardUtility.GetPointIcon(pinRewards[0].pointType);
                 if (icon != null)
                 {
                     RectTransform iconRect = NewChild("Icon", holder);
@@ -648,7 +651,7 @@ namespace OJ.Pinball
 
                 TMP_Text amount = NewLabel(
                     "Amount", holder,
-                    BuildRewardText(pin, manager != null ? manager.RewardMultiplier : 1),
+                    BuildRewardText(pinRewards, manager != null ? manager.RewardMultiplier : 1),
                     pinLabelSize - 2f);
                 amount.rectTransform.sizeDelta = new Vector2(140f, 44f);
                 amount.rectTransform.anchoredPosition = new Vector2(0f, 44f);
@@ -719,17 +722,17 @@ namespace OJ.Pinball
         /// 배율은 판이 뒤집히기 전에 이미 확정되므로(핀볼 세션에서만 오른다)
         /// 라벨을 한 번 만들어 두면 라운드 내내 맞다.
         /// </summary>
-        private static string BuildRewardText(BonusPinReward pin, int multiplier)
+        private static string BuildRewardText(IReadOnlyList<PinballReward> rewards, int multiplier)
         {
             int scale = Mathf.Max(1, multiplier);
 
             var sb = new StringBuilder();
-            for (int i = 0; i < pin.rewards.Count; i++)
+            for (int i = 0; i < rewards.Count; i++)
             {
                 if (i > 0)
                     sb.Append('\n');
 
-                sb.Append(PinballRules.ScaleAmount(pin.rewards[i].amount, scale).ToString("N0"));
+                sb.Append(PinballRules.ScaleAmount(rewards[i].amount, scale).ToString("N0"));
             }
             return sb.ToString();
         }

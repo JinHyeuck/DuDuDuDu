@@ -32,17 +32,6 @@ namespace OJ.Shop
         /// <summary>골드 상점.</summary>
         internal static Sprite Gold(int tier) => Load("Shop_Money_", tier);
 
-        /// <summary>
-        /// 강화석 상점. 신화석은 빨강(<c>MergeLevelUp_2</c>), 그 밖은 파랑(<c>MergeLevelUp_1</c>) —
-        /// <c>PointMetadataDatabase</c> 의 재화 아이콘과 같은 짝이라 색이 어긋나지 않는다.
-        /// </summary>
-        internal static Sprite Stone(PointType stoneType, int tier)
-        {
-            return Load(stoneType == PointType.MythicStone
-                ? "Shop_MergeLevelUp_2_"
-                : "Shop_MergeLevelUp_1_", tier);
-        }
-
         /// <summary>보석 보물상자의 상자 그림. 시안이 일반=은상자, 영웅=금상자다.</summary>
         internal static Sprite GemBoxArt(int index) => Load("DiaBox_", index + 1);
 

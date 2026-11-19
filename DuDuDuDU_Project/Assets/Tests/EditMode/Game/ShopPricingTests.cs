@@ -125,9 +125,9 @@ namespace OJ.Game.Tests
         [Test]
         public void 구매_키가_섹션끼리_안_겹친다()
         {
-            Assert.That(ShopPurchaseManager.GoldKey(0), Is.EqualTo("gold:0"));
+            Assert.That(ShopPurchaseManager.CurrencyKey(0), Is.EqualTo("currency:0"));
             Assert.That(
-                new[] { ShopPurchaseManager.GoldKey(0), ShopPurchaseManager.GoldKey(1) },
+                new[] { ShopPurchaseManager.CurrencyKey(0), ShopPurchaseManager.CurrencyKey(1) },
                 Is.Unique);
         }
 

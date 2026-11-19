@@ -29,14 +29,19 @@ namespace OJ.Hunting
                 return;
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
+            bool wasPoisoned = target.IsPoisoned();
             target.ApplyPoison(
-                DiceMetaDataProvider.GetPoisonDuration(DiceType),
+                DiceMetaDataProvider.GetPoisonDuration(DiceType, level),
                 DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level),
                 DiceType);
-            if (level >= 12)
+            if (level >= OJ.Core.DiceMilestoneLevels.Third)
                 target.ApplyPoisonDamageTakenBonus(10);
 
-            if (level < 9 || UnityEngine.Random.value > 0.4f)
+            // 승급 T1: 이미 중독된 적에게 다시 명중하면 중독 틱이 즉시 한 번 터진다(지속시간은 위에서 갱신됐다).
+            if (wasPoisoned && OJ.Dice.PromotionManager.TierOf(DiceType) >= 1)
+                target.TickPoisonNow();
+
+            if (level < OJ.Core.DiceMilestoneLevels.Second || UnityEngine.Random.value > 0.4f)
                 return;
 
             List<Monster> around = attackContent.GetRedHitTarget(
@@ -54,10 +59,10 @@ namespace OJ.Hunting
 
                 attackContent.HitMonster(splashTarget, DiceType, attackContent.CurrentDamage);
                 splashTarget.ApplyPoison(
-                    DiceMetaDataProvider.GetPoisonDuration(DiceType),
+                    DiceMetaDataProvider.GetPoisonDuration(DiceType, level),
                     DiceMetaDataProvider.GetPoisonDamageMultiplier(DiceType, level),
                     DiceType);
-                if (level >= 12)
+                if (level >= OJ.Core.DiceMilestoneLevels.Third)
                     splashTarget.ApplyPoisonDamageTakenBonus(10);
             }
         }

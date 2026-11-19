@@ -19,38 +19,84 @@ MonoBehaviour:
   ballTable: 0300000005000000080000000c0000000f0000001400000019000000230000003c000000
   pinRewards:
   - tag: 1
-    label: "\uACE8\uB4DC \uD540"
+    label: "\uBCF4\uC0C1 \uD540 1"
     requiredHits: 6
     rewards:
     - pointType: 0
-      amount: 300
+      amount: 20
   - tag: 2
-    label: "\uB808\uC5B4\uC11D \uD540"
+    label: "\uBCF4\uC0C1 \uD540 2"
     requiredHits: 6
     rewards:
-    - pointType: 106
-      amount: 25
+    - pointType: 0
+      amount: 20
   - tag: 3
-    label: "\uC720\uBB3C\uAD8C \uD540"
+    label: "\uBCF4\uC0C1 \uD540 3"
     requiredHits: 6
     rewards:
-    - pointType: 4
-      amount: 2
+    - pointType: 0
+      amount: 20
   - tag: 4
-    label: "\uC82C \uD540"
+    label: "\uBCF4\uC0C1 \uD540 4"
     requiredHits: 7
     rewards:
-    - pointType: 1
-      amount: 100
+    - pointType: 0
+      amount: 20
   - tag: 5
-    label: "\uC2E0\uD654\uC11D \uD540"
+    label: "\uBCF4\uC0C1 \uD540 5"
     requiredHits: 7
     rewards:
-    - pointType: 105
+    - pointType: 0
       amount: 20
   - tag: 6
-    label: "\uC82C \uB300\uBC15 \uD540"
+    label: "\uBCF4\uC0C1 \uD540 6"
     requiredHits: 8
     rewards:
-    - pointType: 1
-      amount: 50
+    - pointType: 0
+      amount: 20
+  rewardPool:
+  - label: "\uB808\uC5B4\u00B7\uD0B9 \uCE74\uD53C"
+    weight: 167
+    rewards:
+    - pointType: 133
+      amount: 1
+  - label: "\uAE30\uBCF8 \uCE74\uD53C"
+    weight: 167
+    rewards:
+    - pointType: 130
+      amount: 1
+  - label: "\uC77C\uBC18 \uBCF4\uC11D \uBF51\uAE30\uAD8C"
+    weight: 83
+    rewards:
+    - pointType: 107
+      amount: 1
+  - label: "\uC120\uD0DD\uAD8C"
+    weight: 42
+    rewards:
+    - pointType: 120
+      amount: 1
+  - label: "\uC720\uBB3C\uAD8C"
+    weight: 42
+    rewards:
+    - pointType: 4
+      amount: 1
+  - label: "\uCD5C\uACE0\uAE09 \uBCF4\uC11D \uBF51\uAE30\uAD8C"
+    weight: 42
+    rewards:
+    - pointType: 108
+      amount: 1
+  - label: "\uC2DC\uB108\uC9C0 \uD2F0\uCF13"
+    weight: 150
+    rewards:
+    - pointType: 7
+      amount: 5
+  - label: "\uC774\uBCA4\uD2B8 \uC7AC\uD654"
+    weight: 157
+    rewards:
+    - pointType: 134
+      amount: 5
+  - label: "\uACE8\uB4DC"
+    weight: 150
+    rewards:
+    - pointType: 0
+      amount: 20

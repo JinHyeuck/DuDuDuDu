@@ -562,7 +562,7 @@ namespace OJ.Tower
             if (TowerFormula.IsBandLastFloor(nextFloor))
             {
                 sb.Append(" · 다이아 ").Append(TowerFormula.BandRewardDia(nextFloor));
-                sb.Append(" · 신화 스크롤 ").Append(TowerFormula.BandRewardMaterial(nextFloor));
+                sb.Append(" · 킹 카피 ").Append(TowerFormula.BandRewardMaterial(nextFloor));
             }
 
             DiceType unlock = DiceUnlockDatabaseProvider.Database.GetUnlockAtFloor(nextFloor);
@@ -581,6 +581,14 @@ namespace OJ.Tower
                 case PointType.PaidGem: return "유료젬";
                 case PointType.MythicStone: return "신화석";
                 case PointType.RareStone: return "레어석";
+                case PointType.NormalGemTicket: return "일반 보석 뽑기권";
+                case PointType.PremiumGemTicket: return "최고급 보석 뽑기권";
+                case PointType.KingNormalCopy: return "King Normal 카피";
+                case PointType.KingFireCopy: return "King Fire 카피";
+                case PointType.KingIceCopy: return "King Ice 카피";
+                case PointType.KingPoisonCopy: return "King Poison 카피";
+                case PointType.KingThunderCopy: return "King Thunder 카피";
+                case PointType.RandomKingCopy: return "랜덤 킹 카피";
 
                 // 강화석 줄이 여기 있었다. 그 재화는 PointType 이 아니라
                 // BattlePointType 으로 갔다 — 결과창은 영구 재화만 그리므로

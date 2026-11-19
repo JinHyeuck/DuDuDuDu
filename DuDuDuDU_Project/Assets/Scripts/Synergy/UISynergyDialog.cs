@@ -171,6 +171,11 @@ namespace OJ.Synergy
             TopRect((RectTransform)odds.transform, new Vector2(130f, 72f), new Vector2(PanelWidth - 230f, -60f));
             odds.onClick.AddListener(() => oddsPanel.SetActive(!oddsPanel.activeSelf));
 
+            // 시너지 티켓·골드가 모자랄 때 바로 살 수 있는 "충전" 버튼(확률 버튼 오른쪽).
+            OJ.Shop.CurrencyPassPopup.AttachButton(
+                p, OJ.Shop.ContentPass.Synergy, ticketText.font,
+                new Vector2(0f, 1f), new Vector2(PanelWidth - 78f, -60f), new Vector2(150f, 72f));
+
             // 닫기는 아래 가운데. 오른쪽 위는 DEV 배지가 가린다.
             Button close = NewButton("Close", p, new Color(0.42f, 0.38f, 0.52f, 1f), "닫기", 34f, out _);
             var closeRect = (RectTransform)close.transform;
@@ -361,6 +366,8 @@ namespace OJ.Synergy
             sb.Append("기본 ").Append(SynergyRules.BaseRerollCost).Append("장 + 잠근 효과 1줄마다 ")
                 .Append(SynergyRules.LockedEffectCostStep).Append("장, 조건을 잠그면 ×")
                 .Append(SynergyRules.LockedConditionCostMultiplier).AppendLine(".");
+            sb.Append("티켓이 모자라면 모자란 티켓 1장마다 골드 ").Append(SynergyRules.GoldPerTicket)
+                .AppendLine("으로 메꿀 수 있고, 결과는 같습니다.");
             sb.AppendLine();
 
             for (int c = 0; c < SynergyRules.CategoryCount; c++)
@@ -404,13 +411,14 @@ namespace OJ.Synergy
 
             int tickets = PointManager.Instance != null ? PointManager.Instance.Get(PointType.SynergyTicket) : 0;
             ticketText.text = "<size=26><color=#A09CB3>시너지 티켓</color></size> " + tickets.ToString("N0");
+            int gold = PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0;
             int openLines = manager.OpenEffectLines;
 
             foreach (CardView card in cards)
-                RefreshCard(card, manager, openLines, tickets);
+                RefreshCard(card, manager, openLines, tickets, gold);
         }
 
-        private void RefreshCard(CardView card, SynergyManager manager, int openLines, int tickets)
+        private void RefreshCard(CardView card, SynergyManager manager, int openLines, int tickets, int gold)
         {
             bool open = manager.IsOpen(card.Category);
             card.LockedCover.SetActive(!open);
@@ -443,9 +451,9 @@ namespace OJ.Synergy
 
             bool canRoll = SynergyRules.CanReroll(preset, openLines);
             int cost = SynergyRules.RerollCost(preset, openLines);
-            bool affordable = tickets >= cost;
+            bool affordable = SynergyRules.TryPay(cost, tickets, gold, out _, out _);
             card.RerollImage.color = canRoll && affordable ? RerollColor : DisabledColor;
-            card.RerollText.text = canRoll ? "리롤  <size=26>티켓 " + cost + "</size>" : "<size=26>모두 잠김</size>";
+            card.RerollText.text = canRoll ? "리롤  <size=24>" + SynergyText.RerollCostLabel(cost, tickets, gold) + "</size>" : "<size=26>모두 잠김</size>";
         }
 
         private static void FillLine(LineView view, SynergyLine line, bool condition, bool open, bool flash)
@@ -492,9 +500,10 @@ namespace OJ.Synergy
 
             int cost = manager.GetRerollCost(category, index);
             int tickets = PointManager.Instance != null ? PointManager.Instance.Get(PointType.SynergyTicket) : 0;
-            if (tickets < cost)
+            int gold = PointManager.Instance != null ? PointManager.Instance.Get(PointType.Gold) : 0;
+            if (!SynergyRules.TryPay(cost, tickets, gold, out _, out _))
             {
-                ShowToast("시너지 티켓이 부족합니다.\n<size=30>핀볼에서 얻을 수 있어요.</size>");
+                ShowToast("시너지 티켓이 부족합니다.\n<size=30>핀볼에서 얻거나, 모자란 만큼 골드로 낼 수 있어요.</size>");
                 return;
             }
 

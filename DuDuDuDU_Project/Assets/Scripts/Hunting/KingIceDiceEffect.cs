@@ -17,12 +17,22 @@ namespace OJ.Hunting
 
         public override DiceType DiceType => DiceType.KingIce;
 
+        private System.Collections.IEnumerator CoBossVulnerable(Monster boss)
+        {
+            yield return new UnityEngine.WaitForSeconds(1f);
+
+            if (boss != null && boss.gameObject.activeInHierarchy)
+                boss.ApplyPromotionDamageTakenBonus(OJ.Core.PromotionEffectRules.KingIceBossDamageTakenPercent, OJ.Core.PromotionEffectRules.KingIceBossBonusSeconds);
+        }
+
         public override void BuildTargets(AttackContent attackContent, Monster rootTarget, List<Monster> hitMonsters)
         {
             if (attackContent == null || hitMonsters == null)
                 return;
 
             List<Monster> iceTargets = new List<Monster>();
+            // 승급 T2: 연쇄 타격 대상 3명 → 5명.
+            int chainCount = OJ.Dice.PromotionManager.TierOf(DiceType) >= 2 ? OJ.Core.PromotionEffectRules.KingIceChainTargetsT2 : OJ.Core.PromotionEffectRules.KingIceChainTargetsBase;
             for (int i = 0; i < hitMonsters.Count; i++)
             {
                 Monster target = hitMonsters[i];
@@ -33,7 +43,7 @@ namespace OJ.Hunting
                     target.transform.position,
                     IFFType.IFF_Friend,
                     1.2f,
-                    3,
+                    chainCount,
                     target);
 
                 for (int n = 0; n < nearby.Count; n++)
@@ -57,8 +67,14 @@ namespace OJ.Hunting
             float duration = DiceMetaDataProvider.GetSlowDuration(DiceType, level);
             target.ApplySlow(duration, 0.8f, DiceType);
             target.ApplySlow(duration, 0.8f, DiceType);
-            if (level >= 9)
+            if (level >= OJ.Core.DiceMilestoneLevels.Second)
+            {
                 target.ApplyStun(1f, DiceType);
+
+                // 승급 T3: 빙결(정지)된 보스는 정지가 풀린 뒤 일정 시간 받는 피해가 늘어난다.
+                if (target.IsStageBoss && OJ.Dice.PromotionManager.TierOf(DiceType) >= 3 && attackContent != null)
+                    attackContent.StartCoroutine(CoBossVulnerable(target));
+            }
         }
     }
 }

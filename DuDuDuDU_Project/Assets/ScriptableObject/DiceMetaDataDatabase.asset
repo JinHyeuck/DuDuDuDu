@@ -42,15 +42,15 @@ MonoBehaviour:
     baseScrollCost: 10
     scrollCostPerLevel: 20
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
-    - level: 9
+    - level: 20
       description: "\uACF5\uACA9 \uC2DC 20% \uD655\uB960\uB85C SP +5"
-    - level: 12
+    - level: 25
       description: "\uACF5\uACA9 \uC2DC 20% \uD655\uB960\uB85C \uB300\uBBF8\uC9C0
         2\uBC30"
+    - level: 30
+      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 30% \uC99D\uAC00"
   - diceType: 1
     elementType: 01000000
     displayName: Fire Dice
@@ -80,15 +80,15 @@ MonoBehaviour:
     baseScrollCost: 10
     scrollCostPerLevel: 20
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uACF5\uACA9 \uC2DC 20% \uD655\uB960\uB85C \uD55C \uBC88 \uB354
         \uD3ED\uBC1C"
-    - level: 9
+    - level: 20
       description: "\uD3ED\uBC1C \uBC94\uC704 10% \uC99D\uAC00"
-    - level: 12
+    - level: 25
       description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
+    - level: 30
+      description: "\uD3ED\uBC1C \uCD5C\uC885 \uD53C\uD574 30% \uC99D\uAC00"
   - diceType: 2
     elementType: 02000000
     displayName: Ice Dice
@@ -118,14 +118,14 @@ MonoBehaviour:
     baseScrollCost: 10
     scrollCostPerLevel: 20
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uACF5\uACA9 \uC2DC 30% \uD655\uB960\uB85C \uBC94\uC704 \uD53C\uD574"
-    - level: 9
+    - level: 20
       description: "\uB454\uD654 \uC9C0\uC18D\uC2DC\uAC04 50% \uC99D\uAC00"
-    - level: 12
+    - level: 25
       description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
+    - level: 30
+      description: "\uB454\uD654\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 10% \uC99D\uAC00"
   - diceType: 3
     elementType: 03000000
     displayName: Thunder Dice
@@ -156,15 +156,15 @@ MonoBehaviour:
     baseScrollCost: 10
     scrollCostPerLevel: 20
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uC804\uC774 \uB300\uC0C1 +1"
-    - level: 9
+    - level: 20
       description: "\uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
-    - level: 12
+    - level: 25
       description: "\uACF5\uACA9\uD55C \uC801 \uC8FC\uBCC0 1\uBA85\uC5D0\uAC8C 50%
         \uCD94\uAC00 \uBC88\uAC1C \uD53C\uD574"
+    - level: 30
+      description: "\uC804\uC774 \uD53C\uD574 30% \uC99D\uAC00"
   - diceType: 4
     elementType: 04000000
     displayName: Poison Dice
@@ -195,15 +195,15 @@ MonoBehaviour:
     baseScrollCost: 10
     scrollCostPerLevel: 20
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uC911\uB3C5 \uD53C\uD574\uB7C9 50% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uACF5\uACA9 \uC2DC 40% \uD655\uB960\uB85C \uBC94\uC704 \uD53C\uD574"
-    - level: 12
+    - level: 25
       description: "\uC911\uB3C5\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 10%
         \uC99D\uAC00"
+    - level: 30
+      description: "\uC911\uB3C5 \uC9C0\uC18D\uC2DC\uAC04 50% \uC99D\uAC00"
   - diceType: 100
     elementType: 00000000
     displayName: Tornado Dice
@@ -233,13 +233,11 @@ MonoBehaviour:
     baseScrollCost: 3
     scrollCostPerLevel: 5
     milestones:
-    - level: 3
-      description: "\uBC94\uC704 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uC801\uC744 2\uCD08 \uB3D9\uC548 \uD761\uC785"
-    - level: 9
+    - level: 20
       description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
-    - level: 12
+    - level: 25
       description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 30% \uC99D\uAC00"
   - diceType: 101
     elementType: 04000000
@@ -269,13 +267,11 @@ MonoBehaviour:
     baseScrollCost: 3
     scrollCostPerLevel: 5
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uC2A4\uD134 \uD655\uB960 10% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
-    - level: 12
+    - level: 25
       description: "\uC2A4\uD134\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 20%
         \uC99D\uAC00"
   - diceType: 102
@@ -305,13 +301,11 @@ MonoBehaviour:
     baseScrollCost: 3
     scrollCostPerLevel: 5
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uBC29\uC5B4\uB825 \uAC10\uC18C 10% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uCFE8\uD0C0\uC784 20% \uAC10\uC18C"
-    - level: 12
+    - level: 25
       description: "\uBC29\uAE4E \uC0C1\uD0DC \uC801\uC774 \uBC1B\uB294 \uD53C\uD574
         10% \uC99D\uAC00"
   - diceType: 103
@@ -341,14 +335,12 @@ MonoBehaviour:
     baseScrollCost: 3
     scrollCostPerLevel: 5
     milestones:
-    - level: 3
-      description: "\uBC00\uC5B4\uB0B4\uB294 \uAC70\uB9AC 10% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uBC00\uB9AC\uB294 \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 10%
         \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uBC00\uC5B4\uB0B4\uAE30 \uD655\uB960 10% \uCD94\uAC00 \uC99D\uAC00"
-    - level: 12
+    - level: 25
       description: "\uBC00\uC5B4\uB0B4\uB294 \uB300\uC0C1 +1"
   - diceType: 104
     elementType: 03000000
@@ -376,13 +368,11 @@ MonoBehaviour:
     baseScrollCost: 3
     scrollCostPerLevel: 5
     milestones:
-    - level: 3
-      description: "\uCFE8\uD0C0\uC784 \uAC10\uC18C\uB7C9 5% \uCD94\uAC00 \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uB300\uC0C1 +1"
-    - level: 9
+    - level: 20
       description: "\uC790\uC2E0\uC758 \uCFE8\uD0C0\uC784 10% \uAC10\uC18C"
-    - level: 12
+    - level: 25
       description: "\uCFE8\uD0C0\uC784 \uAC10\uC18C\uB7C9 10% \uCD94\uAC00 \uC99D\uAC00"
   - diceType: 200
     elementType: 00000000
@@ -410,15 +400,13 @@ MonoBehaviour:
     baseScrollCost: 4
     scrollCostPerLevel: 6
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 30% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 NormalDice \uCD5C\uC885
         \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 \uBAA8\uB4E0 \uB2E4\uC774\uC2A4
         \uD06C\uB9AC\uD2F0\uCEEC \uD655\uB960 10% \uC99D\uAC00"
-    - level: 12
+    - level: 25
       description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 \uBAA8\uB4E0 \uB2E4\uC774\uC2A4
         \uD06C\uB9AC\uD2F0\uCEEC \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
   - diceType: 201
@@ -447,15 +435,13 @@ MonoBehaviour:
     baseScrollCost: 4
     scrollCostPerLevel: 6
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 FireDice \uD3ED\uBC1C
         \uBC94\uC704 20% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uD3ED\uBC1C\uC774 30% \uD655\uB960\uB85C \uD55C \uBC88 \uB354
         \uBC1C\uC0DD"
-    - level: 12
+    - level: 25
       description: "\uD3ED\uBC1C \uCD5C\uC885 \uD53C\uD574 30% \uC99D\uAC00"
   - diceType: 202
     elementType: 02000000
@@ -482,13 +468,11 @@ MonoBehaviour:
     baseScrollCost: 4
     scrollCostPerLevel: 6
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "IceDice \uB454\uD654 \uC9C0\uC18D\uC2DC\uAC04 50% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uACF5\uACA9 \uC2DC \uBE59\uACB0 \uBD80\uC5EC"
-    - level: 12
+    - level: 25
       description: "\uB454\uD654\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 15%
         \uC99D\uAC00"
   - diceType: 203
@@ -518,14 +502,12 @@ MonoBehaviour:
     baseScrollCost: 4
     scrollCostPerLevel: 6
     milestones:
-    - level: 3
-      description: "\uC804\uC774 \uB300\uC0C1 +2"
-    - level: 6
+    - level: 10
       description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 ThunderDice \uCD5C\uC885
         \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "30% \uD655\uB960\uB85C \uCD94\uAC00 1\uBA85\uC5D0\uAC8C 50% \uD53C\uD574"
-    - level: 12
+    - level: 25
       description: "\uB9DE\uC740 \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 15% \uC99D\uAC00"
   - diceType: 204
     elementType: 04000000
@@ -553,14 +535,12 @@ MonoBehaviour:
     baseScrollCost: 4
     scrollCostPerLevel: 6
     milestones:
-    - level: 3
-      description: "\uCD5C\uC885 \uB300\uBBF8\uC9C0 20% \uC99D\uAC00"
-    - level: 6
+    - level: 10
       description: "\uC18C\uD658 \uC911\uC778 \uB3D9\uC548 PoisonDice \uC911\uB3C5
         \uD53C\uD574\uB7C9 50% \uC99D\uAC00"
-    - level: 9
+    - level: 20
       description: "\uC911\uB3C5 \uC801\uC6A9 \uC2DC 30% \uD655\uB960\uB85C \uC8FC\uBCC0
         \uC801 1\uBA85\uC5D0\uAC8C \uC804\uC774"
-    - level: 12
+    - level: 25
       description: "\uC911\uB3C5\uB41C \uC801\uC774 \uBC1B\uB294 \uD53C\uD574 15%
         \uC99D\uAC00"
