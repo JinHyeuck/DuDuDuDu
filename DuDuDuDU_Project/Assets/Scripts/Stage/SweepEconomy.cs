@@ -15,8 +15,9 @@ namespace OJ.Stage
     /// 급격하다 — 0.3 → 0.6 은 "두 배 버프"로 보이지만 승수는 1.43 → 2.5 다.
     /// <b>r 이 유일한 방어선이고 2차 방어선이 없다</b>(정책 4.2). 그래서 <c>SweepEconomyTests</c> 가
     /// 이 계산을 잠근다. 멤버십이 없는 유저에게는 하루 소탕 한도가 생겼지만(2026-10-06,
-    /// <c>ShopDatabase.Membership.freeDailySweepLimit</c> = 72 = <see cref="DailySweepClears"/>)
+    /// <c>ShopDatabase.Membership.freeDailySweepLimit</c> = 5)
     /// <b>고기 멤버십이 그 한도를 풀어 주므로</b> 멤버에게는 여전히 r 하나뿐이다.
+    /// 아래 하루 수치(<see cref="DailySweepClears"/> 등)는 <b>멤버 기준</b>이다 — 무료 유저는 소탕 5회 + 방치 24회뿐이다.
     ///
     /// <b>왜 값을 여기 베껴 두는가.</b> 핀볼 칸 보상은 SO 에셋이 정본인데 헤드리스 러너에서는
     /// <c>ScriptableObject</c> 가 뜨지 않는다. 그래서 <b>선언값</b>을 코드에 두어 테스트가
@@ -29,10 +30,10 @@ namespace OJ.Stage
         public const int DailyIdleClears = 24;
 
         /// <summary>
-        /// 소탕의 하루 클리어 수. 고기 유입 360(2시간마다 30 x 12) / 1회 5개.
+        /// 소탕의 하루 클리어 수. 고기 유입 720(2분마다 1개 x 720) / 1회 5개.
         /// <see cref="OJ.IdleReward"/> 의 <c>MeatPerSet</c> 과 짝이다.
         /// </summary>
-        public const int DailySweepClears = 72;
+        public const int DailySweepClears = 144;
 
         /// <summary>핀볼 1발에 드는 티켓. <c>PinballRewardDatabase.ticketCost</c> 의 선언값.</summary>
         public const int DeclaredTicketCost = 1;
@@ -46,17 +47,12 @@ namespace OJ.Stage
         /// <summary>
         /// 칸별 고기. <c>PinballRewardDatabase.asset</c> 의 선언값이다.
         ///
-        /// <b>가운데가 잭팟이다.</b> 그 칸의 확률이 1% 뿐이라 25개를 넣어도 기댓값이
-        /// 0.25 밖에 안 오른다 — 정책 5.1 의 "평소 조금 + 가끔 왕창"이 여기서 성립한다.
-        ///
-        /// <b>확률을 깎는 것이 핵심이었다.</b> 다섯 칸이 고른 확률(0.16~0.22)이면 잭팟을
-        /// 만들 수가 없다. 발당 최소 1개씩만 줘도 96발이면 96개인데 회수율 상한
-        /// (r = 0.35, 하루 126개)이 거의 차서 남는 몫이 하루 30개뿐이고, 그것을
-        /// 다시 나누면 한 번에 몇 개가 안 된다.
-        ///
-        /// 바닥값은 0 으로 두지 않았다(정책 5.1) — 잭팟이 안 터져도 조금씩은 쌓여야 한다.
+        /// <b>가운데 1% 칸만 준다.</b> 클리어당 티켓을 21장으로 올려 하루 2,016발이 되면서(2026-11)
+        /// 발당 고기를 0.11 까지 내려야 r 이 0.31 에 머문다. 정수 1 만 가장자리 칸에 걸려도 발당 0.99 라
+        /// r 이 6 을 넘어 발산하므로 가장자리는 0 이고, 가운데 칸이 11(소탕 2회분 + 1)을 준다 —
+        /// 하루 약 20번 터져 고기가 꾸준히 새는 구조다(예전 "바닥값 > 0" 정책 5.1 은 발수가 적을 때의 이야기였다).
         /// </summary>
-        public static readonly int[] DeclaredSlotStamina = { 1, 1, 25, 1, 1 };
+        public static readonly int[] DeclaredSlotStamina = { 0, 0, 11, 0, 0 };
 
         /// <summary>잭팟 칸의 인덱스. 확률이 가장 낮고 고기가 가장 많은 칸이다.</summary>
         public const int JackpotSlotIndex = 2;
@@ -154,12 +150,6 @@ namespace OJ.Stage
 
         /// <summary>보너스 라운드 <b>1회 완주</b>가 주는 무료젬. 젬 핀 100 + 젬 대박 핀 50.</summary>
         public const int BonusFreeGemPerRound = 150;
-
-        /// <summary>1회 완주 레어석. 레어석 핀.</summary>
-        public const int BonusRareStonePerRound = 25;
-
-        /// <summary>1회 완주 신화석. 신화석 핀.</summary>
-        public const int BonusMythicStonePerRound = 20;
 
         /// <summary>1회 완주 유물권. 유물권 핀.</summary>
         public const int BonusRelicTicketPerRound = 2;

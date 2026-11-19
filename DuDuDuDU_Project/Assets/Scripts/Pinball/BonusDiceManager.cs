@@ -76,6 +76,13 @@ namespace OJ.Pinball
         /// <summary>특수 핀 태그 → 이번 라운드 누적 적중 수. 0 인 태그는 넣지 않는다.</summary>
         private readonly Dictionary<int, int> pinCounts = new Dictionary<int, int>();
 
+        /// <summary>
+        /// 특수 핀 태그 → 이번 라운드에 그 핀에 걸린 보상의 <b>추첨 결과</b>(<c>BonusDiceDatabase.rewardPool</c> 의 인덱스).
+        /// 라운드를 열 때 한 번 뽑고, 저장한다 — 앱이 죽었다 돌아와도 핀 위의 보상이 바뀌면 안 된다.
+        /// 풀이 비어 있으면 비어 있고, 그때는 핀에 적힌 rewards(폴백)가 쓰인다.
+        /// </summary>
+        private readonly Dictionary<int, int> pinDraws = new Dictionary<int, int>();
+
         private readonly Dictionary<int, int> scratchHits = new Dictionary<int, int>();
 
         private int[] dice = Array.Empty<int>();
@@ -141,6 +148,71 @@ namespace OJ.Pinball
         public int GetPinCount(int tag)
         {
             return pinCounts.TryGetValue(tag, out int value) ? value : 0;
+        }
+
+        /// <summary>
+        /// 그 핀에 이번 라운드에 걸린 보상. <b>화면과 지급이 같은 것을 본다</b> — 핀 위에 적힌 것과 채웠을 때
+        /// 나가는 것이 달라지면 안 되므로, 둘 다 이 함수 하나를 지난다.
+        /// 보상 풀에서 뽑힌 줄이 있으면 그 줄이고, 없으면(풀이 비었거나 아직 안 뽑았거나) 핀에 적힌 폴백이다.
+        /// </summary>
+        public IReadOnlyList<PinballReward> GetPinRewards(int tag)
+        {
+            BonusPinReward pin = Database.GetPin(tag);
+            if (pin == null)
+                return Array.Empty<PinballReward>();
+
+            EnsureDraws();
+
+            if (pinDraws.TryGetValue(tag, out int index))
+            {
+                BonusRewardDraw draw = Database.GetDraw(index);
+                if (draw != null && draw.rewards != null && draw.rewards.Count > 0)
+                    return draw.rewards;
+            }
+
+            return (IReadOnlyList<PinballReward>)pin.rewards ?? Array.Empty<PinballReward>();
+        }
+
+        /// <summary>
+        /// 라운드를 열 때 핀마다 보상 풀에서 하나씩 가중치대로 뽑는다. 풀이 비었으면 아무것도 하지 않는다.
+        /// 같은 보상이 여러 핀에 걸릴 수 있다 — 핀마다 독립 추첨이다.
+        /// </summary>
+        private void DrawPinRewards()
+        {
+            pinDraws.Clear();
+            DrawMissingPinRewards();
+        }
+
+        private void DrawMissingPinRewards()
+        {
+            BonusDiceDatabase db = Database;
+            if (db.rewardPool == null || db.rewardPool.Count == 0 || db.pinRewards == null)
+                return;
+
+            List<int> weights = db.PoolWeights();
+            for (int i = 0; i < db.pinRewards.Count; i++)
+            {
+                BonusPinReward pin = db.pinRewards[i];
+                if (pin == null || pinDraws.ContainsKey(pin.tag))
+                    continue;
+
+                int index = BonusDiceRules.PickWeightedIndex(weights, UnityEngine.Random.value);
+                if (index >= 0)
+                    pinDraws[pin.tag] = index;
+            }
+        }
+
+        /// <summary>
+        /// 이어하기로 로드된 진행 중 라운드에 추첨 결과가 없으면(예전 세이브) 지금 뽑는다. 이미 있는 핀은 건드리지 않는다.
+        /// <b>로드 시점에는 못 한다</b> — 수치표를 건드리면 <c>StaticResource</c> 가 안 서 있어 거짓 LogError 가 찍힌다.
+        /// 그래서 첫 조회까지 미룬다(<see cref="cycleDirty"/> 와 같은 이유).
+        /// </summary>
+        private void EnsureDraws()
+        {
+            if (!inProgress)
+                return;
+
+            DrawMissingPinRewards();
         }
 
         public bool IsPinComplete(int tag)
@@ -234,6 +306,7 @@ namespace OJ.Pinball
             remainingCycles = Mathf.Max(1, Database.cyclesPerRound);
             rewardMultiplier = 1;
             pinCounts.Clear();
+            DrawPinRewards();
             ResetCycle();
 
             Save();
@@ -452,13 +525,13 @@ namespace OJ.Pinball
         /// </summary>
         private void AppendRewards(BonusPinReward pin, List<PointRewardEntry> into)
         {
-            if (pin.rewards == null)
-                return;
+            // 핀에 걸린 보상은 라운드를 열 때 풀에서 뽑은 것이다(GetPinRewards). 화면이 적어 둔 것과 같다.
+            IReadOnlyList<PinballReward> rewards = GetPinRewards(pin.tag);
 
             int scale = Mathf.Max(1, rewardMultiplier);
-            for (int i = 0; i < pin.rewards.Count; i++)
+            for (int i = 0; i < rewards.Count; i++)
             {
-                PinballReward reward = pin.rewards[i];
+                PinballReward reward = rewards[i];
                 into.Add(new PointRewardEntry(
                     reward.pointType, PinballRules.ScaleAmount(reward.amount, scale)));
             }
@@ -552,6 +625,7 @@ namespace OJ.Pinball
             state.BonusDice.RemainingCycles = remainingCycles;
             state.BonusDice.RewardMultiplier = Mathf.Max(1, rewardMultiplier);
             state.BonusDice.PinCounts.Clear();
+            state.BonusDice.PinDraws.Clear();
 
             // 끝난 라운드의 카운트는 파일에 남기지 않는다. 화면이 마지막 연출에 쓰려고
             // 메모리에 들고 있을 뿐이고, 저장까지 하면 다음 판에 남은 진행도로 오해된다.
@@ -565,6 +639,11 @@ namespace OJ.Pinball
 
                 state.BonusDice.PinCounts[TagKeyPrefix + pair.Key] = pair.Value;
             }
+
+            // 핀 위의 보상 추첨 결과. 라운드가 끝나면 위에서 이미 돌아갔으므로 여기 닿는 것은 진행 중일 때뿐이다.
+            state.BonusDice.PinDraws.Clear();
+            foreach (KeyValuePair<int, int> pair in pinDraws)
+                state.BonusDice.PinDraws[TagKeyPrefix + pair.Key] = pair.Value;
         }
 
         public void ReadFrom(SaveState state)
@@ -587,6 +666,15 @@ namespace OJ.Pinball
 
                 if (pair.Value > 0)
                     pinCounts[tag] = pair.Value;
+            }
+
+            // 핀 위의 보상 추첨 결과. 인덱스가 풀 범위 안인지는 여기서 보지 않는다 — 수치표를 못 건드린다.
+            // GetPinRewards 가 범위를 벗어난 값을 폴백으로 흘려보낸다.
+            pinDraws.Clear();
+            foreach (KeyValuePair<string, int> pair in state.BonusDice.PinDraws)
+            {
+                if (TryParseTagKey(pair.Key, out int drawTag) && pair.Value >= 0)
+                    pinDraws[drawTag] = pair.Value;
             }
 
             // 주사위는 저장하지 않았다. 이어하기면 새로 굴려야 하는데, 지금은 StaticResource 가

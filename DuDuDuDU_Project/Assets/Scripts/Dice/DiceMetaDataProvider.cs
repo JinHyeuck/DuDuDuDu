@@ -103,33 +103,21 @@ namespace OJ.Dice
         }
 #endif
 
+        /// <summary>
+        /// 다이스를 한 칸 올리는 비용. <b>카피 장수만 든다 — 골드는 없다.</b>
+        ///
+        /// 장수는 <see cref="DiceCopyCurve"/> 가 정본이고 <b>다이스 종류와 무관하다</b>(기본·레어·킹
+        /// 모두 같은 장수 — 성능 차이는 카피 한 장의 값어치가 갖는다). 예전에는 에셋의
+        /// <c>baseGoldCost/goldCostPerLevel/baseScrollCost/scrollCostPerLevel</c> 네 값으로 일차식을
+        /// 만들었는데, 그 필드는 에셋에 남아 있어도 <b>더 이상 읽지 않는다</b>.
+        /// 반환형의 첫 칸(골드)을 남긴 것은 호출부 여덟 곳의 모양을 지키기 위해서다 — 항상 0 이다.
+        /// </summary>
         public static (int goldCost, int scrollCost) GetUpgradeCost(DiceType diceType, int currentLevel)
         {
-            var meta = GetMeta(diceType);
-            if (meta == null)
+            if (diceType == DiceType.Max)
                 return (0, 0);
 
-            // 4.3 이전에는 이 우회가 킹 다이스 5종에서 <b>항상</b> 탔다. MergeMeta 가 강화 비용을
-            // 코드 기본값에서 가져왔는데 CreateMythicDefault 는 네 값을 0 으로 두기 때문이다.
-            // 이제 에셋이 있으면 그 값(265/90/4/6)이 그대로 와서 이 분기가 거짓이 된다.
-            // 산 것을 죽인 게 아니라 같은 표가 두 군데 있었을 뿐이다 — 값은 한 자리도 안 바뀐다.
-            //
-            // <b>지우지 말 것.</b> "이제 안 탄다"는 에셋이 있을 때 이야기다. 이 분기는 두 경우에
-            // 여전히 산다:
-            //   1) 에셋이 통째로 없거나 그 DiceType 이 등재되지 않아 GetMeta 가 CreateMythicDefault
-            //      를 돌려줄 때. 그때 킹 5종의 비용 네 개는 전부 0 이고, 이 표만이 0원 강화를 막는다.
-            //   2) 에셋에서 사람이 비용 네 개를 모두 0 으로 만들었을 때. 조용히 코드 표로 되돌아간다.
-            // 즉 지우는 순간 1) 에서 킹 강화가 공짜가 된다. (헤드리스 차분 대조로 실측 확인)
-            if (meta.baseGoldCost <= 0 && meta.goldCostPerLevel <= 0 && meta.baseScrollCost <= 0 && meta.scrollCostPerLevel <= 0)
-            {
-                if (TryGetFallbackUpgradeCost(diceType, currentLevel, out var fallbackCost))
-                    return fallbackCost;
-            }
-
-            int level = Mathf.Max(1, currentLevel);
-            int gold = Mathf.Max(0, meta.baseGoldCost + (level - 1) * meta.goldCostPerLevel);
-            int scroll = Mathf.Max(0, meta.baseScrollCost + (level - 1) * meta.scrollCostPerLevel);
-            return (gold, scroll);
+            return (0, DiceCopyCurve.CopiesToLevelUp(currentLevel));
         }
 
         public static Color GetColor(DiceType diceType)
@@ -376,6 +364,8 @@ namespace OJ.Dice
                 equipmentAttackTotal = EquipmentManager.Instance.GetTotalEquipmentAttack();
 
             float levelDamageMultiplier = GetLevelDamageMultiplier(diceType, level);
+            // 승급 단계마다 최종 대미지 ×1.2 (T1 1.2 / T2 1.44 / T3 1.728). 단계 0 이면 1 이라 그대로다.
+            levelDamageMultiplier *= PromotionEffectRules.DamageMultiplier(PromotionManager.TierOf(diceType));
             float kingSynergyMultiplier = GetKingSynergyDamageMultiplier(diceType);
             bool isKingDice = IsKingDice(diceType);
 
@@ -463,34 +453,6 @@ namespace OJ.Dice
             }
         }
 
-        private static bool TryGetFallbackUpgradeCost(DiceType diceType, int currentLevel, out (int goldCost, int scrollCost) cost)
-        {
-            switch (diceType)
-            {
-                // 킹 5종은 같은 등급이므로 <b>같은 비용</b>을 쓴다. 예전에는 250~280 골드로
-                // 조금씩 달랐는데, 같은 등급끼리 값이 갈리면 유저가 이유 없이 싼 쪽만 키운다.
-                // 그건 빌드 선택이 아니라 표의 실수다.
-                case DiceType.KingNormal:
-                case DiceType.KingFire:
-                case DiceType.KingIce:
-                case DiceType.KingThunder:
-                case DiceType.KingPoison:
-                    cost = BuildUpgradeCost(currentLevel, 265, 90, 4, 6);
-                    return true;
-                default:
-                    cost = (0, 0);
-                    return false;
-            }
-        }
-
-        private static (int goldCost, int scrollCost) BuildUpgradeCost(int currentLevel, int baseGold, int goldPerLevel, int baseScroll, int scrollPerLevel)
-        {
-            int level = Mathf.Max(1, currentLevel);
-            int gold = Mathf.Max(0, baseGold + (level - 1) * goldPerLevel);
-            int scroll = Mathf.Max(0, baseScroll + (level - 1) * scrollPerLevel);
-            return (gold, scroll);
-        }
-
         public static float GetBaseCooldown(DiceType diceType)
         {
             var meta = GetMeta(diceType);
@@ -550,38 +512,36 @@ namespace OJ.Dice
 
         public static float GetLevelDamageMultiplier(DiceType diceType, int level)
         {
+            // 옛 Lv3 마일스톤(최종 대미지 +10~30%)은 <b>기본 수치로 합쳤다</b> — 레벨과 무관한 상수다.
             float multiplier = 1f;
-            if (level >= 3)
+            switch (diceType)
             {
-                switch (diceType)
-                {
-                    case DiceType.Normal:
-                    case DiceType.Thunder:
-                    case DiceType.Fire:
-                    case DiceType.Ice:
-                    case DiceType.Poison:
-                    case DiceType.Stun:
-                    case DiceType.ArmorBreak:
-                        multiplier *= 1.1f;
-                        break;
-                    case DiceType.Tornado:
-                        break;
-                    case DiceType.KingNormal:
-                        multiplier *= 1.3f;
-                        break;
-                    case DiceType.KingFire:
-                    case DiceType.KingIce:
-                    case DiceType.KingPoison:
-                        multiplier *= 1.2f;
-                        break;
-                    case DiceType.KingThunder:
-                        break;
-                }
+                case DiceType.Normal:
+                case DiceType.Thunder:
+                case DiceType.Fire:
+                case DiceType.Ice:
+                case DiceType.Poison:
+                case DiceType.Stun:
+                case DiceType.ArmorBreak:
+                    multiplier *= 1.1f;
+                    break;
+                case DiceType.KingNormal:
+                    multiplier *= 1.3f;
+                    break;
+                case DiceType.KingFire:
+                case DiceType.KingIce:
+                case DiceType.KingPoison:
+                    multiplier *= 1.2f;
+                    break;
             }
 
-            if (diceType == DiceType.Tornado && level >= 12)
+            if (diceType == DiceType.Tornado && level >= OJ.Core.DiceMilestoneLevels.Third)
                 multiplier *= 1.3f;
-            if (diceType == DiceType.KingFire && level >= 12)
+            if (diceType == DiceType.KingFire && level >= OJ.Core.DiceMilestoneLevels.Third)
+                multiplier *= 1.3f;
+
+            // 기본 5종 전용 Lv30 마일스톤. 노말은 최종 대미지 +30%.
+            if (diceType == DiceType.Normal && level >= OJ.Core.DiceMilestoneLevels.Final)
                 multiplier *= 1.3f;
 
             return multiplier;
@@ -593,28 +553,28 @@ namespace OJ.Dice
             switch (diceType)
             {
                 case DiceType.Normal:
-                    if (level >= 6) multiplier *= 0.9f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.First) multiplier *= 0.9f;
                     break;
                 case DiceType.Thunder:
-                    if (level >= 9) multiplier *= 0.9f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.Second) multiplier *= 0.9f;
                     break;
                 case DiceType.Fire:
-                    if (level >= 12) multiplier *= 0.8f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.Third) multiplier *= 0.8f;
                     break;
                 case DiceType.Ice:
-                    if (level >= 12) multiplier *= 0.8f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.Third) multiplier *= 0.8f;
                     break;
                 case DiceType.Tornado:
-                    if (level >= 9) multiplier *= 0.8f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.Second) multiplier *= 0.8f;
                     break;
                 case DiceType.Stun:
-                    if (level >= 9) multiplier *= 0.9f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.Second) multiplier *= 0.9f;
                     break;
                 case DiceType.ArmorBreak:
-                    if (level >= 9) multiplier *= 0.8f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.Second) multiplier *= 0.8f;
                     break;
                 case DiceType.Time:
-                    if (level >= 9) multiplier *= 0.9f;
+                    if (level >= OJ.Core.DiceMilestoneLevels.Second) multiplier *= 0.9f;
                     break;
             }
 
@@ -624,16 +584,16 @@ namespace OJ.Dice
         public static int GetThunderTargetCount(int level)
         {
             int count = 2;
-            if (level >= 6)
+            if (level >= OJ.Core.DiceMilestoneLevels.First)
                 count += 1;
             return count;
         }
 
         public static float GetFireExplosionRangeMultiplier(int level)
         {
-            float multiplier = level >= 9 ? 1.1f : 1f;
+            float multiplier = level >= OJ.Core.DiceMilestoneLevels.Second ? 1.1f : 1f;
             int kingFireLevel = GetKingLevel(DiceType.KingFire);
-            if (IsKingSummoned(DiceType.KingFire) && kingFireLevel >= 6)
+            if (IsKingSummoned(DiceType.KingFire) && kingFireLevel >= OJ.Core.DiceMilestoneLevels.First)
                 multiplier *= 1.2f;
             return multiplier;
         }
@@ -641,7 +601,7 @@ namespace OJ.Dice
         public static float GetWindPushChancePercent(int level)
         {
             float chance = 40f + Mathf.Max(1, level) * 1f;
-            if (level >= 9)
+            if (level >= OJ.Core.DiceMilestoneLevels.Second)
                 chance += 10f;
             return chance;
         }
@@ -658,20 +618,21 @@ namespace OJ.Dice
 
         public static int GetWindTargetCount(int level)
         {
-            return level >= 12 ? 3 : 2;
+            return level >= OJ.Core.DiceMilestoneLevels.Third ? 3 : 2;
         }
 
         public static float GetWindDistanceMultiplier(int level)
         {
-            return level >= 3 ? 1.1f : 1f;
+            // 옛 Lv3 마일스톤(밀어내는 거리 +10%) — 기본 수치로 합쳤다.
+            return 1.1f;
         }
 
         public static float GetTimeCooldownReducePercent(int level)
         {
             float percent = 10f + Mathf.Max(1, level) * 1f;
-            if (level >= 3)
-                percent += 5f;
-            if (level >= 12)
+            // 옛 Lv3 마일스톤(감소량 +5%)은 기본 수치로 합쳤다.
+            percent += 5f;
+            if (level >= OJ.Core.DiceMilestoneLevels.Third)
                 percent += 10f;
             return percent;
         }
@@ -688,17 +649,17 @@ namespace OJ.Dice
 
         public static int GetTimeTargetCount(int level)
         {
-            return level >= 6 ? 3 : 2;
+            return level >= OJ.Core.DiceMilestoneLevels.First ? 3 : 2;
         }
 
         public static float GetStunChancePercent(int level)
         {
-            return level >= 6 ? 50f : 40f;
+            return level >= OJ.Core.DiceMilestoneLevels.First ? 50f : 40f;
         }
 
         public static int GetArmorBreakPercent(int level)
         {
-            return level >= 6 ? 40 : 30;
+            return level >= OJ.Core.DiceMilestoneLevels.First ? 40 : 30;
         }
 
         public static float GetGlobalCriticalChancePercent()
@@ -707,7 +668,7 @@ namespace OJ.Dice
                 return 0f;
 
             int kingNormalLevel = GetKingLevel(DiceType.KingNormal);
-            return kingNormalLevel >= 9 ? 10f : 0f;
+            return kingNormalLevel >= OJ.Core.DiceMilestoneLevels.Second ? 10f : 0f;
         }
 
         public static float GetGlobalCriticalDamageMultiplier()
@@ -716,7 +677,7 @@ namespace OJ.Dice
                 return 2f;
 
             int kingNormalLevel = GetKingLevel(DiceType.KingNormal);
-            return kingNormalLevel >= 12 ? 2.2f : 2f;
+            return kingNormalLevel >= OJ.Core.DiceMilestoneLevels.Third ? 2.2f : 2f;
         }
 
         public static float GetKingSynergyDamageMultiplier(DiceType diceType)
@@ -724,9 +685,9 @@ namespace OJ.Dice
             switch (diceType)
             {
                 case DiceType.Normal:
-                    return IsKingSummoned(DiceType.KingNormal) && GetKingLevel(DiceType.KingNormal) >= 6 ? 1.2f : 1f;
+                    return IsKingSummoned(DiceType.KingNormal) && GetKingLevel(DiceType.KingNormal) >= OJ.Core.DiceMilestoneLevels.First ? 1.2f : 1f;
                 case DiceType.Thunder:
-                    return IsKingSummoned(DiceType.KingThunder) && GetKingLevel(DiceType.KingThunder) >= 6 ? 1.2f : 1f;
+                    return IsKingSummoned(DiceType.KingThunder) && GetKingLevel(DiceType.KingThunder) >= OJ.Core.DiceMilestoneLevels.First ? 1.2f : 1f;
                 case DiceType.Fire:
                     return 1f;
                 case DiceType.Ice:
@@ -740,8 +701,8 @@ namespace OJ.Dice
 
         public static float GetPoisonDamageMultiplier(DiceType diceType, int level)
         {
-            float multiplier = level >= 6 ? 1.5f : 1f;
-            if (diceType == DiceType.Poison && IsKingSummoned(DiceType.KingPoison) && GetKingLevel(DiceType.KingPoison) >= 6)
+            float multiplier = level >= OJ.Core.DiceMilestoneLevels.First ? 1.5f : 1f;
+            if (diceType == DiceType.Poison && IsKingSummoned(DiceType.KingPoison) && GetKingLevel(DiceType.KingPoison) >= OJ.Core.DiceMilestoneLevels.First)
                 multiplier *= 1.5f;
             return multiplier;
         }
@@ -749,10 +710,10 @@ namespace OJ.Dice
         public static float GetSlowDuration(DiceType diceType, int level)
         {
             float duration = 2f;
-            if (diceType == DiceType.Ice && level >= 9)
+            if (diceType == DiceType.Ice && level >= OJ.Core.DiceMilestoneLevels.Second)
                 duration *= 1.5f;
             if (diceType == DiceType.KingIce)
-                duration *= IsKingSummoned(DiceType.KingIce) && GetKingLevel(DiceType.KingIce) >= 6 ? 1.5f : 1f;
+                duration *= IsKingSummoned(DiceType.KingIce) && GetKingLevel(DiceType.KingIce) >= OJ.Core.DiceMilestoneLevels.First ? 1.5f : 1f;
             return duration;
         }
 
@@ -761,14 +722,23 @@ namespace OJ.Dice
             return 4f;
         }
 
+        /// <summary>레벨까지 보는 중독 지속시간. 포이즌 Lv30 마일스톤이 지속시간 +50% 다.</summary>
+        public static float GetPoisonDuration(DiceType diceType, int level)
+        {
+            float duration = GetPoisonDuration(diceType);
+            if (diceType == DiceType.Poison && level >= OJ.Core.DiceMilestoneLevels.Final)
+                duration *= 1.5f;
+            return duration;
+        }
+
         public static bool HasKingIceDamageBonus()
         {
-            return IsKingSummoned(DiceType.KingIce) && GetKingLevel(DiceType.KingIce) >= 12;
+            return IsKingSummoned(DiceType.KingIce) && GetKingLevel(DiceType.KingIce) >= OJ.Core.DiceMilestoneLevels.Third;
         }
 
         public static bool HasKingPoisonDamageBonus()
         {
-            return IsKingSummoned(DiceType.KingPoison) && GetKingLevel(DiceType.KingPoison) >= 12;
+            return IsKingSummoned(DiceType.KingPoison) && GetKingLevel(DiceType.KingPoison) >= OJ.Core.DiceMilestoneLevels.Third;
         }
 
         private static int GetKingLevel(DiceType diceType)
@@ -854,99 +824,89 @@ namespace OJ.Dice
             defaults = new Dictionary<DiceType, DiceMetaDataDatabase.DiceMeta>
             {
                 { DiceType.Normal, CreateDefault(DiceType.Normal, "Normal Dice", "가장 가까운 적 하나를 공격합니다. 부가 효과는 없지만 쿨타임이 짧아 꾸준히 피해를 쌓습니다.", 1f, 0.1f, 120, 50, 8, 2, 2.4f, new []{
-                    (3, "최종 대미지 10% 증가"),
-                    (6, "쿨타임 10% 감소"),
-                    (9, "공격 시 20% 확률로 SP +5"),
-                    (12, "공격 시 20% 확률로 대미지 2배")
+                    (10, "쿨타임 10% 감소"),
+                    (20, "공격 시 20% 확률로 SP +5"),
+                    (25, "공격 시 20% 확률로 대미지 2배"),
+                    (30, "최종 대미지 30% 증가")
                 }) },
                 { DiceType.Fire, CreateDefault(DiceType.Fire, "Fire Dice", "적 하나를 공격하고 명중 지점 주변으로 폭발을 일으킵니다. 적이 몰려 있을수록 강해집니다.", 0.5f, 0.05f, 140, 60, 10, 2, 3.1f, new []{
-                    (3, "최종 대미지 10% 증가"),
-                    (6, "공격 시 20% 확률로 한 번 더 폭발"),
-                    (9, "폭발 범위 10% 증가"),
-                    (12, "쿨타임 20% 감소")
+                    (10, "공격 시 20% 확률로 한 번 더 폭발"),
+                    (20, "폭발 범위 10% 증가"),
+                    (25, "쿨타임 20% 감소"),
+                    (30, "폭발 최종 피해 30% 증가")
                 }) },
                 { DiceType.Ice, CreateDefault(DiceType.Ice, "Ice Dice", "적 하나를 공격하고 둔화를 겁니다. 벽까지 오는 시간을 벌어 주는 방어형 다이스입니다.", 0.7f, 0.07f, 130, 55, 9, 2, 3.8f, new []{
-                    (3, "최종 대미지 10% 증가"),
-                    (6, "공격 시 30% 확률로 범위 피해"),
-                    (9, "둔화 지속시간 50% 증가"),
-                    (12, "쿨타임 20% 감소")
+                    (10, "공격 시 30% 확률로 범위 피해"),
+                    (20, "둔화 지속시간 50% 증가"),
+                    (25, "쿨타임 20% 감소"),
+                    (30, "둔화된 적이 받는 피해 10% 증가")
                 }) },
                 { DiceType.Poison, CreateDefault(DiceType.Poison, "Poison Dice", "적 하나를 공격하고 중독을 겁니다. 중독은 남은 체력에 비례해 피해를 주므로 체력이 두꺼운 적일수록 아픕니다.", 0.6f, 0.06f, 125, 50, 9, 2, 3.4f, new []{
-                    (3, "최종 대미지 10% 증가"),
-                    (6, "중독 피해량 50% 증가"),
-                    (9, "공격 시 40% 확률로 범위 피해"),
-                    (12, "중독된 적이 받는 피해 10% 증가")
+                    (10, "중독 피해량 50% 증가"),
+                    (20, "공격 시 40% 확률로 범위 피해"),
+                    (25, "중독된 적이 받는 피해 10% 증가"),
+                    (30, "중독 지속시간 50% 증가")
                 }) },
                 { DiceType.Thunder, CreateDefault(DiceType.Thunder, "Thunder Dice", "적 하나를 공격하면 번개가 주변으로 전이됩니다. 넓게 퍼진 적을 훑는 데 좋습니다.", 0.4f, 0.04f, 150, 65, 11, 2, 2.7f, new []{
-                    (3, "최종 대미지 10% 증가"),
-                    (6, "전이 대상 +1"),
-                    (9, "쿨타임 10% 감소"),
-                    (12, "공격한 적 주변 1명에게 50% 추가 번개 피해")
+                    (10, "전이 대상 +1"),
+                    (20, "쿨타임 10% 감소"),
+                    (25, "공격한 적 주변 1명에게 50% 추가 번개 피해"),
+                    (30, "전이 피해 30% 증가")
                 }) },
                 { DiceType.Tornado, CreateDefault(DiceType.Tornado, "Tornado Dice", "노말 다이스가 진화한 모습입니다. 적을 공격하면서 주변의 적들을 명중 지점으로 끌어당겨, 뒤이어 오는 광역 공격이 한 번에 쓸어 담게 만듭니다.", 8f, 0.8f, 145, 62, 10, 2, 3.0f, new []{
-                    (3, "범위 10% 증가"),
-                    (6, "적을 2초 동안 흡입"),
-                    (9, "쿨타임 20% 감소"),
-                    (12, "최종 대미지 30% 증가")
+                    (10, "적을 2초 동안 흡입"),
+                    (20, "쿨타임 20% 감소"),
+                    (25, "최종 대미지 30% 증가")
                 }, new [] { ElementType.Normal },
                     false, false, false) },
                 { DiceType.Stun, CreateDefault(DiceType.Stun, "Stun Dice", "포이즌 다이스가 진화한 모습입니다. 적 하나를 강하게 때리고 확률로 기절시켜 발을 묶습니다. 벽 앞까지 밀려온 적을 끊어 낼 때 믿을 수 있습니다.", 6.4f, 0.64f, 140, 58, 10, 2, 3.5f, new []{
-                    (3, "최종 대미지 10% 증가"),
-                    (6, "스턴 확률 10% 증가"),
-                    (9, "쿨타임 10% 감소"),
-                    (12, "스턴된 적이 받는 피해 20% 증가")
+                    (10, "스턴 확률 10% 증가"),
+                    (20, "쿨타임 10% 감소"),
+                    (25, "스턴된 적이 받는 피해 20% 증가")
                 }, new [] { ElementType.Dark },
                     false, false, false) },
                 { DiceType.ArmorBreak, CreateDefault(DiceType.ArmorBreak, "Armor Break Dice", "파이어 다이스가 진화한 모습입니다. 적의 방어력을 깎아 그 뒤로 들어가는 모든 공격을 더 아프게 만듭니다. 단단한 적과 보스에게 특히 강합니다.", 6f, 0.6f, 150, 64, 11, 2, 3.2f, new []{
-                    (3, "최종 대미지 10% 증가"),
-                    (6, "방어력 감소 10% 증가"),
-                    (9, "쿨타임 20% 감소"),
-                    (12, "방깎 상태 적이 받는 피해 10% 증가")
+                    (10, "방어력 감소 10% 증가"),
+                    (20, "쿨타임 20% 감소"),
+                    (25, "방깎 상태 적이 받는 피해 10% 증가")
                 }, new [] { ElementType.Fire },
                     false, false, false) },
                 { DiceType.Wind, CreateDefault(DiceType.Wind, "Wind Dice", "아이스 다이스가 진화한 모습입니다. 벽 앞에 몰린 적들을 한꺼번에 때리고 확률로 뒤쪽까지 밀어냅니다. 총알을 쏘지 않고 벽 앞 전체를 직접 칩니다.", 6.8f, 0.68f, 135, 56, 9, 2, 2.9f, new []{
-                    (3, "밀어내는 거리 10% 증가"),
-                    (6, "밀리는 적이 받는 피해 10% 증가"),
-                    (9, "밀어내기 확률 10% 추가 증가"),
-                    (12, "밀어내는 대상 +1")
+                    (10, "밀리는 적이 받는 피해 10% 증가"),
+                    (20, "밀어내기 확률 10% 추가 증가"),
+                    (25, "밀어내는 대상 +1")
                 }, new [] { ElementType.Water },
                     false, false, false) },
                 { DiceType.Time, CreateDefault(DiceType.Time, "Time Dice", "썬더 다이스가 진화한 모습입니다. 적을 공격하는 동시에 다른 다이스의 남은 쿨타임을 당겨, 보드 전체의 화력을 끌어올립니다.", 5.6f, 0.56f, 170, 70, 12, 3, 4.0f, new []{
-                    (3, "쿨타임 감소량 5% 추가 증가"),
-                    (6, "대상 +1"),
-                    (9, "자신의 쿨타임 10% 감소"),
-                    (12, "쿨타임 감소량 10% 추가 증가")
+                    (10, "대상 +1"),
+                    (20, "자신의 쿨타임 10% 감소"),
+                    (25, "쿨타임 감소량 10% 추가 증가")
                 }, new [] { ElementType.Light },
                     false, false, false) },
                 { DiceType.KingNormal, CreateMythicDefault(DiceType.KingNormal, "King Normal", "토네이도 다이스가 도달하는 최종 형태입니다. 적과 그 주변을 첫 타 70%, 이어서 0.2초 간격으로 10%씩 세 번 더 두드립니다.", 12f, 1.2f, 3.0f, new []{
-                    (3, "최종 대미지 30% 증가"),
-                    (6, "소환 중인 동안 NormalDice 최종 대미지 20% 증가"),
-                    (9, "소환 중인 동안 모든 다이스 크리티컬 확률 10% 증가"),
-                    (12, "소환 중인 동안 모든 다이스 크리티컬 대미지 20% 증가")
+                    (10, "소환 중인 동안 NormalDice 최종 대미지 20% 증가"),
+                    (20, "소환 중인 동안 모든 다이스 크리티컬 확률 10% 증가"),
+                    (25, "소환 중인 동안 모든 다이스 크리티컬 대미지 20% 증가")
                 }) },
                 { DiceType.KingFire, CreateMythicDefault(DiceType.KingFire, "King Fire", "아머브레이크 다이스가 도달하는 최종 형태입니다. 일반 폭발보다 훨씬 넓은 강화 폭발로 무리를 통째로 태웁니다.", 9f, 0.9f, 3.3f, new []{
-                    (3, "최종 대미지 20% 증가"),
-                    (6, "소환 중인 동안 FireDice 폭발 범위 20% 증가"),
-                    (9, "폭발이 30% 확률로 한 번 더 발생"),
-                    (12, "폭발 최종 피해 30% 증가")
+                    (10, "소환 중인 동안 FireDice 폭발 범위 20% 증가"),
+                    (20, "폭발이 30% 확률로 한 번 더 발생"),
+                    (25, "폭발 최종 피해 30% 증가")
                 }) },
                 { DiceType.KingIce, CreateMythicDefault(DiceType.KingIce, "King Ice", "윈드 다이스가 도달하는 최종 형태입니다. 적과 그 주변을 함께 때리고 강한 둔화를 겁니다.", 10.2f, 1.02f, 3.5f, new []{
-                    (3, "최종 대미지 20% 증가"),
-                    (6, "IceDice 둔화 지속시간 50% 증가"),
-                    (9, "공격 시 빙결 부여"),
-                    (12, "둔화된 적이 받는 피해 15% 증가")
+                    (10, "IceDice 둔화 지속시간 50% 증가"),
+                    (20, "공격 시 빙결 부여"),
+                    (25, "둔화된 적이 받는 피해 15% 증가")
                 }) },
                 { DiceType.KingPoison, CreateMythicDefault(DiceType.KingPoison, "King Poison", "스턴 다이스가 도달하는 최종 형태입니다. 적 하나를 때리고 중독과 둔화를 함께 걸어 오래 붙잡아 둡니다.", 9.6f, 0.96f, 3.3f, new []{
-                    (3, "최종 대미지 20% 증가"),
-                    (6, "소환 중인 동안 PoisonDice 중독 피해량 50% 증가"),
-                    (9, "중독 적용 시 30% 확률로 주변 적 1명에게 전이"),
-                    (12, "중독된 적이 받는 피해 15% 증가")
+                    (10, "소환 중인 동안 PoisonDice 중독 피해량 50% 증가"),
+                    (20, "중독 적용 시 30% 확률로 주변 적 1명에게 전이"),
+                    (25, "중독된 적이 받는 피해 15% 증가")
                 }) },
                 { DiceType.KingThunder, CreateMythicDefault(DiceType.KingThunder, "King Thunder", "타임 다이스가 도달하는 최종 형태입니다. 번개가 더 많은 적에게 전이되어 넓게 퍼진 무리를 한 번에 훑습니다.", 8.4f, 0.84f, 3.0f, new []{
-                    (3, "전이 대상 +2"),
-                    (6, "소환 중인 동안 ThunderDice 최종 대미지 20% 증가"),
-                    (9, "30% 확률로 추가 1명에게 50% 피해"),
-                    (12, "맞은 적이 받는 피해 15% 증가")
+                    (10, "소환 중인 동안 ThunderDice 최종 대미지 20% 증가"),
+                    (20, "30% 확률로 추가 1명에게 50% 피해"),
+                    (25, "맞은 적이 받는 피해 15% 증가")
                 }) }
             };
         }

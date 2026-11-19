@@ -19,12 +19,17 @@ namespace OJ.Hunting
 
         public override DiceType DiceType => DiceType.Thunder;
 
+        // 이번 타에서 전이가 한 번이라도 일어났는가. BuildTargets 가 쓰고 ApplyOnHit 이 읽는다.
+        private bool lastShotChained;
+
         public override void BuildTargets(AttackContent attackContent, Monster rootTarget, List<Monster> hitMonsters)
         {
             if (attackContent == null || hitMonsters == null)
                 return;
 
             int thunderTargets = attackContent.GetThunderTargetCount(DiceType);
+            int diceLevel = OJ.Dice.DiceLevelManager.Instance != null ? OJ.Dice.DiceLevelManager.Instance.GetLevel(DiceType) : 1;
+            lastShotChained = false;
             Dictionary<Monster, List<Monster>> chainedByTarget = attackContent.GetNPerTarget_NoGlobalDup(
                 battle.Monsters.EngagedMonsters,
                 hitMonsters,
@@ -46,6 +51,11 @@ namespace OJ.Hunting
 
                     PlayEffectAt(DiceType, chained.transform.position);
                     hitMonsters.Add(chained);
+                    lastShotChained = true;
+
+                    // Lv30 마일스톤: 전이 피해 +30%.
+                    if (diceLevel >= OJ.Core.DiceMilestoneLevels.Final)
+                        attackContent.ScaleTarget(chained, OJ.Core.PromotionEffectRules.ThunderTransferMultiplier);
                 }
             }
         }
@@ -55,7 +65,11 @@ namespace OJ.Hunting
             if (attackContent == null || target == null)
                 return;
 
-            if (attackContent.CurrentDiceLevel < 12)
+            // 승급 T1: 전이가 끝나면 번개가 처음 대상에게 되돌아와 50% 피해.
+            if (lastShotChained && target == attackContent.CurrentRootTarget && OJ.Dice.PromotionManager.TierOf(DiceType) >= 1)
+                attackContent.HitMonster(target, DiceType, UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(attackContent.CurrentDamage * OJ.Core.PromotionEffectRules.ThunderReturnRatio)));
+
+            if (attackContent.CurrentDiceLevel < OJ.Core.DiceMilestoneLevels.Third)
                 return;
 
             Vector3 center = target.transform.position;

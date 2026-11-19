@@ -41,24 +41,24 @@ namespace OJ.Game.Tests
         /// 이 값이 길어질수록 "며칠 안 들어와도 손해가 없나"의 답이 바뀐다.
         /// </summary>
         [Test]
-        public void 최대_저장은_고기_1800개_소탕_360회분이다()
+        public void 최대_저장은_고기_3600개_소탕_720회분이다()
         {
             int total = MeatFestivalRules.TotalMeat(
                 IdleRewardManager.MaxMeatSetCount, IdleRewardManager.MeatPerSet);
 
-            Assert.AreEqual(1800, total);
-            Assert.AreEqual(360, MeatFestivalRules.SweepCount(total, SweepRules.StaminaCostPerSweep));
+            Assert.AreEqual(3600, total);
+            Assert.AreEqual(720, MeatFestivalRules.SweepCount(total, SweepRules.StaminaCostPerSweep));
         }
 
-        /// <summary>하루 유입은 360 이다. 2시간마다 30개 x 12번 — 소탕 72회분이다.</summary>
+        /// <summary>하루 유입은 720 이다. 2분마다 1개 x 720번 — 소탕 144회분이다.</summary>
         [Test]
-        public void 하루_유입은_고기_360개다()
+        public void 하루_유입은_고기_720개다()
         {
             int setsPerDay = (int)(24d * 60d * 60d / IdleRewardManager.MeatSetIntervalSeconds);
-            Assert.AreEqual(12, setsPerDay);
+            Assert.AreEqual(720, setsPerDay);
 
             int daily = MeatFestivalRules.TotalMeat(setsPerDay, IdleRewardManager.MeatPerSet);
-            Assert.AreEqual(360, daily);
+            Assert.AreEqual(720, daily);
             Assert.AreEqual(
                 SweepEconomy.DailySweepClears,
                 MeatFestivalRules.SweepCount(daily, SweepRules.StaminaCostPerSweep),

@@ -40,13 +40,13 @@ namespace OJ.Core
     /// </summary>
     public static class CriticalFormula
     {
-        // 일반 다이스 더블히트 임계 레벨과 확률. AttackContent.cs:143 의 리터럴 12 / 0.2f 다.
+        // 일반 다이스 더블히트 임계 레벨과 확률. 임계는 세 번째 마일스톤(Lv25)이다 — 예전 리터럴 12 가 옮겨 갔다.
         //
         // <b>바로 아래 줄(:149)의 SP 획득 0.2f 와 합치지 마라.</b> 값이 같지만 서로 다른 기능이고
         // (한쪽은 데미지 2배, 한쪽은 SP +5), 한쪽만 조정되는 날 합쳐 둔 상수가 조용히 양쪽을
         // 같이 움직인다. 같은 이유로 SP 쪽 임계 9 도 여기 끌어오지 않았다 —
         // 그쪽은 배수가 아니라서 이 파일의 담당이 아니다.
-        public const int DoubleHitMinLevel = 12;
+        public const int DoubleHitMinLevel = DiceMilestoneLevels.Third;
         public const float DoubleHitChance01 = 0.2f;
 
         // 2단의 곱수. 정수 곱이라 float 로 쓰면 안 된다 —
@@ -100,7 +100,7 @@ namespace OJ.Core
         }
 
         /// <summary>
-        /// AttackContent.cs:143 의 <c>diceLevel &gt;= 12</c>. 타입 판정(Normal)은 호출부에 남았다.
+        /// AttackContent.cs:143 의 <c>diceLevel &gt;= DoubleHitMinLevel</c>. 타입 판정(Normal)은 호출부에 남았다.
         /// </summary>
         public static bool IsDoubleHitLevel(int diceLevel)
         {

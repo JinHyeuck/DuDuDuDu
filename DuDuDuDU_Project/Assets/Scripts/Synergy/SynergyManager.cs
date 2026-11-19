@@ -165,8 +165,18 @@ namespace OJ.Synergy
             int cost = SynergyRules.RerollCost(preset, lines);
 
             PointManager points = PointManager.Instance;
-            if (points == null || !points.TrySpend(PointType.SynergyTicket, cost, false))
+            if (points == null
+                || !SynergyRules.TryPay(cost, points.Get(PointType.SynergyTicket), points.Get(PointType.Gold), out int ticketsUsed, out int goldUsed))
                 return none;
+
+            if (ticketsUsed > 0 && !points.TrySpend(PointType.SynergyTicket, ticketsUsed, false))
+                return none;
+            if (goldUsed > 0 && !points.TrySpend(PointType.Gold, goldUsed, false))
+            {
+                if (ticketsUsed > 0)
+                    points.Add(PointType.SynergyTicket, ticketsUsed);
+                return none;
+            }
 
             CategoryState state = Get(category);
             SynergyRerollResult result = guideRollPending && category == SynergyCategory.Dice

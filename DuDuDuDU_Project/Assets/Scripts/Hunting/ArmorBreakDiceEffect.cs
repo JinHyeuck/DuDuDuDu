@@ -33,8 +33,18 @@ namespace OJ.Hunting
                 percent += RelicManager.Instance.GetArmorBreakPercentBonus();
                 duration += RelicManager.Instance.GetArmorBreakDurationBonus();
             }
+            // 승급 T3: 보스에게는 방깎 효과 2배.
+            int armorTier = OJ.Dice.PromotionManager.TierOf(DiceType);
+            if (armorTier >= 3 && target.IsStageBoss)
+                percent *= OJ.Core.PromotionEffectRules.ArmorBreakBossMultiplier;
+
+            bool wasBroken = target.IsDefenseDown;
             target.ApplyDefenseDown(duration, percent, DiceType);
-            if (level >= 12)
+
+            // 승급 T1: 방깎이 걸린 적에게 명중하면 20% 확률로 방어 무시 추가 일격(피해 50%).
+            if (wasBroken && armorTier >= 1 && attackContent != null && UnityEngine.Random.value <= OJ.Core.PromotionEffectRules.ArmorBreakExtraChance)
+                attackContent.HitMonsterFixed(target, DiceType, UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(attackContent.CurrentDamage * OJ.Core.PromotionEffectRules.ArmorBreakExtraRatio)));
+            if (level >= OJ.Core.DiceMilestoneLevels.Third)
                 target.ApplyArmorBreakDamageTakenBonus(10, duration);
             PlayEffectAt(DiceType, target.transform.position);
         }

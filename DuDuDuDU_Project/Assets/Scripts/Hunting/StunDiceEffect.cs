@@ -32,9 +32,12 @@ namespace OJ.Hunting
             if (Random.value * 100f > chancePercent)
                 return;
 
-            float duration = StunDuration;
+            // 승급 T2: 기절 지속시간 +50%.
+            float duration = PromotionCombat.StunDiceEffectDuration(OJ.Dice.PromotionManager.TierOf(DiceType));
             target.ApplyStun(duration, DiceType);
-            if (level >= 12)
+            // 이 기절을 건 다이스를 적어 둔다 — 죽을 때 주변 전이(T1)와 쿨타임 초기화(T3)가 읽는다.
+            target.StunSourceDice = attackContent != null ? attackContent.CurrentSourceDice : null;
+            if (level >= OJ.Core.DiceMilestoneLevels.Third)
                 target.ApplyStunDamageTakenBonus(20, duration);
             if (RelicManager.Instance != null)
                 target.ApplyRelicDamageTakenBonus(RelicManager.Instance.GetStunDamageTakenBonusPercent(), duration);

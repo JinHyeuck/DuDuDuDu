@@ -46,6 +46,11 @@ namespace OJ.Relic
             BuildElementsIfNeeded();
             CreateDetailPopupIfNeeded();
 
+            // 유물권이 모자랄 때 바로 살 수 있는 "충전" 버튼(소환 버튼 오른쪽).
+            OJ.Shop.CurrencyPassPopup.AttachBeside(
+                summonButton, OJ.Shop.ContentPass.Relic, summonButtonText != null ? summonButtonText.font : null,
+                new Vector2(200f, 110f));
+
             if (summonButton != null)
                 summonButton.onClick.AddListener(HandleSummonClick);
 

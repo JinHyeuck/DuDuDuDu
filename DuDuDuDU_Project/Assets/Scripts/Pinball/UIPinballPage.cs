@@ -177,6 +177,11 @@ namespace OJ.Pinball
 
         protected override void OnLoad()
         {
+            // 핀볼 발수가 모자랄 때 바로 살 수 있는 "충전" 버튼(발사 버튼 오른쪽). 하루 한도는 재화 상점과 같은 키로 센다.
+            OJ.Shop.CurrencyPassPopup.AttachBeside(
+                launchButton, OJ.Shop.ContentPass.Pinball, ticketText != null ? ticketText.font : null,
+                new Vector2(210f, 110f));
+
             // 발사는 onClick 이 아니라 꾹 누르기로 받는다 — 누르는 순간 한 발, 누르고 있으면 0.2초마다 한 발.
             // onClick 을 같이 걸면 뗄 때 한 발이 더 나간다(UIHoldRepeat 참고).
             if (launchButton != null)
@@ -286,6 +291,7 @@ namespace OJ.Pinball
 
             EndSession();
             ClearAllFx();
+            Manager?.ClearLandingQueues();
 
             // 라운드 상태는 건드리지 않는다. 저장된 것이 정본이고, 다음에 들어오면 이어한다.
             if (bonusPanel != null)
@@ -458,7 +464,7 @@ namespace OJ.Pinball
                 return;
 
             int multiplier = sessionMultiplier > 0 ? sessionMultiplier : 1;
-            SpawnDropFx(SlotAnchored(slot), manager.GetLandingRewards(slot, multiplier));
+            SpawnDropFx(SlotAnchored(slot), manager.ConsumeLandingRewards(slot, multiplier));
         }
 
         private void HandleSpecialHit(int ballId, int pegIndex, int tag, int hitsForThisBall)
@@ -892,6 +898,15 @@ namespace OJ.Pinball
             bool hasReward = rule.rewards != null && rule.rewards.Count > 0;
             if (hasReward)
             {
+                // 보상 글자가 여러 줄(랜덤 1종 핀의 확률 표기)이면 게이지와 아이콘을 안 가리게 위로 민다.
+                string rewardText = BuildSpecialRewardText(rule);
+                int extraLines = 0;
+                for (int c = 0; c < rewardText.Length; c++)
+                {
+                    if (rewardText[c] == '\n')
+                        extraLines++;
+                }
+
                 Sprite icon = PointRewardUtility.GetPointIcon(rule.rewards[0].pointType);
                 if (icon != null)
                 {
@@ -901,12 +916,12 @@ namespace OJ.Pinball
                     image.raycastTarget = false;
                     image.preserveAspect = true;
                     iconRect.sizeDelta = new Vector2(SpecialIconSize, SpecialIconSize);
-                    iconRect.anchoredPosition = new Vector2(0f, 98f);
+                    iconRect.anchoredPosition = new Vector2(0f, 98f + extraLines * 40f);
                 }
 
-                TMP_Text amount = NewLabel("Amount", holder, BuildSpecialRewardText(rule), 26f);
-                amount.rectTransform.sizeDelta = new Vector2(180f, 50f);
-                amount.rectTransform.anchoredPosition = new Vector2(0f, 50f);
+                TMP_Text amount = NewLabel("Amount", holder, rewardText, 26f);
+                amount.rectTransform.sizeDelta = new Vector2(180f, 50f + extraLines * 34f);
+                amount.rectTransform.anchoredPosition = new Vector2(0f, 50f + extraLines * 22f);
             }
 
             // 누적 카운트. 실시간으로 차야 하므로 참조를 들고 있는다.
@@ -924,6 +939,28 @@ namespace OJ.Pinball
             labels.Add(gauge);
         }
 
+        private static bool HasWeights(PinballSpecialReward rule)
+        {
+            for (int i = 0; i < rule.rewards.Count; i++)
+            {
+                if (rule.rewards[i].chancePercent > 0)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>핀 위에 확률과 함께 적는 짧은 이름. 모르는 종류는 빈 문자열(수량으로 대신 적는다).</summary>
+        private static string ShortRewardName(PointType type)
+        {
+            switch (type)
+            {
+                case PointType.RandomRareKingCopy: return "레어·킹";
+                case PointType.RandomBasicCopy: return "일반";
+                default: return string.Empty;
+            }
+        }
+
         private static string BuildSpecialRewardText(PinballSpecialReward rule)
         {
             var builder = new StringBuilder();
@@ -931,6 +968,22 @@ namespace OJ.Pinball
             // 랜덤 1종 핀은 목록을 그대로 세로로 쌓으면 "100" 이 다섯 줄 나온다.
             // 나올 수 있는 <b>금액</b>만 추려서 한 줄로 보여 준다 — 종류는 아이콘이 말하고,
             // 여기서 유저가 알고 싶은 것은 "얼마짜리가 걸렸나"다.
+            if (rule.pickOneAtRandom && HasWeights(rule))
+            {
+                for (int i = 0; i < rule.rewards.Count; i++)
+                {
+                    if (i > 0)
+                        builder.Append('\n');
+
+                    PinballReward reward = rule.rewards[i];
+                    string name = ShortRewardName(reward.pointType);
+                    builder.Append(name.Length > 0 ? name : reward.amount.ToString("N0"))
+                           .Append(' ').Append(reward.chancePercent).Append('%');
+                }
+
+                return builder.ToString();
+            }
+
             if (rule.pickOneAtRandom)
             {
                 var shown = new List<int>();
@@ -973,7 +1026,14 @@ namespace OJ.Pinball
             RectTransform holder = NewChild("Slot_" + slot, slotLabelRoot);
             holder.anchoredPosition = SlotAnchored(slot);
 
-            // 첫 경품을 아이콘으로 세운다. 한 칸에 여러 개면 수량 줄이 여러 줄이 된다.
+            // 경품이 둘 이상이면 한 줄에 하나씩(작은 아이콘 + 수량, 확률이 있으면 "·24%").
+            // 예전엔 아이콘 하나에 숫자만 세로로 쌓아서 어느 숫자가 무엇인지 알 수 없었다.
+            if (rewards.Count > 1)
+            {
+                BuildCompactSlotRows(holder, rewards);
+                return;
+            }
+
             Sprite icon = PointRewardUtility.GetPointIcon(rewards[0].pointType);
             if (icon != null)
             {
@@ -989,6 +1049,41 @@ namespace OJ.Pinball
             TMP_Text amount = NewLabel("Amount", holder, BuildSlotText(rewards), 30f);
             amount.rectTransform.sizeDelta = new Vector2(150f, 60f);
             amount.rectTransform.anchoredPosition = new Vector2(0f, icon != null ? -34f : 0f);
+        }
+
+        private const float SlotRowHeight = 44f;
+        private const float SlotRowIconSize = 38f;
+
+        private void BuildCompactSlotRows(RectTransform holder, IReadOnlyList<PinballReward> rewards)
+        {
+            int count = rewards.Count;
+            float top = (count - 1) * 0.5f * SlotRowHeight;
+
+            for (int i = 0; i < count; i++)
+            {
+                float y = top - i * SlotRowHeight;
+                PinballReward reward = rewards[i];
+
+                Sprite icon = PointRewardUtility.GetPointIcon(reward.pointType);
+                if (icon != null)
+                {
+                    RectTransform iconRect = NewChild("Icon" + i, holder);
+                    var image = iconRect.gameObject.AddComponent<Image>();
+                    image.sprite = icon;
+                    image.raycastTarget = false;
+                    image.preserveAspect = true;
+                    iconRect.sizeDelta = new Vector2(SlotRowIconSize, SlotRowIconSize);
+                    iconRect.anchoredPosition = new Vector2(-30f, y);
+                }
+
+                string text = reward.amount.ToString("N0");
+                if (!reward.IsGuaranteed)
+                    text += "(" + reward.chancePercent + "%)";
+
+                TMP_Text amount = NewLabel("Amount" + i, holder, text, i == 0 ? 30f : 24f);
+                amount.rectTransform.sizeDelta = new Vector2(92f, 40f);
+                amount.rectTransform.anchoredPosition = new Vector2(icon != null ? 18f : 0f, y);
+            }
         }
 
         private static string BuildSlotText(IReadOnlyList<PinballReward> rewards)

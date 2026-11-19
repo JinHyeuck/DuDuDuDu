@@ -352,6 +352,32 @@ namespace OJ.Core
             return conditionLocked ? cost * LockedConditionCostMultiplier : cost;
         }
 
+        /// <summary>
+        /// 티켓 1장을 골드로 낼 때의 골드. 티켓 50원 / 골드 0.1원 = 500 (BM 설계 확정). 이 환산은 여기 한 곳에만 둔다.
+        /// </summary>
+        public const int GoldPerTicket = 500;
+
+        /// <summary>
+        /// 리롤 비용(티켓 단위)을 티켓 먼저, 모자란 만큼을 골드로 메꿔 낸다. 티켓으로 내든 골드로 내든 같은 리롤이다.
+        /// 낼 수 없으면 false 이고 아무것도 내지 않는다(out 은 0).
+        /// </summary>
+        public static bool TryPay(int cost, int tickets, int gold, out int ticketsUsed, out int goldUsed)
+        {
+            ticketsUsed = 0;
+            goldUsed = 0;
+            if (cost < 0)
+                return false;
+
+            int fromTickets = Math.Min(cost, Math.Max(0, tickets));
+            long goldNeeded = (long)(cost - fromTickets) * GoldPerTicket;
+            if (goldNeeded > Math.Max(0, gold))
+                return false;
+
+            ticketsUsed = fromTickets;
+            goldUsed = (int)goldNeeded;
+            return true;
+        }
+
         public static int RerollCost(SynergyPreset preset, int openEffectLines)
         {
             return RerollCost(preset.Condition.Locked, CountLockedEffects(preset, openEffectLines));

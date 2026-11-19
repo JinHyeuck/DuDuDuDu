@@ -30,8 +30,8 @@ namespace OJ.Dice
         [SerializeField] private Transform milestoneListRoot;
         [SerializeField] private UIMilestoneElement milestoneElementPrefab;
 
-        // 조합식 칸이던 자리다. 프리팹의 필드 이름·배선은 그대로 두고 <b>보여 주는 것만</b>
-        // 바꿨다 — 이름을 바꾸면 프리팹의 직렬화 참조가 끊어져 에디터에서 다시 끌어다
+        // 조합식 칸이던 자리다. 지금은 <b>승급 칸</b>이 대신 들어서서(BuildPromotionBox) 이 목록은 켜지 않는다.
+        // 필드 이름·배선은 그대로 둔다 — 이름을 바꾸면 프리팹의 직렬화 참조가 끊어져 에디터에서 다시 끌어다
         // 놓아야 하고, 이 화면은 로비에 이미 배선이 끝나 있다.
         [Header("Evolve Path")]
         [SerializeField] private GameObject recipeSectionRoot;
@@ -276,6 +276,14 @@ namespace OJ.Dice
         protected override void OnLoad()
         {
             BuildResetButton();
+            BuildPromotionBox();
+
+            // 선택권·이벤트 재화(승급 미션 B)를 바로 사는 "충전" 버튼(강화 버튼 오른쪽).
+            if (levelText != null)
+            {
+                OJ.Shop.CurrencyPassPopup.AttachBeside(
+                    upgradeButton, OJ.Shop.ContentPass.DiceGrowth, levelText.font, new Vector2(200f, 110f));
+            }
 
             if (upgradeButton != null)
                 upgradeButton.onClick.AddListener(OnClickUpgrade);
@@ -292,6 +300,9 @@ namespace OJ.Dice
             if (resetButton != null)
                 resetButton.onClick.RemoveListener(OnClickReset);
 
+            if (promotionButton != null)
+                promotionButton.onClick.RemoveListener(OnClickPromotion);
+
             if (upgradeButton != null)
                 upgradeButton.onClick.RemoveListener(OnClickUpgrade);
 
@@ -306,12 +317,22 @@ namespace OJ.Dice
         {
             if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged += OnDiceLevelChanged;
+
+            if (PromotionManager.Instance != null)
+            {
+                PromotionManager.Instance.OnChanged += Refresh;
+                // 끝난 이벤트의 남은 재화를 정리한 뒤 화면을 그린다(날짜가 바뀐 프레임이 아직 안 왔을 수 있다).
+                PromotionManager.Instance.Tick(System.DateTime.UtcNow);
+            }
         }
 
         protected override void OnExit()
         {
             if (DiceLevelManager.Instance != null)
                 DiceLevelManager.Instance.OnDiceLevelChanged -= OnDiceLevelChanged;
+
+            if (PromotionManager.Instance != null)
+                PromotionManager.Instance.OnChanged -= Refresh;
         }
 
         public void Open(DiceType diceType, System.Action changedCallback)
@@ -373,7 +394,7 @@ namespace OJ.Dice
             RefreshResetButton(owned);
             RefreshMilestoneRows(meta, level);
 
-            RefreshEvolvePath();
+            RefreshPromotionBox(owned, level);
         }
 
         /// <summary>
@@ -385,8 +406,9 @@ namespace OJ.Dice
         /// </summary>
         private void RefreshCostSection(bool owned, DiceOwnershipManager ownership, (int goldCost, int scrollCost) cost)
         {
+            // 레벨업에 골드가 들지 않는다(카피만). 골드 줄은 비용이 있을 때만 보인다.
             if (goldRow != null)
-                goldRow.SetActive(owned);
+                goldRow.SetActive(owned && cost.goldCost > 0);
 
             if (scrollRow != null)
                 scrollRow.SetActive(owned);
@@ -529,78 +551,8 @@ namespace OJ.Dice
                 Refresh();
         }
 
-        /// <summary>
-        /// 진화 경로 칸. 예전에는 조합식 재료를 늘어놓던 자리다.
-        ///
-        /// 조합식이 사라지면서 보여 줄 것이 <b>재료 목록에서 한 줄짜리 계보</b>로 바뀌었다.
-        /// 이 다이스가 무엇에서 왔고 무엇이 되는지, 아이콘 두 칸으로 말한다.
-        ///
-        /// <list type="bullet">
-        /// <item>기본 다이스: [4성 자기 자신] → [특수]</item>
-        /// <item>특수 다이스: [특수 자기 자신] → [킹]</item>
-        /// <item>킹 다이스: 최종이라 칸을 통째로 숨긴다</item>
-        /// </list>
-        ///
-        /// <b>"보유" 표시를 끈다</b>(showState: false). 재고를 세어 조합 가능 여부를 말하던
-        /// 칸이었지만, 진화는 보드 위의 그 다이스 하나와 재화만 보므로 로비에서 셀 재고가
-        /// 없다. 켜 두면 항상 "미보유"라고 빨갛게 거짓말을 한다.
-        /// </summary>
-        private void RefreshEvolvePath()
-        {
-            bool hasPath = DiceEvolution.TryGetEvolveTarget(currentDiceType, out DiceType evolveTarget);
 
-            if (recipeSectionRoot != null)
-                recipeSectionRoot.SetActive(hasPath);
-
-            if (!hasPath)
-            {
-                HideRecipeSlotsFrom(0);
-                return;
-            }
-
-            // 진화의 재료는 자기 자신이다. 기본 다이스만 성급 조건이 붙는다.
-            int fromStar = DiceEvolution.GetTier(currentDiceType) == DiceTier.Base
-                ? DiceEvolution.EvolveRequiredStar
-                : 1;
-
-            BindEvolveSlot(0, currentDiceType, fromStar);
-            BindEvolveSlot(1, evolveTarget, 1);
-            HideRecipeSlotsFrom(2);
-        }
-
-        private void BindEvolveSlot(int index, DiceType diceType, int star)
-        {
-            UIDiceCraftMaterialStatusItem item = GetOrCreateRecipeItem(index);
-            if (item == null)
-                return;
-
-            item.gameObject.SetActive(true);
-            item.Bind(diceType, star, true, false);
-        }
-
-        private UIDiceCraftMaterialStatusItem GetOrCreateRecipeItem(int index)
-        {
-            if (index < recipeItems.Count && recipeItems[index] != null)
-                return recipeItems[index];
-
-            if (recipeItemPrefab == null || recipeListRoot == null)
-                return null;
-
-            UIDiceCraftMaterialStatusItem created = Instantiate(recipeItemPrefab, recipeListRoot);
-            recipeItems.Add(created);
-            return created;
-        }
-
-        private void HideRecipeSlotsFrom(int start)
-        {
-            for (int i = start; i < recipeItems.Count; i++)
-            {
-                if (recipeItems[i] != null)
-                    recipeItems[i].gameObject.SetActive(false);
-            }
-        }
-
-        /// <summary>줄마다 어느 레벨의 마일스톤인가. 가이드가 "3레벨 효과" 줄을 짚는 데 쓴다.</summary>
+        /// <summary>줄마다 어느 레벨의 마일스톤인가. 가이드가 첫 마일스톤 줄을 짚는 데 쓴다.</summary>
         private readonly List<int> milestoneRowLevels = new List<int>();
 
         /// <summary>이 레벨의 마일스톤 줄. 안 보이거나 없으면 null.</summary>
@@ -615,32 +567,101 @@ namespace OJ.Dice
             return null;
         }
 
+        /// <summary>추가 효과 목록 한 줄. 마일스톤(레벨로 열림)과 승급(단계로 열림)이 섞여 레벨순으로 선다.</summary>
+        private readonly struct EffectRow
+        {
+            public EffectRow(int level, string description, bool unlocked, bool promotion)
+            {
+                Level = level;
+                Description = description;
+                Unlocked = unlocked;
+                Promotion = promotion;
+            }
+
+            public int Level { get; }
+            public string Description { get; }
+            public bool Unlocked { get; }
+            public bool Promotion { get; }
+        }
+
+        private const float MilestoneRowPitch = 62f;
+        private const float MilestoneRowHeight = 54f;
+
+        /// <summary>
+        /// 추가 효과 목록. <b>마일스톤 줄과 승급 줄을 한 목록에 합쳐</b> 레벨순으로 세운다 —
+        /// 승급 효과는 "다이스를 키우면 생기는 것"이라 따로 칸을 두면 같은 종류의 정보가 두 곳에 갈라진다.
+        /// 승급 줄은 레벨이 아니라 <b>승급 단계</b>로 열린다(레벨은 등록 조건일 뿐이다).
+        /// </summary>
         private void RefreshMilestoneRows(DiceMetaDataDatabase.DiceMeta meta, int currentLevel)
         {
-            int count = meta != null && meta.milestones != null ? meta.milestones.Count : 0;
-            milestoneRowLevels.Clear();
-            for (int i = 0; i < count; i++)
-            {
-                UIMilestoneElement row = GetOrCreateMilestoneElement(i);
-                milestoneRowLevels.Add(meta.milestones[i].level);
-                if (row == null)
-                    continue;
+            var rows = new List<EffectRow>();
 
-                bool unlocked = currentLevel >= meta.milestones[i].level;
-                row.gameObject.SetActive(true);
-                row.Bind(meta.milestones[i].level, meta.milestones[i].description, unlocked);
-                RectTransform rowRect = row.transform as RectTransform;
-                if (rowRect != null)
+            if (meta != null && meta.milestones != null)
+            {
+                for (int i = 0; i < meta.milestones.Count; i++)
                 {
-                    rowRect.anchorMin = new Vector2(0.06f, 0.46f);
-                    rowRect.anchorMax = new Vector2(0.94f, 0.46f);
-                    rowRect.pivot = new Vector2(0.5f, 1f);
-                    rowRect.anchoredPosition = new Vector2(0f, -(i * 62f));
-                    rowRect.sizeDelta = new Vector2(0f, 54f);
+                    rows.Add(new EffectRow(
+                        meta.milestones[i].level,
+                        meta.milestones[i].description,
+                        currentLevel >= meta.milestones[i].level,
+                        false));
                 }
             }
 
-            for (int i = count; i < milestoneElements.Count; i++)
+            if (PromotionManager.IsPromotable(currentDiceType))
+            {
+                int maxTier = PromotionRules.MaxTier(PromotionManager.IsBasic(currentDiceType));
+                int tier = PromotionManager.TierOf(currentDiceType);
+                for (int promoTier = 1; promoTier <= maxTier; promoTier++)
+                {
+                    string text = PromotionText.Describe(currentDiceType, promoTier);
+                    if (string.IsNullOrEmpty(text))
+                        continue;
+
+                    rows.Add(new EffectRow(
+                        PromotionRules.RequiredDiceLevel(promoTier),
+                        "<color=#7FE3FF>[승급]</color> " + text,
+                        tier >= promoTier,
+                        true));
+                }
+            }
+
+            // 레벨순. 같은 레벨이면 마일스톤이 먼저다(승급 Lv30 과 기본 5종 Lv30 마일스톤이 겹치지는 않지만 순서를 못 박아 둔다).
+            rows.Sort((x, y) =>
+            {
+                int byLevel = x.Level.CompareTo(y.Level);
+                return byLevel != 0 ? byLevel : x.Promotion.CompareTo(y.Promotion);
+            });
+
+            milestoneRowLevels.Clear();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                UIMilestoneElement row = GetOrCreateMilestoneElement(i);
+                // 승급 줄은 레벨이 겹칠 수 있어 가이드 조회에는 마일스톤만 싣는다.
+                milestoneRowLevels.Add(rows[i].Promotion ? -1 : rows[i].Level);
+                if (row == null)
+                    continue;
+
+                row.gameObject.SetActive(true);
+                row.Bind(rows[i].Level, rows[i].Description, rows[i].Unlocked);
+                RectTransform rowRect = row.transform as RectTransform;
+                if (rowRect != null)
+                {
+                    // 위쪽 기준으로 세운다. 줄이 여섯 개까지 늘 수 있어 목록 높이를 줄 수에 맞춰야 스크롤이 된다.
+                    rowRect.anchorMin = new Vector2(0.06f, 1f);
+                    rowRect.anchorMax = new Vector2(0.94f, 1f);
+                    rowRect.pivot = new Vector2(0.5f, 1f);
+                    rowRect.anchoredPosition = new Vector2(0f, -(i * MilestoneRowPitch));
+                    rowRect.sizeDelta = new Vector2(0f, MilestoneRowHeight);
+                }
+            }
+
+            if (milestoneListRoot is RectTransform content)
+            {
+                content.sizeDelta = new Vector2(content.sizeDelta.x, rows.Count * MilestoneRowPitch);
+            }
+
+            for (int i = rows.Count; i < milestoneElements.Count; i++)
             {
                 if (milestoneElements[i] != null)
                     milestoneElements[i].gameObject.SetActive(false);
@@ -658,6 +679,322 @@ namespace OJ.Dice
             UIMilestoneElement created = Instantiate(milestoneElementPrefab, milestoneListRoot);
             milestoneElements.Add(created);
             return created;
+        }
+
+        // ── 승급 칸 ──────────────────────────────────────────────────────
+        //
+        // 예전에 조합식(그 뒤 진화 경로)을 보이던 칸 자리다. <b>코드로 만든다</b> — 강화 버튼 옆 초기화 버튼과
+        // 같은 이유로, 이 창의 프리팹 YAML 을 건드리지 않고 기존 칸(Craft) 안에 붙이기 위해서다.
+        // 칸 제목(CraftTitle)만 "승급" 으로 바꾸고, 옛 진화 경로 목록(recipeSectionRoot)은 켜지 않는다.
+
+        private TMP_Text promotionStatusText;
+        private Button promotionButton;
+        private TMP_Text promotionButtonLabel;
+
+        private static readonly Vector2 PromotionButtonSize = new Vector2(250f, 104f);
+
+        private void BuildPromotionBox()
+        {
+            if (promotionButton != null || recipeSectionRoot == null || levelText == null)
+                return;
+
+            Transform craft = recipeSectionRoot.transform.parent;
+            if (craft == null)
+                return;
+
+            recipeSectionRoot.SetActive(false);
+
+            Transform title = craft.Find("CraftTitle");
+            TMP_Text titleText = title != null ? title.GetComponentInChildren<TMP_Text>(true) : null;
+            if (titleText != null)
+                titleText.SetText("승급");
+
+            // 옛 칸의 안내 문구("조합이 필요 없습니다")가 같은 자리에 남아 새 글자와 겹친다 — 글자만 끈다(배경은 칸 몫이다).
+            Transform oldDesc = craft.Find("Desc");
+            if (oldDesc != null)
+            {
+                foreach (TMP_Text old in oldDesc.GetComponentsInChildren<TMP_Text>(true))
+                    old.enabled = false;
+            }
+
+            promotionStatusText = UIBountyUIFactory.CreateText("PromotionStatus", craft, string.Empty, 30f,
+                TextAlignmentOptions.TopLeft, Color.white, levelText.font, levelText.fontSharedMaterial);
+            RectTransform statusRect = promotionStatusText.rectTransform;
+            statusRect.anchorMin = new Vector2(0.04f, 0.04f);
+            statusRect.anchorMax = new Vector2(0.62f, 0.80f);
+            statusRect.pivot = new Vector2(0.5f, 0.5f);
+            statusRect.offsetMin = Vector2.zero;
+            statusRect.offsetMax = Vector2.zero;
+            promotionStatusText.textWrappingMode = TextWrappingModes.Normal;
+            promotionStatusText.raycastTarget = false;
+
+            GameObject root = UIBountyUIFactory.CreateRect("PromotionButton", craft);
+            var rect = (RectTransform)root.transform;
+            rect.anchorMin = new Vector2(0.80f, 0.40f);
+            rect.anchorMax = new Vector2(0.80f, 0.40f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = PromotionButtonSize;
+            rect.anchoredPosition = Vector2.zero;
+
+            Image back = root.AddComponent<Image>();
+            back.sprite = UIBountyUIFactory.LoadSprite("Ingame/Big_Btn_Green");
+            back.type = Image.Type.Sliced;
+
+            promotionButton = root.AddComponent<Button>();
+            promotionButton.targetGraphic = back;
+            ColorBlock colors = promotionButton.colors;
+            colors.disabledColor = new Color(0.55f, 0.55f, 0.55f, 0.85f);
+            promotionButton.colors = colors;
+
+            promotionButtonLabel = UIBountyUIFactory.CreateText("Label", root.transform, "승급 미션", 36f,
+                TextAlignmentOptions.Center, Color.white, levelText.font, levelText.fontSharedMaterial);
+            UIBountyUIFactory.Stretch(promotionButtonLabel.rectTransform);
+            promotionButtonLabel.textWrappingMode = TextWrappingModes.NoWrap;
+
+            promotionButton.onClick.AddListener(OnClickPromotion);
+        }
+
+        private void RefreshPromotionBox(bool owned, int level)
+        {
+            if (promotionStatusText == null || promotionButton == null)
+                return;
+
+            PromotionManager manager = PromotionManager.Instance;
+            if (manager == null || !PromotionManager.IsPromotable(currentDiceType))
+            {
+                promotionStatusText.SetText(string.Empty);
+                promotionButton.gameObject.SetActive(false);
+                return;
+            }
+
+            int maxTier = PromotionRules.MaxTier(PromotionManager.IsBasic(currentDiceType));
+            int tier = manager.GetTier(currentDiceType);
+            bool queuedHere = manager.TryGetQueue(out PromotionQueueView queue) && queue.DiceType == currentDiceType;
+
+            var text = new StringBuilder();
+            text.Append("<b>승급 ").Append(tier).Append(" / ").Append(maxTier).Append("</b>  ");
+            for (int i = 1; i <= maxTier; i++)
+                text.Append(i <= tier ? "<color=#FFE27A>★</color>" : "<color=#7A7F8C>☆</color>");
+            text.Append('\n');
+
+            if (!owned)
+            {
+                text.Append("<color=#C9D6EE>미보유 다이스는 승급할 수 없어요</color>");
+            }
+            else if (tier >= maxTier)
+            {
+                text.Append("<color=#CFFFD0>승급을 모두 마쳤어요</color>");
+            }
+            else if (queuedHere)
+            {
+                text.Append("<color=#7FE3FF>승급 진행 중</color>  ")
+                    .Append(CountMetMissions(manager, queue.TargetTier)).Append(" / ")
+                    .Append(CountRequiredMissions(queue.TargetTier)).Append(" 미션");
+            }
+            else
+            {
+                int need = PromotionRules.RequiredDiceLevel(tier + 1);
+                string levelNote = level >= need
+                    ? "<color=#CFFFD0>등록할 수 있어요</color>"
+                    : "<color=#C9D6EE>Lv." + need + " 부터 등록 (현재 Lv." + level + ")</color>";
+                text.Append("다음 승급 ").Append(tier + 1).Append("단계  ").Append(levelNote);
+            }
+
+            promotionStatusText.SetText(text.ToString());
+
+            promotionButton.gameObject.SetActive(true);
+            promotionButton.interactable = owned && tier < maxTier;
+            promotionButtonLabel.SetText(queuedHere ? "진행 보기" : "승급 미션");
+        }
+
+        private static int CountRequiredMissions(int targetTier)
+        {
+            int count = 0;
+            for (int i = 0; i < PromotionRules.MissionCount; i++)
+            {
+                if (PromotionRules.IsRequired((PromotionMission)i, targetTier))
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static int CountMetMissions(PromotionManager manager, int targetTier)
+        {
+            int count = 0;
+            for (int i = 0; i < PromotionRules.MissionCount; i++)
+            {
+                var mission = (PromotionMission)i;
+                int need = PromotionRules.Requirement(mission, targetTier);
+                if (need > 0 && manager.GetProgress(mission) >= need)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private void OnClickPromotion()
+        {
+            OpenPromotionPopup();
+        }
+
+        /// <summary>
+        /// 승급 미션 창. <b>범용 확인 창을 빌려 쓴다</b> — 미션이 여덟 줄 안팎이라 목록 프리팹을 새로 만들 만큼은 아니고,
+        /// 확인 버튼이 상황에 따라 "등록" / "이벤트 재화 투입" / "확인" 으로 바뀐다.
+        /// </summary>
+        private void OpenPromotionPopup()
+        {
+            PromotionManager manager = PromotionManager.Instance;
+            UIConfirmDialog confirm = GameContainer.UI?.Get<UIConfirmDialog>();
+            if (manager == null || confirm == null || !PromotionManager.IsPromotable(currentDiceType))
+                return;
+
+            System.DateTime now = System.DateTime.UtcNow;
+            DiceType target = currentDiceType;
+            var meta = DiceMetaDataProvider.GetMeta(target);
+            string diceName = meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : target.ToString();
+
+            bool queuedHere = manager.TryGetQueue(out PromotionQueueView queue) && queue.DiceType == target;
+            int targetTier = queuedHere ? queue.TargetTier : manager.GetTier(target) + 1;
+            int maxTier = PromotionRules.MaxTier(PromotionManager.IsBasic(target));
+            if (targetTier > maxTier)
+                return;
+
+            var message = new StringBuilder();
+            message.Append("<size=32>").Append(diceName).Append("  승급 ").Append(targetTier).Append("단계</size>\n");
+
+            string effect = PromotionText.Describe(target, targetTier);
+            message.Append("<size=26><color=#7FE3FF>").Append(effect).Append("</color>\n")
+                .Append(PromotionText.CommonLine).Append("</size>\n<size=10> </size>\n");
+
+            string confirmLabel;
+            System.Action onConfirm = null;
+
+            if (queuedHere)
+            {
+                AppendMissionLines(message, manager, targetTier);
+
+                int need = PromotionRules.Requirement(PromotionMission.EventCurrency, targetTier);
+                int missing = need - manager.GetProgress(PromotionMission.EventCurrency);
+                PointType open = EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(now));
+                int held = PointManager.Instance != null ? PointManager.Instance.Get(open) : 0;
+
+                if (need > 0 && missing > 0)
+                {
+                    message.Append("<size=24><color=#C9D6EE>열린 이벤트 재화만 넣을 수 있어요 (보유 ").Append(held).Append("개)</color></size>");
+                    confirmLabel = held > 0 ? "재화 투입" : "확인";
+                    if (held > 0)
+                    {
+                        onConfirm = () =>
+                        {
+                            manager.DonateEventCurrency(held, System.DateTime.UtcNow);
+                            Refresh();
+                            OpenPromotionPopup();
+                        };
+                    }
+                }
+                else
+                {
+                    confirmLabel = "확인";
+                }
+            }
+            else
+            {
+                int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(target) : 1;
+                PromotionRegisterResult result = manager.CanRegister(target, now);
+
+                AppendRequirementLines(message, targetTier);
+
+                switch (result)
+                {
+                    case PromotionRegisterResult.LevelTooLow:
+                        message.Append("<size=26><color=#FFB0B0>Lv.").Append(PromotionRules.RequiredDiceLevel(targetTier))
+                            .Append(" 이 되면 등록할 수 있어요 (현재 Lv.").Append(level).Append(")</color></size>");
+                        confirmLabel = "확인";
+                        break;
+
+                    case PromotionRegisterResult.ReplaceLocked:
+                        System.TimeSpan left = manager.ReplaceLockRemaining(now);
+                        message.Append("<size=26><color=#FFB0B0>다른 다이스를 승급 중이에요. ")
+                            .Append(FormatLock(left)).Append(" 뒤에 바꿀 수 있어요</color></size>");
+                        confirmLabel = "확인";
+                        break;
+
+                    default:
+                        if (manager.TryGetQueue(out PromotionQueueView other))
+                        {
+                            message.Append("<size=26><color=#FFE27A>바꾸면 ").Append(DiceName(other.DiceType))
+                                .Append("의 진행도가 사라져요</color></size>");
+                        }
+                        else
+                        {
+                            message.Append("<size=26><color=#CFFFD0>등록한 뒤에 쓴 분만 인정돼요</color></size>");
+                        }
+
+                        confirmLabel = "등록";
+                        onConfirm = () =>
+                        {
+                            manager.TryRegister(target, System.DateTime.UtcNow);
+                            Refresh();
+                            OpenPromotionPopup();
+                        };
+                        break;
+                }
+            }
+
+            confirm.transform.SetAsLastSibling();
+            confirm.Open("다이스 승급", message.ToString(), confirmLabel, "닫기", onConfirm);
+        }
+
+        private static string DiceName(DiceType diceType)
+        {
+            var meta = DiceMetaDataProvider.GetMeta(diceType);
+            return meta != null && !string.IsNullOrEmpty(meta.displayName) ? meta.displayName : diceType.ToString();
+        }
+
+        private static string FormatLock(System.TimeSpan left)
+        {
+            int hours = (int)left.TotalHours;
+            int minutes = left.Minutes;
+            return hours > 0 ? hours + "시간 " + minutes + "분" : minutes + "분";
+        }
+
+        /// <summary>진행도 줄. 채운 미션은 초록, 아닌 것은 흰색이다.</summary>
+        private static void AppendMissionLines(StringBuilder message, PromotionManager manager, int targetTier)
+        {
+            message.Append("<size=26>");
+            for (int i = 0; i < PromotionRules.MissionCount; i++)
+            {
+                var mission = (PromotionMission)i;
+                int need = PromotionRules.Requirement(mission, targetTier);
+                if (need <= 0)
+                    continue;
+
+                int done = manager.GetProgress(mission);
+                bool met = done >= need;
+                message.Append(met ? "<color=#CFFFD0>" : "<color=#FFFFFF>")
+                    .Append(PromotionText.MissionName(mission)).Append("  ")
+                    .Append(done).Append(" / ").Append(need)
+                    .Append(met ? "  (완료)" : string.Empty)
+                    .Append("</color>\n");
+            }
+
+            message.Append("</size>");
+        }
+
+        /// <summary>등록 전에 보이는 요구량 줄.</summary>
+        private static void AppendRequirementLines(StringBuilder message, int targetTier)
+        {
+            message.Append("<size=26>");
+            for (int i = 0; i < PromotionRules.MissionCount; i++)
+            {
+                var mission = (PromotionMission)i;
+                int need = PromotionRules.Requirement(mission, targetTier);
+                if (need > 0)
+                    message.Append(PromotionText.MissionName(mission)).Append("  ").Append(need).Append('\n');
+            }
+
+            message.Append("</size>");
         }
 
         /// <summary>

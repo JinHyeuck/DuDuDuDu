@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using OJ;
 using OJ.Core;
+using OJ.Dice;
 using OJ.Mission;
 using OJ.Point;
 
@@ -22,23 +23,26 @@ namespace OJ.Game.Tests
 
         /// <summary>
         /// <b>표를 둘로 둔 값을 치르는 테스트다.</b> <c>MissionSubKeys.ForDice</c> 는 번호
-        /// 구간으로 등급을 가르고 <c>PointManager.ToScrollType</c> 은 다이스마다 강화 재화를
-        /// 적는다. 둘이 어긋나면 "신화 다이스 레벨업" 업적이 특수 다이스에 올라가는데,
+        /// 구간으로 등급을 가르고 <c>DiceEvolution.GetTier</c> 는 같은 번호 구간에서 티어를
+        /// 가른다. 둘이 어긋나면 "신화 다이스 레벨업" 업적이 특수 다이스에 올라가는데,
         /// 그 사고는 화면에서 숫자가 조금 더 빨리 오르는 것으로만 보인다.
+        ///
+        /// 예전에는 강화 재화(레어석·신화석)로 등급을 가렸지만, 카피 개편으로 재화가 다이스별이
+        /// 되어 재화는 더 이상 등급을 말해 주지 않는다. 등급의 정본은 티어다.
         /// </summary>
         [Test]
-        public void DiceGradeMatchesUpgradeCurrency()
+        public void DiceGradeMatchesDiceTier()
         {
             foreach (DiceType diceType in Enum.GetValues(typeof(DiceType)))
             {
                 if (diceType == DiceType.Max)
                     continue;
 
-                PointType scroll = PointManager.ToScrollType(diceType);
+                DiceTier tier = DiceEvolution.GetTier(diceType);
 
                 string expected =
-                    scroll == PointType.MythicStone ? MissionSubKeys.DiceMythic :
-                    scroll == PointType.RareStone ? MissionSubKeys.DiceRare :
+                    tier == DiceTier.King ? MissionSubKeys.DiceMythic :
+                    tier == DiceTier.Special ? MissionSubKeys.DiceRare :
                     MissionSubKeys.DiceNormal;
 
                 Assert.AreEqual(expected, MissionSubKeys.ForDice(diceType), diceType.ToString());

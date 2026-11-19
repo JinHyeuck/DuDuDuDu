@@ -28,6 +28,12 @@ namespace OJ.Hunting
         private bool _hasImpacted;
         private readonly RaycastHit2D[] _hitBuffer = new RaycastHit2D[8];
 
+        /// <summary>이 총알을 쏜 다이스. 승급 효과가 자기 쿨타임을 만지는 데 쓴다.</summary>
+        public UIDice SourceDice { get; set; }
+
+        /// <summary>타임 T2 가 건 일회성 대미지 배수. 1 이면 없다.</summary>
+        public float ShotScale { get; set; } = 1f;
+
         public void SetBulletStat(DiceType diceType, int diceStar)
         {
             _diceType = diceType;
@@ -129,6 +135,8 @@ namespace OJ.Hunting
                 return;
 
             _hasImpacted = true;
+            battle.Attack.CurrentSourceDice = SourceDice;
+            battle.Attack.PendingShotScale = ShotScale;
             battle.Attack.PlayHit(monster, _diceType, _diceStar);
             battle.Bullets.PoolBullet(this);
         }
@@ -136,6 +144,8 @@ namespace OJ.Hunting
         private void OnDisable()
         {
             _hasImpacted = false;
+            SourceDice = null;
+            ShotScale = 1f;
         }
     }
 

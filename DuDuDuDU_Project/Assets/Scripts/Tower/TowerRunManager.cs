@@ -403,10 +403,11 @@ namespace OJ.Tower
 
             rewards.Add(new PointRewardEntry(PointType.Gold, TowerFormula.FirstClearGold(floor)));
 
-            // 1층 첫 클리어는 신화석을 얹는다. 3스테이지에서 킹 썬더를 받고 탑 1층에서 처음 써 본 직후,
+            // 1층 첫 클리어는 킹 썬더 카피를 얹는다. 3스테이지에서 킹 썬더를 받고 탑 1층에서 처음 써 본 직후,
             // 그 킹을 키울 재료를 바로 쥐여 줘 "강화해 본다" 안내가 빈손이 되지 않게 한다.
+            // (카피 개편: 신화석 10 → 킹 썬더 카피 3 — Lv1→3 이 1+2 장이다.)
             if (floor == 1)
-                rewards.Add(new PointRewardEntry(PointType.MythicStone, TowerFormula.FirstFloorMythicStone));
+                rewards.Add(new PointRewardEntry(PointType.KingThunderCopy, TowerFormula.FirstFloorKingCopies));
 
             if (TowerFormula.IsBandLastFloor(floor))
             {
@@ -418,12 +419,12 @@ namespace OJ.Tower
                 // 지금은 이 실수가 <b>컴파일되지 않는다</b> — 그 재화는 PointType 이 아니라
                 // BattlePointType 이고, 이 목록은 PointRewardEntry(영구 재화)만 받는다.
                 //
-                // 신화 스크롤로 바꾼 이유: <b>탑이 여는 것이 킹 다이스</b>이고, 킹을 올리는
-                // 재료가 신화 스크롤이다(PointManager.ToScrollType). 탑이 킹을 주고 그것을
-                // 키울 재료도 주는 것이 한 줄로 읽힌다. 게다가 신화 스크롤의 다른 수급처는
-                // 스테이지 등급 보너스뿐이라 1회성이고 상한이 낮다.
+                // 킹 카피로 주는 이유: <b>탑이 여는 것이 킹 다이스</b>이고, 킹을 올리는
+                // 재료가 킹 카피다(PointManager.ToScrollType). 탑이 킹을 주고 그것을
+                // 키울 재료도 주는 것이 한 줄로 읽힌다. 어느 킹인지는 랜덤 킹 카피가
+                // 지급 순간에 정한다(카피 개편 전에는 등급 공용 신화석이었다).
                 rewards.Add(new PointRewardEntry(
-                    PointType.MythicStone, TowerFormula.BandRewardMaterial(floor)));
+                    PointType.RandomKingCopy, TowerFormula.BandRewardMaterial(floor)));
             }
 
             return rewards;

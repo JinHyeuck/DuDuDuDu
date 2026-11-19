@@ -28,7 +28,7 @@ namespace OJ.Shop
         /// 섹션 순서와 머리글. 기획서 7.1 의 순서를 지키되 <b>이름은 시안을 따른다</b> —
         /// 시안이 재화를 그림으로 부르기 때문에("깃털", "다이아") 글자도 같아야 한다.
         /// 어느 재화인지는 <c>PointMetadataDatabase</c> 의 아이콘과 짝이 맞는다:
-        /// 깃털 = 유료젬, 다이아 = 무료젬, 강화석 = 다이스석.
+        /// 깃털 = 유료젬, 다이아 = 무료젬.
         ///
         /// <b>빈 문자열은 머리글 바를 만들지 않는다는 뜻이다.</b> 시안에서 패키지와
         /// 광고 칸은 바 없이 바로 내용이 온다.
@@ -40,8 +40,8 @@ namespace OJ.Shop
             "",               // 2 광고 상점 — 시안에 새로 생겼다
             "깃털 상점",      // 3 (8.4 유료젬 상점)
             "다이아",         // 4 (8.5 무료젬 상점)
-            "강화석",         // 5 (8.6 다이스석 상점)
-            "골드",           // 6 (8.7 골드 상점)
+            "골드",           // 5 (8.7 골드 상점)
+            "재화",           // 6 (재화 상점 — 가치 장부 기준, 유료젬으로만 산다)
         };
 
         [Header("섹션 본체")]
@@ -49,8 +49,8 @@ namespace OJ.Shop
         [SerializeField] private RectTransform gemDrawBody;
         [SerializeField] private RectTransform paidGemBody;
         [SerializeField] private RectTransform freeGemBody;
-        [SerializeField] private RectTransform stoneBody;
         [SerializeField] private RectTransform goldBody;
+        [SerializeField] private RectTransform currencyBody;
 
         /// <summary>교환비 안내. 시안에 자리가 없어 굽지 않는다 — 비어 있어도 된다.</summary>
         [SerializeField] private TMP_Text freeGemRateText;
@@ -68,8 +68,7 @@ namespace OJ.Shop
         private readonly List<UIShopOfferCard> gemBoxCards = new List<UIShopOfferCard>();
         private readonly List<UIShopGridCard> paidGemCards = new List<UIShopGridCard>();
         private readonly List<UIShopGridCard> freeGemCards = new List<UIShopGridCard>();
-        private readonly List<UIShopGridCard> stoneCards = new List<UIShopGridCard>();
-        private readonly List<UIShopGridCard> goldCards = new List<UIShopGridCard>();
+        private readonly List<UIShopGridCard> currencyCards = new List<UIShopGridCard>();
 
         /// <summary>다음 갱신 표기를 몇 초마다 다시 그릴지. 초 단위로 적히므로 1초면 된다.</summary>
 
@@ -80,6 +79,11 @@ namespace OJ.Shop
             SetTemplateActive(growthTemplate, false);
             SetTemplateActive(cardTemplate, false);
             SetTemplateActive(gridCardTemplate, false);
+
+            // 옛 골드 상점(무료젬 누진)은 걷어냈다 — 골드는 재화 상점이 유료젬으로 판다.
+            // 구워진 프리팹에 섹션 껍데기가 남아 있어, 다시 굽기 전까지는 여기서 감춘다.
+            if (goldBody != null && goldBody.parent != null)
+                goldBody.parent.gameObject.SetActive(false);
         }
 
         protected override void OnEnter()
@@ -147,8 +151,7 @@ namespace OJ.Shop
             RefreshAdShop();
             RefreshPaidGem(db);
             RefreshFreeGem(db);
-            RefreshStone(db);
-            RefreshGold(db);
+            RefreshCurrency(db);
         }
 
         // ── 광고 상점 (시안에 새로 생긴 칸) ──────────────────────────
@@ -396,64 +399,46 @@ namespace OJ.Shop
                 () => Report(ShopPurchaseManager.Instance?.TryExchangeFreeGem(paidGemAmount)));
         }
 
-        // ── 8.6 다이스석 상점 ─────────────────────────────────────────
+        // ── 재화 상점 ─────────────────────────────────────────────────
 
-        private void RefreshStone(ShopDatabase db)
+        /// <summary>
+        /// 재화 상점. 유료젬으로만 산다. 하루 한도가 있는 상품(핀볼 1,000발)은 가격 옆에 남은 횟수를 적고,
+        /// 다 쓰면 눌리지 않게 둔다. 열린 이벤트가 없으면 이벤트 재화 줄은 감춘다.
+        /// </summary>
+        private void RefreshCurrency(ShopDatabase db)
         {
-            IReadOnlyList<ShopDatabase.StoneOffer> offers = db.StoneOffers;
-            EnsurePool(stoneCards, gridCardTemplate, stoneBody, offers.Count);
+            if (currencyBody == null)
+                return;
 
-            for (int i = 0; i < stoneCards.Count; i++)
-            {
-                bool used = i < offers.Count;
-                stoneCards[i].gameObject.SetActive(used);
-                if (!used)
-                    continue;
-
-                ShopDatabase.StoneOffer offer = offers[i];
-                int index = i;
-
-                // 한도도 누진도 없다. 값이 그대로 가격이고, 살 수 있는지는 보유량만 본다.
-                stoneCards[i].Bind(
-                    offer.stoneType, offer.amountPerPurchase,
-                    PointType.FreeGem, ShopText.FormatAmount(offer.costFreeGem),
-                    Affordable(PointType.FreeGem, offer.costFreeGem),
-                    () => Report(ShopPurchaseManager.Instance?.TryBuyStone(index)),
-                    ShopTierArt.Stone(offer.stoneType, i + 1));
-            }
-        }
-
-        // ── 8.7 골드 상점 ─────────────────────────────────────────────
-
-        private void RefreshGold(ShopDatabase db)
-        {
-            IReadOnlyList<ShopDatabase.GoldOffer> offers = db.GoldOffers;
-            EnsurePool(goldCards, gridCardTemplate, goldBody, offers.Count);
+            IReadOnlyList<ShopDatabase.CurrencyOffer> offers = db.CurrencyOffers;
+            EnsurePool(currencyCards, gridCardTemplate, currencyBody, offers.Count);
 
             ShopPurchaseManager purchases = ShopPurchaseManager.Instance;
+            bool eventOpen = OJ.Point.EventCurrencyRules.IsEventOpen(System.DateTime.UtcNow);
 
-            for (int i = 0; i < goldCards.Count; i++)
+            for (int i = 0; i < currencyCards.Count; i++)
             {
-                bool used = i < offers.Count;
-                goldCards[i].gameObject.SetActive(used);
+                bool used = i < offers.Count && CurrencyShopRules.IsVisible(offers[i].pointType, eventOpen);
+                currencyCards[i].gameObject.SetActive(used);
                 if (!used)
                     continue;
 
-                ShopDatabase.GoldOffer offer = offers[i];
+                ShopDatabase.CurrencyOffer offer = offers[i];
                 int index = i;
 
-                // 누진이라 오늘 산 횟수만큼 값이 오른다(기획서 8.7-2). 카드에 적히는 것은
-                // <b>지금 눌렀을 때의 값</b>이라, 사고 나면 그 자리에서 숫자가 바뀐다.
-                int bought = purchases != null ? purchases.GetTodayCount(ShopPurchaseManager.GoldKey(index)) : 0;
-                int cost = ShopPurchaseManager.ProgressiveCost(
-                    offer.baseCostFreeGem, offer.costIncreasePerPurchase, bought);
+                int bought = purchases != null ? purchases.GetTodayCount(ShopPurchaseManager.CurrencyKey(index)) : 0;
+                bool limited = offer.dailyLimit > 0;
+                bool soldOut = CurrencyShopRules.IsLimitReached(offer.dailyLimit, bought);
 
-                goldCards[i].Bind(
-                    PointType.Gold, offer.goldAmount,
-                    PointType.FreeGem, ShopText.FormatAmount(cost),
-                    Affordable(PointType.FreeGem, cost),
-                    () => Report(purchases?.TryBuyGold(index)),
-                    ShopTierArt.Gold(i + 1));
+                string price = ShopText.FormatAmount(offer.priceGem);
+                if (limited)
+                    price += " (" + CurrencyShopRules.RemainingToday(offer.dailyLimit, bought) + "/" + offer.dailyLimit + ")";
+
+                currencyCards[i].Bind(
+                    offer.pointType, offer.amount,
+                    PointType.PaidGem, price,
+                    !soldOut && Affordable(PointType.PaidGem, offer.priceGem),
+                    () => Report(purchases?.TryBuyCurrency(index)));
             }
         }
 
@@ -485,6 +470,9 @@ namespace OJ.Shop
                     break;
                 case ShopPurchaseResult.RefreshLimitReached:
                     Debug.Log("[상점] 오늘 갱신 횟수를 다 썼습니다.");
+                    break;
+                case ShopPurchaseResult.DailyLimitReached:
+                    Debug.Log("[상점] 오늘 구매 한도를 다 썼습니다.");
                     break;
             }
         }
@@ -553,8 +541,8 @@ namespace OJ.Shop
 
             page.paidGemBody = BuildSection(content, 3, font, SectionBody.Grid);
             page.freeGemBody = BuildSection(content, 4, font, SectionBody.Grid);
-            page.stoneBody = BuildSection(content, 5, font, SectionBody.Grid);
-            page.goldBody = BuildSection(content, 6, font, SectionBody.Grid);
+            page.goldBody = BuildSection(content, 5, font, SectionBody.Grid);
+            page.currencyBody = BuildSection(content, 6, font, SectionBody.Grid);
 
             BuildFooter(content, font);
 

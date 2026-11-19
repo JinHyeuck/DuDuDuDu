@@ -1120,6 +1120,8 @@ namespace OJ.Hunting
             TowerRunRequest towerRun = TowerProgressManager.Instance?.ConsumePendingRun();
             if (towerRun != null)
             {
+                // 승급 미션은 입장을 센다. 탑과 본편을 가른다 — 같은 입장이라도 다른 미션이다.
+                PromotionManager.Instance?.Notify(PromotionMission.TowerChallenges);
                 InitializeTowerFloor(towerRun);
                 return;
             }
@@ -1130,6 +1132,8 @@ namespace OJ.Hunting
                 InitializeTutorial();
                 return;
             }
+
+            PromotionManager.Instance?.Notify(PromotionMission.StageChallenges);
 
             CurrentStageData = StageProgressManager.Instance != null
                 ? StageProgressManager.Instance.GetSelectedStage()

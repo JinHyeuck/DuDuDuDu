@@ -207,15 +207,15 @@ namespace OJ.Mission
 
             AddSeries(list, "ach_dice_normal", MissionAction.DiceLevelUp, MissionSubKeys.DiceNormal,
                 "일반 다이스 레벨업 {0}회",
-                new[] { 10, 50, 200 }, PointType.NormalScroll, new[] { 10, 50, 200 });
+                new[] { 10, 50, 200 }, PointType.NormalScroll, new[] { 1, 3, 10 });
 
             AddSeries(list, "ach_dice_rare", MissionAction.DiceLevelUp, MissionSubKeys.DiceRare,
                 "레어 다이스 레벨업 {0}회",
-                new[] { 10, 50, 200 }, PointType.RareStone, new[] { 10, 50, 200 });
+                new[] { 10, 50, 200 }, PointType.RandomRareCopy, new[] { 2, 10, 40 });
 
             AddSeries(list, "ach_dice_mythic", MissionAction.DiceLevelUp, MissionSubKeys.DiceMythic,
                 "신화 다이스 레벨업 {0}회",
-                new[] { 5, 25, 100 }, PointType.MythicStone, new[] { 10, 50, 200 });
+                new[] { 5, 25, 100 }, PointType.RandomKingCopy, new[] { 2, 9, 34 });
 
             AddSeries(list, "ach_equipment", MissionAction.EquipmentLevelUp, string.Empty,
                 "장비 레벨업 {0}회",

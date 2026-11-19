@@ -249,9 +249,10 @@ namespace OJ.Core.Tests
             Assert.AreEqual(expected, TowerFormula.BandRewardDia(floor));
         }
 
-        [TestCase(5, 12)]
-        [TestCase(10, 15)]
-        [TestCase(300, 189)]
+        // 카피 개편(2026-11): 2 + 구간/2 장의 랜덤 킹 카피. 5층=1구간 → 2, 10층=2구간 → 3, 300층=60구간 → 32.
+        [TestCase(5, 2)]
+        [TestCase(10, 3)]
+        [TestCase(300, 32)]
         public void BandRewardMaterial_GrowsWithBand(int floor, int expected)
         {
             Assert.AreEqual(expected, TowerFormula.BandRewardMaterial(floor));

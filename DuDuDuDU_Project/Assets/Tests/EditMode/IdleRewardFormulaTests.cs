@@ -46,8 +46,8 @@ namespace OJ.Core.Tests
         // 곱셈 형태까지 원본과 똑같이 유지한다 — 상수 접기 결과는 같지만 diff 로 1:1 대조하려는 것이다.
         private const double AutoBattleMaxSeconds = 24d * 60d * 60d;
         private const double SecondsPerAutoBattleClear = 60d * 60d;
-        private const double MeatSetIntervalSeconds = 2d * 60d * 60d;
-        private const int MaxMeatSetCount = 60;
+        private const double MeatSetIntervalSeconds = 2d * 60d;
+        private const int MaxMeatSetCount = 3600;
 
         /// <summary>담당 접두사별로 골든에 있어야 하는 키 개수.</summary>
         /// <remarks>

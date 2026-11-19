@@ -178,7 +178,9 @@ namespace OJ.StageReward
                 new StageRewardEntry(PointType.Gold, 300 + GetStageBonus(stageIndex)),
             };
 
-            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50 }, stageIndex);
+            // 속성 스크롤은 기본 카피다. 카피 개편(2026-11)으로 50 → 3 (진행도 등가: 옛 곡선 Lv12 까지 1,210장,
+            // 새 곡선 63장 — 비율 약 0.05, 반올림).
+            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 3 }, stageIndex);
             AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10 }, stageIndex);
             return rewards;
         }
@@ -190,9 +192,10 @@ namespace OJ.StageReward
                 new StageRewardEntry(PointType.Gold, 400 + GetStageBonus(stageIndex)),
             };
 
-            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50 }, stageIndex);
+            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 3, 3 }, stageIndex);
             AddDistinctRewards(rewards, EquipmentScrollTypes, new[] { 10, 10 }, stageIndex);
-            rewards.Add(new StageRewardEntry(PointType.MythicStone, 25));
+            // 신화석 25 → 랜덤 킹 카피 4 (킹 곡선 비율 약 0.17, 반올림). 지급 때 킹 5종 중 하나씩으로 풀린다.
+            rewards.Add(new StageRewardEntry(PointType.RandomKingCopy, 4));
             return rewards;
         }
 
@@ -203,9 +206,9 @@ namespace OJ.StageReward
                 new StageRewardEntry(PointType.Gold, 500 + GetStageBonus(stageIndex)),
             };
 
-            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 50, 50, 50 }, stageIndex);
+            AddDistinctRewards(rewards, ElementScrollTypes, new[] { 3, 3, 3 }, stageIndex);
             rewards.Add(new StageRewardEntry(PointType.FreeGem, 300));
-            rewards.Add(new StageRewardEntry(PointType.MythicStone, 40));
+            rewards.Add(new StageRewardEntry(PointType.RandomKingCopy, 7));
 
             return rewards;
         }

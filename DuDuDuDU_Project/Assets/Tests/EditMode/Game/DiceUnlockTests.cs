@@ -293,21 +293,32 @@ namespace OJ.Game.Tests
 
             Assert.That(second, Is.False, "이미 보유면 새로 얻은 것이 아니다");
             Assert.That(rewards, Has.Count.EqualTo(1));
-            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.MythicStone));
+            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.KingIceCopy));
             Assert.That(rewards[0].Amount, Is.EqualTo(280));
         }
 
-        /// <summary>킹은 신화 재화로 환급된다 — 강화에 쓰는 재화와 같은 것이다.</summary>
+        /// <summary>킹은 <b>그 킹의 카피</b>로 환급된다 — 강화에 쓰는 재화와 같은 것이다.</summary>
         [Test]
-        public void 킹_환급은_신화_재화다()
+        public void 킹_환급은_자기_카피다()
         {
             var rewards = new List<PointRewardEntry>();
 
-            DiceOwnershipManager.ShouldGrant(DiceType.KingFire, alreadyOwned: true, price: 200, rewards);
+            DiceOwnershipManager.ShouldGrant(DiceType.KingFire, alreadyOwned: true, price: 1, rewards);
 
             Assert.That(rewards, Has.Count.EqualTo(1));
-            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.MythicStone));
-            Assert.That(rewards[0].Amount, Is.EqualTo(200));
+            Assert.That(rewards[0].PointType, Is.EqualTo(PointType.KingFireCopy));
+            Assert.That(rewards[0].Amount, Is.EqualTo(1));
+        }
+
+        /// <summary>
+        /// 킹 해금 가격은 전부 카피 1장이다. 중복이 곧 카피 1장이라는 가챠 문법이 성립하려면
+        /// 환급액(= 가격)이 1 이어야 한다.
+        /// </summary>
+        [Test]
+        public void 킹_해금_가격은_카피_한_장이다()
+        {
+            foreach (DiceUnlockDefinition definition in DiceUnlockDatabase.BuildDefaults())
+                Assert.That(definition.price, Is.EqualTo(1), definition.diceType.ToString());
         }
 
         /// <summary>

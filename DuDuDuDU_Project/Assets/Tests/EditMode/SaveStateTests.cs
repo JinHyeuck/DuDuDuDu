@@ -113,6 +113,10 @@ namespace OJ.Core.Tests
             state.BonusDice.PinCounts["tag:1"] = 2;
             state.BonusDice.PinCounts["tag:2"] = 5;
 
+            // 핀 위의 보상 추첨 결과(풀 인덱스). PinCounts 와 같은 키 모양이지만 <b>다른 값</b>이다.
+            state.BonusDice.PinDraws["tag:1"] = 7;
+            state.BonusDice.PinDraws["tag:2"] = 0;
+
             // 미션. 일일분과 누적분에 <b>같은 키로 다른 수</b>를 넣어 둔다 —
             // 둘을 한 표로 합치거나 서로 덮는 변경이 생기면 그 자리에서 터진다.
             state.Missions.DailyResetDate = "2026-10-01";
@@ -207,6 +211,8 @@ namespace OJ.Core.Tests
                 Is.EqualTo(expected.BonusDice.RewardMultiplier), "bonusDice.rewardMultiplier");
             CollectionAssert.AreEqual(
                 expected.BonusDice.PinCounts, actual.BonusDice.PinCounts, "bonusDice.pinCounts");
+            CollectionAssert.AreEqual(
+                expected.BonusDice.PinDraws, actual.BonusDice.PinDraws, "bonusDice.pinDraws");
 
             Assert.That(actual.Missions.DailyResetDate,
                 Is.EqualTo(expected.Missions.DailyResetDate), "missions.dailyResetDate");
@@ -510,7 +516,8 @@ namespace OJ.Core.Tests
                 "    \"inProgress\": false,",
                 "    \"remainingCycles\": 0,",
                 "    \"rewardMultiplier\": 1,",
-                "    \"pinCounts\": {}",
+                "    \"pinCounts\": {},",
+                "    \"pinDraws\": {}",
                 "  },",
                 "  \"missions\": {",
                 "    \"dailyResetDate\": \"\",",
@@ -546,6 +553,13 @@ namespace OJ.Core.Tests
                 "  \"synergy\": {",
                 "    \"totalFires\": 0,",
                 "    \"categories\": {}",
+                "  },",
+                "  \"promotion\": {",
+                "    \"tiers\": {},",
+                "    \"queuedDice\": \"\",",
+                "    \"queuedTargetTier\": 0,",
+                "    \"registeredUtcTicks\": 0,",
+                "    \"progress\": {}",
                 "  }",
                 "}",
             })));

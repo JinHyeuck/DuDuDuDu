@@ -253,8 +253,11 @@ namespace OJ.Core
             return 10 + (BandOf(floor) - 1) * 2;
         }
 
-        /// <summary>1층 첫 클리어로 주는 신화석. 킹 썬더를 처음 키워 보게 하는 재료다(2026-10-20).</summary>
-        public const int FirstFloorMythicStone = 10;
+        /// <summary>
+        /// 1층 첫 클리어로 주는 킹 썬더 카피 장수. 킹 썬더를 처음 키워 보게 하는 재료다(2026-10-20 신화석 10,
+        /// 2026-11 카피 개편으로 3장 — Lv1→2 가 1장, Lv2→3 이 2장이라 세 장이면 Lv3 까지 올려 볼 수 있다).
+        /// </summary>
+        public const int FirstFloorKingCopies = 3;
 
         /// <summary>
         /// 구간 마지막 층이 주는 <b>다이스 재료</b>의 양. 어떤 재화로 낼지는 여기서 정하지 않는다
@@ -272,7 +275,9 @@ namespace OJ.Core
         /// </summary>
         public static int BandRewardMaterial(int floor)
         {
-            return 12 + (BandOf(floor) - 1) * 3;
+            // 카피 개편(2026-11): 옛 12 + 3(구간-1) 신화석을 킹 곡선 비율(약 0.17)로 낮춘 값 —
+            // 2, 3, 3, 4, 4, 5, 5 … 처럼 구간 두 개마다 한 장씩 는다. 단위는 랜덤 킹 카피 장수다.
+            return 2 + BandOf(floor) / 2;
         }
 
         // ── 진행 ────────────────────────────────────────────────────────

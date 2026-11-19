@@ -17,6 +17,30 @@ namespace OJ.Hunting
 
         public override DiceType DiceType => DiceType.KingPoison;
 
+        private void SlowAllIfCrowded()
+        {
+            System.Collections.Generic.List<Monster> active = battle.Monsters.activeMonsters;
+            if (active == null)
+                return;
+
+            int poisoned = 0;
+            for (int i = 0; i < active.Count; i++)
+            {
+                if (active[i] != null && active[i].gameObject.activeInHierarchy && active[i].IsPoisoned())
+                    poisoned++;
+            }
+
+            if (poisoned < OJ.Core.PromotionEffectRules.KingPoisonSlowAllThreshold)
+                return;
+
+            float duration = DiceMetaDataProvider.GetSlowDuration(DiceType, 1);
+            for (int i = 0; i < active.Count; i++)
+            {
+                if (active[i] != null && active[i].gameObject.activeInHierarchy)
+                    active[i].ApplySlow(duration, 0.8f, DiceType);
+            }
+        }
+
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
         {
             if (target == null)
@@ -31,7 +55,16 @@ namespace OJ.Hunting
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
             target.ApplyPoison(DiceMetaDataProvider.GetPoisonDuration(DiceType), 1f, DiceType);
             target.ApplySlow(DiceMetaDataProvider.GetSlowDuration(DiceType, level), 0.8f, DiceType);
-            if (level >= 9 && UnityEngine.Random.value <= 0.3f && attackContent != null)
+
+            int poisonTier = OJ.Dice.PromotionManager.TierOf(DiceType);
+            // 승급 T2: 중독과 둔화가 동시에 걸린 적은 중독 피해 +30%.
+            if (poisonTier >= 2 && target.IsSlowed() && target.IsPoisoned())
+                target.ApplyPoison(DiceMetaDataProvider.GetPoisonDuration(DiceType), OJ.Core.PromotionEffectRules.KingPoisonSlowedMultiplier, DiceType);
+
+            // 승급 T3: 중독된 적이 일정 수 이상이면 모두 둔화.
+            if (poisonTier >= 3)
+                SlowAllIfCrowded();
+            if (level >= OJ.Core.DiceMilestoneLevels.Second && UnityEngine.Random.value <= 0.3f && attackContent != null)
             {
                 List<Monster> nearby = attackContent.GetRedHitTarget(
                     impactPosition,

@@ -24,12 +24,13 @@ namespace OJ.SeasonPass
         /// 한 레벨을 올리는 데 드는 포인트(= 쓴 고기). 화면의 "0 / 1000" 의 분모다.
         ///
         /// <b>소탕 1회가 고기 5 다</b>(<c>SweepRules.StaminaCostPerSweep</c>).
-        /// 200 으로 두면 레벨 하나에 소탕 40회이고, 하루 소탕 상한이 72회
-        /// (<c>SweepEconomy.DailySweepClears</c>)라 하루에 한 레벨 남짓 오른다.
+        /// 400 으로 두면 레벨 하나에 소탕 80회이고, 하루 소탕 상한이 144회
+        /// (<c>SweepEconomy.DailySweepClears</c>)라 하루에 한 레벨 남짓 오른다
+        /// (고기 축제를 2분당 1개로 올리며 200 → 400, 2026-11).
         /// 한 달이면 30레벨 안팎 — 그것이 아래 기본 시즌의 길이다.
         /// </summary>
         [Tooltip("한 레벨에 필요한 포인트(쓴 고기). 소탕 1회 = 고기 5.")]
-        [SerializeField, Min(1)] private int pointsPerLevel = 200;
+        [SerializeField, Min(1)] private int pointsPerLevel = 400;
 
         /// <summary>
         /// 유료 트랙 가격(원). 구매 창의 버튼에 그대로 적힌다.
@@ -241,14 +242,14 @@ namespace OJ.SeasonPass
                 // 무료 트랙 — 매 레벨 골드, 5레벨마다 소환권.
                 data.freeRewards.Add(new SeasonPassReward(PointType.Gold, 10000 * level));
                 if (level % 5 == 0)
-                    data.freeRewards.Add(new SeasonPassReward(PointType.NormalScroll, 2));
+                    data.freeRewards.Add(new SeasonPassReward(PointType.NormalScroll, 1));
 
                 // 유료 트랙 — 매 레벨 무료젬, 5레벨마다 레어석, 10레벨마다 신화석.
                 data.premiumRewards.Add(new SeasonPassReward(PointType.FreeGem, 50 * level));
                 if (level % 5 == 0)
-                    data.premiumRewards.Add(new SeasonPassReward(PointType.RareStone, 10));
+                    data.premiumRewards.Add(new SeasonPassReward(PointType.RandomRareCopy, 2));
                 if (level % 10 == 0)
-                    data.premiumRewards.Add(new SeasonPassReward(PointType.MythicStone, 5));
+                    data.premiumRewards.Add(new SeasonPassReward(PointType.RandomKingCopy, 1));
 
                 season.levels.Add(data);
             }
