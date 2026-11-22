@@ -29,7 +29,7 @@ namespace OJ.Dice
     }
 
     /// <summary>
-    /// 다이스 승급의 실행부. <b>큐 한 칸 · 등록 뒤 쓴 분만 인정하는 진행도 · 이벤트 재화 투입과 환급</b>이
+    /// 다이스 승급의 실행부. <b>큐 한 칸 · 등록 뒤 쓴 분만 인정하는 진행도 · 이벤트 재화 소모 집계와 환급</b>이
     /// 한 자리에 있다. 규칙(요구량·레벨·잠금)은 <see cref="PromotionRules"/> 가 정본이고 여기는 상태를 든다.
     ///
     /// <b>세는 곳이 여럿이라 <see cref="Notify"/> 한 곳으로 모았다.</b> 핀볼·소탕·탑·스테이지·처치가
@@ -213,31 +213,28 @@ namespace OJ.Dice
         }
 
         /// <summary>
-        /// 열린 이벤트의 재화를 미션 B 에 넣는다. 돌려주는 값은 <b>실제로 쓴 개수</b>다.
-        /// 부른 양·가진 양·남은 요구량 중 가장 작은 만큼만 쓴다.
+        /// 이벤트 미니게임이 재화를 <b>쓴 순간</b> 부른다 — 쓴 만큼이 미션 B 진행도다(따로 넣지 않는다).
+        /// <c>EventMinigameManager.TrySpend</c> 한 곳에서만 부르게 했다: <c>OnPointSpent</c> 를 구독하면
+        /// 종료 환급(<see cref="RefundClosedEventCurrency"/>)도 소모로 잡힌다.
+        ///
+        /// <b>열린 이벤트의 재화만 센다</b>(닫힌 이벤트의 재화는 어디에도 못 쓴다). 등록 전의 소모는 인정하지 않고
+        /// 요구량을 넘은 분은 버린다. <see cref="Notify"/> 처럼 절대 던지지 않고 세이브도 건드리지 않는다.
         /// </summary>
-        public int DonateEventCurrency(int offered, DateTime utcNow, bool saveNow = true)
+        public void NotifyEventCurrencySpent(PointType currency, int amount, DateTime utcNow)
         {
-            if (!hasQueue || points == null)
-                return 0;
+            if (!hasQueue || amount <= 0)
+                return;
 
-            int need = PromotionRules.Requirement(SlotOf(queuedDice), PromotionMission.EventCurrency, queuedTargetTier);
-            if (need <= 0)
-                return 0;
+            if (currency != EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(utcNow)))
+                return;
 
-            PointType open = EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(utcNow));
-            int amount = PromotionRules.AcceptableEventCurrency(
-                GetProgress(PromotionMission.EventCurrency), need, points.Get(open), offered);
-
-            if (amount <= 0 || !points.TrySpend(open, amount, saveNow))
-                return 0;
-
-            PromotionRules.Add(progress, SlotOf(queuedDice), PromotionMission.EventCurrency, queuedTargetTier, amount);
+            int added = PromotionRules.Add(
+                progress, SlotOf(queuedDice), PromotionMission.EventCurrency, queuedTargetTier, amount);
+            if (added <= 0)
+                return;
 
             if (!TryComplete())
                 OnChanged?.Invoke();
-
-            return amount;
         }
 
         /// <summary>
@@ -375,7 +372,26 @@ namespace OJ.Dice
 
             int shots = RefundClosedEventCurrency(utcNow, saveNow);
             if (shots > 0)
+            {
+                pendingRefundShots += shots;
                 OnEventCurrencyRefunded?.Invoke(shots);
+            }
+        }
+
+        private int pendingRefundShots;
+
+        /// <summary>
+        /// 유저가 아직 못 본 환급 발수. 앱 시작 때 도는 환급은 로비 화면이 만들어지기 <b>전에</b> 끝나서 이벤트를 아무도 못 받으므로,
+        /// 알림은 여기 쌓인 값을 로비가 열릴 때 꺼내 본다. 저장하지 않는다 — 핀볼은 이미 지급됐고 알림만 놓치는 것이다.
+        /// </summary>
+        public int PendingRefundShots => pendingRefundShots;
+
+        /// <summary>쌓인 환급 발수를 꺼내고 0 으로 비운다.</summary>
+        public int TakePendingRefund()
+        {
+            int shots = pendingRefundShots;
+            pendingRefundShots = 0;
+            return shots;
         }
 
         // ── 저장 ───────────────────────────────────────────────────────

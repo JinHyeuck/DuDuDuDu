@@ -7,7 +7,7 @@ using OJ.Point;
 namespace OJ.Game.Tests
 {
     /// <summary>
-    /// <c>PromotionManager</c> 의 큐·진행도·투입·환급·저장 왕복.
+    /// <c>PromotionManager</c> 의 큐·진행도·이벤트 재화 소모·환급·저장 왕복.
     /// 규칙 값(요구량 표 등)은 <c>PromotionRulesTests</c> 가 잠그고, 여기는 <b>상태가 규칙대로 움직이는지</b>를 본다.
     /// <c>PointManager</c>·<c>DiceLevelManager</c> 는 생성자가 순수해서 실물을 그대로 쓴다.
     /// </summary>
@@ -235,7 +235,7 @@ namespace OJ.Game.Tests
             Assert.AreEqual(2, view.TargetTier);
         }
 
-        // ── 이벤트 재화 투입 (미션 B) ───────────────────────────────────
+        // ── 이벤트 재화 소모 (미션 B) ───────────────────────────────────
 
         private PointType OpenCurrency(DateTime utc)
         {
@@ -250,40 +250,75 @@ namespace OJ.Game.Tests
         }
 
         [Test]
-        public void 열린_이벤트_재화를_요구량까지만_넣는다()
+        public void 열린_이벤트_재화를_쓰면_요구량까지만_인정한다()
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 1500, false);
 
-            int used = manager.DonateEventCurrency(5000, T0, false);
+            manager.NotifyEventCurrencySpent(open, 5000, T0);
 
-            Assert.AreEqual(1000, used);
-            Assert.AreEqual(500, points.Get(open));
             Assert.AreEqual(1000, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
-        public void 가진_만큼만_넣는다()
+        public void 여러_번_쓴_재화는_합해서_센다()
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 40, false);
 
-            Assert.AreEqual(40, manager.DonateEventCurrency(5000, T0, false));
-            Assert.AreEqual(0, points.Get(open));
+            manager.NotifyEventCurrencySpent(open, 300, T0);
+            manager.NotifyEventCurrencySpent(open, 400, T0);
+
+            Assert.AreEqual(700, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
-        public void 닫힌_이벤트의_재화는_넣을_수_없다()
+        public void 닫힌_이벤트의_재화를_써도_세지_않는다()
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
             PointType closed = open == PointType.EventCurrency1 ? PointType.EventCurrency2 : PointType.EventCurrency1;
-            points.Add(closed, 500, false);
 
-            Assert.AreEqual(0, manager.DonateEventCurrency(500, T0, false));
-            Assert.AreEqual(500, points.Get(closed));
+            manager.NotifyEventCurrencySpent(closed, 500, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void 이벤트_재화가_아닌_재화는_세지_않는다()
+        {
+            QueueTierTwo(DiceType.Tornado);
+
+            manager.NotifyEventCurrencySpent(PointType.Gold, 500, T0);
+            manager.NotifyEventCurrencySpent(PointType.OpenEventCurrency, 500, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void 쓴_양이_0_이하면_세지_않는다()
+        {
+            QueueTierTwo(DiceType.Tornado);
+            PointType open = OpenCurrency(T0);
+
+            manager.NotifyEventCurrencySpent(open, 0, T0);
+            manager.NotifyEventCurrencySpent(open, -20, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void 등록_전에_쓴_재화는_인정하지_않는다()
+        {
+            PromoteToTierOne(DiceType.Tornado);
+            PointType open = OpenCurrency(T0);
+
+            // 큐가 비어 있을 때 쓴 분.
+            manager.NotifyEventCurrencySpent(open, 800, T0);
+
+            levels.SetLevel(DiceType.Tornado, 15, false);
+            Assert.AreEqual(PromotionRegisterResult.Ok, manager.TryRegister(DiceType.Tornado, T0));
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
@@ -292,10 +327,23 @@ namespace OJ.Game.Tests
             levels.SetLevel(DiceType.Tornado, 5, false);
             manager.TryRegister(DiceType.Tornado, T0);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 100, false);
 
-            Assert.AreEqual(0, manager.DonateEventCurrency(100, T0, false));
-            Assert.AreEqual(100, points.Get(open));
+            manager.NotifyEventCurrencySpent(open, 100, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void 포인트_매니저의_소모는_저절로_세지_않는다()
+        {
+            // 종료 환급 같은 소모가 미션 B 로 새면 안 된다 — 세는 것은 NotifyEventCurrencySpent 뿐이다.
+            QueueTierTwo(DiceType.Tornado);
+            PointType open = OpenCurrency(T0);
+            points.Add(open, 500, false);
+
+            Assert.IsTrue(points.TrySpend(open, 500, false));
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
@@ -303,7 +351,6 @@ namespace OJ.Game.Tests
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 1000, false);
 
             // 토네이도 T2 의 C 는 소탕 100회다. 다른 참여 미션은 세지 않는다.
             manager.Notify(PromotionMission.PinballShots, 3000);
@@ -311,7 +358,7 @@ namespace OJ.Game.Tests
             manager.Notify(PromotionMission.Sweeps, 100);
             Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
 
-            manager.DonateEventCurrency(1000, T0, false);
+            manager.NotifyEventCurrencySpent(open, 1000, T0);
             Assert.AreEqual(2, manager.GetTier(DiceType.Tornado));
         }
 
@@ -319,9 +366,8 @@ namespace OJ.Game.Tests
         public void 이벤트_재화만_채우면_T2가_끝나지_않는다()
         {
             QueueTierTwo(DiceType.Tornado);
-            points.Add(OpenCurrency(T0), 1000, false);
 
-            manager.DonateEventCurrency(1000, T0, false);
+            manager.NotifyEventCurrencySpent(OpenCurrency(T0), 1000, T0);
 
             Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
             Assert.IsTrue(manager.HasQueue);
@@ -334,10 +380,8 @@ namespace OJ.Game.Tests
         private void QueueTierThree(DiceType dice)
         {
             QueueTierTwo(dice);
-            PointType open = OpenCurrency(T0);
-            points.Add(open, 1000, false);
             FillAssignedMission();
-            manager.DonateEventCurrency(1000, T0, false);
+            manager.NotifyEventCurrencySpent(OpenCurrency(T0), 1000, T0);
             Assert.AreEqual(2, manager.GetTier(dice));
 
             levels.SetLevel(dice, 30, false);
@@ -357,9 +401,8 @@ namespace OJ.Game.Tests
 
         private void FillTierThreeCAndB(DiceType dice)
         {
-            points.Add(OpenCurrency(T0), 3000, false);
             FillAssignedMission();
-            manager.DonateEventCurrency(3000, T0, false);
+            manager.NotifyEventCurrencySpent(OpenCurrency(T0), 3000, T0);
         }
 
         [Test]
@@ -462,6 +505,48 @@ namespace OJ.Game.Tests
             Assert.AreEqual(0, points.Get(before));
             Assert.AreEqual(10, points.Get(PointType.PinballTicket));
             Assert.AreEqual(10, refunded);
+        }
+
+        [Test]
+        public void 환급한_발수는_알림용으로_쌓였다가_한_번만_꺼낸다()
+        {
+            // 앱 시작 때 도는 환급은 로비가 만들어지기 전이라 이벤트를 못 받는다 — 쌓아 뒀다가 로비가 꺼내 본다.
+            manager.Tick(T0, false);
+            PointType before = OpenCurrency(T0);
+            points.Add(before, 30, false);
+            DateTime later = T0.AddDays(EventCurrencyRules.DaysPerEvent);
+
+            manager.Tick(later, false);
+
+            Assert.AreEqual(10, manager.PendingRefundShots);
+            Assert.AreEqual(10, manager.TakePendingRefund());
+            Assert.AreEqual(0, manager.PendingRefundShots);
+            Assert.AreEqual(0, manager.TakePendingRefund());
+        }
+
+        [Test]
+        public void 환급이_없으면_알림도_쌓이지_않는다()
+        {
+            manager.Tick(T0, false);
+            manager.Tick(T0.AddDays(EventCurrencyRules.DaysPerEvent), false);
+
+            Assert.AreEqual(0, manager.PendingRefundShots);
+        }
+
+        [Test]
+        public void 알림을_안_꺼낸_사이_또_환급되면_합쳐진다()
+        {
+            manager.Tick(T0, false);
+            PointType a = OpenCurrency(T0);
+            points.Add(a, 9, false);
+            DateTime second = T0.AddDays(EventCurrencyRules.DaysPerEvent);
+            manager.Tick(second, false);               // 3발
+
+            PointType b = OpenCurrency(second);
+            points.Add(b, 6, false);
+            manager.Tick(second.AddDays(EventCurrencyRules.DaysPerEvent), false);   // 2발
+
+            Assert.AreEqual(5, manager.TakePendingRefund());
         }
 
         [Test]

@@ -20,6 +20,8 @@ namespace OJ.SceneFlow
             contentGate = gameObject.AddComponent<LobbyContentGate>();
             // 강화할 수 있는 장비·다이스가 있으면 하단 탭에 레드닷을 건다(씬을 고치지 않고 코드로 붙인다).
             gameObject.AddComponent<OJ.Lobby.LobbyUpgradeBadges>();
+            // 끝난 이벤트 재화를 핀볼로 환급했으면 로비에서 한 번 알려 준다.
+            gameObject.AddComponent<OJ.Lobby.LobbyRefundNotice>();
         }
 
         /// <summary>
