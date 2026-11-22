@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
 using OJ.Core;
+using OJ.Equipment;
 using OJ.Pinball;
 using OJ.Point;
+using OJ.Relic;
 using OJ.Save;
 
 namespace OJ.Dice
@@ -239,12 +241,50 @@ namespace OJ.Dice
         }
 
         /// <summary>
-        /// 미션 A(보유형). <b>아직 정해진 것이 없다</b> — 종류·수량은 테스트 뒤에 정한다.
-        /// 승급 단계와 무관한 것만 걸 것(순환 의존 금지: 승급하려면 다른 다이스의 승급이 필요하면 안 된다).
+        /// A 축의 현재 값 공급자. 테스트가 갈아끼운다. 비어 있으면 실제 매니저를 읽는다
+        /// (매니저가 없으면 0 — 헤드리스·로비 밖).
         /// </summary>
-        private static bool AreOwnedRequirementsMet(DiceType diceType, int targetTier)
+        public Func<PromotionOwned, int> OwnedValueSource;
+
+        /// <summary>A 축의 지금 값(장비 레벨 합 / 유물 레벨 합 / 보석 점수).</summary>
+        public int GetOwnedValue(PromotionOwned kind)
         {
-            return true;
+            if (OwnedValueSource != null)
+                return OwnedValueSource(kind);
+
+            switch (kind)
+            {
+                case PromotionOwned.EquipmentLevels:
+                    return EquipmentManager.Instance != null ? EquipmentManager.Instance.GetTotalLevel() : 0;
+                case PromotionOwned.RelicLevels:
+                    return RelicManager.Instance != null ? RelicManager.Instance.GetTotalLevel() : 0;
+                case PromotionOwned.GemScore:
+                    return EquipmentManager.Instance != null ? EquipmentManager.Instance.GetGemScore() : 0;
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// 미션 A(보유형, T3 전용)가 찼는가. 승급 단계와 무관한 값만 본다(순환 의존 금지 —
+        /// 다른 다이스의 승급을 조건으로 걸면 서로를 기다려 영영 못 오른다).
+        /// </summary>
+        private bool AreOwnedRequirementsMet(DiceType diceType, int targetTier)
+        {
+            PromotionOwned kind = PromotionRules.AssignedOwned(SlotOf(diceType), targetTier);
+            if (kind == PromotionOwned.None)
+                return true;
+
+            return GetOwnedValue(kind) >= PromotionRules.OwnedRequirement(kind);
+        }
+
+        /// <summary>
+        /// 장비·유물·보석이 바뀌었을 때 불린다. 나머지 미션을 먼저 채워 둔 큐가 A 가 찬 순간 끝나야 하는데,
+        /// A 는 행동이 아니라 상태라 <c>Notify</c> 가 오지 않기 때문이다.
+        /// </summary>
+        public void Recheck()
+        {
+            TryComplete();
         }
 
         private bool TryComplete()

@@ -814,6 +814,9 @@ namespace OJ.Dice
                     count++;
             }
 
+            if (PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier) != PromotionOwned.None)
+                count++;
+
             return count;
         }
 
@@ -827,6 +830,10 @@ namespace OJ.Dice
                 if (need > 0 && manager.GetProgress(mission) >= need)
                     count++;
             }
+
+            PromotionOwned owned = PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier);
+            if (owned != PromotionOwned.None && manager.GetOwnedValue(owned) >= PromotionRules.OwnedRequirement(owned))
+                count++;
 
             return count;
         }
@@ -977,6 +984,20 @@ namespace OJ.Dice
                     .Append("</color>\n");
             }
 
+            // 미션 A(보유형): 진행도가 아니라 지금 가진 값을 보여 준다.
+            PromotionOwned owned = PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier);
+            if (owned != PromotionOwned.None)
+            {
+                int have = manager.GetOwnedValue(owned);
+                int ownedNeed = PromotionRules.OwnedRequirement(owned);
+                bool ownedMet = have >= ownedNeed;
+                message.Append(ownedMet ? "<color=#CFFFD0>" : "<color=#FFFFFF>")
+                    .Append(PromotionText.OwnedName(owned)).Append("  ")
+                    .Append(have).Append(" / ").Append(ownedNeed)
+                    .Append(ownedMet ? "  (완료)" : string.Empty)
+                    .Append("</color>\n");
+            }
+
             message.Append("</size>");
         }
 
@@ -991,6 +1012,10 @@ namespace OJ.Dice
                 if (need > 0)
                     message.Append(PromotionText.MissionName(mission)).Append("  ").Append(need).Append('\n');
             }
+
+            PromotionOwned owned = PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier);
+            if (owned != PromotionOwned.None)
+                message.Append(PromotionText.OwnedName(owned)).Append("  ").Append(PromotionRules.OwnedRequirement(owned)).Append('\n');
 
             message.Append("</size>");
         }

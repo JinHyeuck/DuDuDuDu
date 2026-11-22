@@ -99,6 +99,18 @@ namespace OJ.Dice
             }
         }
 
+        /// <summary>미션 A(보유형) 이름. 목표값은 "가진 값 / 하한" 으로 같이 보인다.</summary>
+        public static string OwnedName(PromotionOwned kind)
+        {
+            switch (kind)
+            {
+                case PromotionOwned.EquipmentLevels: return "장비 레벨 합";
+                case PromotionOwned.RelicLevels: return "유물 레벨 합";
+                case PromotionOwned.GemScore: return "보석 점수";
+                default: return kind.ToString();
+            }
+        }
+
         /// <summary>미션 이름. 화면 목록의 한 줄.</summary>
         public static string MissionName(PromotionMission mission)
         {

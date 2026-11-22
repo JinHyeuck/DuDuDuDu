@@ -37,6 +37,24 @@ namespace OJ.Core
         EventCurrency,
     }
 
+    /// <summary>
+    /// 미션 A(보유형, T3 전용)가 보는 축. <b>다이스 카피만 몰아 키운 유저가 다른 콘텐츠도 평균 속도로 키우게</b> 하는 균형 검사다.
+    /// 값은 전부 이미 세이브에 있는 것이라 진행도를 따로 저장하지 않는다.
+    /// </summary>
+    public enum PromotionOwned
+    {
+        None = 0,
+
+        /// <summary>장비 6부위의 레벨 합.</summary>
+        EquipmentLevels,
+
+        /// <summary>보유 유물의 레벨 합(소환 1회 = 레벨 약 1).</summary>
+        RelicLevels,
+
+        /// <summary>보석 점수(보유 + 장착). 등급마다 4배라 4개 합성해도 점수가 그대로다.</summary>
+        GemScore,
+    }
+
     /// <summary>승급 등록 가능 여부.</summary>
     public enum PromotionRegisterResult
     {
@@ -66,7 +84,7 @@ namespace OJ.Core
     ///   큐     1칸. 등록한 뒤 쓴 분만 인정, 교체는 24시간 잠금, 교체하면 진행도 초기화
     ///   미션   0→1: C 1개 / 1→2: C 1개 + B 1개 / 2→3: C 1개 + B 1개 + A 1개
     ///          <b>C 는 유저가 고르지 않는다</b> — 다이스·단계마다 정해 둔 한 가지다(<see cref="AssignedMission"/>)
-    ///   A      보유형 미션(T3 전용). 종류·수량은 테스트 뒤에 정한다 — 지금은 없다
+    ///   A      보유형 미션(T3 전용, 레어·킹 10종). 다이스마다 장비/유물/보석 중 하나로 고정(<see cref="AssignedOwned"/>)
     /// </code>
     /// B 가 <b>유일한 시간 병목</b>이다 — 이벤트 재화는 하루 약 200개(열린 이벤트 하나)라
     /// T2 1,000개는 5일, T3 3,000개는 15일이다. C 쪽 수치는 그 시간 안에 자연히 채워지는 크기다.
@@ -124,6 +142,89 @@ namespace OJ.Core
                 return PromotionMission.PinballShots;
 
             return AssignedC[slot][targetTier - 1];
+        }
+
+        /// <summary>장비 레벨 합 하한. 평균 유저 18일치(약 90)의 70%.</summary>
+        public const int EquipmentLevelsNeed = 63;
+
+        /// <summary>유물 레벨 합 하한. 평균 유저 18일치(약 18)의 70%.</summary>
+        public const int RelicLevelsNeed = 13;
+
+        /// <summary>보석 점수 하한. 평균 유저 18일치(약 92)의 70%.</summary>
+        public const int GemScoreNeed = 64;
+
+        /// <summary>
+        /// 다이스 칸(0~14) → T3 의 A 미션. 기본 5종은 T3 가 없어 None 이다.
+        /// 한 가지로 몰리지 않게 장비 3 / 유물 4 / 보석 3 으로 흩었다.
+        /// </summary>
+        private static readonly PromotionOwned[] AssignedA =
+        {
+            /*  0 Normal      */ PromotionOwned.None,
+            /*  1 Fire        */ PromotionOwned.None,
+            /*  2 Ice         */ PromotionOwned.None,
+            /*  3 Thunder     */ PromotionOwned.None,
+            /*  4 Poison      */ PromotionOwned.None,
+            /*  5 Tornado     */ PromotionOwned.EquipmentLevels,
+            /*  6 Stun        */ PromotionOwned.RelicLevels,
+            /*  7 ArmorBreak  */ PromotionOwned.GemScore,
+            /*  8 Wind        */ PromotionOwned.EquipmentLevels,
+            /*  9 Time        */ PromotionOwned.RelicLevels,
+            /* 10 KingNormal  */ PromotionOwned.RelicLevels,
+            /* 11 KingFire    */ PromotionOwned.GemScore,
+            /* 12 KingIce     */ PromotionOwned.EquipmentLevels,
+            /* 13 KingThunder */ PromotionOwned.GemScore,
+            /* 14 KingPoison  */ PromotionOwned.RelicLevels,
+        };
+
+        /// <summary>그 다이스 칸이 그 단계에서 채울 A 미션. T3 가 아니거나 대상이 아니면 None.</summary>
+        public static PromotionOwned AssignedOwned(int slot, int targetTier)
+        {
+            if (targetTier != PromotableMaxTier || slot < 0 || slot >= AssignedA.Length)
+                return PromotionOwned.None;
+
+            return AssignedA[slot];
+        }
+
+        /// <summary>A 축의 하한. None 이면 0.</summary>
+        public static int OwnedRequirement(PromotionOwned kind)
+        {
+            switch (kind)
+            {
+                case PromotionOwned.EquipmentLevels: return EquipmentLevelsNeed;
+                case PromotionOwned.RelicLevels: return RelicLevelsNeed;
+                case PromotionOwned.GemScore: return GemScoreNeed;
+                default: return 0;
+            }
+        }
+
+        /// <summary>
+        /// 보석 한 개의 점수. 등급이 한 단계 오를 때마다 4배다(합성이 4개 → 1개라 합성해도 총점이 그대로).
+        /// <paramref name="rarityOrdinal"/> 은 <c>Rarity</c> 의 정수값이다 — Common(1)=1, Normal(2)=4, Rare(3)=16, Epic(4)=64, Mythic(5)=256.
+        /// Common 아래(Uncommon)는 0점이다.
+        /// </summary>
+        public static int GemPoints(int rarityOrdinal)
+        {
+            if (rarityOrdinal < 1)
+                return 0;
+
+            int points = 1;
+            for (int i = 1; i < rarityOrdinal; i++)
+                points *= 4;
+
+            return points;
+        }
+
+        /// <summary>그 다이스 칸·단계의 A 미션이 찼는가. 요구가 없으면 true.</summary>
+        public static bool OwnedMet(int slot, int targetTier, int equipmentLevels, int relicLevels, int gemScore)
+        {
+            PromotionOwned kind = AssignedOwned(slot, targetTier);
+            switch (kind)
+            {
+                case PromotionOwned.EquipmentLevels: return equipmentLevels >= EquipmentLevelsNeed;
+                case PromotionOwned.RelicLevels: return relicLevels >= RelicLevelsNeed;
+                case PromotionOwned.GemScore: return gemScore >= GemScoreNeed;
+                default: return true;
+            }
         }
 
         /// <summary>

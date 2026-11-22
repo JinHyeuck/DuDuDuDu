@@ -327,6 +327,95 @@ namespace OJ.Game.Tests
             Assert.IsTrue(manager.HasQueue);
         }
 
+        // ── 미션 A (보유형, T3) ─────────────────────────────────────────
+
+        private int equipmentLevels, relicLevels, gemScore;
+
+        private void QueueTierThree(DiceType dice)
+        {
+            QueueTierTwo(dice);
+            PointType open = OpenCurrency(T0);
+            points.Add(open, 1000, false);
+            FillAssignedMission();
+            manager.DonateEventCurrency(1000, T0, false);
+            Assert.AreEqual(2, manager.GetTier(dice));
+
+            levels.SetLevel(dice, 30, false);
+            Assert.AreEqual(PromotionRegisterResult.Ok, manager.TryRegister(dice, T0));
+
+            manager.OwnedValueSource = kind =>
+            {
+                switch (kind)
+                {
+                    case PromotionOwned.EquipmentLevels: return equipmentLevels;
+                    case PromotionOwned.RelicLevels: return relicLevels;
+                    case PromotionOwned.GemScore: return gemScore;
+                    default: return 0;
+                }
+            };
+        }
+
+        private void FillTierThreeCAndB(DiceType dice)
+        {
+            points.Add(OpenCurrency(T0), 3000, false);
+            FillAssignedMission();
+            manager.DonateEventCurrency(3000, T0, false);
+        }
+
+        [Test]
+        public void T3는_C와_B를_채워도_A가_모자라면_끝나지_않는다()
+        {
+            QueueTierThree(DiceType.Tornado);   // A: 장비 레벨 합 63
+            equipmentLevels = 62;
+
+            FillTierThreeCAndB(DiceType.Tornado);
+
+            Assert.AreEqual(2, manager.GetTier(DiceType.Tornado));
+            Assert.IsTrue(manager.HasQueue);
+        }
+
+        [Test]
+        public void A가_차는_순간_Recheck가_승급을_끝낸다()
+        {
+            QueueTierThree(DiceType.Tornado);
+            equipmentLevels = 10;
+            FillTierThreeCAndB(DiceType.Tornado);
+            Assert.AreEqual(2, manager.GetTier(DiceType.Tornado));
+
+            // A 는 행동이 아니라 상태라 Notify 가 오지 않는다 — 장비가 바뀌었다는 신호로 다시 본다.
+            equipmentLevels = 63;
+            manager.Recheck();
+
+            Assert.AreEqual(3, manager.GetTier(DiceType.Tornado));
+            Assert.IsFalse(manager.HasQueue);
+        }
+
+        [Test]
+        public void 배정되지_않은_축이_높아도_A를_채우지_못한다()
+        {
+            QueueTierThree(DiceType.Stun);      // A: 유물 레벨 합 13
+            equipmentLevels = 999;
+            gemScore = 999;
+            relicLevels = 12;
+
+            FillTierThreeCAndB(DiceType.Stun);
+            manager.Recheck();
+
+            Assert.AreEqual(2, manager.GetTier(DiceType.Stun));
+
+            relicLevels = 13;
+            manager.Recheck();
+            Assert.AreEqual(3, manager.GetTier(DiceType.Stun));
+        }
+
+        [Test]
+        public void T1과_T2는_A를_보지_않는다()
+        {
+            // OwnedValueSource 를 두지 않아 모든 축이 0 이어도 T1·T2 는 C·B 만으로 끝난다.
+            PromoteToTierOne(DiceType.Tornado);
+            Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
+        }
+
         // ── 환급 ───────────────────────────────────────────────────────
 
         [Test]

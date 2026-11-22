@@ -163,6 +163,16 @@ namespace OJ.Relic
             return Mathf.Clamp(level, 0, MaxLevel);
         }
 
+        /// <summary>보유한 모든 유물의 레벨 합. 승급 미션 A 가 본다.</summary>
+        public int GetTotalLevel()
+        {
+            int sum = 0;
+            foreach (var pair in levels)
+                sum += Mathf.Clamp(pair.Value, 0, MaxLevel);
+
+            return sum;
+        }
+
         public bool HasRelic(RelicId relicId)
         {
             return GetLevel(relicId) > 0;
