@@ -375,7 +375,26 @@ namespace OJ.Dice
 
             int shots = RefundClosedEventCurrency(utcNow, saveNow);
             if (shots > 0)
+            {
+                pendingRefundShots += shots;
                 OnEventCurrencyRefunded?.Invoke(shots);
+            }
+        }
+
+        private int pendingRefundShots;
+
+        /// <summary>
+        /// 유저가 아직 못 본 환급 발수. 앱 시작 때 도는 환급은 로비 화면이 만들어지기 <b>전에</b> 끝나서 이벤트를 아무도 못 받으므로,
+        /// 알림은 여기 쌓인 값을 로비가 열릴 때 꺼내 본다. 저장하지 않는다 — 핀볼은 이미 지급됐고 알림만 놓치는 것이다.
+        /// </summary>
+        public int PendingRefundShots => pendingRefundShots;
+
+        /// <summary>쌓인 환급 발수를 꺼내고 0 으로 비운다.</summary>
+        public int TakePendingRefund()
+        {
+            int shots = pendingRefundShots;
+            pendingRefundShots = 0;
+            return shots;
         }
 
         // ── 저장 ───────────────────────────────────────────────────────
