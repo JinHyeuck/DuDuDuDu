@@ -111,6 +111,21 @@ namespace OJ.Dice
                    || (diceType >= DiceType.KingNormal && diceType <= DiceType.KingPoison);
         }
 
+        /// <summary>
+        /// 승급 규칙(<see cref="PromotionRules"/>)이 쓰는 다이스 칸 번호. 기본 5종 0~4, 레어 5종 5~9, 킹 5종 10~14.
+        /// 대상이 아니면 -1 이다.
+        /// </summary>
+        public static int SlotOf(DiceType diceType)
+        {
+            if (diceType >= DiceType.Normal && diceType <= DiceType.Poison)
+                return diceType - DiceType.Normal;
+            if (diceType >= DiceType.Tornado && diceType <= DiceType.Time)
+                return 5 + (diceType - DiceType.Tornado);
+            if (diceType >= DiceType.KingNormal && diceType <= DiceType.KingPoison)
+                return 10 + (diceType - DiceType.KingNormal);
+            return -1;
+        }
+
         public bool HasQueue => hasQueue;
 
         /// <summary>큐 한 칸. 비어 있으면 false.</summary>
@@ -123,7 +138,7 @@ namespace OJ.Dice
         /// <summary>큐에 올라 있는 다이스의 미션 진행도(요구량으로 자른 값). 큐가 비었거나 제외된 미션이면 0.</summary>
         public int GetProgress(PromotionMission mission)
         {
-            return hasQueue ? PromotionRules.Progress(progress, mission, queuedTargetTier) : 0;
+            return hasQueue ? PromotionRules.Progress(progress, SlotOf(queuedDice), mission, queuedTargetTier) : 0;
         }
 
         /// <summary>교체 잠금이 남은 시간. 큐가 비었거나 잠기지 않았으면 0.</summary>
@@ -181,7 +196,7 @@ namespace OJ.Dice
             if (!hasQueue || mission == PromotionMission.EventCurrency)
                 return;
 
-            int added = PromotionRules.Add(progress, mission, queuedTargetTier, amount);
+            int added = PromotionRules.Add(progress, SlotOf(queuedDice), mission, queuedTargetTier, amount);
             if (added <= 0)
                 return;
 
@@ -204,7 +219,7 @@ namespace OJ.Dice
             if (!hasQueue || points == null)
                 return 0;
 
-            int need = PromotionRules.Requirement(PromotionMission.EventCurrency, queuedTargetTier);
+            int need = PromotionRules.Requirement(SlotOf(queuedDice), PromotionMission.EventCurrency, queuedTargetTier);
             if (need <= 0)
                 return 0;
 
@@ -215,7 +230,7 @@ namespace OJ.Dice
             if (amount <= 0 || !points.TrySpend(open, amount, saveNow))
                 return 0;
 
-            PromotionRules.Add(progress, PromotionMission.EventCurrency, queuedTargetTier, amount);
+            PromotionRules.Add(progress, SlotOf(queuedDice), PromotionMission.EventCurrency, queuedTargetTier, amount);
 
             if (!TryComplete())
                 OnChanged?.Invoke();
@@ -235,7 +250,7 @@ namespace OJ.Dice
         private bool TryComplete()
         {
             if (!hasQueue
-                || !PromotionRules.AllMissionsMet(progress, queuedTargetTier)
+                || !PromotionRules.AllMissionsMet(progress, SlotOf(queuedDice), queuedTargetTier)
                 || !AreOwnedRequirementsMet(queuedDice, queuedTargetTier))
             {
                 return false;
@@ -398,7 +413,7 @@ namespace OJ.Dice
                 if (!source.Progress.TryGetValue(key, out int value))
                     continue;
 
-                int clamped = PromotionRules.Clamp(value, PromotionRules.Requirement(mission, target));
+                int clamped = PromotionRules.Clamp(value, PromotionRules.Requirement(SlotOf(queued), mission, target));
                 if (clamped > 0)
                     progress[key] = clamped;
             }

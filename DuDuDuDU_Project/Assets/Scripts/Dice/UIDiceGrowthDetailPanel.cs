@@ -772,10 +772,8 @@ namespace OJ.Dice
             bool queuedHere = manager.TryGetQueue(out PromotionQueueView queue) && queue.DiceType == currentDiceType;
 
             var text = new StringBuilder();
-            text.Append("<b>승급 ").Append(tier).Append(" / ").Append(maxTier).Append("</b>  ");
-            for (int i = 1; i <= maxTier; i++)
-                text.Append(i <= tier ? "<color=#FFE27A>★</color>" : "<color=#7A7F8C>☆</color>");
-            text.Append('\n');
+            // 별(★☆)은 BM HANNA 에 글리프가 없어 빈칸으로 나온다 — 단계 숫자만 쓴다.
+            text.Append("<b>승급 ").Append(tier).Append(" / ").Append(maxTier).Append("</b>\n");
 
             if (!owned)
             {
@@ -788,8 +786,8 @@ namespace OJ.Dice
             else if (queuedHere)
             {
                 text.Append("<color=#7FE3FF>승급 진행 중</color>  ")
-                    .Append(CountMetMissions(manager, queue.TargetTier)).Append(" / ")
-                    .Append(CountRequiredMissions(queue.TargetTier)).Append(" 미션");
+                    .Append(CountMetMissions(manager, currentDiceType, queue.TargetTier)).Append(" / ")
+                    .Append(CountRequiredMissions(currentDiceType, queue.TargetTier)).Append(" 미션");
             }
             else
             {
@@ -807,25 +805,25 @@ namespace OJ.Dice
             promotionButtonLabel.SetText(queuedHere ? "진행 보기" : "승급 미션");
         }
 
-        private static int CountRequiredMissions(int targetTier)
+        private static int CountRequiredMissions(DiceType diceType, int targetTier)
         {
             int count = 0;
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
-                if (PromotionRules.IsRequired((PromotionMission)i, targetTier))
+                if (PromotionRules.IsRequired(PromotionManager.SlotOf(diceType), (PromotionMission)i, targetTier))
                     count++;
             }
 
             return count;
         }
 
-        private static int CountMetMissions(PromotionManager manager, int targetTier)
+        private static int CountMetMissions(PromotionManager manager, DiceType diceType, int targetTier)
         {
             int count = 0;
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
                 var mission = (PromotionMission)i;
-                int need = PromotionRules.Requirement(mission, targetTier);
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(diceType), mission, targetTier);
                 if (need > 0 && manager.GetProgress(mission) >= need)
                     count++;
             }
@@ -872,9 +870,9 @@ namespace OJ.Dice
 
             if (queuedHere)
             {
-                AppendMissionLines(message, manager, targetTier);
+                AppendMissionLines(message, manager, target, targetTier);
 
-                int need = PromotionRules.Requirement(PromotionMission.EventCurrency, targetTier);
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(target), PromotionMission.EventCurrency, targetTier);
                 int missing = need - manager.GetProgress(PromotionMission.EventCurrency);
                 PointType open = EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(now));
                 int held = PointManager.Instance != null ? PointManager.Instance.Get(open) : 0;
@@ -903,7 +901,7 @@ namespace OJ.Dice
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(target) : 1;
                 PromotionRegisterResult result = manager.CanRegister(target, now);
 
-                AppendRequirementLines(message, targetTier);
+                AppendRequirementLines(message, target, targetTier);
 
                 switch (result)
                 {
@@ -960,13 +958,13 @@ namespace OJ.Dice
         }
 
         /// <summary>진행도 줄. 채운 미션은 초록, 아닌 것은 흰색이다.</summary>
-        private static void AppendMissionLines(StringBuilder message, PromotionManager manager, int targetTier)
+        private static void AppendMissionLines(StringBuilder message, PromotionManager manager, DiceType diceType, int targetTier)
         {
             message.Append("<size=26>");
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
                 var mission = (PromotionMission)i;
-                int need = PromotionRules.Requirement(mission, targetTier);
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(diceType), mission, targetTier);
                 if (need <= 0)
                     continue;
 
@@ -983,13 +981,13 @@ namespace OJ.Dice
         }
 
         /// <summary>등록 전에 보이는 요구량 줄.</summary>
-        private static void AppendRequirementLines(StringBuilder message, int targetTier)
+        private static void AppendRequirementLines(StringBuilder message, DiceType diceType, int targetTier)
         {
             message.Append("<size=26>");
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
                 var mission = (PromotionMission)i;
-                int need = PromotionRules.Requirement(mission, targetTier);
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(diceType), mission, targetTier);
                 if (need > 0)
                     message.Append(PromotionText.MissionName(mission)).Append("  ").Append(need).Append('\n');
             }
