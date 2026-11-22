@@ -465,6 +465,48 @@ namespace OJ.Game.Tests
         }
 
         [Test]
+        public void 환급한_발수는_알림용으로_쌓였다가_한_번만_꺼낸다()
+        {
+            // 앱 시작 때 도는 환급은 로비가 만들어지기 전이라 이벤트를 못 받는다 — 쌓아 뒀다가 로비가 꺼내 본다.
+            manager.Tick(T0, false);
+            PointType before = OpenCurrency(T0);
+            points.Add(before, 30, false);
+            DateTime later = T0.AddDays(EventCurrencyRules.DaysPerEvent);
+
+            manager.Tick(later, false);
+
+            Assert.AreEqual(10, manager.PendingRefundShots);
+            Assert.AreEqual(10, manager.TakePendingRefund());
+            Assert.AreEqual(0, manager.PendingRefundShots);
+            Assert.AreEqual(0, manager.TakePendingRefund());
+        }
+
+        [Test]
+        public void 환급이_없으면_알림도_쌓이지_않는다()
+        {
+            manager.Tick(T0, false);
+            manager.Tick(T0.AddDays(EventCurrencyRules.DaysPerEvent), false);
+
+            Assert.AreEqual(0, manager.PendingRefundShots);
+        }
+
+        [Test]
+        public void 알림을_안_꺼낸_사이_또_환급되면_합쳐진다()
+        {
+            manager.Tick(T0, false);
+            PointType a = OpenCurrency(T0);
+            points.Add(a, 9, false);
+            DateTime second = T0.AddDays(EventCurrencyRules.DaysPerEvent);
+            manager.Tick(second, false);               // 3발
+
+            PointType b = OpenCurrency(second);
+            points.Add(b, 6, false);
+            manager.Tick(second.AddDays(EventCurrencyRules.DaysPerEvent), false);   // 2발
+
+            Assert.AreEqual(5, manager.TakePendingRefund());
+        }
+
+        [Test]
         public void 같은_이벤트_안에서_날이_바뀌어도_환급하지_않는다()
         {
             // 이벤트의 첫날로 맞춘다 — 그날과 다음 날은 같은 이벤트다.
