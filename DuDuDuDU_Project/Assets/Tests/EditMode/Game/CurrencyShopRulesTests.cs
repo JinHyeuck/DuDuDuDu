@@ -70,11 +70,20 @@ namespace OJ.Game.Tests
             Assert.AreEqual(1000, Find(PointType.Gold, 100000).priceGem);
         }
 
+        /// <summary>핀볼 하루 2회, 이벤트 재화 하루 1회(쓰면 10배가 돌아오니 한도가 곧 보상 상한). 나머지는 한도 없음.</summary>
         [Test]
-        public void 한도는_핀볼_상품에만_있다()
+        public void 한도는_핀볼과_이벤트_재화_상품에만_있다()
         {
             foreach (var o in ShopDatabase.BuildDefaultCurrencyOffers())
-                Assert.AreEqual(o.pointType == PointType.PinballTicket ? 2 : 0, o.dailyLimit);
+            {
+                int expected = 0;
+                if (o.pointType == PointType.PinballTicket)
+                    expected = 2;
+                else if (o.pointType == PointType.OpenEventCurrency)
+                    expected = 1;
+
+                Assert.AreEqual(expected, o.dailyLimit, o.pointType.ToString());
+            }
         }
     }
 }

@@ -845,7 +845,7 @@ namespace OJ.Dice
 
         /// <summary>
         /// 승급 미션 창. <b>범용 확인 창을 빌려 쓴다</b> — 미션이 여덟 줄 안팎이라 목록 프리팹을 새로 만들 만큼은 아니고,
-        /// 확인 버튼이 상황에 따라 "등록" / "이벤트 재화 투입" / "확인" 으로 바뀐다.
+        /// 확인 버튼이 상황에 따라 "등록" / "확인" 으로 바뀐다.
         /// </summary>
         private void OpenPromotionPopup()
         {
@@ -879,29 +879,13 @@ namespace OJ.Dice
             {
                 AppendMissionLines(message, manager, target, targetTier);
 
+                // 이벤트 재화(미션 B)는 따로 넣지 않는다 — 이벤트 미니게임에서 쓴 만큼이 그대로 채워진다.
                 int need = PromotionRules.Requirement(PromotionManager.SlotOf(target), PromotionMission.EventCurrency, targetTier);
                 int missing = need - manager.GetProgress(PromotionMission.EventCurrency);
-                PointType open = EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(now));
-                int held = PointManager.Instance != null ? PointManager.Instance.Get(open) : 0;
-
                 if (need > 0 && missing > 0)
-                {
-                    message.Append("<size=24><color=#C9D6EE>열린 이벤트 재화만 넣을 수 있어요 (보유 ").Append(held).Append("개)</color></size>");
-                    confirmLabel = held > 0 ? "재화 투입" : "확인";
-                    if (held > 0)
-                    {
-                        onConfirm = () =>
-                        {
-                            manager.DonateEventCurrency(held, System.DateTime.UtcNow);
-                            Refresh();
-                            OpenPromotionPopup();
-                        };
-                    }
-                }
-                else
-                {
-                    confirmLabel = "확인";
-                }
+                    message.Append("<size=24><color=#C9D6EE>열린 이벤트 미니게임에서 재화를 쓰면 채워져요</color></size>");
+
+                confirmLabel = "확인";
             }
             else
             {

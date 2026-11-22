@@ -115,7 +115,7 @@ namespace OJ.Shop
             [Tooltip("유료젬 가격. 가치 장부의 원화 값어치 / 10.")]
             public int priceGem = 100;
 
-            [Tooltip("하루 구매 한도. 0 이면 한도 없음. 핀볼 1,000발은 하루 2회다(구매분도 같은 보상).")]
+            [Tooltip("하루 구매 한도. 0 이면 한도 없음. 핀볼 1,000발은 하루 2회, 이벤트 재화 250개는 하루 1회다(구매분도 같은 보상 — 이벤트 재화는 쓰면 평균 10배가 돌아와 한도가 곧 보상 상한이다).")]
             public int dailyLimit;
         }
 
@@ -349,7 +349,7 @@ namespace OJ.Shop
                 new CurrencyOffer { pointType = PointType.PremiumGemTicket, amount = 1, priceGem = 180 },
                 new CurrencyOffer { pointType = PointType.NormalGemTicket, amount = 1, priceGem = 50 },
                 new CurrencyOffer { pointType = PointType.SynergyTicket, amount = 100, priceGem = 500 },
-                new CurrencyOffer { pointType = PointType.OpenEventCurrency, amount = 250, priceGem = 500 },
+                new CurrencyOffer { pointType = PointType.OpenEventCurrency, amount = 250, priceGem = 500, dailyLimit = 1 },
                 new CurrencyOffer { pointType = PointType.Gold, amount = 10000, priceGem = 100 },
                 new CurrencyOffer { pointType = PointType.Gold, amount = 50000, priceGem = 500 },
                 new CurrencyOffer { pointType = PointType.Gold, amount = 100000, priceGem = 1000 },
