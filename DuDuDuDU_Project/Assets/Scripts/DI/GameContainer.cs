@@ -354,6 +354,10 @@ namespace OJ.DI
             SeasonPassManager.Instance = container.Resolve<SeasonPassManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
+            // 승급 미션 A(장비·유물·보석 보유)는 행동이 아니라 상태라, 그것들이 바뀔 때 다시 판정해 줘야 한다.
+            EquipmentManager.Instance.OnEquipmentChanged += _ => PromotionManager.Instance.Recheck();
+            EquipmentManager.Instance.OnGemChanged += () => PromotionManager.Instance.Recheck();
+            RelicManager.Instance.OnRelicChanged += () => PromotionManager.Instance.Recheck();
             SynergyManager.Instance = container.Resolve<SynergyManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();
             AOSBackBtnManager.Instance = container.Resolve<AOSBackBtnManager>();

@@ -283,6 +283,42 @@ namespace OJ.Equipment
             return gemDefinitionMap.TryGetValue(gemId, out definition);
         }
 
+        /// <summary>6부위 장비 레벨의 합. 승급 미션 A 가 본다.</summary>
+        public int GetTotalLevel()
+        {
+            int sum = 0;
+            foreach (EquipmentType equipmentType in Enum.GetValues(typeof(EquipmentType)))
+                sum += GetLevel(equipmentType);
+
+            return sum;
+        }
+
+        /// <summary>
+        /// 보석 점수 — 보유 재고 + 장착 중인 보석의 <see cref="PromotionRules.GemPoints"/> 합.
+        /// 장착하면 재고에서 빠지므로 둘 다 세지 않으면 장착한 보석이 점수에서 사라진다.
+        /// </summary>
+        public int GetGemScore()
+        {
+            int score = 0;
+            foreach (var pair in gemInventory)
+            {
+                if (pair.Value > 0 && gemDefinitionMap.TryGetValue(pair.Key, out GemDefinition definition) && definition != null)
+                    score += PromotionRules.GemPoints((int)definition.rarity) * pair.Value;
+            }
+
+            foreach (var pair in equippedGemSlots)
+            {
+                string[] slots = pair.Value;
+                for (int i = 0; slots != null && i < slots.Length; i++)
+                {
+                    if (!string.IsNullOrEmpty(slots[i]) && gemDefinitionMap.TryGetValue(slots[i], out GemDefinition definition) && definition != null)
+                        score += PromotionRules.GemPoints((int)definition.rarity);
+                }
+            }
+
+            return score;
+        }
+
         public int GetGemCount(string gemId)
         {
             return gemInventory.TryGetValue(gemId, out int count) ? Mathf.Max(0, count) : 0;

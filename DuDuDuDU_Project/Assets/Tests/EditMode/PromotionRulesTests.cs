@@ -160,6 +160,97 @@ namespace OJ.Core.Tests
             Assert.IsTrue(PromotionRules.AllMissionsMet(progress, Tornado, 3));
         }
 
+        // ── 미션 A (보유형, T3 전용) ───────────────────────────────────
+
+        [Test]
+        public void OnlyRareAndKingHaveAnOwnedMissionAtTierThree()
+        {
+            for (int slot = 0; slot < PromotionRules.SlotCount; slot++)
+            {
+                bool basic = slot < 5;
+                for (int tier = 1; tier <= 3; tier++)
+                {
+                    PromotionOwned kind = PromotionRules.AssignedOwned(slot, tier);
+                    bool expected = !basic && tier == 3;
+                    Assert.AreEqual(expected, kind != PromotionOwned.None, "slot " + slot + " T" + tier);
+                    if (expected)
+                        Assert.Greater(PromotionRules.OwnedRequirement(kind), 0, "slot " + slot);
+                }
+            }
+        }
+
+        [Test]
+        public void OwnedAssignmentsAreSpreadAcrossAxes()
+        {
+            // 장비 3 / 유물 4 / 보석 3 — 한 축으로 몰리면 그 축만 키운 유저가 전부 통과한다.
+            int equipment = 0, relic = 0, gem = 0;
+            for (int slot = 5; slot < PromotionRules.SlotCount; slot++)
+            {
+                switch (PromotionRules.AssignedOwned(slot, 3))
+                {
+                    case PromotionOwned.EquipmentLevels: equipment++; break;
+                    case PromotionOwned.RelicLevels: relic++; break;
+                    case PromotionOwned.GemScore: gem++; break;
+                }
+            }
+
+            Assert.AreEqual(3, equipment);
+            Assert.AreEqual(4, relic);
+            Assert.AreEqual(3, gem);
+        }
+
+        [Test]
+        public void OwnedThresholdsMatchPlan()
+        {
+            Assert.AreEqual(63, PromotionRules.OwnedRequirement(PromotionOwned.EquipmentLevels));
+            Assert.AreEqual(13, PromotionRules.OwnedRequirement(PromotionOwned.RelicLevels));
+            Assert.AreEqual(64, PromotionRules.OwnedRequirement(PromotionOwned.GemScore));
+            Assert.AreEqual(0, PromotionRules.OwnedRequirement(PromotionOwned.None));
+        }
+
+        [Test]
+        public void OwnedMetReadsOnlyTheAssignedAxis()
+        {
+            const int Tornado = 5;   // 장비 레벨 합
+            Assert.IsFalse(PromotionRules.OwnedMet(Tornado, 3, 62, 999, 999));
+            Assert.IsTrue(PromotionRules.OwnedMet(Tornado, 3, 63, 0, 0));
+
+            const int Stun = 6;      // 유물 레벨 합
+            Assert.IsFalse(PromotionRules.OwnedMet(Stun, 3, 999, 12, 999));
+            Assert.IsTrue(PromotionRules.OwnedMet(Stun, 3, 0, 13, 0));
+
+            const int ArmorBreak = 7; // 보석 점수
+            Assert.IsFalse(PromotionRules.OwnedMet(ArmorBreak, 3, 999, 999, 63));
+            Assert.IsTrue(PromotionRules.OwnedMet(ArmorBreak, 3, 0, 0, 64));
+        }
+
+        [Test]
+        public void OwnedMissionIsNotRequiredBeforeTierThree()
+        {
+            Assert.IsTrue(PromotionRules.OwnedMet(5, 1, 0, 0, 0));
+            Assert.IsTrue(PromotionRules.OwnedMet(5, 2, 0, 0, 0));
+            Assert.IsTrue(PromotionRules.OwnedMet(1, 1, 0, 0, 0));   // 기본 다이스
+        }
+
+        [TestCase(0, 0)]    // Uncommon
+        [TestCase(1, 1)]    // Common
+        [TestCase(2, 4)]    // Normal
+        [TestCase(3, 16)]   // Rare
+        [TestCase(4, 64)]   // Epic
+        [TestCase(5, 256)]  // Mythic
+        public void GemPointsQuadruplePerRarity(int rarity, int expected)
+        {
+            Assert.AreEqual(expected, PromotionRules.GemPoints(rarity));
+        }
+
+        [Test]
+        public void MergingGemsKeepsTheScore()
+        {
+            // 합성은 4개 → 1개. 점수가 줄면 합성할수록 A 에서 멀어진다.
+            Assert.AreEqual(4 * PromotionRules.GemPoints(1), PromotionRules.GemPoints(2));
+            Assert.AreEqual(4 * PromotionRules.GemPoints(3), PromotionRules.GemPoints(4));
+        }
+
         [Test]
         public void RegisterNeedsTheTierLevel()
         {
