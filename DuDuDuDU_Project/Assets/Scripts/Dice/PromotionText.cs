@@ -123,7 +123,7 @@ namespace OJ.Dice
                 case PromotionMission.StageChallenges: return "스테이지 도전";
                 case PromotionMission.MonsterKills: return "몬스터 처치";
                 case PromotionMission.BossKills: return "보스 처치";
-                case PromotionMission.EventCurrency: return "이벤트 재화 투입";
+                case PromotionMission.EventCurrency: return "이벤트 재화 소모";
                 default: return mission.ToString();
             }
         }

@@ -317,16 +317,6 @@ namespace OJ.Core.Tests
             Assert.AreEqual(TimeSpan.Zero, PromotionRules.ReplaceLockRemaining(0, 24 * Hour));
         }
 
-        [Test]
-        public void EventCurrencyIsCappedByRemainingNeedAndHeld()
-        {
-            Assert.AreEqual(300, PromotionRules.AcceptableEventCurrency(700, 1000, 5000, 5000));
-            Assert.AreEqual(40, PromotionRules.AcceptableEventCurrency(0, 1000, 40, 5000));
-            Assert.AreEqual(10, PromotionRules.AcceptableEventCurrency(0, 1000, 5000, 10));
-            Assert.AreEqual(0, PromotionRules.AcceptableEventCurrency(1000, 1000, 5000, 5000));
-            Assert.AreEqual(0, PromotionRules.AcceptableEventCurrency(0, 0, 5000, 5000));
-        }
-
         [TestCase(0, 0)]
         [TestCase(2, 0)]
         [TestCase(3, 1)]

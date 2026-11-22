@@ -31,8 +31,9 @@ namespace OJ.Core
         BossKills,
 
         /// <summary>
-        /// 이벤트 재화 투입(미션 B). <b>열린 이벤트의 재화만 인정한다.</b>
-        /// 다른 미션과 달리 행동이 아니라 유저가 직접 넣는 것이라 <c>Notify</c> 가 아니라 투입 경로로만 오른다.
+        /// 이벤트 재화 소모(미션 B). <b>열린 이벤트의 재화만 인정한다.</b>
+        /// 이벤트 미니게임이 재화를 쓴 만큼 오른다. 다른 미션처럼 <c>Notify</c> 로 세지 않고 전용 경로
+        /// (<c>PromotionManager.NotifyEventCurrencySpent</c>)로만 오른다 — 열린 이벤트인지 날짜로 따져야 해서다.
         /// </summary>
         EventCurrency,
     }
@@ -418,23 +419,6 @@ namespace OJ.Core
                 return System.TimeSpan.Zero;
 
             return System.TimeSpan.FromHours(ReplaceLockHours) - System.TimeSpan.FromTicks(nowUtcTicks - registeredUtcTicks);
-        }
-
-        /// <summary>
-        /// 이벤트 재화 투입량. 부른 양·가진 양·남은 요구량 중 가장 작은 값이다.
-        /// 요구량을 넘겨 넣어 재화를 버리는 일이 없다.
-        /// </summary>
-        public static int AcceptableEventCurrency(int progress, int requirement, int held, int offered)
-        {
-            if (requirement <= 0 || held <= 0 || offered <= 0)
-                return 0;
-
-            int remaining = requirement - Clamp(progress, requirement);
-            if (remaining <= 0)
-                return 0;
-
-            int amount = offered < held ? offered : held;
-            return amount < remaining ? amount : remaining;
         }
 
         /// <summary>
