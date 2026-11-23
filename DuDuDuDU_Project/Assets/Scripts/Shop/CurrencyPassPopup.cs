@@ -54,7 +54,7 @@ namespace OJ.Shop
                 case ContentPass.DiceGrowth: return "다이스 성장 재화";
                 case ContentPass.Synergy: return "시너지 재화";
                 case ContentPass.Relic: return "유물 재화";
-                default: return "보석 뽑기권";
+                default: return "보석 상자 열쇠";
             }
         }
 

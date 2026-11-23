@@ -47,6 +47,29 @@ namespace OJ.Pinball
         [SerializeField] private TMP_Text sessionText;
         [SerializeField] private TMP_Text gaugeText;
 
+        [Header("아트 — 시안의 HUD")]
+        [Tooltip("상단 재화 칩. 칩마다 종류와 글자를 꽂는다.")]
+        [SerializeField] private List<CurrencyChip> currencyChips = new List<CurrencyChip>();
+
+        [Tooltip("하트 안의 숫자. 지금 열린 배율 단계(1~)가 찍힌다.")]
+        [SerializeField] private TMP_Text levelText;
+
+        [Tooltip("다음 배율 단계까지 보유 티켓이 얼마나 찼는지. Filled 이미지.")]
+        [SerializeField] private Image levelGaugeFill;
+
+        [SerializeField] private TMP_Text levelGaugeText;
+
+        [Tooltip("발사 버튼 아래의 초록 막대. 보유 티켓이 한 발 값을 채웠는지 보여 준다.")]
+        [SerializeField] private Image ticketGaugeFill;
+
+        [SerializeField] private TMP_Text ticketGaugeText;
+
+        [Tooltip("특수 핀의 링·막대 장식. 비어 있으면 글자만 갱신한다.")]
+        [SerializeField] private List<SpecialSkin> specialSkins = new List<SpecialSkin>();
+
+        [Tooltip("발사 버튼이 잠겼을 때 입힐 색. 시안에 잠긴 그림이 없어 색으로 대신한다.")]
+        [SerializeField] private Color launchDisabledTint = new Color(0.45f, 0.45f, 0.5f, 1f);
+
         [Header("보상 라운드 — 휴릭 전환")]
         [Tooltip("양면을 다 가진 부모. 이것을 Y축으로 돌려 판을 뒤집는다.")]
         [SerializeField] private RectTransform boardPivot;
@@ -74,6 +97,9 @@ namespace OJ.Pinball
         [SerializeField] private float flipDuration = 0.55f;
 
         [Header("연출")]
+        [Tooltip("쏠 때 스프링이 눌렸다 튕기고 공이 나오는 자리에 불꽃이 인다. 비어 있으면 이 연출만 빠진다.")]
+        [SerializeField] private PinballSpringLauncher springLauncher;
+
         [Tooltip("드랍 연출이 떠오르는 높이(px).")]
         [SerializeField] private float dropRise = 90f;
 
@@ -95,7 +121,12 @@ namespace OJ.Pinball
         // 보상 아이콘 크기. 예전에는 44~52 였는데 <b>판 위에서 무엇이 걸렸는지 안 보였다</b> —
         // 핀볼은 "저 칸에 뭐가 있나"를 보고 쏘는 게임이라 아이콘이 안 읽히면 조준이 무의미해진다.
         private const float SpecialIconSize = 68f;
+        private const float SpecialRowIconSize = 44f;
+        private const float SpecialRowGap = 6f;
+        private const float SpecialRowMaxTextWidth = 150f;
+        private const float SpecialAmountFontSize = 28f;
         private const float SlotIconSize = 80f;
+        private const float SlotAmountFontSize = 35f;
         private const float DropFxIconSize = 64f;
 
         /// <summary>배율 버튼 하나.</summary>
@@ -113,6 +144,48 @@ namespace OJ.Pinball
 
             [Tooltip("선택 중임을 보여줄 테두리·체크 등. 비워도 된다.")]
             public GameObject selectedMark;
+        }
+
+        /// <summary>상단 재화 칩 하나. 값은 <c>PointManager</c> 가 정본이다.</summary>
+        [System.Serializable]
+        public sealed class CurrencyChip
+        {
+            public PointType pointType;
+            public TMP_Text text;
+
+            [Tooltip("칩 왼쪽의 재화 아이콘. 그림은 재화 표(PointMetadataDatabase)에서 가져온다. 비워도 된다.")]
+            public Image icon;
+        }
+
+        /// <summary>센터핀 상자 둘레의 막대 하나. 게이지가 <see cref="percent"/> 를 넘으면 켜진 그림으로 바뀐다.</summary>
+        [System.Serializable]
+        public sealed class ChestBar
+        {
+            public Image image;
+            public Sprite normalSprite;
+            public Sprite litSprite;
+            [Range(1, 100)] public int percent = 25;
+        }
+
+        /// <summary>
+        /// 특수 핀 하나의 게이지 장식. 같은 태그의 핀마다 하나씩 둔다.
+        /// 링 채움은 게이지 비율을, 막대는 임계 비율을 넘었는지를 보여 준다.
+        /// </summary>
+        [System.Serializable]
+        public sealed class SpecialSkin
+        {
+            [Tooltip("boardView.pegs 의 인덱스.")]
+            public int pegIndex;
+
+            public int tag;
+            public Image ringFill;
+            public List<ChestBar> bars = new List<ChestBar>();
+
+            [Tooltip("핀 중심에서 게이지 글자까지 화면 px(위가 +).")]
+            public float gaugeLabelY = -90f;
+
+            [Tooltip("핀 중심에서 보상 줄(아이콘+수량)까지 화면 px(위가 +).")]
+            public float rewardRowY = -130f;
         }
 
         /// <summary>다음 세션에 쓸 배율. 세션이 열리면 <see cref="sessionMultiplier"/> 로 굳는다.</summary>
@@ -135,6 +208,9 @@ namespace OJ.Pinball
 
         private RectTransform slotLabelRoot;
         private RectTransform fxRoot;
+
+        /// <summary>판의 가로세로 배율을 되돌리는 값. 판 배율이 1 이면 (1,1,1).</summary>
+        private Vector3 boardCounterScale = Vector3.one;
         private bool labelsBuilt;
         private bool closing;
 
@@ -179,7 +255,7 @@ namespace OJ.Pinball
         {
             // 핀볼 발수가 모자랄 때 바로 살 수 있는 "충전" 버튼(발사 버튼 오른쪽). 하루 한도는 재화 상점과 같은 키로 센다.
             OJ.Shop.CurrencyPassPopup.AttachBeside(
-                launchButton, OJ.Shop.ContentPass.Pinball, ticketText != null ? ticketText.font : null,
+                launchButton, OJ.Shop.ContentPass.Pinball, FontSource(),
                 new Vector2(210f, 110f));
 
             // 발사는 onClick 이 아니라 꾹 누르기로 받는다 — 누르는 순간 한 발, 누르고 있으면 0.2초마다 한 발.
@@ -265,6 +341,7 @@ namespace OJ.Pinball
             if (Manager != null)
                 Manager.OnGaugeChanged += RefreshGauge;
 
+            boardView?.ResetPegLights();
             BuildSlotLabels();
             ClampSelectedMultiplier();
             Refresh();
@@ -408,10 +485,16 @@ namespace OJ.Pinball
             if (granted == null)
                 return;
 
+            // 새 세션의 첫 공이다. 지난 세션에서 맞아 불이 들어온 핀을 끈다 — 공이 아직 안 나갔으니 지금이 안전하다.
+            if (!SessionOpen)
+                boardView?.ResetPegLights();
+
             // 시드 풀이 비면 -1 이고 아무것도 발사되지 않는다. 지급은 이미 끝났으므로
             // 유저가 손해 보지는 않지만, 공이 안 보이는 것은 사고라 로그를 남긴다.
             if (playback.PlayForSlot(slot) < 0)
                 Debug.LogError("[핀볼] " + slot + "번 칸의 궤적을 재생하지 못했다. 지급은 끝났다.");
+            else
+                springLauncher?.Fire();
 
             if (!SessionOpen)
             {
@@ -541,7 +624,10 @@ namespace OJ.Pinball
         private void HandlePointChanged(PointType pointType, int amount)
         {
             if (pointType != PointType.PinballTicket)
+            {
+                RefreshChips();
                 return;
+            }
 
             ClampSelectedMultiplier();
             Refresh();
@@ -838,6 +924,14 @@ namespace OJ.Pinball
             if (manager == null || boardView == null)
                 return;
 
+            // 판이 가로세로 다른 비율로 늘어나 있으면(아트 판) 글자와 아이콘이 찌그러진다.
+            // 라벨 묶음(holder)에 역배율을 걸어 그 안의 단위를 화면 px 로 되돌린다.
+            Vector3 boardScale = boardView.transform.localScale;
+            boardCounterScale = new Vector3(
+                Mathf.Abs(boardScale.x) > 0.0001f ? 1f / boardScale.x : 1f,
+                Mathf.Abs(boardScale.y) > 0.0001f ? 1f / boardScale.y : 1f,
+                1f);
+
             slotLabelRoot = NewChild("SlotRewards", boardView.transform);
 
             int count = manager.SlotCount;
@@ -891,21 +985,59 @@ namespace OJ.Pinball
         private void BuildOneSpecialLabel(
             RectTransform root, int pegIndex, int tag, PinballSpecialReward rule)
         {
-            RectTransform holder = NewChild("Peg_" + pegIndex + "_Tag" + tag, root);
+            RectTransform holder = NewHolder("Peg_" + pegIndex + "_Tag" + tag, root);
             holder.anchoredPosition = PegAnchored(pegIndex);
 
-            // 핀 반지름이 30px 안팎이라 그 위로 올려야 핀을 가리지 않는다.
+            SpecialSkin skin = FindSkin(pegIndex);
             bool hasReward = rule.rewards != null && rule.rewards.Count > 0;
+
+            if (skin != null)
+            {
+                // 아트 판: 링·상자 아래에 게이지 글자, 그 아래에 보상 줄(아이콘+수량).
+                // 위쪽은 링 안의 별·달과 판 테두리가 차지한다.
+                if (hasReward)
+                {
+                    string rewardText = BuildSpecialRewardText(rule);
+                    int extraLines = CountLines(rewardText);
+
+                    Sprite icon = PointRewardUtility.GetPointIcon(rule.rewards[0].pointType);
+                    float rowY = skin.rewardRowY - extraLines * 11f;
+
+                    // 아이콘+글자를 한 덩어리로 핀 가운데에 맞춘다. 글자가 짧으면(수량 하나) 아이콘 곁에 붙는다.
+                    TMP_Text amount = NewLabel("Amount", holder, rewardText, SpecialAmountFontSize);
+                    float textWidth = Mathf.Min(SpecialRowMaxTextWidth, amount.GetPreferredValues(rewardText).x);
+                    float iconWidth = icon != null ? SpecialRowIconSize + SpecialRowGap : 0f;
+                    float left = -(iconWidth + textWidth) * 0.5f;
+
+                    amount.rectTransform.sizeDelta = new Vector2(textWidth, 40f + extraLines * 34f);
+                    amount.rectTransform.anchoredPosition = new Vector2(left + iconWidth + textWidth * 0.5f, rowY);
+
+                    if (icon != null)
+                    {
+                        RectTransform iconRect = NewChild("Icon", holder);
+                        var image = iconRect.gameObject.AddComponent<Image>();
+                        image.sprite = icon;
+                        image.raycastTarget = false;
+                        image.preserveAspect = true;
+                        iconRect.sizeDelta = new Vector2(SpecialRowIconSize, SpecialRowIconSize);
+                        iconRect.anchoredPosition = new Vector2(left + SpecialRowIconSize * 0.5f, rowY);
+                    }
+                }
+
+                TMP_Text skinGauge = NewLabel("Gauge", holder, string.Empty, GaugeFontSize);
+                skinGauge.color = GaugeColor;
+                skinGauge.rectTransform.sizeDelta = new Vector2(160f, 40f);
+                skinGauge.rectTransform.anchoredPosition = new Vector2(0f, skin.gaugeLabelY);
+                RegisterGaugeLabel(tag, skinGauge);
+                return;
+            }
+
+            // 핀 반지름이 30px 안팎이라 그 위로 올려야 핀을 가리지 않는다.
             if (hasReward)
             {
                 // 보상 글자가 여러 줄(랜덤 1종 핀의 확률 표기)이면 게이지와 아이콘을 안 가리게 위로 민다.
                 string rewardText = BuildSpecialRewardText(rule);
-                int extraLines = 0;
-                for (int c = 0; c < rewardText.Length; c++)
-                {
-                    if (rewardText[c] == '\n')
-                        extraLines++;
-                }
+                int extraLines = CountLines(rewardText);
 
                 Sprite icon = PointRewardUtility.GetPointIcon(rule.rewards[0].pointType);
                 if (icon != null)
@@ -929,6 +1061,34 @@ namespace OJ.Pinball
             gauge.color = GaugeColor;
             gauge.rectTransform.sizeDelta = new Vector2(140f, 40f);
             gauge.rectTransform.anchoredPosition = new Vector2(0f, hasReward ? 20f : 48f);
+            RegisterGaugeLabel(tag, gauge);
+        }
+
+        private SpecialSkin FindSkin(int pegIndex)
+        {
+            for (int i = 0; i < specialSkins.Count; i++)
+            {
+                if (specialSkins[i] != null && specialSkins[i].pegIndex == pegIndex)
+                    return specialSkins[i];
+            }
+
+            return null;
+        }
+
+        private static int CountLines(string text)
+        {
+            int extra = 0;
+            for (int c = 0; c < text.Length; c++)
+            {
+                if (text[c] == '\n')
+                    extra++;
+            }
+
+            return extra;
+        }
+
+        private void RegisterGaugeLabel(int tag, TMP_Text gauge)
+        {
 
             if (!specialGaugeLabels.TryGetValue(tag, out List<TMP_Text> labels))
             {
@@ -1023,7 +1183,7 @@ namespace OJ.Pinball
             if (rewards == null || rewards.Count == 0)
                 return;
 
-            RectTransform holder = NewChild("Slot_" + slot, slotLabelRoot);
+            RectTransform holder = NewHolder("Slot_" + slot, slotLabelRoot);
             holder.anchoredPosition = SlotAnchored(slot);
 
             // 경품이 둘 이상이면 한 줄에 하나씩(작은 아이콘 + 수량, 확률이 있으면 "·24%").
@@ -1043,12 +1203,12 @@ namespace OJ.Pinball
                 image.raycastTarget = false;
                 image.preserveAspect = true;
                 iconRect.sizeDelta = new Vector2(SlotIconSize, SlotIconSize);
-                iconRect.anchoredPosition = new Vector2(0f, 36f);
+                iconRect.anchoredPosition = new Vector2(0f, 24f);
             }
 
-            TMP_Text amount = NewLabel("Amount", holder, BuildSlotText(rewards), 30f);
-            amount.rectTransform.sizeDelta = new Vector2(150f, 60f);
-            amount.rectTransform.anchoredPosition = new Vector2(0f, icon != null ? -34f : 0f);
+            TMP_Text amount = NewLabel("Amount", holder, BuildSlotText(rewards), SlotAmountFontSize);
+            amount.rectTransform.sizeDelta = new Vector2(124f, 60f);
+            amount.rectTransform.anchoredPosition = new Vector2(0f, icon != null ? -48f : 0f);
         }
 
         private const float SlotRowHeight = 44f;
@@ -1146,7 +1306,7 @@ namespace OJ.Pinball
                 fx.label.text = "+" + rewards[i].Amount.ToString("N0");
 
                 // 같은 자리에서 여러 개가 겹치지 않게 조금씩 벌린다.
-                fx.origin = anchored + new Vector2(0f, i * 34f);
+                fx.origin = anchored + new Vector2(0f, i * 34f * boardCounterScale.y);
                 fx.clock = 0f;
                 fx.root.anchoredPosition = fx.origin;
                 fx.group.alpha = 1f;
@@ -1158,7 +1318,7 @@ namespace OJ.Pinball
 
         private DropFx CreateFx()
         {
-            RectTransform root = NewChild("Fx", fxRoot);
+            RectTransform root = NewHolder("Fx", fxRoot);
 
             var fx = new DropFx
             {
@@ -1199,7 +1359,7 @@ namespace OJ.Pinball
                 fx.clock += Time.deltaTime;
 
                 float t = Mathf.Clamp01(fx.clock / duration);
-                fx.root.anchoredPosition = fx.origin + new Vector2(0f, dropRise * t);
+                fx.root.anchoredPosition = fx.origin + new Vector2(0f, dropRise * t * boardCounterScale.y);
 
                 // 처음 20% 는 또렷하게 두고 그 뒤로 사라진다. 바로 흐려지면 뭘 받았는지 못 읽는다.
                 fx.group.alpha = t < 0.2f ? 1f : 1f - Mathf.InverseLerp(0.2f, 1f, t);
@@ -1249,6 +1409,9 @@ namespace OJ.Pinball
 
             RefreshLaunchButton(manager, multiplier);
             RefreshMultiplierButtons(manager, multiplier);
+            RefreshChips();
+            RefreshLevelGauge(manager);
+            RefreshTicketGauge(manager, multiplier);
 
             // 세션 중에는 나갈 수 없다. 지급은 이미 끝났지만 연출은 끝까지 보여준다.
             if (closeButton != null)
@@ -1268,8 +1431,91 @@ namespace OJ.Pinball
 
             // 굴러가는 공이 있어도 잠그지 않는다 — 세션을 이어 가는 것이 이 컨텐츠의 재미다.
             // 잠기는 것은 셋뿐: 결과 대기 중, 세션 발사 수를 다 씀, 티켓 부족.
-            launchButton.interactable =
-                manager != null && !awaitingResult && !sessionFull && manager.CanShoot(multiplier);
+            bool canShoot = manager != null && !awaitingResult && !sessionFull && manager.CanShoot(multiplier);
+            launchButton.interactable = canShoot;
+
+            // 시안에 잠긴 버튼 그림이 없다. SpriteSwap 은 비활성 그림이 비면 평소 그림을 그대로 보여 주므로 색으로 구별한다.
+            if (launchButton.targetGraphic != null)
+                launchButton.targetGraphic.color = canShoot ? Color.white : launchDisabledTint;
+        }
+
+        private void RefreshChips()
+        {
+            PointManager points = PointManager.Instance;
+            if (points == null)
+                return;
+
+            for (int i = 0; i < currencyChips.Count; i++)
+            {
+                CurrencyChip chip = currencyChips[i];
+                if (chip == null)
+                    continue;
+
+                if (chip.text != null)
+                    chip.text.text = points.Get(chip.pointType).ToString("N0");
+
+                if (chip.icon != null && chip.icon.sprite == null)
+                    chip.icon.sprite = PointRewardUtility.GetPointIcon(chip.pointType);
+            }
+        }
+
+        /// <summary>
+        /// 열린 배율 단계(하트 숫자)와, 다음 단계까지 보유 티켓이 얼마나 찼는지(막대).
+        /// 배율은 티켓을 쓰는 게 아니라 <b>들고 있는 양</b>으로 열리므로 이 막대가 곧 "다음 배율까지"다.
+        /// </summary>
+        private void RefreshLevelGauge(PinballManager manager)
+        {
+            if (levelText == null && levelGaugeFill == null && levelGaugeText == null)
+                return;
+
+            int level = 1;
+            int nextRequired = 0;
+            int tickets = manager != null ? manager.TicketCount : 0;
+
+            IReadOnlyList<PinballMultiplierTier> tiers = manager != null ? manager.MultiplierTiers : null;
+            if (tiers != null)
+            {
+                level = 0;
+                for (int i = 0; i < tiers.Count; i++)
+                {
+                    PinballMultiplierTier tier = tiers[i];
+                    if (tier == null)
+                        continue;
+
+                    if (manager.IsMultiplierUnlocked(tier.multiplier))
+                        level++;
+                    else if (nextRequired <= 0)
+                        nextRequired = manager.RequiredTicketsFor(tier.multiplier);
+                }
+
+                level = Mathf.Max(1, level);
+            }
+
+            if (levelText != null)
+                levelText.text = level.ToString();
+
+            if (levelGaugeFill != null)
+                levelGaugeFill.fillAmount = nextRequired > 0 ? Mathf.Clamp01(tickets / (float)nextRequired) : 1f;
+
+            if (levelGaugeText != null)
+            {
+                levelGaugeText.text = nextRequired > 0
+                    ? tickets.ToString("N0") + "/" + nextRequired.ToString("N0")
+                    : "MAX";
+            }
+        }
+
+        /// <summary>발사 버튼 아래 막대. 보유 티켓이 이번 한 발 값을 채웠으면 가득 찬다.</summary>
+        private void RefreshTicketGauge(PinballManager manager, int multiplier)
+        {
+            int tickets = manager != null ? manager.TicketCount : 0;
+            int cost = manager != null ? Mathf.Max(1, manager.ShotCost(multiplier)) : 1;
+
+            if (ticketGaugeFill != null)
+                ticketGaugeFill.fillAmount = Mathf.Clamp01(tickets / (float)cost);
+
+            if (ticketGaugeText != null)
+                ticketGaugeText.text = tickets.ToString("N0") + "/" + cost.ToString("N0");
         }
 
         private void RefreshMultiplierButtons(PinballManager manager, int activeMultiplier)
@@ -1354,6 +1600,8 @@ namespace OJ.Pinball
         /// <summary>핀 위에 붙은 누적 카운트.</summary>
         private void RefreshGaugeOnPegs(PinballManager manager)
         {
+            RefreshSkins(manager);
+
             if (manager == null || specialGaugeLabels.Count == 0)
                 return;
 
@@ -1385,7 +1633,45 @@ namespace OJ.Pinball
             }
         }
 
+        /// <summary>링 채움과 상자 막대를 게이지 비율에 맞춘다.</summary>
+        private void RefreshSkins(PinballManager manager)
+        {
+            for (int i = 0; i < specialSkins.Count; i++)
+            {
+                SpecialSkin skin = specialSkins[i];
+                if (skin == null)
+                    continue;
+
+                PinballSpecialReward rule = manager != null ? manager.GetSpecialReward(skin.tag) : null;
+                float ratio = 0f;
+                if (rule != null && rule.requiredHits > 0)
+                    ratio = Mathf.Clamp01(manager.GetGauge(skin.tag) / (float)rule.requiredHits);
+
+                if (skin.ringFill != null)
+                    skin.ringFill.fillAmount = ratio;
+
+                int percent = Mathf.RoundToInt(ratio * 100f);
+                for (int b = 0; b < skin.bars.Count; b++)
+                {
+                    ChestBar bar = skin.bars[b];
+                    if (bar == null || bar.image == null)
+                        continue;
+
+                    bool lit = percent >= bar.percent && bar.litSprite != null;
+                    bar.image.sprite = lit ? bar.litSprite : bar.normalSprite;
+                }
+            }
+        }
+
         // ──────────────────────────────────────────────── 조립 헬퍼
+
+        /// <summary>판 배율을 되돌린 묶음. 자식의 좌표·크기는 화면 px 로 쓴다.</summary>
+        private RectTransform NewHolder(string name, Transform parent)
+        {
+            RectTransform rect = NewChild(name, parent);
+            rect.localScale = boardCounterScale;
+            return rect;
+        }
 
         private static RectTransform NewChild(string name, Transform parent)
         {
@@ -1417,10 +1703,24 @@ namespace OJ.Pinball
             label.raycastTarget = false;
             label.color = Color.white;
 
-            if (gaugeText != null && gaugeText.font != null)
-                label.font = gaugeText.font;
+            TMP_FontAsset font = FontSource();
+            if (font != null)
+                label.font = font;
 
             return label;
+        }
+
+        /// <summary>이 화면이 이미 쓰는 글자 하나에서 폰트를 빌린다. 아트 판은 요약 글자(gaugeText)를 두지 않는다.</summary>
+        private TMP_FontAsset FontSource()
+        {
+            TMP_Text[] candidates = { gaugeText, levelGaugeText, ticketGaugeText, ticketText, levelText, costText };
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                if (candidates[i] != null && candidates[i].font != null)
+                    return candidates[i].font;
+            }
+
+            return null;
         }
     }
 }

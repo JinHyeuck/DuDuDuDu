@@ -581,8 +581,8 @@ namespace OJ.Tower
                 case PointType.PaidGem: return "유료젬";
                 case PointType.MythicStone: return "신화석";
                 case PointType.RareStone: return "레어석";
-                case PointType.NormalGemTicket: return "일반 보석 뽑기권";
-                case PointType.PremiumGemTicket: return "최고급 보석 뽑기권";
+                case PointType.NormalGemTicket: return "일반 보석 상자 열쇠";
+                case PointType.PremiumGemTicket: return "최고급 보석 상자 열쇠";
                 case PointType.KingNormalCopy: return "King Normal 카피";
                 case PointType.KingFireCopy: return "King Fire 카피";
                 case PointType.KingIceCopy: return "King Ice 카피";

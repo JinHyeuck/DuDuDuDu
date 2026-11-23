@@ -35,13 +35,28 @@ namespace Pinball
         public float pegPunchScale = 1.35f;
         public float pegPunchDuration = 0.18f;
 
+        [Tooltip("공이 맞힌 일반 핀에 입힐 스프라이트. 비우면 번쩍임만 있다. 특수 핀(specialTag != 0)은 바꾸지 않는다.")]
+        public Sprite pegLitSprite;
+
+        [Tooltip("켜면 갓 발사된 공을 launchRevealY 까지 오를 때까지 숨긴다. 발사대 그림 속에서 튀어나오는 것처럼 보인다.")]
+        public bool concealLaunch;
+
+        [Tooltip("숨겼던 공이 나타나는 보드 y(유닛). 공의 중심이 이 높이에 닿는 순간 BallRevealed 가 울린다.")]
+        public float launchRevealY;
+
+        /// <summary>숨겨 둔 공이 발사대 윗면에 나타나는 순간. 불꽃 같은 연출을 붙이는 자리다.</summary>
+        public event System.Action BallRevealed;
+
         private float[] _punchTimer;
         private Vector3[] _pegBaseScale;
         private Graphic[] _pegGraphic;
         private Color[] _pegBaseColor;
+        private Image[] _pegLitImage;
+        private Sprite[] _pegBaseSprite;
 
         private readonly Stack<RectTransform> _ballPool = new Stack<RectTransform>();
         private readonly List<RectTransform> _ballsInUse = new List<RectTransform>();
+        private readonly HashSet<RectTransform> _concealed = new HashSet<RectTransform>();
 
         private void Awake()
         {
@@ -60,6 +75,8 @@ namespace Pinball
             _pegBaseScale = new Vector3[pegs.Length];
             _pegGraphic = new Graphic[pegs.Length];
             _pegBaseColor = new Color[pegs.Length];
+            _pegLitImage = new Image[pegs.Length];
+            _pegBaseSprite = new Sprite[pegs.Length];
 
             for (int i = 0; i < pegs.Length; i++)
             {
@@ -68,6 +85,14 @@ namespace Pinball
                 _pegGraphic[i] = pegs[i].GetComponent<Graphic>();
                 if (_pegGraphic[i] != null) _pegBaseColor[i] = _pegGraphic[i].color;
                 _punchTimer[i] = -1f;
+
+                bool special = board != null && board.pegs != null && i < board.pegs.Length &&
+                               board.pegs[i].specialTag != 0;
+                if (!special && _pegGraphic[i] is Image image)
+                {
+                    _pegLitImage[i] = image;
+                    _pegBaseSprite[i] = image.sprite;
+                }
             }
         }
 
@@ -88,6 +113,13 @@ namespace Pinball
             rt.gameObject.SetActive(true);
             rt.SetAsLastSibling();              // 항상 판 위에 보이도록
             _ballsInUse.Add(rt);
+
+            if (concealLaunch)
+            {
+                SetBallVisible(rt, false);
+                _concealed.Add(rt);
+            }
+
             return rt;
         }
 
@@ -95,13 +127,31 @@ namespace Pinball
         {
             if (rt == null) return;
             _ballsInUse.Remove(rt);
+            Unconceal(rt);
             rt.gameObject.SetActive(false);
             _ballPool.Push(rt);
         }
 
         public void SetBallPosition(RectTransform rt, Vector2 boardPos)
         {
-            if (rt != null) rt.anchoredPosition = BoardToAnchored(boardPos);
+            if (rt == null) return;
+            rt.anchoredPosition = BoardToAnchored(boardPos);
+
+            if (_concealed.Count > 0 && boardPos.y >= launchRevealY && Unconceal(rt))
+                BallRevealed?.Invoke();
+        }
+
+        private bool Unconceal(RectTransform rt)
+        {
+            if (!_concealed.Remove(rt)) return false;
+            SetBallVisible(rt, true);
+            return true;
+        }
+
+        private static void SetBallVisible(RectTransform rt, bool visible)
+        {
+            var graphic = rt.GetComponent<Graphic>();
+            if (graphic != null) graphic.enabled = visible;
         }
 
         /// <summary>굴러가던 구슬을 전부 회수한다. 씬 전환이나 강제 중단 시.</summary>
@@ -111,6 +161,7 @@ namespace Pinball
             {
                 var rt = _ballsInUse[i];
                 if (rt == null) continue;
+                Unconceal(rt);
                 rt.gameObject.SetActive(false);
                 _ballPool.Push(rt);
             }
@@ -122,12 +173,28 @@ namespace Pinball
         /// <param name="strength">0~1. HitEvent.impact 를 정규화해서 넘기면 세기가 반영된다.</param>
         public void PunchPeg(int index, float strength = 1f)
         {
-            if (!pegPunchEnabled || _punchTimer == null) return;
+            if (_punchTimer == null) return;
             if (index < 0 || index >= _punchTimer.Length) return;
+
+            if (pegLitSprite != null && _pegLitImage[index] != null)
+                _pegLitImage[index].sprite = pegLitSprite;
+
+            if (!pegPunchEnabled) return;
 
             // 여러 구슬이 같은 핀을 연달아 치면 더 센 쪽이 이긴다
             float t = pegPunchDuration * Mathf.Clamp(strength, 0.4f, 1f);
             if (t > _punchTimer[index]) _punchTimer[index] = t;
+        }
+
+        /// <summary>맞힌 핀의 불을 모두 끈다. 새 발사 묶음이 시작될 때 부른다.</summary>
+        public void ResetPegLights()
+        {
+            if (_pegLitImage == null) return;
+
+            for (int i = 0; i < _pegLitImage.Length; i++)
+            {
+                if (_pegLitImage[i] != null) _pegLitImage[i].sprite = _pegBaseSprite[i];
+            }
         }
 
         private void Update()

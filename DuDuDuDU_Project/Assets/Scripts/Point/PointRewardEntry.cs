@@ -95,6 +95,22 @@ namespace OJ.Point
             return metadata != null ? metadata.icon : null;
         }
 
+        /// <summary>재화 설명 한 줄. 에셋에 적힌 것이 전부이고, 비었거나 enum 이름 그대로면 빈 문자열.</summary>
+        public static string GetPointDescription(PointType pointType)
+        {
+            if (!StaticResource.isAlive || StaticResource.Instance == null || StaticResource.Instance.PointMetadataDatabase == null)
+                return string.Empty;
+
+            PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(pointType);
+            if (metadata == null || string.IsNullOrWhiteSpace(metadata.description) ||
+                metadata.description.Trim() == pointType.ToString())
+            {
+                return string.Empty;
+            }
+
+            return metadata.description.Trim();
+        }
+
         /// <summary>
         /// 화면에 적을 재화 이름.
         ///
@@ -165,8 +181,8 @@ namespace OJ.Point
                 case PointType.EventCurrency3: return "이벤트 재화 3";
                 case PointType.MythicStone: return "신화석";
                 case PointType.RareStone: return "레어석";
-                case PointType.NormalGemTicket: return "일반 보석 뽑기권";
-                case PointType.PremiumGemTicket: return "최고급 보석 뽑기권";
+                case PointType.NormalGemTicket: return "일반 보석 상자 열쇠";
+                case PointType.PremiumGemTicket: return "최고급 보석 상자 열쇠";
                 case PointType.WeaponScroll: return "무기 강화권";
                 case PointType.HelmetScroll: return "투구 강화권";
                 case PointType.ArmorScroll: return "갑옷 강화권";

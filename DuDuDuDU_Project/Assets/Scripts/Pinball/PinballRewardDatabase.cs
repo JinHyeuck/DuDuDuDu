@@ -200,23 +200,29 @@ namespace OJ.Pinball
         public const int EventCurrencyChancePercent = 18;
 
         /// <summary>
-        /// 중간 핀의 "몇 번 맞으면 보상이 나가는가". 기본판의 공 1발당 적중 횟수를 시뮬로 쟀다
-        /// (2026-11, 칸 확률 0.2475/0.2475/0.01/0.2475/0.2475 가중, 시드 6만 개):
-        /// 왼쪽 핀(1번) 0.221 / 오른쪽 핀(2번) 0.159 / 센터핀(3번) 0.446. 판이나 칸 확률을 바꾸면 다시 재서 고칠 것.
+        /// 중간 핀의 "몇 번 맞으면 보상이 나가는가". 공 1발당 적중 횟수를 시뮬로 쟀다
+        /// (2026-11, 아트 PSD 배치 + 아치 판 셋을 일반 벽으로 둘러 상자를 감싼 판. 칸 확률 0.2475/0.2475/0.01/0.2475/0.2475 로 칸을 뽑고
+        /// 그 칸의 <b>시드표 풀</b>에서 공을 뽑는다 — 실제 게임이 하는 그대로, 표본 20만 개):
+        /// 카피핀(1번) 0.370 / 뽑기권핀(2번) 0.369 / 대박핀(3번) 0.690. 판이나 칸 확률을 바꾸면 다시 재서 고칠 것.
+        /// 시드표는 재미있는 궤적을 골라 담아서 날것 궤적보다 특수 핀을 자주 맞힌다(날것으로 재면 대박핀 0.192). 장부는 실제 게임 기준으로 맞춘다.
         ///
         /// 5,000발 기준 완주 횟수 = 발당 적중 × 5,000 ÷ 필요 적중:
-        ///   1번  7회  → 158.1번 (완주마다 카피 1장: 레어·킹 17% / 기본 83% → 레어·킹 26.9장 + 기본 131.2장; 장부 27.5 / 140)
-        ///   2번 66회  → 12.0번 (일반 보석 뽑기권 12장; 장부 12)
-        ///   3번 223회 → 10.0번 (Bonus 입장 10회, 500발당 1회; 장부 10)
+        ///   1번  11회  → 168.2번 (완주마다 카피 1장: 레어·킹 17% / 기본 83% → 레어·킹 28.6장 + 기본 139.6장; 장부 27.5 / 140)
+        ///   2번 154회  → 12.0번 (일반 보석 뽑기권 12장; 장부 12)
+        ///   3번 345회  → 10.0번 (Bonus 입장 10회, 500발당 1회; 장부 10)
         ///
         /// 카피핀은 <b>자주 나오고 한 번에 1장</b>이다(예전엔 40회마다 1장+5장을 몰아 줬다 — 2026-11 사용자 결정).
         /// 무엇이 나올지는 확률이다(랜덤 1종 핀의 가중치).
+        ///
+        /// 3번 대박핀은 아치 판 셋(좌·우·아래)에 둘러싸여 맞히기 어렵다(공 한 발이 한 번이라도 맞힐 확률 약 25%).
+        /// 한 번 들어가면 틀 안에서 여러 번 튀기 때문에 맞힌 공은 평균 2.7번 맞힌다. 게이지는 34/67/100% 에서 판이 하나씩 켜진다.
+        /// 보너스 라운드의 입구는 이 핀 하나뿐이고 완주 보상도 그 라운드 하나다(확정 보상을 더 얹지 않는다 — 2026-11 사용자 결정).
         /// </summary>
-        public const int CopyPinRequiredHits = 7;
+        public const int CopyPinRequiredHits = 11;
         public const int CopyPinRareKingPercent = 17;
         public const int CopyPinBasicPercent = 83;
-        public const int GemTicketPinRequiredHits = 66;
-        public const int BonusPinRequiredHits = 223;
+        public const int GemTicketPinRequiredHits = 154;
+        public const int BonusPinRequiredHits = 345;
 
         public void PopulateDefaults()
         {
@@ -259,7 +265,7 @@ namespace OJ.Pinball
             // 중간 핀 셋 (기본판의 태그 1·2·3). 필요 적중 수는 위 상수의 시뮬 측정에서 왔다.
             //
             // 1번 핀 = 카피핀: 완주 한 번에 <b>카피 1장</b> — 랜덤 레어·킹 카피 17% / 랜덤 기본 카피 83%(랜덤 1종 핀, chancePercent 가 가중치).
-            //   5,000발에 158번 완주 → 레어·킹 26.9장(3,500원) + 기본 131.2장(700원) ≈ 18.6만 원.
+            //   5,000발에 170번 완주 → 레어·킹 29.0장(3,500원) + 기본 141.5장(700원) ≈ 20.1만 원.
             var copyPin = new PinballSpecialReward
             {
                 tag = 1, label = "카피핀", requiredHits = CopyPinRequiredHits, pickOneAtRandom = true,
@@ -277,11 +283,11 @@ namespace OJ.Pinball
             gemPin.rewards.Add(new PinballReward(PointType.NormalGemTicket, 1));
             specialRewards.Add(gemPin);
 
-            // 3번 핀 = 센터핀: 보상을 걸지 않는다 — 가득 차면 보너스 라운드가 열린다(BonusDiceDatabase.pinballTriggerTag).
-            //   5,000발에 10번(500발당 1회).
+            // 3번 핀 = 대박핀: 보상을 걸지 않는다 — 가득 차면 보너스 라운드가 열린다(BonusDiceDatabase.pinballTriggerTag).
+            //   5,000발에 10번(500발당 1회). 아치 판 셋이 둘러싼 상자 핀이라 맞히기 어렵고, 그래서 이 핀이 대박이다.
             specialRewards.Add(new PinballSpecialReward
             {
-                tag = 3, label = "센터핀", requiredHits = BonusPinRequiredHits, pickOneAtRandom = false,
+                tag = 3, label = "대박핀", requiredHits = BonusPinRequiredHits, pickOneAtRandom = false,
             });
         }
 

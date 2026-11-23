@@ -46,10 +46,16 @@ namespace OJ.SeasonPass
                    perLevel.ToString(CultureInfo.InvariantCulture);
         }
 
-        /// <summary>로비 버튼에 적는 한 줄. <c>Lv.3 · 8일 남음</c> 대신 쉼표를 쓴다(글꼴에 가운데점이 없다).</summary>
-        public static string LobbySummary(int level, TimeSpan remaining)
+        /// <summary>로비 버튼 왼쪽의 레벨. <c>Lv.3</c>.</summary>
+        public static string LevelLabel(int level)
         {
-            return "Lv." + level.ToString(CultureInfo.InvariantCulture) + ", " + Remaining(remaining) + " 남음";
+            return "Lv." + level.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>로비 버튼 오른쪽의 남은 시간. <c>25일 2시간 남음</c>.</summary>
+        public static string RemainingLabel(TimeSpan remaining)
+        {
+            return Remaining(remaining) + " 남음";
         }
     }
 }
