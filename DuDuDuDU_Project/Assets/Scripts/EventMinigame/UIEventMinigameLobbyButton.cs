@@ -62,7 +62,7 @@ namespace OJ.EventMinigame
             if (manager == null)
                 return;
 
-            DateTime now = DateTime.UtcNow;
+            DateTime now = EventMinigameClock.UtcNow;
             EventKind kind = manager.OpenKind(now);
 
             nameText.text = EventMinigameText.EventName(kind);
@@ -78,7 +78,7 @@ namespace OJ.EventMinigame
             if (manager == null || GameContainer.UI == null)
                 return;
 
-            DateTime now = DateTime.UtcNow;
+            DateTime now = EventMinigameClock.UtcNow;
             UIEventMinigameDialog dialog;
             switch (manager.OpenKind(now))
             {

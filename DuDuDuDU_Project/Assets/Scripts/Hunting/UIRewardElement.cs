@@ -32,6 +32,12 @@ namespace OJ.Hunting
         /// <summary>이미 가진 다이스를 그릴 때의 색. 흑백에 가깝게 눌러 "이건 못 받았다" 를 말한다.</summary>
         private static readonly Color DimmedColor = new Color(0.42f, 0.42f, 0.46f, 1f);
 
+        /// <summary>그림이 없는 재화의 바탕색. 이름 글자가 읽히는 어두운 판이다.</summary>
+        private static readonly Color MissingIconColor = new Color(0.16f, 0.17f, 0.26f, 1f);
+
+        /// <summary>그림이 없는 재화의 이름 글자. 처음 필요할 때 만든다.</summary>
+        private TMP_Text fallbackLabel;
+
         // ── 등장 연출 ────────────────────────────────────────────────
 
         /// <summary>튀어나오기 시작하는 배율.</summary>
@@ -64,6 +70,42 @@ namespace OJ.Hunting
         public void Bind(Sprite iconSprite, int amount)
         {
             Bind(iconSprite, amount, "{0:#,##0}");
+        }
+
+        /// <summary>
+        /// 재화 한 칸. <b>아이콘이 없는 재화</b>(핀볼 티켓·시너지 티켓은 아직 그림이 없다)는 흰 네모로 나오지 않게
+        /// <paramref name="fallbackName"/> 을 어두운 칸 위에 적는다. 그림이 등록되면 저절로 그림이 이긴다.
+        /// </summary>
+        public void Bind(Sprite iconSprite, int amount, string amountFormat, string fallbackName)
+        {
+            Bind(iconSprite, amount, amountFormat);
+
+            if (iconSprite != null || string.IsNullOrEmpty(fallbackName) || iconImage == null || amountText == null)
+                return;
+
+            iconImage.sprite = null;
+            iconImage.color = MissingIconColor;
+
+            if (fallbackLabel == null)
+            {
+                fallbackLabel = Instantiate(amountText, iconImage.transform);
+                fallbackLabel.name = "FallbackName";
+                fallbackLabel.raycastTarget = false;
+                fallbackLabel.alignment = TextAlignmentOptions.Center;
+                fallbackLabel.textWrappingMode = TextWrappingModes.Normal;
+                fallbackLabel.enableAutoSizing = true;
+                fallbackLabel.fontSizeMin = 14f;
+                fallbackLabel.fontSizeMax = 36f;
+
+                RectTransform rect = fallbackLabel.rectTransform;
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = new Vector2(6f, 6f);
+                rect.offsetMax = new Vector2(-6f, -6f);
+            }
+
+            fallbackLabel.gameObject.SetActive(true);
+            fallbackLabel.SetText(fallbackName);
         }
 
         /// <summary>재화 한 칸. 다이스로 쓰였던 칸이 재사용될 수 있어 <b>상태를 되돌린다.</b></summary>
@@ -254,6 +296,9 @@ namespace OJ.Hunting
 
             if (overlayIcon != null)
                 overlayIcon.gameObject.SetActive(false);
+
+            if (fallbackLabel != null)
+                fallbackLabel.gameObject.SetActive(false);
         }
     }
 }

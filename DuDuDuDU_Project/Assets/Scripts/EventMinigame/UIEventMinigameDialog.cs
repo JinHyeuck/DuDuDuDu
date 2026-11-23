@@ -35,7 +35,7 @@ namespace OJ.EventMinigame
 
         protected static DateTime UtcNow
         {
-            get { return DateTime.UtcNow; }
+            get { return EventMinigameClock.UtcNow; }
         }
 
         protected EventMinigameManager Manager
@@ -239,20 +239,26 @@ namespace OJ.EventMinigame
             listContent.anchoredPosition = position;
         }
 
-        /// <summary>지급 팝업. 비어 있으면 띄우지 않는다.</summary>
-        protected void ShowRewards(IReadOnlyList<PointRewardEntry> rewards, string message)
+        /// <summary>지급 팝업. 비어 있으면 띄우지 않고 <paramref name="onClose"/> 를 바로 부른다(닫힌 뒤에 이어 할 일이 있을 때).</summary>
+        protected void ShowRewards(IReadOnlyList<PointRewardEntry> rewards, string message, Action onClose = null)
         {
             if (rewards == null || rewards.Count == 0)
+            {
+                if (onClose != null)
+                    onClose();
                 return;
+            }
 
             UIRewardResultDialog dialog = GameContainer.UI != null ? GameContainer.UI.Get<UIRewardResultDialog>() : null;
             if (dialog == null)
             {
                 Debug.LogError("[이벤트] 보상 창을 열지 못했다. DialogCatalog 에 UIRewardResultDialog 가 등재됐는지 확인할 것.");
+                if (onClose != null)
+                    onClose();
                 return;
             }
 
-            dialog.Open(rewards, message);
+            dialog.Open(rewards, message, onClose);
         }
     }
 }
