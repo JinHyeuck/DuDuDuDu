@@ -26,9 +26,18 @@ namespace OJ.EventMinigame
         [SerializeField] private GameObject listRoot;
         [SerializeField] private RectTransform listContent;
         [SerializeField] private UIEventMilestoneRow rowTemplate;
+        [SerializeField] private Button rewardButton;
+        [SerializeField] private Button sheetCloseButton;
+
+        /// <summary>킷 버튼 그림 넷(주 행동 / 보조 / 선택됨 / 대박). 굽을 때 채워서 런타임에 그림만 바꿔 끼운다.</summary>
+        [SerializeField] private Sprite spritePrimary;
+        [SerializeField] private Sprite spriteSecondary;
+        [SerializeField] private Sprite spritePositive;
+        [SerializeField] private Sprite spriteDanger;
 
         private readonly List<UIEventMilestoneRow> rows = new List<UIEventMilestoneRow>();
         private float nextHeaderRefresh;
+        private int sheetFocusOverride = -1;
 
         /// <summary>이 화면이 맡은 이벤트.</summary>
         protected abstract EventKind Kind { get; }
@@ -74,6 +83,29 @@ namespace OJ.EventMinigame
         internal void SetCurrency(TMP_Text value) { currencyText = value; }
         internal void SetStatus(TMP_Text value) { statusText = value; }
 
+        internal void SetRewardButton(Button value) { rewardButton = value; }
+        internal void SetSheetClose(Button value) { sheetCloseButton = value; }
+
+        internal void SetButtonSprites(Sprite primary, Sprite secondary, Sprite positive, Sprite danger)
+        {
+            spritePrimary = primary;
+            spriteSecondary = secondary;
+            spritePositive = positive;
+            spriteDanger = danger;
+        }
+
+        /// <summary>킷 버튼 그림. 버튼 상태(선택·활성)가 바뀔 때 <c>Image.sprite</c> 에 끼운다.</summary>
+        protected Sprite ButtonSprite(EventButtonKind kind)
+        {
+            switch (kind)
+            {
+                case EventButtonKind.Secondary: return spriteSecondary;
+                case EventButtonKind.Positive: return spritePositive;
+                case EventButtonKind.Danger: return spriteDanger;
+                default: return spritePrimary;
+            }
+        }
+
         internal void SetList(GameObject root, RectTransform content, UIEventMilestoneRow template)
         {
             listRoot = root;
@@ -88,7 +120,48 @@ namespace OJ.EventMinigame
             if (rowTemplate != null)
                 rowTemplate.gameObject.SetActive(false);
 
+            if (rewardButton != null)
+                rewardButton.onClick.AddListener(OpenRewardSheet);
+
+            if (sheetCloseButton != null)
+                sheetCloseButton.onClick.AddListener(CloseRewardSheet);
+
+            if (listRoot != null)
+                listRoot.SetActive(false);
+
             OnLoadPlay();
+        }
+
+        /// <summary>보상 목록 판을 연다. 열 때 목록을 다시 그리고 <see cref="SheetFocusRow"/> 줄이 위에 오게 스크롤한다.</summary>
+        protected void OpenRewardSheet()
+        {
+            if (listRoot == null)
+                return;
+
+            listRoot.SetActive(true);
+            RefreshList();
+
+            int row = sheetFocusOverride >= 0 ? sheetFocusOverride : SheetFocusRow();
+            sheetFocusOverride = -1;
+            ScrollListTo(row);
+        }
+
+        protected void CloseRewardSheet()
+        {
+            if (listRoot != null)
+                listRoot.SetActive(false);
+        }
+
+        /// <summary>다음에 보상 판을 열 때 위로 올릴 줄(예: 고르지 않은 3택1 상자). 한 번만 쓰인다.</summary>
+        protected void FocusSheetOn(int row)
+        {
+            sheetFocusOverride = row;
+        }
+
+        /// <summary>보상 판을 열 때 위에 보일 줄. 기본은 맨 위.</summary>
+        protected virtual int SheetFocusRow()
+        {
+            return 0;
         }
 
         /// <summary>하위 클래스가 버튼 연결 같은 한 번짜리 준비를 한다.</summary>
@@ -109,6 +182,7 @@ namespace OJ.EventMinigame
                 PointManager.Instance.OnPointChanged += OnPointChanged;
 
             nextHeaderRefresh = 0f;
+            CloseRewardSheet();
             RefreshAll();
             OnOpened();
         }
@@ -191,15 +265,6 @@ namespace OJ.EventMinigame
         {
             if (statusText != null)
                 statusText.text = text ?? string.Empty;
-        }
-
-        protected void SetListVisible(bool visible)
-        {
-            if (listRoot != null)
-                listRoot.SetActive(visible);
-
-            if (listContent != null)
-                listContent.parent.gameObject.SetActive(visible);
         }
 
         /// <summary>줄을 <paramref name="count"/> 개로 맞춰 돌려준다(모자라면 템플릿을 복제한다).</summary>

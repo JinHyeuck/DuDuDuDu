@@ -92,8 +92,8 @@ namespace OJ.EventMinigame
 
         public static UIEventMilestoneRow Create(Transform parent, TMP_FontAsset font)
         {
-            Image root = UIMissionUIFactory.CreateImage("EventMilestoneRow", parent, UIEventMinigameFactory.RowIdle);
-            UIMissionUIFactory.SetRect(root.rectTransform, RowSize, Vector2.zero);
+            Image root = UIMissionUIFactory.Sliced(parent, "EventMilestoneRow", UIEventMinigameFactory.SmallBox, 1.5f,
+                RowSize, Vector2.zero, UIEventMinigameFactory.RowIdle);
             root.raycastTarget = false;
 
             var row = root.gameObject.AddComponent<UIEventMilestoneRow>();
@@ -118,9 +118,9 @@ namespace OJ.EventMinigame
                 TextAlignmentOptions.Center, Color.white, font);
             UIMissionUIFactory.SetRect(row.stateText.rectTransform, new Vector2(140f, 60f), new Vector2(355f, 0f));
 
-            Button button = UIMissionUIFactory.CreateButton(
-                "ActionButton", root.transform, "선택", new Vector2(150f, 70f), new Vector2(355f, 0f),
-                UIEventMinigameFactory.ButtonOn, UIEventMinigameFactory.DarkText, 30f, font);
+            Button button = UIEventMinigameFactory.KitButton(
+                root.transform, "ActionButton", "선택", EventButtonKind.Primary,
+                new Vector2(150f, 72f), new Vector2(355f, 0f), 30f, font);
             row.actionButton = button;
             row.actionText = button.GetComponentInChildren<TMP_Text>();
             button.gameObject.SetActive(false);
