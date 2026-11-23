@@ -77,7 +77,11 @@ namespace OJ.EventMinigame
             RefreshPlay();
 
             if (Manager != null)
-                ScrollListTo(Manager.RaftingClaimedCount);
+            {
+                // 고르지 않은 상자가 있으면 그 줄부터 보여 준다.
+                List<int> pending = Manager.GetRaftingPending();
+                ScrollListTo(pending.Count > 0 ? pending[0] : Manager.RaftingClaimedCount);
+            }
         }
 
         private void SelectMultiplier(int index)
@@ -165,10 +169,18 @@ namespace OJ.EventMinigame
 
             SetStatus(text.ToString());
             RefreshAll();
-            ShowRewards(result.Rewards, "래프팅 보상");
 
-            if (result.NewPendingChoices.Count > 0 && result.Rewards.Count == 0)
-                OpenChoice(result.NewPendingChoices[0]);
+            // 3택1 상자가 열렸으면 그 줄이 보이게 스크롤하고, 보상 팝업이 있으면 닫힌 뒤에 선택 창을 연다.
+            // 안 그러면 선택 줄이 목록 아래에 묻혀, 못 고른 채 회차가 끝나 첫 묶음이 자동 지급된다.
+            if (result.NewPendingChoices.Count > 0)
+            {
+                int row = result.NewPendingChoices[0];
+                ScrollListTo(row);
+                ShowRewards(result.Rewards, "래프팅 보상", () => OpenChoice(row));
+                return;
+            }
+
+            ShowRewards(result.Rewards, "래프팅 보상");
         }
 
         protected override void RefreshPlay()
