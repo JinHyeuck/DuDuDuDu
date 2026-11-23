@@ -772,10 +772,8 @@ namespace OJ.Dice
             bool queuedHere = manager.TryGetQueue(out PromotionQueueView queue) && queue.DiceType == currentDiceType;
 
             var text = new StringBuilder();
-            text.Append("<b>승급 ").Append(tier).Append(" / ").Append(maxTier).Append("</b>  ");
-            for (int i = 1; i <= maxTier; i++)
-                text.Append(i <= tier ? "<color=#FFE27A>★</color>" : "<color=#7A7F8C>☆</color>");
-            text.Append('\n');
+            // 별(★☆)은 BM HANNA 에 글리프가 없어 빈칸으로 나온다 — 단계 숫자만 쓴다.
+            text.Append("<b>승급 ").Append(tier).Append(" / ").Append(maxTier).Append("</b>\n");
 
             if (!owned)
             {
@@ -788,8 +786,8 @@ namespace OJ.Dice
             else if (queuedHere)
             {
                 text.Append("<color=#7FE3FF>승급 진행 중</color>  ")
-                    .Append(CountMetMissions(manager, queue.TargetTier)).Append(" / ")
-                    .Append(CountRequiredMissions(queue.TargetTier)).Append(" 미션");
+                    .Append(CountMetMissions(manager, currentDiceType, queue.TargetTier)).Append(" / ")
+                    .Append(CountRequiredMissions(currentDiceType, queue.TargetTier)).Append(" 미션");
             }
             else
             {
@@ -807,28 +805,35 @@ namespace OJ.Dice
             promotionButtonLabel.SetText(queuedHere ? "진행 보기" : "승급 미션");
         }
 
-        private static int CountRequiredMissions(int targetTier)
+        private static int CountRequiredMissions(DiceType diceType, int targetTier)
         {
             int count = 0;
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
-                if (PromotionRules.IsRequired((PromotionMission)i, targetTier))
+                if (PromotionRules.IsRequired(PromotionManager.SlotOf(diceType), (PromotionMission)i, targetTier))
                     count++;
             }
+
+            if (PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier) != PromotionOwned.None)
+                count++;
 
             return count;
         }
 
-        private static int CountMetMissions(PromotionManager manager, int targetTier)
+        private static int CountMetMissions(PromotionManager manager, DiceType diceType, int targetTier)
         {
             int count = 0;
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
                 var mission = (PromotionMission)i;
-                int need = PromotionRules.Requirement(mission, targetTier);
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(diceType), mission, targetTier);
                 if (need > 0 && manager.GetProgress(mission) >= need)
                     count++;
             }
+
+            PromotionOwned owned = PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier);
+            if (owned != PromotionOwned.None && manager.GetOwnedValue(owned) >= PromotionRules.OwnedRequirement(owned))
+                count++;
 
             return count;
         }
@@ -840,7 +845,7 @@ namespace OJ.Dice
 
         /// <summary>
         /// 승급 미션 창. <b>범용 확인 창을 빌려 쓴다</b> — 미션이 여덟 줄 안팎이라 목록 프리팹을 새로 만들 만큼은 아니고,
-        /// 확인 버튼이 상황에 따라 "등록" / "이벤트 재화 투입" / "확인" 으로 바뀐다.
+        /// 확인 버튼이 상황에 따라 "등록" / "확인" 으로 바뀐다.
         /// </summary>
         private void OpenPromotionPopup()
         {
@@ -872,38 +877,22 @@ namespace OJ.Dice
 
             if (queuedHere)
             {
-                AppendMissionLines(message, manager, targetTier);
+                AppendMissionLines(message, manager, target, targetTier);
 
-                int need = PromotionRules.Requirement(PromotionMission.EventCurrency, targetTier);
+                // 이벤트 재화(미션 B)는 따로 넣지 않는다 — 이벤트 미니게임에서 쓴 만큼이 그대로 채워진다.
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(target), PromotionMission.EventCurrency, targetTier);
                 int missing = need - manager.GetProgress(PromotionMission.EventCurrency);
-                PointType open = EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(now));
-                int held = PointManager.Instance != null ? PointManager.Instance.Get(open) : 0;
-
                 if (need > 0 && missing > 0)
-                {
-                    message.Append("<size=24><color=#C9D6EE>열린 이벤트 재화만 넣을 수 있어요 (보유 ").Append(held).Append("개)</color></size>");
-                    confirmLabel = held > 0 ? "재화 투입" : "확인";
-                    if (held > 0)
-                    {
-                        onConfirm = () =>
-                        {
-                            manager.DonateEventCurrency(held, System.DateTime.UtcNow);
-                            Refresh();
-                            OpenPromotionPopup();
-                        };
-                    }
-                }
-                else
-                {
-                    confirmLabel = "확인";
-                }
+                    message.Append("<size=24><color=#C9D6EE>열린 이벤트 미니게임에서 재화를 쓰면 채워져요</color></size>");
+
+                confirmLabel = "확인";
             }
             else
             {
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(target) : 1;
                 PromotionRegisterResult result = manager.CanRegister(target, now);
 
-                AppendRequirementLines(message, targetTier);
+                AppendRequirementLines(message, target, targetTier);
 
                 switch (result)
                 {
@@ -960,13 +949,13 @@ namespace OJ.Dice
         }
 
         /// <summary>진행도 줄. 채운 미션은 초록, 아닌 것은 흰색이다.</summary>
-        private static void AppendMissionLines(StringBuilder message, PromotionManager manager, int targetTier)
+        private static void AppendMissionLines(StringBuilder message, PromotionManager manager, DiceType diceType, int targetTier)
         {
             message.Append("<size=26>");
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
                 var mission = (PromotionMission)i;
-                int need = PromotionRules.Requirement(mission, targetTier);
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(diceType), mission, targetTier);
                 if (need <= 0)
                     continue;
 
@@ -979,20 +968,38 @@ namespace OJ.Dice
                     .Append("</color>\n");
             }
 
+            // 미션 A(보유형): 진행도가 아니라 지금 가진 값을 보여 준다.
+            PromotionOwned owned = PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier);
+            if (owned != PromotionOwned.None)
+            {
+                int have = manager.GetOwnedValue(owned);
+                int ownedNeed = PromotionRules.OwnedRequirement(owned);
+                bool ownedMet = have >= ownedNeed;
+                message.Append(ownedMet ? "<color=#CFFFD0>" : "<color=#FFFFFF>")
+                    .Append(PromotionText.OwnedName(owned)).Append("  ")
+                    .Append(have).Append(" / ").Append(ownedNeed)
+                    .Append(ownedMet ? "  (완료)" : string.Empty)
+                    .Append("</color>\n");
+            }
+
             message.Append("</size>");
         }
 
         /// <summary>등록 전에 보이는 요구량 줄.</summary>
-        private static void AppendRequirementLines(StringBuilder message, int targetTier)
+        private static void AppendRequirementLines(StringBuilder message, DiceType diceType, int targetTier)
         {
             message.Append("<size=26>");
             for (int i = 0; i < PromotionRules.MissionCount; i++)
             {
                 var mission = (PromotionMission)i;
-                int need = PromotionRules.Requirement(mission, targetTier);
+                int need = PromotionRules.Requirement(PromotionManager.SlotOf(diceType), mission, targetTier);
                 if (need > 0)
                     message.Append(PromotionText.MissionName(mission)).Append("  ").Append(need).Append('\n');
             }
+
+            PromotionOwned owned = PromotionRules.AssignedOwned(PromotionManager.SlotOf(diceType), targetTier);
+            if (owned != PromotionOwned.None)
+                message.Append(PromotionText.OwnedName(owned)).Append("  ").Append(PromotionRules.OwnedRequirement(owned)).Append('\n');
 
             message.Append("</size>");
         }

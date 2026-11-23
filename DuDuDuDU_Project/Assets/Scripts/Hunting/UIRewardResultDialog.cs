@@ -376,7 +376,8 @@ namespace OJ.Hunting
                 if (i < mergedRewards.Count)
                 {
                     PointRewardEntry reward = mergedRewards[i];
-                    rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.PointType), reward.Amount, "x{0:#,##0}");
+                    rewardElement.Bind(PointRewardUtility.GetPointIcon(reward.PointType), reward.Amount, "x{0:#,##0}",
+                        PointRewardUtility.GetPointName(reward.PointType));
                     continue;
                 }
 

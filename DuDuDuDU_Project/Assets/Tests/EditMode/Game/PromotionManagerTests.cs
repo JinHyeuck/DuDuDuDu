@@ -7,7 +7,7 @@ using OJ.Point;
 namespace OJ.Game.Tests
 {
     /// <summary>
-    /// <c>PromotionManager</c> 의 큐·진행도·투입·환급·저장 왕복.
+    /// <c>PromotionManager</c> 의 큐·진행도·이벤트 재화 소모·환급·저장 왕복.
     /// 규칙 값(요구량 표 등)은 <c>PromotionRulesTests</c> 가 잠그고, 여기는 <b>상태가 규칙대로 움직이는지</b>를 본다.
     /// <c>PointManager</c>·<c>DiceLevelManager</c> 는 생성자가 순수해서 실물을 그대로 쓴다.
     /// </summary>
@@ -33,22 +33,19 @@ namespace OJ.Game.Tests
             manager.Dispose();
         }
 
-        private void FillTierOneMissions()
+        /// <summary>큐에 오른 다이스·단계에 <b>배정된</b> C 미션 하나를 채운다(승급 규칙은 그것만 요구한다).</summary>
+        private void FillAssignedMission()
         {
-            manager.Notify(PromotionMission.PinballShots, 100000);
-            manager.Notify(PromotionMission.SynergyTickets, 100000);
-            manager.Notify(PromotionMission.Sweeps, 100000);
-            manager.Notify(PromotionMission.TowerChallenges, 100000);
-            manager.Notify(PromotionMission.StageChallenges, 100000);
-            manager.Notify(PromotionMission.MonsterKills, 100000);
-            manager.Notify(PromotionMission.BossKills, 100000);
+            Assert.IsTrue(manager.TryGetQueue(out PromotionQueueView view));
+            PromotionMission mission = PromotionRules.AssignedMission(PromotionManager.SlotOf(view.DiceType), view.TargetTier);
+            manager.Notify(mission, 1000000);
         }
 
         private void PromoteToTierOne(DiceType dice)
         {
             levels.SetLevel(dice, 5, false);
             Assert.AreEqual(PromotionRegisterResult.Ok, manager.TryRegister(dice, T0));
-            FillTierOneMissions();
+            FillAssignedMission();
             Assert.AreEqual(1, manager.GetTier(dice));
         }
 
@@ -98,16 +95,16 @@ namespace OJ.Game.Tests
             levels.SetLevel(DiceType.Tornado, 5, false);
             levels.SetLevel(DiceType.Stun, 5, false);
             manager.TryRegister(DiceType.Tornado, T0);
-            manager.Notify(PromotionMission.Sweeps, 4);
+            manager.Notify(PromotionMission.TowerChallenges, 4);
 
             Assert.AreEqual(PromotionRegisterResult.ReplaceLocked,
                 manager.TryRegister(DiceType.Stun, T0.AddHours(23)));
-            Assert.AreEqual(4, manager.GetProgress(PromotionMission.Sweeps));
+            Assert.AreEqual(4, manager.GetProgress(PromotionMission.TowerChallenges));
 
             Assert.AreEqual(PromotionRegisterResult.Ok, manager.TryRegister(DiceType.Stun, T0.AddHours(24)));
             Assert.IsTrue(manager.TryGetQueue(out PromotionQueueView view));
             Assert.AreEqual(DiceType.Stun, view.DiceType);
-            Assert.AreEqual(0, manager.GetProgress(PromotionMission.Sweeps));
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.TowerChallenges));
         }
 
         // ── 진행도 ─────────────────────────────────────────────────────
@@ -115,12 +112,12 @@ namespace OJ.Game.Tests
         [Test]
         public void 큐가_비었으면_센_것이_인정되지_않는다()
         {
-            manager.Notify(PromotionMission.Sweeps, 10);
+            manager.Notify(PromotionMission.TowerChallenges, 5);
 
             levels.SetLevel(DiceType.Tornado, 5, false);
             manager.TryRegister(DiceType.Tornado, T0);
 
-            Assert.AreEqual(0, manager.GetProgress(PromotionMission.Sweeps));
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.TowerChallenges));
         }
 
         [Test]
@@ -129,16 +126,22 @@ namespace OJ.Game.Tests
             levels.SetLevel(DiceType.Tornado, 5, false);
             manager.TryRegister(DiceType.Tornado, T0);
 
-            manager.Notify(PromotionMission.Sweeps, 9999);
+            // 요구량(5)을 훌쩍 넘겨 세도 승급이 끝나고, 넘친 분은 다음 단계로 이월되지 않는다.
+            manager.Notify(PromotionMission.TowerChallenges, 9999);
+            Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
 
-            Assert.AreEqual(10, manager.GetProgress(PromotionMission.Sweeps));
+            levels.SetLevel(DiceType.Tornado, 15, false);
+            manager.TryRegister(DiceType.Tornado, T0);
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.Sweeps));
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.TowerChallenges));
         }
 
         [Test]
         public void 시너지_티켓을_쓰면_자동으로_센다()
         {
-            levels.SetLevel(DiceType.Tornado, 5, false);
-            manager.TryRegister(DiceType.Tornado, T0);
+            // 얼음 T1 의 C 미션이 시너지 티켓 소모다.
+            levels.SetLevel(DiceType.Ice, 5, false);
+            manager.TryRegister(DiceType.Ice, T0);
             points.Add(PointType.SynergyTicket, 80, false);
 
             Assert.IsTrue(points.TrySpend(PointType.SynergyTicket, 30, false));
@@ -149,8 +152,8 @@ namespace OJ.Game.Tests
         [Test]
         public void 시너지_티켓_외의_소모는_세지_않는다()
         {
-            levels.SetLevel(DiceType.Tornado, 5, false);
-            manager.TryRegister(DiceType.Tornado, T0);
+            levels.SetLevel(DiceType.Ice, 5, false);
+            manager.TryRegister(DiceType.Ice, T0);
             points.Add(PointType.Gold, 500, false);
 
             points.TrySpend(PointType.Gold, 100, false);
@@ -179,20 +182,34 @@ namespace OJ.Game.Tests
         }
 
         [Test]
-        public void 한_미션이라도_비면_승급하지_않는다()
+        public void 배정되지_않은_미션만_채우면_승급하지_않는다()
         {
             levels.SetLevel(DiceType.Tornado, 5, false);
             manager.TryRegister(DiceType.Tornado, T0);
 
+            // 토네이도 T1 의 C 는 탑 도전뿐이다. 나머지를 아무리 해도 세지 않는다.
             manager.Notify(PromotionMission.PinballShots, 100000);
             manager.Notify(PromotionMission.SynergyTickets, 100000);
             manager.Notify(PromotionMission.Sweeps, 100000);
-            manager.Notify(PromotionMission.TowerChallenges, 100000);
             manager.Notify(PromotionMission.StageChallenges, 100000);
             manager.Notify(PromotionMission.MonsterKills, 100000);
+            manager.Notify(PromotionMission.BossKills, 100000);
 
             Assert.AreEqual(0, manager.GetTier(DiceType.Tornado));
             Assert.IsTrue(manager.HasQueue);
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.Sweeps));
+        }
+
+        [Test]
+        public void 배정된_미션_하나만_채우면_T1이_끝난다()
+        {
+            levels.SetLevel(DiceType.Tornado, 5, false);
+            manager.TryRegister(DiceType.Tornado, T0);
+
+            manager.Notify(PromotionMission.TowerChallenges, 5);
+
+            Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
+            Assert.IsFalse(manager.HasQueue);
         }
 
         [Test]
@@ -218,7 +235,7 @@ namespace OJ.Game.Tests
             Assert.AreEqual(2, view.TargetTier);
         }
 
-        // ── 이벤트 재화 투입 (미션 B) ───────────────────────────────────
+        // ── 이벤트 재화 소모 (미션 B) ───────────────────────────────────
 
         private PointType OpenCurrency(DateTime utc)
         {
@@ -233,40 +250,75 @@ namespace OJ.Game.Tests
         }
 
         [Test]
-        public void 열린_이벤트_재화를_요구량까지만_넣는다()
+        public void 열린_이벤트_재화를_쓰면_요구량까지만_인정한다()
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 1500, false);
 
-            int used = manager.DonateEventCurrency(5000, T0, false);
+            manager.NotifyEventCurrencySpent(open, 5000, T0);
 
-            Assert.AreEqual(1000, used);
-            Assert.AreEqual(500, points.Get(open));
             Assert.AreEqual(1000, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
-        public void 가진_만큼만_넣는다()
+        public void 여러_번_쓴_재화는_합해서_센다()
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 40, false);
 
-            Assert.AreEqual(40, manager.DonateEventCurrency(5000, T0, false));
-            Assert.AreEqual(0, points.Get(open));
+            manager.NotifyEventCurrencySpent(open, 300, T0);
+            manager.NotifyEventCurrencySpent(open, 400, T0);
+
+            Assert.AreEqual(700, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
-        public void 닫힌_이벤트의_재화는_넣을_수_없다()
+        public void 닫힌_이벤트의_재화를_써도_세지_않는다()
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
             PointType closed = open == PointType.EventCurrency1 ? PointType.EventCurrency2 : PointType.EventCurrency1;
-            points.Add(closed, 500, false);
 
-            Assert.AreEqual(0, manager.DonateEventCurrency(500, T0, false));
-            Assert.AreEqual(500, points.Get(closed));
+            manager.NotifyEventCurrencySpent(closed, 500, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void 이벤트_재화가_아닌_재화는_세지_않는다()
+        {
+            QueueTierTwo(DiceType.Tornado);
+
+            manager.NotifyEventCurrencySpent(PointType.Gold, 500, T0);
+            manager.NotifyEventCurrencySpent(PointType.OpenEventCurrency, 500, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void 쓴_양이_0_이하면_세지_않는다()
+        {
+            QueueTierTwo(DiceType.Tornado);
+            PointType open = OpenCurrency(T0);
+
+            manager.NotifyEventCurrencySpent(open, 0, T0);
+            manager.NotifyEventCurrencySpent(open, -20, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void 등록_전에_쓴_재화는_인정하지_않는다()
+        {
+            PromoteToTierOne(DiceType.Tornado);
+            PointType open = OpenCurrency(T0);
+
+            // 큐가 비어 있을 때 쓴 분.
+            manager.NotifyEventCurrencySpent(open, 800, T0);
+
+            levels.SetLevel(DiceType.Tornado, 15, false);
+            Assert.AreEqual(PromotionRegisterResult.Ok, manager.TryRegister(DiceType.Tornado, T0));
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
@@ -275,27 +327,136 @@ namespace OJ.Game.Tests
             levels.SetLevel(DiceType.Tornado, 5, false);
             manager.TryRegister(DiceType.Tornado, T0);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 100, false);
 
-            Assert.AreEqual(0, manager.DonateEventCurrency(100, T0, false));
-            Assert.AreEqual(100, points.Get(open));
+            manager.NotifyEventCurrencySpent(open, 100, T0);
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
         }
 
         [Test]
-        public void T2는_이벤트_재화와_참여_미션을_다_채워야_끝난다()
+        public void 포인트_매니저의_소모는_저절로_세지_않는다()
+        {
+            // 종료 환급 같은 소모가 미션 B 로 새면 안 된다 — 세는 것은 NotifyEventCurrencySpent 뿐이다.
+            QueueTierTwo(DiceType.Tornado);
+            PointType open = OpenCurrency(T0);
+            points.Add(open, 500, false);
+
+            Assert.IsTrue(points.TrySpend(open, 500, false));
+
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.EventCurrency));
+        }
+
+        [Test]
+        public void T2는_배정된_참여_미션_하나와_이벤트_재화를_채워야_끝난다()
         {
             QueueTierTwo(DiceType.Tornado);
             PointType open = OpenCurrency(T0);
-            points.Add(open, 1000, false);
 
+            // 토네이도 T2 의 C 는 소탕 100회다. 다른 참여 미션은 세지 않는다.
             manager.Notify(PromotionMission.PinballShots, 3000);
-            manager.Notify(PromotionMission.SynergyTickets, 500);
+            Assert.AreEqual(0, manager.GetProgress(PromotionMission.PinballShots));
             manager.Notify(PromotionMission.Sweeps, 100);
-            manager.Notify(PromotionMission.StageChallenges, 30);
             Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
 
-            manager.DonateEventCurrency(1000, T0, false);
+            manager.NotifyEventCurrencySpent(open, 1000, T0);
             Assert.AreEqual(2, manager.GetTier(DiceType.Tornado));
+        }
+
+        [Test]
+        public void 이벤트_재화만_채우면_T2가_끝나지_않는다()
+        {
+            QueueTierTwo(DiceType.Tornado);
+
+            manager.NotifyEventCurrencySpent(OpenCurrency(T0), 1000, T0);
+
+            Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
+            Assert.IsTrue(manager.HasQueue);
+        }
+
+        // ── 미션 A (보유형, T3) ─────────────────────────────────────────
+
+        private int equipmentLevels, relicLevels, gemScore;
+
+        private void QueueTierThree(DiceType dice)
+        {
+            QueueTierTwo(dice);
+            FillAssignedMission();
+            manager.NotifyEventCurrencySpent(OpenCurrency(T0), 1000, T0);
+            Assert.AreEqual(2, manager.GetTier(dice));
+
+            levels.SetLevel(dice, 30, false);
+            Assert.AreEqual(PromotionRegisterResult.Ok, manager.TryRegister(dice, T0));
+
+            manager.OwnedValueSource = kind =>
+            {
+                switch (kind)
+                {
+                    case PromotionOwned.EquipmentLevels: return equipmentLevels;
+                    case PromotionOwned.RelicLevels: return relicLevels;
+                    case PromotionOwned.GemScore: return gemScore;
+                    default: return 0;
+                }
+            };
+        }
+
+        private void FillTierThreeCAndB(DiceType dice)
+        {
+            FillAssignedMission();
+            manager.NotifyEventCurrencySpent(OpenCurrency(T0), 3000, T0);
+        }
+
+        [Test]
+        public void T3는_C와_B를_채워도_A가_모자라면_끝나지_않는다()
+        {
+            QueueTierThree(DiceType.Tornado);   // A: 장비 레벨 합 63
+            equipmentLevels = 62;
+
+            FillTierThreeCAndB(DiceType.Tornado);
+
+            Assert.AreEqual(2, manager.GetTier(DiceType.Tornado));
+            Assert.IsTrue(manager.HasQueue);
+        }
+
+        [Test]
+        public void A가_차는_순간_Recheck가_승급을_끝낸다()
+        {
+            QueueTierThree(DiceType.Tornado);
+            equipmentLevels = 10;
+            FillTierThreeCAndB(DiceType.Tornado);
+            Assert.AreEqual(2, manager.GetTier(DiceType.Tornado));
+
+            // A 는 행동이 아니라 상태라 Notify 가 오지 않는다 — 장비가 바뀌었다는 신호로 다시 본다.
+            equipmentLevels = 63;
+            manager.Recheck();
+
+            Assert.AreEqual(3, manager.GetTier(DiceType.Tornado));
+            Assert.IsFalse(manager.HasQueue);
+        }
+
+        [Test]
+        public void 배정되지_않은_축이_높아도_A를_채우지_못한다()
+        {
+            QueueTierThree(DiceType.Stun);      // A: 유물 레벨 합 13
+            equipmentLevels = 999;
+            gemScore = 999;
+            relicLevels = 12;
+
+            FillTierThreeCAndB(DiceType.Stun);
+            manager.Recheck();
+
+            Assert.AreEqual(2, manager.GetTier(DiceType.Stun));
+
+            relicLevels = 13;
+            manager.Recheck();
+            Assert.AreEqual(3, manager.GetTier(DiceType.Stun));
+        }
+
+        [Test]
+        public void T1과_T2는_A를_보지_않는다()
+        {
+            // OwnedValueSource 를 두지 않아 모든 축이 0 이어도 T1·T2 는 C·B 만으로 끝난다.
+            PromoteToTierOne(DiceType.Tornado);
+            Assert.AreEqual(1, manager.GetTier(DiceType.Tornado));
         }
 
         // ── 환급 ───────────────────────────────────────────────────────
@@ -347,6 +508,48 @@ namespace OJ.Game.Tests
         }
 
         [Test]
+        public void 환급한_발수는_알림용으로_쌓였다가_한_번만_꺼낸다()
+        {
+            // 앱 시작 때 도는 환급은 로비가 만들어지기 전이라 이벤트를 못 받는다 — 쌓아 뒀다가 로비가 꺼내 본다.
+            manager.Tick(T0, false);
+            PointType before = OpenCurrency(T0);
+            points.Add(before, 30, false);
+            DateTime later = T0.AddDays(EventCurrencyRules.DaysPerEvent);
+
+            manager.Tick(later, false);
+
+            Assert.AreEqual(10, manager.PendingRefundShots);
+            Assert.AreEqual(10, manager.TakePendingRefund());
+            Assert.AreEqual(0, manager.PendingRefundShots);
+            Assert.AreEqual(0, manager.TakePendingRefund());
+        }
+
+        [Test]
+        public void 환급이_없으면_알림도_쌓이지_않는다()
+        {
+            manager.Tick(T0, false);
+            manager.Tick(T0.AddDays(EventCurrencyRules.DaysPerEvent), false);
+
+            Assert.AreEqual(0, manager.PendingRefundShots);
+        }
+
+        [Test]
+        public void 알림을_안_꺼낸_사이_또_환급되면_합쳐진다()
+        {
+            manager.Tick(T0, false);
+            PointType a = OpenCurrency(T0);
+            points.Add(a, 9, false);
+            DateTime second = T0.AddDays(EventCurrencyRules.DaysPerEvent);
+            manager.Tick(second, false);               // 3발
+
+            PointType b = OpenCurrency(second);
+            points.Add(b, 6, false);
+            manager.Tick(second.AddDays(EventCurrencyRules.DaysPerEvent), false);   // 2발
+
+            Assert.AreEqual(5, manager.TakePendingRefund());
+        }
+
+        [Test]
         public void 같은_이벤트_안에서_날이_바뀌어도_환급하지_않는다()
         {
             // 이벤트의 첫날로 맞춘다 — 그날과 다음 날은 같은 이벤트다.
@@ -382,8 +585,7 @@ namespace OJ.Game.Tests
             PromoteToTierOne(DiceType.Tornado);
             levels.SetLevel(DiceType.Stun, 5, false);
             manager.TryRegister(DiceType.Stun, T0.AddHours(1));
-            manager.Notify(PromotionMission.Sweeps, 7);
-            manager.Notify(PromotionMission.MonsterKills, 20);
+            manager.Notify(PromotionMission.BossKills, 2);
 
             var saved = new SaveState();
             manager.WriteTo(saved);
@@ -394,8 +596,7 @@ namespace OJ.Game.Tests
             Assert.AreEqual(DiceType.Stun, view.DiceType);
             Assert.AreEqual(1, view.TargetTier);
             Assert.AreEqual(T0.AddHours(1).Ticks, view.RegisteredUtcTicks);
-            Assert.AreEqual(7, reloaded.GetProgress(PromotionMission.Sweeps));
-            Assert.AreEqual(20, reloaded.GetProgress(PromotionMission.MonsterKills));
+            Assert.AreEqual(2, reloaded.GetProgress(PromotionMission.BossKills));
 
             var again = new SaveState();
             reloaded.WriteTo(again);
@@ -415,14 +616,16 @@ namespace OJ.Game.Tests
             saved.Promotion.Tiers["Tornado"] = -4;        // 음수는 없는 것이다
             saved.Promotion.QueuedDice = "Stun";
             saved.Promotion.QueuedTargetTier = 1;
-            saved.Promotion.Progress["Sweeps"] = 99999;   // 요구량으로 자른다
+            saved.Promotion.Progress["BossKills"] = 99999;   // 요구량(3)으로 자른다
+            saved.Promotion.Progress["Sweeps"] = 7;       // 스턴 T1 에 배정되지 않은 미션이라 버린다
             saved.Promotion.Progress["Nonsense"] = 5;
 
             PromotionManager reloaded = Reload(saved);
 
             Assert.AreEqual(1, reloaded.GetTier(DiceType.Normal));
             Assert.AreEqual(0, reloaded.GetTier(DiceType.Tornado));
-            Assert.AreEqual(10, reloaded.GetProgress(PromotionMission.Sweeps));
+            Assert.AreEqual(3, reloaded.GetProgress(PromotionMission.BossKills));
+            Assert.AreEqual(0, reloaded.GetProgress(PromotionMission.Sweeps));
 
             var again = new SaveState();
             reloaded.WriteTo(again);
@@ -451,12 +654,12 @@ namespace OJ.Game.Tests
             var saved = new SaveState();
             saved.Promotion.QueuedDice = "Stun";
             saved.Promotion.QueuedTargetTier = 2;         // 이 다이스는 아직 T0 → 계산한 목표는 1
-            saved.Promotion.Progress["Sweeps"] = 10;
+            saved.Promotion.Progress["BossKills"] = 2;
 
             PromotionManager reloaded = Reload(saved);
 
             Assert.IsTrue(reloaded.HasQueue);
-            Assert.AreEqual(0, reloaded.GetProgress(PromotionMission.Sweeps));
+            Assert.AreEqual(0, reloaded.GetProgress(PromotionMission.BossKills));
             reloaded.Dispose();
         }
     }

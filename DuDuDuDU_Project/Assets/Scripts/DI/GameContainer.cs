@@ -4,6 +4,7 @@ using VContainer.Unity;
 using OJ.Analytics;
 using OJ.Dice;
 using OJ.Equipment;
+using OJ.EventMinigame;
 using OJ.IdleReward;
 using OJ.Mission;
 using OJ.Pinball;
@@ -189,6 +190,12 @@ namespace OJ.DI
             // 헤드리스 러너에 VContainer 가 없어 ITickable 을 붙인 클래스는 테스트에서 로드조차 안 되기 때문이다.
             builder.RegisterEntryPoint<PromotionTicker>();
 
+            // 이벤트 미니게임(낚시·보물찾기·래프팅). 재화를 쓰는 순간 승급 미션 B 를 올리므로
+            // PointManager 와 PromotionManager 를 생성자로 받는다 — 컨테이너가 그 순서를 보장한다.
+            builder.Register<EventMinigameManager>(Lifetime.Singleton)
+                .AsSelf()
+                .As<ISaveStateOwner>();
+
             // 스테이지 계열. StageProgressManager 가 뿌리이고 나머지 셋이 그것을 받는다.
             // 순서를 신경 쓸 필요는 없다 — 컨테이너가 생성자 의존을 보고 알아서 정한다.
             // 예전에 Awake 순서를 못 믿어 구독을 두 번 시도하던 것이 이걸로 사라졌다.
@@ -351,9 +358,14 @@ namespace OJ.DI
             ContentUnlockManager.Instance = container.Resolve<ContentUnlockManager>();
             MissionManager.Instance = container.Resolve<MissionManager>();
             PromotionManager.Instance = container.Resolve<PromotionManager>();
+            EventMinigameManager.Instance = container.Resolve<EventMinigameManager>();
             SeasonPassManager.Instance = container.Resolve<SeasonPassManager>();
             EquipmentManager.Instance = container.Resolve<EquipmentManager>();
             RelicManager.Instance = container.Resolve<RelicManager>();
+            // 승급 미션 A(장비·유물·보석 보유)는 행동이 아니라 상태라, 그것들이 바뀔 때 다시 판정해 줘야 한다.
+            EquipmentManager.Instance.OnEquipmentChanged += _ => PromotionManager.Instance.Recheck();
+            EquipmentManager.Instance.OnGemChanged += () => PromotionManager.Instance.Recheck();
+            RelicManager.Instance.OnRelicChanged += () => PromotionManager.Instance.Recheck();
             SynergyManager.Instance = container.Resolve<SynergyManager>();
             RunHistoryManager.Instance = container.Resolve<RunHistoryManager>();
             AOSBackBtnManager.Instance = container.Resolve<AOSBackBtnManager>();
@@ -383,6 +395,7 @@ namespace OJ.DI
             // 진행도가 남고 로그인 미션이 영영 0 이 된다.
             MissionManager.Instance.NotifyAppStart();
             PromotionManager.Instance.NotifyAppStart();
+            EventMinigameManager.Instance.Tick(System.DateTime.UtcNow);
             SeasonPassManager.Instance.NotifyAppStart();
             SpecialSevenDaysManager.Instance.NotifyAppStart();
         }

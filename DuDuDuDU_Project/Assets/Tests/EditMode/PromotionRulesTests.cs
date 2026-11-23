@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace OJ.Core.Tests
 {
     /// <summary>
-    /// 승급 규칙. 요구량 표·레벨 게이트·교체 잠금·환급이 계획서(1.3)와 같은지 잠근다.
+    /// 승급 규칙. 요구량 표·다이스별 고정 C 미션·레벨 게이트·교체 잠금·환급이 계획서(1.3)와 같은지 잠근다.
     /// 값을 바꾸려면 이 테스트를 같이 고쳐서 의도를 남길 것.
     /// </summary>
     public class PromotionRulesTests
@@ -50,9 +50,9 @@ namespace OJ.Core.Tests
         [TestCase(PromotionMission.EventCurrency, 1, 0)]
         [TestCase(PromotionMission.EventCurrency, 2, 1000)]
         [TestCase(PromotionMission.EventCurrency, 3, 3000)]
-        public void RequirementTableMatchesPlan(PromotionMission mission, int tier, int expected)
+        public void BaseRequirementTableMatchesPlan(PromotionMission mission, int tier, int expected)
         {
-            Assert.AreEqual(expected, PromotionRules.Requirement(mission, tier));
+            Assert.AreEqual(expected, PromotionRules.BaseRequirement(mission, tier));
         }
 
         [Test]
@@ -63,67 +63,192 @@ namespace OJ.Core.Tests
                 Assert.IsTrue(seen.Add(PromotionRules.Key((PromotionMission)i)));
         }
 
+        // 칸 번호: 기본 0~4, 레어 5~9, 킹 10~14. 아래 테스트는 불(1) 과 토네이도(5) 를 쓴다.
+        private const int Fire = 1;
+        private const int Tornado = 5;
+
+        [Test]
+        public void EveryAssignedMissionIsUsableInItsTier()
+        {
+            // 고정표가 그 단계에서 요구량이 0인 미션을 가리키면 그 다이스는 영영 승급할 수 없다.
+            for (int slot = 0; slot < PromotionRules.SlotCount; slot++)
+            {
+                bool basic = slot < 5;
+                int maxTier = PromotionRules.MaxTier(basic);
+                for (int tier = 1; tier <= maxTier; tier++)
+                {
+                    PromotionMission mission = PromotionRules.AssignedMission(slot, tier);
+                    Assert.AreNotEqual(PromotionMission.EventCurrency, mission, "slot " + slot + " T" + tier);
+                    Assert.Greater(PromotionRules.Requirement(slot, mission, tier), 0, "slot " + slot + " T" + tier);
+                }
+            }
+        }
+
+        [Test]
+        public void OnlyTheAssignedParticipationMissionIsRequired()
+        {
+            // 불 T1 은 핀볼 발수 하나만 요구한다. 나머지 C 미션은 제외다.
+            Assert.AreEqual(PromotionMission.PinballShots, PromotionRules.AssignedMission(Fire, 1));
+            Assert.AreEqual(300, PromotionRules.Requirement(Fire, PromotionMission.PinballShots, 1));
+
+            for (int i = 0; i < PromotionRules.MissionCount; i++)
+            {
+                var m = (PromotionMission)i;
+                if (m != PromotionMission.PinballShots)
+                    Assert.AreEqual(0, PromotionRules.Requirement(Fire, m, 1), m.ToString());
+            }
+        }
+
         [Test]
         public void AddStopsAtTheRequirement()
         {
             var progress = new Dictionary<string, int>();
 
-            Assert.AreEqual(8, PromotionRules.Add(progress, PromotionMission.Sweeps, 1, 8));
-            Assert.AreEqual(2, PromotionRules.Add(progress, PromotionMission.Sweeps, 1, 50));
-            Assert.AreEqual(0, PromotionRules.Add(progress, PromotionMission.Sweeps, 1, 5));
-            Assert.AreEqual(10, PromotionRules.Progress(progress, PromotionMission.Sweeps, 1));
+            // 토네이도 T2 의 C 는 소탕 100회다.
+            Assert.AreEqual(PromotionMission.Sweeps, PromotionRules.AssignedMission(Tornado, 2));
+            Assert.AreEqual(80, PromotionRules.Add(progress, Tornado, PromotionMission.Sweeps, 2, 80));
+            Assert.AreEqual(20, PromotionRules.Add(progress, Tornado, PromotionMission.Sweeps, 2, 50));
+            Assert.AreEqual(0, PromotionRules.Add(progress, Tornado, PromotionMission.Sweeps, 2, 5));
+            Assert.AreEqual(100, PromotionRules.Progress(progress, Tornado, PromotionMission.Sweeps, 2));
         }
 
         [Test]
-        public void ExcludedMissionIsIgnored()
+        public void UnassignedMissionIsIgnored()
         {
             var progress = new Dictionary<string, int>();
 
-            // 탑 도전은 T2 에서 제외다.
-            Assert.AreEqual(0, PromotionRules.Add(progress, PromotionMission.TowerChallenges, 2, 5));
+            // 불 T1 의 C 는 핀볼뿐이라 소탕·몬스터 처치는 세지 않는다.
+            Assert.AreEqual(0, PromotionRules.Add(progress, Fire, PromotionMission.Sweeps, 1, 10));
+            Assert.AreEqual(0, PromotionRules.Add(progress, Fire, PromotionMission.MonsterKills, 1, 50));
             Assert.AreEqual(0, progress.Count);
         }
 
         [Test]
-        public void TierOneNeedsEveryParticipationMissionAndNoEventCurrency()
+        public void TierOneNeedsOnlyTheAssignedMission()
         {
             var progress = new Dictionary<string, int>();
-            Assert.IsFalse(PromotionRules.AllMissionsMet(progress, 1));
+            Assert.IsFalse(PromotionRules.AllMissionsMet(progress, Fire, 1));
 
-            foreach (PromotionMission m in new[]
-            {
-                PromotionMission.PinballShots, PromotionMission.SynergyTickets, PromotionMission.Sweeps,
-                PromotionMission.TowerChallenges, PromotionMission.StageChallenges,
-                PromotionMission.MonsterKills,
-            })
-            {
-                PromotionRules.Add(progress, m, 1, 100000);
-            }
+            PromotionRules.Add(progress, Fire, PromotionMission.PinballShots, 1, 299);
+            Assert.IsFalse(PromotionRules.AllMissionsMet(progress, Fire, 1));
 
-            // 보스 처치만 비었다.
-            Assert.IsFalse(PromotionRules.AllMissionsMet(progress, 1));
-
-            PromotionRules.Add(progress, PromotionMission.BossKills, 1, 3);
-            Assert.IsTrue(PromotionRules.AllMissionsMet(progress, 1));
+            PromotionRules.Add(progress, Fire, PromotionMission.PinballShots, 1, 1);
+            Assert.IsTrue(PromotionRules.AllMissionsMet(progress, Fire, 1));
         }
 
         [Test]
-        public void TierTwoNeedsEventCurrency()
+        public void TierTwoNeedsOneParticipationMissionAndEventCurrency()
         {
             var progress = new Dictionary<string, int>();
-            foreach (PromotionMission m in new[]
+
+            // 토네이도 T2: 소탕 100회 + 이벤트 재화 1,000개.
+            PromotionRules.Add(progress, Tornado, PromotionMission.Sweeps, 2, 100);
+            Assert.IsFalse(PromotionRules.AllMissionsMet(progress, Tornado, 2));
+
+            PromotionRules.Add(progress, Tornado, PromotionMission.EventCurrency, 2, 1000);
+            Assert.IsTrue(PromotionRules.AllMissionsMet(progress, Tornado, 2));
+        }
+
+        [Test]
+        public void EventCurrencyAloneIsNotEnoughAndNeitherIsParticipationAlone()
+        {
+            var progress = new Dictionary<string, int>();
+            PromotionRules.Add(progress, Tornado, PromotionMission.EventCurrency, 3, 3000);
+            Assert.IsFalse(PromotionRules.AllMissionsMet(progress, Tornado, 3));
+
+            PromotionRules.Add(progress, Tornado, PromotionMission.PinballShots, 3, 15000);
+            Assert.IsTrue(PromotionRules.AllMissionsMet(progress, Tornado, 3));
+        }
+
+        // ── 미션 A (보유형, T3 전용) ───────────────────────────────────
+
+        [Test]
+        public void OnlyRareAndKingHaveAnOwnedMissionAtTierThree()
+        {
+            for (int slot = 0; slot < PromotionRules.SlotCount; slot++)
             {
-                PromotionMission.PinballShots, PromotionMission.SynergyTickets, PromotionMission.Sweeps,
-                PromotionMission.StageChallenges,
-            })
+                bool basic = slot < 5;
+                for (int tier = 1; tier <= 3; tier++)
+                {
+                    PromotionOwned kind = PromotionRules.AssignedOwned(slot, tier);
+                    bool expected = !basic && tier == 3;
+                    Assert.AreEqual(expected, kind != PromotionOwned.None, "slot " + slot + " T" + tier);
+                    if (expected)
+                        Assert.Greater(PromotionRules.OwnedRequirement(kind), 0, "slot " + slot);
+                }
+            }
+        }
+
+        [Test]
+        public void OwnedAssignmentsAreSpreadAcrossAxes()
+        {
+            // 장비 3 / 유물 4 / 보석 3 — 한 축으로 몰리면 그 축만 키운 유저가 전부 통과한다.
+            int equipment = 0, relic = 0, gem = 0;
+            for (int slot = 5; slot < PromotionRules.SlotCount; slot++)
             {
-                PromotionRules.Add(progress, m, 2, 1000000);
+                switch (PromotionRules.AssignedOwned(slot, 3))
+                {
+                    case PromotionOwned.EquipmentLevels: equipment++; break;
+                    case PromotionOwned.RelicLevels: relic++; break;
+                    case PromotionOwned.GemScore: gem++; break;
+                }
             }
 
-            Assert.IsFalse(PromotionRules.AllMissionsMet(progress, 2));
+            Assert.AreEqual(3, equipment);
+            Assert.AreEqual(4, relic);
+            Assert.AreEqual(3, gem);
+        }
 
-            PromotionRules.Add(progress, PromotionMission.EventCurrency, 2, 1000);
-            Assert.IsTrue(PromotionRules.AllMissionsMet(progress, 2));
+        [Test]
+        public void OwnedThresholdsMatchPlan()
+        {
+            Assert.AreEqual(63, PromotionRules.OwnedRequirement(PromotionOwned.EquipmentLevels));
+            Assert.AreEqual(13, PromotionRules.OwnedRequirement(PromotionOwned.RelicLevels));
+            Assert.AreEqual(64, PromotionRules.OwnedRequirement(PromotionOwned.GemScore));
+            Assert.AreEqual(0, PromotionRules.OwnedRequirement(PromotionOwned.None));
+        }
+
+        [Test]
+        public void OwnedMetReadsOnlyTheAssignedAxis()
+        {
+            const int Tornado = 5;   // 장비 레벨 합
+            Assert.IsFalse(PromotionRules.OwnedMet(Tornado, 3, 62, 999, 999));
+            Assert.IsTrue(PromotionRules.OwnedMet(Tornado, 3, 63, 0, 0));
+
+            const int Stun = 6;      // 유물 레벨 합
+            Assert.IsFalse(PromotionRules.OwnedMet(Stun, 3, 999, 12, 999));
+            Assert.IsTrue(PromotionRules.OwnedMet(Stun, 3, 0, 13, 0));
+
+            const int ArmorBreak = 7; // 보석 점수
+            Assert.IsFalse(PromotionRules.OwnedMet(ArmorBreak, 3, 999, 999, 63));
+            Assert.IsTrue(PromotionRules.OwnedMet(ArmorBreak, 3, 0, 0, 64));
+        }
+
+        [Test]
+        public void OwnedMissionIsNotRequiredBeforeTierThree()
+        {
+            Assert.IsTrue(PromotionRules.OwnedMet(5, 1, 0, 0, 0));
+            Assert.IsTrue(PromotionRules.OwnedMet(5, 2, 0, 0, 0));
+            Assert.IsTrue(PromotionRules.OwnedMet(1, 1, 0, 0, 0));   // 기본 다이스
+        }
+
+        [TestCase(0, 0)]    // Uncommon
+        [TestCase(1, 1)]    // Common
+        [TestCase(2, 4)]    // Normal
+        [TestCase(3, 16)]   // Rare
+        [TestCase(4, 64)]   // Epic
+        [TestCase(5, 256)]  // Mythic
+        public void GemPointsQuadruplePerRarity(int rarity, int expected)
+        {
+            Assert.AreEqual(expected, PromotionRules.GemPoints(rarity));
+        }
+
+        [Test]
+        public void MergingGemsKeepsTheScore()
+        {
+            // 합성은 4개 → 1개. 점수가 줄면 합성할수록 A 에서 멀어진다.
+            Assert.AreEqual(4 * PromotionRules.GemPoints(1), PromotionRules.GemPoints(2));
+            Assert.AreEqual(4 * PromotionRules.GemPoints(3), PromotionRules.GemPoints(4));
         }
 
         [Test]
@@ -190,16 +315,6 @@ namespace OJ.Core.Tests
         {
             Assert.AreEqual(TimeSpan.FromHours(20), PromotionRules.ReplaceLockRemaining(0, 4 * Hour));
             Assert.AreEqual(TimeSpan.Zero, PromotionRules.ReplaceLockRemaining(0, 24 * Hour));
-        }
-
-        [Test]
-        public void EventCurrencyIsCappedByRemainingNeedAndHeld()
-        {
-            Assert.AreEqual(300, PromotionRules.AcceptableEventCurrency(700, 1000, 5000, 5000));
-            Assert.AreEqual(40, PromotionRules.AcceptableEventCurrency(0, 1000, 40, 5000));
-            Assert.AreEqual(10, PromotionRules.AcceptableEventCurrency(0, 1000, 5000, 10));
-            Assert.AreEqual(0, PromotionRules.AcceptableEventCurrency(1000, 1000, 5000, 5000));
-            Assert.AreEqual(0, PromotionRules.AcceptableEventCurrency(0, 0, 5000, 5000));
         }
 
         [TestCase(0, 0)]

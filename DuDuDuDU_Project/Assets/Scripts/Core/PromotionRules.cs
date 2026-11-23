@@ -31,10 +31,29 @@ namespace OJ.Core
         BossKills,
 
         /// <summary>
-        /// 이벤트 재화 투입(미션 B). <b>열린 이벤트의 재화만 인정한다.</b>
-        /// 다른 미션과 달리 행동이 아니라 유저가 직접 넣는 것이라 <c>Notify</c> 가 아니라 투입 경로로만 오른다.
+        /// 이벤트 재화 소모(미션 B). <b>열린 이벤트의 재화만 인정한다.</b>
+        /// 이벤트 미니게임이 재화를 쓴 만큼 오른다. 다른 미션처럼 <c>Notify</c> 로 세지 않고 전용 경로
+        /// (<c>PromotionManager.NotifyEventCurrencySpent</c>)로만 오른다 — 열린 이벤트인지 날짜로 따져야 해서다.
         /// </summary>
         EventCurrency,
+    }
+
+    /// <summary>
+    /// 미션 A(보유형, T3 전용)가 보는 축. <b>다이스 카피만 몰아 키운 유저가 다른 콘텐츠도 평균 속도로 키우게</b> 하는 균형 검사다.
+    /// 값은 전부 이미 세이브에 있는 것이라 진행도를 따로 저장하지 않는다.
+    /// </summary>
+    public enum PromotionOwned
+    {
+        None = 0,
+
+        /// <summary>장비 6부위의 레벨 합.</summary>
+        EquipmentLevels,
+
+        /// <summary>보유 유물의 레벨 합(소환 1회 = 레벨 약 1).</summary>
+        RelicLevels,
+
+        /// <summary>보석 점수(보유 + 장착). 등급마다 4배라 4개 합성해도 점수가 그대로다.</summary>
+        GemScore,
     }
 
     /// <summary>승급 등록 가능 여부.</summary>
@@ -64,11 +83,13 @@ namespace OJ.Core
     ///   대상   기본 5종: T1 만 / 레어 5종·킹 5종: T1~T3
     ///   레벨   T1 Lv5 / T2 Lv15 / T3 Lv30 이 되어야 등록할 수 있다
     ///   큐     1칸. 등록한 뒤 쓴 분만 인정, 교체는 24시간 잠금, 교체하면 진행도 초기화
-    ///   미션   C(참여·소모) 전부 + B(이벤트 재화, T2·T3) 를 다 채우면 승급
-    ///   A      보유형 미션(T3 전용). 종류·수량은 테스트 뒤에 정한다 — 지금은 없다
+    ///   미션   0→1: C 1개 / 1→2: C 1개 + B 1개 / 2→3: C 1개 + B 1개 + A 1개
+    ///          <b>C 는 유저가 고르지 않는다</b> — 다이스·단계마다 정해 둔 한 가지다(<see cref="AssignedMission"/>)
+    ///   A      보유형 미션(T3 전용, 레어·킹 10종). 다이스마다 장비/유물/보석 중 하나로 고정(<see cref="AssignedOwned"/>)
     /// </code>
     /// B 가 <b>유일한 시간 병목</b>이다 — 이벤트 재화는 하루 약 200개(열린 이벤트 하나)라
     /// T2 1,000개는 5일, T3 3,000개는 15일이다. C 쪽 수치는 그 시간 안에 자연히 채워지는 크기다.
+    /// B 는 이벤트 재화 한 종류뿐이다.
     /// </summary>
     public static class PromotionRules
     {
@@ -87,9 +108,129 @@ namespace OJ.Core
         /// <summary>단계(1~3) → 등록에 필요한 다이스 레벨. 마일스톤(10/20/25)과 별개다.</summary>
         private static readonly int[] RequiredLevels = { 5, 15, 30 };
 
+        /// <summary>승급 대상 다이스 칸 수. 기본 5 + 레어 5 + 킹 5. 칸 번호는 그 순서(Normal=0 … KingPoison=14)다.</summary>
+        public const int SlotCount = 15;
+
         /// <summary>
-        /// 미션 × 단계(1~3) 요구량. <b>0 은 그 단계에서 제외된 미션</b>이다.
-        /// 행은 <see cref="PromotionMission"/> 순서와 같다.
+        /// 다이스 칸(0~14) × 단계(1~3) → 그 단계에서 채울 <b>C 미션 한 가지</b>. 기획이 정해 둔 고정표다.
+        /// 기본 5종은 T1 만 쓰므로 T2·T3 칸은 자리만 채웠다(<see cref="MaxTier"/> 가 막는다).
+        /// T2·T3 는 요구량이 있는 네 가지(핀볼·시너지·소탕·스테이지)에서만 고른다.
+        /// 한 가지로 몰리지 않게 다이스마다 어긋나게 흩었다.
+        /// </summary>
+        private static readonly PromotionMission[][] AssignedC =
+        {
+            /*  0 Normal     */ new[] { PromotionMission.MonsterKills,    PromotionMission.MonsterKills,    PromotionMission.MonsterKills },
+            /*  1 Fire       */ new[] { PromotionMission.PinballShots,    PromotionMission.PinballShots,    PromotionMission.PinballShots },
+            /*  2 Ice        */ new[] { PromotionMission.SynergyTickets,  PromotionMission.SynergyTickets,  PromotionMission.SynergyTickets },
+            /*  3 Thunder    */ new[] { PromotionMission.Sweeps,          PromotionMission.Sweeps,          PromotionMission.Sweeps },
+            /*  4 Poison     */ new[] { PromotionMission.StageChallenges, PromotionMission.StageChallenges, PromotionMission.StageChallenges },
+            /*  5 Tornado    */ new[] { PromotionMission.TowerChallenges, PromotionMission.Sweeps,          PromotionMission.PinballShots },
+            /*  6 Stun       */ new[] { PromotionMission.BossKills,       PromotionMission.StageChallenges, PromotionMission.SynergyTickets },
+            /*  7 ArmorBreak */ new[] { PromotionMission.PinballShots,    PromotionMission.SynergyTickets,  PromotionMission.Sweeps },
+            /*  8 Wind       */ new[] { PromotionMission.MonsterKills,    PromotionMission.PinballShots,    PromotionMission.StageChallenges },
+            /*  9 Time       */ new[] { PromotionMission.SynergyTickets,  PromotionMission.StageChallenges, PromotionMission.Sweeps },
+            /* 10 KingNormal */ new[] { PromotionMission.Sweeps,          PromotionMission.PinballShots,    PromotionMission.SynergyTickets },
+            /* 11 KingFire   */ new[] { PromotionMission.BossKills,       PromotionMission.Sweeps,          PromotionMission.StageChallenges },
+            /* 12 KingIce    */ new[] { PromotionMission.TowerChallenges, PromotionMission.SynergyTickets,  PromotionMission.PinballShots },
+            /* 13 KingThunder*/ new[] { PromotionMission.StageChallenges, PromotionMission.PinballShots,    PromotionMission.Sweeps },
+            /* 14 KingPoison */ new[] { PromotionMission.MonsterKills,    PromotionMission.StageChallenges, PromotionMission.SynergyTickets },
+        };
+
+        /// <summary>그 다이스 칸이 그 단계(1~3)에서 채울 C 미션. 범위 밖이면 PinballShots(쓰이지 않는다).</summary>
+        public static PromotionMission AssignedMission(int slot, int targetTier)
+        {
+            if (slot < 0 || slot >= AssignedC.Length || targetTier < 1 || targetTier > PromotableMaxTier)
+                return PromotionMission.PinballShots;
+
+            return AssignedC[slot][targetTier - 1];
+        }
+
+        /// <summary>장비 레벨 합 하한. 평균 유저 18일치(약 90)의 70%.</summary>
+        public const int EquipmentLevelsNeed = 63;
+
+        /// <summary>유물 레벨 합 하한. 평균 유저 18일치(약 18)의 70%.</summary>
+        public const int RelicLevelsNeed = 13;
+
+        /// <summary>보석 점수 하한. 평균 유저 18일치(약 92)의 70%.</summary>
+        public const int GemScoreNeed = 64;
+
+        /// <summary>
+        /// 다이스 칸(0~14) → T3 의 A 미션. 기본 5종은 T3 가 없어 None 이다.
+        /// 한 가지로 몰리지 않게 장비 3 / 유물 4 / 보석 3 으로 흩었다.
+        /// </summary>
+        private static readonly PromotionOwned[] AssignedA =
+        {
+            /*  0 Normal      */ PromotionOwned.None,
+            /*  1 Fire        */ PromotionOwned.None,
+            /*  2 Ice         */ PromotionOwned.None,
+            /*  3 Thunder     */ PromotionOwned.None,
+            /*  4 Poison      */ PromotionOwned.None,
+            /*  5 Tornado     */ PromotionOwned.EquipmentLevels,
+            /*  6 Stun        */ PromotionOwned.RelicLevels,
+            /*  7 ArmorBreak  */ PromotionOwned.GemScore,
+            /*  8 Wind        */ PromotionOwned.EquipmentLevels,
+            /*  9 Time        */ PromotionOwned.RelicLevels,
+            /* 10 KingNormal  */ PromotionOwned.RelicLevels,
+            /* 11 KingFire    */ PromotionOwned.GemScore,
+            /* 12 KingIce     */ PromotionOwned.EquipmentLevels,
+            /* 13 KingThunder */ PromotionOwned.GemScore,
+            /* 14 KingPoison  */ PromotionOwned.RelicLevels,
+        };
+
+        /// <summary>그 다이스 칸이 그 단계에서 채울 A 미션. T3 가 아니거나 대상이 아니면 None.</summary>
+        public static PromotionOwned AssignedOwned(int slot, int targetTier)
+        {
+            if (targetTier != PromotableMaxTier || slot < 0 || slot >= AssignedA.Length)
+                return PromotionOwned.None;
+
+            return AssignedA[slot];
+        }
+
+        /// <summary>A 축의 하한. None 이면 0.</summary>
+        public static int OwnedRequirement(PromotionOwned kind)
+        {
+            switch (kind)
+            {
+                case PromotionOwned.EquipmentLevels: return EquipmentLevelsNeed;
+                case PromotionOwned.RelicLevels: return RelicLevelsNeed;
+                case PromotionOwned.GemScore: return GemScoreNeed;
+                default: return 0;
+            }
+        }
+
+        /// <summary>
+        /// 보석 한 개의 점수. 등급이 한 단계 오를 때마다 4배다(합성이 4개 → 1개라 합성해도 총점이 그대로).
+        /// <paramref name="rarityOrdinal"/> 은 <c>Rarity</c> 의 정수값이다 — Common(1)=1, Normal(2)=4, Rare(3)=16, Epic(4)=64, Mythic(5)=256.
+        /// Common 아래(Uncommon)는 0점이다.
+        /// </summary>
+        public static int GemPoints(int rarityOrdinal)
+        {
+            if (rarityOrdinal < 1)
+                return 0;
+
+            int points = 1;
+            for (int i = 1; i < rarityOrdinal; i++)
+                points *= 4;
+
+            return points;
+        }
+
+        /// <summary>그 다이스 칸·단계의 A 미션이 찼는가. 요구가 없으면 true.</summary>
+        public static bool OwnedMet(int slot, int targetTier, int equipmentLevels, int relicLevels, int gemScore)
+        {
+            PromotionOwned kind = AssignedOwned(slot, targetTier);
+            switch (kind)
+            {
+                case PromotionOwned.EquipmentLevels: return equipmentLevels >= EquipmentLevelsNeed;
+                case PromotionOwned.RelicLevels: return relicLevels >= RelicLevelsNeed;
+                case PromotionOwned.GemScore: return gemScore >= GemScoreNeed;
+                default: return true;
+            }
+        }
+
+        /// <summary>
+        /// 미션 × 단계(1~3) 기본 요구량. <b>0 은 그 단계에서 쓸 수 없는 미션</b>이다.
+        /// 행은 <see cref="PromotionMission"/> 순서와 같다. 다이스별로 쓰이는 것은 <see cref="AssignedMission"/> 한 가지다.
         /// </summary>
         private static readonly int[][] Requirements =
         {
@@ -137,8 +278,20 @@ namespace OJ.Core
             return targetTier >= 1 && targetTier <= RequiredLevels.Length ? RequiredLevels[targetTier - 1] : 0;
         }
 
-        /// <summary>그 단계의 그 미션 요구량. 제외된 미션이거나 범위 밖이면 0.</summary>
-        public static int Requirement(PromotionMission mission, int targetTier)
+        /// <summary>
+        /// 그 다이스 칸이 그 단계에서 <b>채워야 하는</b> 미션의 요구량. B(이벤트 재화)는 단계에 값이 있으면 항상 요구하고,
+        /// C 는 <see cref="AssignedMission"/> 한 가지만 요구한다. 그 밖의 미션이거나 범위 밖이면 0.
+        /// </summary>
+        public static int Requirement(int slot, PromotionMission mission, int targetTier)
+        {
+            if (mission != PromotionMission.EventCurrency && AssignedMission(slot, targetTier) != mission)
+                return 0;
+
+            return BaseRequirement(mission, targetTier);
+        }
+
+        /// <summary>미션 종류별 기본 요구량(다이스와 무관). 쓸 수 없는 단계거나 범위 밖이면 0.</summary>
+        public static int BaseRequirement(PromotionMission mission, int targetTier)
         {
             int row = (int)mission;
             if (row < 0 || row >= Requirements.Length || targetTier < 1 || targetTier > Requirements[row].Length)
@@ -148,9 +301,9 @@ namespace OJ.Core
         }
 
         /// <summary>그 단계에서 이 미션을 채워야 하는가.</summary>
-        public static bool IsRequired(PromotionMission mission, int targetTier)
+        public static bool IsRequired(int slot, PromotionMission mission, int targetTier)
         {
-            return Requirement(mission, targetTier) > 0;
+            return Requirement(slot, mission, targetTier) > 0;
         }
 
         /// <summary>
@@ -169,9 +322,9 @@ namespace OJ.Core
         /// 진행도를 더한다. 요구량을 넘기지 않고, 제외된 미션이면 아무것도 하지 않는다.
         /// 돌려주는 값은 <b>실제로 더해진 양</b>이다.
         /// </summary>
-        public static int Add(IDictionary<string, int> progress, PromotionMission mission, int targetTier, int amount)
+        public static int Add(IDictionary<string, int> progress, int slot, PromotionMission mission, int targetTier, int amount)
         {
-            int need = Requirement(mission, targetTier);
+            int need = Requirement(slot, mission, targetTier);
             if (progress == null || need <= 0 || amount <= 0)
                 return 0;
 
@@ -187,9 +340,9 @@ namespace OJ.Core
         }
 
         /// <summary>이 미션의 지금 진행도(요구량으로 자른 값).</summary>
-        public static int Progress(IReadOnlyDictionary<string, int> progress, PromotionMission mission, int targetTier)
+        public static int Progress(IReadOnlyDictionary<string, int> progress, int slot, PromotionMission mission, int targetTier)
         {
-            int need = Requirement(mission, targetTier);
+            int need = Requirement(slot, mission, targetTier);
             if (progress == null || need <= 0)
                 return 0;
 
@@ -197,8 +350,8 @@ namespace OJ.Core
             return Clamp(value, need);
         }
 
-        /// <summary>그 단계의 미션이 전부 찼는가. 제외된 미션은 보지 않는다.</summary>
-        public static bool AllMissionsMet(IReadOnlyDictionary<string, int> progress, int targetTier)
+        /// <summary>그 다이스·단계의 요구 미션(C 한 가지 + B)이 전부 찼는가. 요구가 아닌 미션은 보지 않는다.</summary>
+        public static bool AllMissionsMet(IReadOnlyDictionary<string, int> progress, int slot, int targetTier)
         {
             if (targetTier < 1 || targetTier > PromotableMaxTier)
                 return false;
@@ -206,11 +359,11 @@ namespace OJ.Core
             for (int i = 0; i < Keys.Length; i++)
             {
                 var mission = (PromotionMission)i;
-                int need = Requirement(mission, targetTier);
+                int need = Requirement(slot, mission, targetTier);
                 if (need <= 0)
                     continue;
 
-                if (Progress(progress, mission, targetTier) < need)
+                if (Progress(progress, slot, mission, targetTier) < need)
                     return false;
             }
 
@@ -266,23 +419,6 @@ namespace OJ.Core
                 return System.TimeSpan.Zero;
 
             return System.TimeSpan.FromHours(ReplaceLockHours) - System.TimeSpan.FromTicks(nowUtcTicks - registeredUtcTicks);
-        }
-
-        /// <summary>
-        /// 이벤트 재화 투입량. 부른 양·가진 양·남은 요구량 중 가장 작은 값이다.
-        /// 요구량을 넘겨 넣어 재화를 버리는 일이 없다.
-        /// </summary>
-        public static int AcceptableEventCurrency(int progress, int requirement, int held, int offered)
-        {
-            if (requirement <= 0 || held <= 0 || offered <= 0)
-                return 0;
-
-            int remaining = requirement - Clamp(progress, requirement);
-            if (remaining <= 0)
-                return 0;
-
-            int amount = offered < held ? offered : held;
-            return amount < remaining ? amount : remaining;
         }
 
         /// <summary>

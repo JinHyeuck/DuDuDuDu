@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
 using OJ.Core;
+using OJ.Equipment;
 using OJ.Pinball;
 using OJ.Point;
+using OJ.Relic;
 using OJ.Save;
 
 namespace OJ.Dice
@@ -27,7 +29,7 @@ namespace OJ.Dice
     }
 
     /// <summary>
-    /// 다이스 승급의 실행부. <b>큐 한 칸 · 등록 뒤 쓴 분만 인정하는 진행도 · 이벤트 재화 투입과 환급</b>이
+    /// 다이스 승급의 실행부. <b>큐 한 칸 · 등록 뒤 쓴 분만 인정하는 진행도 · 이벤트 재화 소모 집계와 환급</b>이
     /// 한 자리에 있다. 규칙(요구량·레벨·잠금)은 <see cref="PromotionRules"/> 가 정본이고 여기는 상태를 든다.
     ///
     /// <b>세는 곳이 여럿이라 <see cref="Notify"/> 한 곳으로 모았다.</b> 핀볼·소탕·탑·스테이지·처치가
@@ -111,6 +113,21 @@ namespace OJ.Dice
                    || (diceType >= DiceType.KingNormal && diceType <= DiceType.KingPoison);
         }
 
+        /// <summary>
+        /// 승급 규칙(<see cref="PromotionRules"/>)이 쓰는 다이스 칸 번호. 기본 5종 0~4, 레어 5종 5~9, 킹 5종 10~14.
+        /// 대상이 아니면 -1 이다.
+        /// </summary>
+        public static int SlotOf(DiceType diceType)
+        {
+            if (diceType >= DiceType.Normal && diceType <= DiceType.Poison)
+                return diceType - DiceType.Normal;
+            if (diceType >= DiceType.Tornado && diceType <= DiceType.Time)
+                return 5 + (diceType - DiceType.Tornado);
+            if (diceType >= DiceType.KingNormal && diceType <= DiceType.KingPoison)
+                return 10 + (diceType - DiceType.KingNormal);
+            return -1;
+        }
+
         public bool HasQueue => hasQueue;
 
         /// <summary>큐 한 칸. 비어 있으면 false.</summary>
@@ -123,7 +140,7 @@ namespace OJ.Dice
         /// <summary>큐에 올라 있는 다이스의 미션 진행도(요구량으로 자른 값). 큐가 비었거나 제외된 미션이면 0.</summary>
         public int GetProgress(PromotionMission mission)
         {
-            return hasQueue ? PromotionRules.Progress(progress, mission, queuedTargetTier) : 0;
+            return hasQueue ? PromotionRules.Progress(progress, SlotOf(queuedDice), mission, queuedTargetTier) : 0;
         }
 
         /// <summary>교체 잠금이 남은 시간. 큐가 비었거나 잠기지 않았으면 0.</summary>
@@ -181,7 +198,7 @@ namespace OJ.Dice
             if (!hasQueue || mission == PromotionMission.EventCurrency)
                 return;
 
-            int added = PromotionRules.Add(progress, mission, queuedTargetTier, amount);
+            int added = PromotionRules.Add(progress, SlotOf(queuedDice), mission, queuedTargetTier, amount);
             if (added <= 0)
                 return;
 
@@ -196,46 +213,81 @@ namespace OJ.Dice
         }
 
         /// <summary>
-        /// 열린 이벤트의 재화를 미션 B 에 넣는다. 돌려주는 값은 <b>실제로 쓴 개수</b>다.
-        /// 부른 양·가진 양·남은 요구량 중 가장 작은 만큼만 쓴다.
+        /// 이벤트 미니게임이 재화를 <b>쓴 순간</b> 부른다 — 쓴 만큼이 미션 B 진행도다(따로 넣지 않는다).
+        /// <c>EventMinigameManager.TrySpend</c> 한 곳에서만 부르게 했다: <c>OnPointSpent</c> 를 구독하면
+        /// 종료 환급(<see cref="RefundClosedEventCurrency"/>)도 소모로 잡힌다.
+        ///
+        /// <b>열린 이벤트의 재화만 센다</b>(닫힌 이벤트의 재화는 어디에도 못 쓴다). 등록 전의 소모는 인정하지 않고
+        /// 요구량을 넘은 분은 버린다. <see cref="Notify"/> 처럼 절대 던지지 않고 세이브도 건드리지 않는다.
         /// </summary>
-        public int DonateEventCurrency(int offered, DateTime utcNow, bool saveNow = true)
+        public void NotifyEventCurrencySpent(PointType currency, int amount, DateTime utcNow)
         {
-            if (!hasQueue || points == null)
-                return 0;
+            if (!hasQueue || amount <= 0)
+                return;
 
-            int need = PromotionRules.Requirement(PromotionMission.EventCurrency, queuedTargetTier);
-            if (need <= 0)
-                return 0;
+            if (currency != EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(utcNow)))
+                return;
 
-            PointType open = EventCurrencyRules.Resolve(EventCurrencyRules.DayIndex(utcNow));
-            int amount = PromotionRules.AcceptableEventCurrency(
-                GetProgress(PromotionMission.EventCurrency), need, points.Get(open), offered);
-
-            if (amount <= 0 || !points.TrySpend(open, amount, saveNow))
-                return 0;
-
-            PromotionRules.Add(progress, PromotionMission.EventCurrency, queuedTargetTier, amount);
+            int added = PromotionRules.Add(
+                progress, SlotOf(queuedDice), PromotionMission.EventCurrency, queuedTargetTier, amount);
+            if (added <= 0)
+                return;
 
             if (!TryComplete())
                 OnChanged?.Invoke();
-
-            return amount;
         }
 
         /// <summary>
-        /// 미션 A(보유형). <b>아직 정해진 것이 없다</b> — 종류·수량은 테스트 뒤에 정한다.
-        /// 승급 단계와 무관한 것만 걸 것(순환 의존 금지: 승급하려면 다른 다이스의 승급이 필요하면 안 된다).
+        /// A 축의 현재 값 공급자. 테스트가 갈아끼운다. 비어 있으면 실제 매니저를 읽는다
+        /// (매니저가 없으면 0 — 헤드리스·로비 밖).
         /// </summary>
-        private static bool AreOwnedRequirementsMet(DiceType diceType, int targetTier)
+        public Func<PromotionOwned, int> OwnedValueSource;
+
+        /// <summary>A 축의 지금 값(장비 레벨 합 / 유물 레벨 합 / 보석 점수).</summary>
+        public int GetOwnedValue(PromotionOwned kind)
         {
-            return true;
+            if (OwnedValueSource != null)
+                return OwnedValueSource(kind);
+
+            switch (kind)
+            {
+                case PromotionOwned.EquipmentLevels:
+                    return EquipmentManager.Instance != null ? EquipmentManager.Instance.GetTotalLevel() : 0;
+                case PromotionOwned.RelicLevels:
+                    return RelicManager.Instance != null ? RelicManager.Instance.GetTotalLevel() : 0;
+                case PromotionOwned.GemScore:
+                    return EquipmentManager.Instance != null ? EquipmentManager.Instance.GetGemScore() : 0;
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// 미션 A(보유형, T3 전용)가 찼는가. 승급 단계와 무관한 값만 본다(순환 의존 금지 —
+        /// 다른 다이스의 승급을 조건으로 걸면 서로를 기다려 영영 못 오른다).
+        /// </summary>
+        private bool AreOwnedRequirementsMet(DiceType diceType, int targetTier)
+        {
+            PromotionOwned kind = PromotionRules.AssignedOwned(SlotOf(diceType), targetTier);
+            if (kind == PromotionOwned.None)
+                return true;
+
+            return GetOwnedValue(kind) >= PromotionRules.OwnedRequirement(kind);
+        }
+
+        /// <summary>
+        /// 장비·유물·보석이 바뀌었을 때 불린다. 나머지 미션을 먼저 채워 둔 큐가 A 가 찬 순간 끝나야 하는데,
+        /// A 는 행동이 아니라 상태라 <c>Notify</c> 가 오지 않기 때문이다.
+        /// </summary>
+        public void Recheck()
+        {
+            TryComplete();
         }
 
         private bool TryComplete()
         {
             if (!hasQueue
-                || !PromotionRules.AllMissionsMet(progress, queuedTargetTier)
+                || !PromotionRules.AllMissionsMet(progress, SlotOf(queuedDice), queuedTargetTier)
                 || !AreOwnedRequirementsMet(queuedDice, queuedTargetTier))
             {
                 return false;
@@ -320,7 +372,26 @@ namespace OJ.Dice
 
             int shots = RefundClosedEventCurrency(utcNow, saveNow);
             if (shots > 0)
+            {
+                pendingRefundShots += shots;
                 OnEventCurrencyRefunded?.Invoke(shots);
+            }
+        }
+
+        private int pendingRefundShots;
+
+        /// <summary>
+        /// 유저가 아직 못 본 환급 발수. 앱 시작 때 도는 환급은 로비 화면이 만들어지기 <b>전에</b> 끝나서 이벤트를 아무도 못 받으므로,
+        /// 알림은 여기 쌓인 값을 로비가 열릴 때 꺼내 본다. 저장하지 않는다 — 핀볼은 이미 지급됐고 알림만 놓치는 것이다.
+        /// </summary>
+        public int PendingRefundShots => pendingRefundShots;
+
+        /// <summary>쌓인 환급 발수를 꺼내고 0 으로 비운다.</summary>
+        public int TakePendingRefund()
+        {
+            int shots = pendingRefundShots;
+            pendingRefundShots = 0;
+            return shots;
         }
 
         // ── 저장 ───────────────────────────────────────────────────────
@@ -398,7 +469,7 @@ namespace OJ.Dice
                 if (!source.Progress.TryGetValue(key, out int value))
                     continue;
 
-                int clamped = PromotionRules.Clamp(value, PromotionRules.Requirement(mission, target));
+                int clamped = PromotionRules.Clamp(value, PromotionRules.Requirement(SlotOf(queued), mission, target));
                 if (clamped > 0)
                     progress[key] = clamped;
             }
