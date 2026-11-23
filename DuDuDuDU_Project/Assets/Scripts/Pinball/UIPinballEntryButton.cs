@@ -62,7 +62,7 @@ namespace OJ.Pinball
         private void Refresh()
         {
             if (titleText != null)
-                titleText.SetText("핀볼");
+                titleText.SetText("뽑기");
 
             if (ticketText == null)
                 return;
@@ -108,7 +108,7 @@ namespace OJ.Pinball
             entry.button = background.gameObject.AddComponent<Button>();
             entry.button.targetGraphic = background;
 
-            entry.titleText = UITowerUIFactory.CreateText("Title", background.transform, "핀볼", 32f,
+            entry.titleText = UITowerUIFactory.CreateText("Title", background.transform, "뽑기", 32f,
                 TextAlignmentOptions.Center, Color.white, font);
             UITowerUIFactory.SetRect(entry.titleText.rectTransform,
                 new Vector2(Width - 16f, 44f), new Vector2(0f, 20f));

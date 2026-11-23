@@ -169,10 +169,10 @@ namespace OJ.Pinball
             {
                 Draw("레어·킹 카피", 167, PointType.RandomRareKingCopy, 1),
                 Draw("기본 카피", 167, PointType.RandomBasicCopy, 1),
-                Draw("일반 보석 뽑기권", 83, PointType.NormalGemTicket, 1),
+                Draw("일반 보석 상자 열쇠", 83, PointType.NormalGemTicket, 1),
                 Draw("선택권", 42, PointType.SelectTicket, 1),
                 Draw("유물권", 42, PointType.RelicTicket, 1),
-                Draw("최고급 보석 뽑기권", 42, PointType.PremiumGemTicket, 1),
+                Draw("최고급 보석 상자 열쇠", 42, PointType.PremiumGemTicket, 1),
                 Draw("시너지 티켓", 150, PointType.SynergyTicket, 5),
                 Draw("이벤트 재화", 157, PointType.OpenEventCurrency, 5),
                 Draw("골드", 150, PointType.Gold, 20),

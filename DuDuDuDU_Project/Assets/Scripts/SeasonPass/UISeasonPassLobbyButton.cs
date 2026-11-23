@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using OJ.DI;
 
@@ -15,7 +16,9 @@ namespace OJ.SeasonPass
     public sealed class UISeasonPassLobbyButton : MonoBehaviour
     {
         [SerializeField] private Button button;
-        [SerializeField] private TMP_Text summaryText;
+        [SerializeField] private TMP_Text levelText;
+        [FormerlySerializedAs("summaryText")]
+        [SerializeField] private TMP_Text remainText;
         [SerializeField] private GameObject redDot;
 
         private void Awake()
@@ -52,8 +55,11 @@ namespace OJ.SeasonPass
             if (pass == null)
                 return;
 
-            if (summaryText != null)
-                summaryText.SetText(SeasonPassText.LobbySummary(pass.Level, pass.TimeUntilSeasonEnd));
+            if (levelText != null)
+                levelText.SetText(SeasonPassText.LevelLabel(pass.Level));
+
+            if (remainText != null)
+                remainText.SetText(SeasonPassText.RemainingLabel(pass.TimeUntilSeasonEnd));
 
             if (redDot != null)
                 redDot.SetActive(pass.HasClaimable());
@@ -85,11 +91,17 @@ namespace OJ.SeasonPass
                 TextAlignmentOptions.Center, UISeasonPassUIFactory.LightText, font);
             UISeasonPassUIFactory.SetRect(title.rectTransform, new Vector2(440f, 50f), new Vector2(0f, 24f));
 
-            entry.summaryText = UISeasonPassUIFactory.CreateText(
-                "Summary", root.transform, "Lv.1", 28f,
+            entry.levelText = UISeasonPassUIFactory.CreateText(
+                "Level", root.transform, "Lv.1", 28f,
                 TextAlignmentOptions.Center, UISeasonPassUIFactory.MutedText, font);
             UISeasonPassUIFactory.SetRect(
-                entry.summaryText.rectTransform, new Vector2(440f, 40f), new Vector2(0f, -28f));
+                entry.levelText.rectTransform, new Vector2(200f, 40f), new Vector2(-110f, -28f));
+
+            entry.remainText = UISeasonPassUIFactory.CreateText(
+                "Remain", root.transform, "", 28f,
+                TextAlignmentOptions.Center, UISeasonPassUIFactory.MutedText, font);
+            UISeasonPassUIFactory.SetRect(
+                entry.remainText.rectTransform, new Vector2(240f, 40f), new Vector2(110f, -28f));
 
             Image dot = UISeasonPassUIFactory.CreateImage(
                 "RedDot", root.transform, new Color(0.92f, 0.22f, 0.22f, 1f));
