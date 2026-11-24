@@ -182,5 +182,13 @@ namespace OJ.Game.Tests
                 return OJ.Point.EventCurrencyRules.DayIndex(utc);
             }
         }
+
+        [Test]
+        public void 타이밍_판정_글자는_범위_밖도_Cool_이다()
+        {
+            Assert.AreEqual("Cool!", EventMinigameText.TimingBurst(FishTiming.Miss));
+            Assert.AreEqual("Great!", EventMinigameText.TimingBurst(FishTiming.Good));
+            Assert.AreEqual("Perfect!", EventMinigameText.TimingBurst(FishTiming.Perfect));
+        }
     }
 }
