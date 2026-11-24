@@ -128,7 +128,7 @@ namespace OJ.EventMinigame
         /// 좌표는 1080x1920 화면 중심 기준이다.
         /// </summary>
         internal static Transform BakeScreen(UIEventMinigameDialog dialog, Transform parent, TMP_FontAsset font,
-            string title, string backgroundPath)
+            string title, string backgroundPath, bool withDock = true)
         {
             GameObject view = UIMissionUIFactory.CreateRect("View", parent);
             UIMissionUIFactory.Stretch(view.GetComponent<RectTransform>());
@@ -169,10 +169,13 @@ namespace OJ.EventMinigame
                 "Timer", right.transform, string.Empty, 30f, TextAlignmentOptions.Center, MutedText, font));
             UIMissionUIFactory.SetRect(dialog.TimerText.rectTransform, new Vector2(460f, 44f), new Vector2(0f, 34f));
 
-            // 아래 조작부
-            Image dock = UIMissionUIFactory.Sliced(p, "Dock", PanelDark, 3f,
-                new Vector2(1120f, 340f), new Vector2(0f, -810f), Color.white);
-            dock.raycastTarget = true;
+            // 아래 조작부. 낚시는 독 없이 장면 위에 버튼을 바로 얹는다(withDock = false) — 보상 버튼도 그쪽에서 둔다.
+            if (withDock)
+            {
+                Image dock = UIMissionUIFactory.Sliced(p, "Dock", PanelDark, 3f,
+                    new Vector2(1120f, 340f), new Vector2(0f, -810f), Color.white);
+                dock.raycastTarget = true;
+            }
 
             dialog.SetCurrency(UIMissionUIFactory.CreateText(
                 "Currency", p, string.Empty, 36f, TextAlignmentOptions.Center, GoldText, font));
@@ -188,8 +191,11 @@ namespace OJ.EventMinigame
                 ButtonSprite(EventButtonKind.Primary), ButtonSprite(EventButtonKind.Secondary),
                 ButtonSprite(EventButtonKind.Positive), ButtonSprite(EventButtonKind.Danger));
 
-            dialog.SetRewardButton(KitButton(p, "RewardButton", "보상", EventButtonKind.Secondary,
-                new Vector2(220f, 116f), new Vector2(385f, -770f), 38f, font));
+            if (withDock)
+            {
+                dialog.SetRewardButton(KitButton(p, "RewardButton", "보상", EventButtonKind.Secondary,
+                    new Vector2(220f, 116f), new Vector2(385f, -770f), 38f, font));
+            }
 
             return p;
         }
