@@ -136,11 +136,15 @@ namespace OJ.Dice
 
             var cost = DiceMetaDataProvider.GetUpgradeCost(diceType, currentLevel);
 
+            // 비용은 카피뿐이다(골드 0). 0 인 줄을 넣지 않는다 — TrySpend 가 0 을 어떻게 다루든
+            // 결제 목록에 "골드 0" 이 끼어 있을 이유가 없다. 골드 비용을 다시 두면 이 줄만 되살린다.
             var costs = new Dictionary<PointType, int>
             {
-                { PointType.Gold, cost.goldCost },
                 { PointManager.ToScrollType(diceType), cost.scrollCost }
             };
+
+            if (cost.goldCost > 0)
+                costs[PointType.Gold] = cost.goldCost;
 
             if (!points.TrySpend(costs))
                 return false;

@@ -23,10 +23,20 @@ namespace OJ.Hunting
                 return;
 
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            target.ApplySlow(DiceMetaDataProvider.GetSlowDuration(DiceType, level), 0.8f, DiceType);
+            bool wasSlowed = target.IsSlowed();
+            float slowDuration = DiceMetaDataProvider.GetSlowDuration(DiceType, level);
+            target.ApplySlow(slowDuration, 0.8f, DiceType);
+
+            // 승급 T1: 이미 둔화된 적에게 명중하면 20% 확률로 0.5초 빙결.
+            if (wasSlowed && OJ.Dice.PromotionManager.TierOf(DiceType) >= 1 && UnityEngine.Random.value <= OJ.Core.PromotionEffectRules.IceFreezeChance)
+                target.ApplyStun(OJ.Core.PromotionEffectRules.IceFreezeSeconds, DiceType);
+
+            // Lv30 마일스톤: 둔화된 적이 받는 피해 +10%.
+            if (level >= OJ.Core.DiceMilestoneLevels.Final)
+                target.ApplyPromotionDamageTakenBonus(OJ.Core.PromotionEffectRules.IceSlowedDamageTakenPercent, slowDuration);
             PlayEffectAt(DiceType, target.transform.position);
 
-            if (level < 6 || UnityEngine.Random.value > 0.3f)
+            if (level < OJ.Core.DiceMilestoneLevels.First || UnityEngine.Random.value > 0.3f)
                 return;
 
             List<Monster> around = attackContent.GetRedHitTarget(

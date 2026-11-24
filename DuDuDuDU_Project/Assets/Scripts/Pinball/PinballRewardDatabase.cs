@@ -13,11 +13,25 @@ namespace OJ.Pinball
         public PointType pointType;
         [Min(1)] public int amount;
 
-        public PinballReward(PointType pointType, int amount)
+        /// <summary>
+        /// 지급 확률(%). <b>0 은 "항상"으로 읽는다</b> — 이 필드가 생기기 전에 만든 에셋은 값이 0 이고,
+        /// 그것이 100% 여야 옛 표가 그대로 돈다. 칸 경품·핀 경품에서는 "이 한 줄을 줄지"의 확률이고,
+        /// 랜덤 1종 핀(<c>pickOneAtRandom</c>)에서는 "목록 중 무엇을 줄지"의 <b>가중치</b>다.
+        /// </summary>
+        [Range(0, 100)] public int chancePercent;
+
+        public PinballReward(PointType pointType, int amount, int chancePercent = 0)
         {
             this.pointType = pointType;
             this.amount = Mathf.Max(1, amount);
+            this.chancePercent = Mathf.Clamp(chancePercent, 0, 100);
         }
+
+        /// <summary>항상 주는가(확률 표기가 없거나 100).</summary>
+        public bool IsGuaranteed => chancePercent <= 0 || chancePercent >= 100;
+
+        /// <summary>실제로 쓰는 확률(1~100).</summary>
+        public int EffectiveChance => IsGuaranteed ? 100 : chancePercent;
 
         public PointRewardEntry ToPointRewardEntry()
         {
@@ -152,10 +166,63 @@ namespace OJ.Pinball
         /// 특수 핀 둘은 <c>PinballBoard.asset</c> 의 중앙 범퍼 두 개(태그 1·2)와 짝이다.
         /// </summary>
         /// <summary>
-        /// 칸별 시너지 티켓(초안 2026-10-28). 리롤 1번이 10장이라 발당 기댓값 약 2.2장 → 하루 96발이면 리롤 약 20번이다.
-        /// 고기와 같은 잭팟 모양(가운데 1% 칸만 크다). 에셋에 없으면 시너지 설치 메뉴가 같은 값으로 보충한다.
+        /// 칸별 골드. <b>보기 좋은 수</b>로 잡았다 — 가장자리 5·10·10·5, 가운데 잭팟 500.
+        /// 발당 기댓값 = 0.2475 × 30 + 0.01 × 500 = 12.4(5,000발에 약 6.2만 골드, 0.1원/골드 → 약 6,200원).
+        /// 예전 1·2 는 숫자가 너무 작아 하는 맛이 없었다(2026-11 사용자 결정). 보너스 쪽 골드(50 → 20)를 깎아 보충했다.
         /// </summary>
-        public static readonly int[] SynergyTicketsPerSlot = { 2, 2, 20, 2, 2 };
+        public static readonly int[] GoldPerSlot = { 5, 10, 500, 10, 5 };
+
+        /// <summary>
+        /// 칸별 시너지 티켓. 판의 칸 확률이 0.2475 × 4 + 0.01 이라 정수 한 장이 가장자리 칸에 <b>확정</b>으로 걸리면
+        /// 발당 0.2475 로 장부(0.12)의 두 배가 된다. 그래서 <b>확률로 준다</b> — 2·4번 칸에 1장씩, 24% 지급이면
+        /// 0.2475 × 2 × 0.24 ≈ 0.119 (5,000발에 약 594장, 하루 2,000발이면 약 238장).
+        /// 0 은 그 칸이 주지 않는다는 뜻이다.
+        /// </summary>
+        public static readonly int[] SynergyTicketsPerSlot = { 0, 1, 0, 1, 0 };
+        public const int SynergyTicketChancePercent = 24;
+
+        /// <summary>
+        /// 칸별 고기. <b>장부 밖 값이다</b> — 고기는 가치 장부에 없고 고기 루프(정책 4장 r)가 따로 잡는다.
+        ///
+        /// 클리어당 티켓을 1장에서 12장으로 올리면서(<c>StageRewardCalculator.PinballTicketPerClear</c>, 하루 2,016발)
+        /// 발당 고기를 1.24 → 0.11 로 내렸다. 그대로 두면 r = 168 × 12 × 1.24 ÷ 720 ≈ 3.5 로 고기가 불어난다.
+        /// r = 하루 발수 × 발당 고기 ÷ 하루 소탕 고기(720) = 2,016 × 0.11 ÷ 720 ≈ 0.31 (목표 0.3, 상한 0.35).
+        /// 하루 소탕 고기 720 은 고기 축제(2분마다 1개)가 기준이다.
+        /// 가장자리 칸은 0 이다 — 정수 1 만 걸려도 발당 0.99 라 r 이 상한을 넘는다. 가운데 1% 칸만 11(소탕 2회분 + 1)을 준다.
+        /// </summary>
+        public static readonly int[] StaminaPerSlot = { 0, 0, 11, 0, 0 };
+
+        /// <summary>
+        /// 칸별 열린 이벤트 재화. 장부 값 발당 0.09(5,000발에 450개, 20원 → 0.9만 원). 가장자리 1·5번 칸에 1개씩
+        /// <b>18% 확률</b>로 준다 — 0.2475 × 2 × 0.18 ≈ 0.089. 지급 순간 그날 열린 이벤트의 재화로 풀린다(<c>EventCurrencyRules</c>).
+        /// </summary>
+        public static readonly int[] EventCurrencyPerSlot = { 1, 0, 0, 0, 1 };
+        public const int EventCurrencyChancePercent = 18;
+
+        /// <summary>
+        /// 중간 핀의 "몇 번 맞으면 보상이 나가는가". 공 1발당 적중 횟수를 시뮬로 쟀다
+        /// (2026-11, 아트 PSD 배치 + 아치 판 셋을 일반 벽으로 둘러 상자를 감싼 판. 칸 확률 0.2475/0.2475/0.01/0.2475/0.2475 로 칸을 뽑고
+        /// 그 칸의 <b>시드표 풀</b>에서 공을 뽑는다 — 실제 게임이 하는 그대로, 표본 20만 개):
+        /// 카피핀(1번) 0.370 / 뽑기권핀(2번) 0.369 / 대박핀(3번) 0.690. 판이나 칸 확률을 바꾸면 다시 재서 고칠 것.
+        /// 시드표는 재미있는 궤적을 골라 담아서 날것 궤적보다 특수 핀을 자주 맞힌다(날것으로 재면 대박핀 0.192). 장부는 실제 게임 기준으로 맞춘다.
+        ///
+        /// 5,000발 기준 완주 횟수 = 발당 적중 × 5,000 ÷ 필요 적중:
+        ///   1번  11회  → 168.2번 (완주마다 카피 1장: 레어·킹 17% / 기본 83% → 레어·킹 28.6장 + 기본 139.6장; 장부 27.5 / 140)
+        ///   2번 154회  → 12.0번 (일반 보석 뽑기권 12장; 장부 12)
+        ///   3번 345회  → 10.0번 (Bonus 입장 10회, 500발당 1회; 장부 10)
+        ///
+        /// 카피핀은 <b>자주 나오고 한 번에 1장</b>이다(예전엔 40회마다 1장+5장을 몰아 줬다 — 2026-11 사용자 결정).
+        /// 무엇이 나올지는 확률이다(랜덤 1종 핀의 가중치).
+        ///
+        /// 3번 대박핀은 아치 판 셋(좌·우·아래)에 둘러싸여 맞히기 어렵다(공 한 발이 한 번이라도 맞힐 확률 약 25%).
+        /// 한 번 들어가면 틀 안에서 여러 번 튀기 때문에 맞힌 공은 평균 2.7번 맞힌다. 게이지는 34/67/100% 에서 판이 하나씩 켜진다.
+        /// 보너스 라운드의 입구는 이 핀 하나뿐이고 완주 보상도 그 라운드 하나다(확정 보상을 더 얹지 않는다 — 2026-11 사용자 결정).
+        /// </summary>
+        public const int CopyPinRequiredHits = 11;
+        public const int CopyPinRareKingPercent = 17;
+        public const int CopyPinBasicPercent = 83;
+        public const int GemTicketPinRequiredHits = 154;
+        public const int BonusPinRequiredHits = 345;
 
         public void PopulateDefaults()
         {
@@ -165,81 +232,63 @@ namespace OJ.Pinball
             specialRewards.Clear();
             PopulateMultiplierDefaults();
 
-            // 칸별 경품. <b>가운데 칸이 잭팟이다</b> — 판의 declaredProbability 가
-            // 0.2475 / 0.2475 / <b>0.01</b> / 0.2475 / 0.2475 라 100발에 한 번 걸린다.
+            // 칸별 경품 — <b>가치 장부(2026-11)의 5,000발 값에서 거꾸로 잡았다.</b>
+            // 판의 declaredProbability 는 0.2475 / 0.2475 / <b>0.01</b> / 0.2475 / 0.2475 라 가운데 칸이 100발에 한 번 걸리는 잭팟이다.
             //
-            // <b>확률을 깎는 것이 잭팟의 핵심이다.</b> 예전에는 다섯 칸이 0.16~0.22 로 고르고
-            // 금액이 1000~5000 이었다. 그 모양으로는 무엇을 얹어도 대박이 안 나온다 —
-            // 고기는 특히 그렇다. 발당 최소 1개씩만 줘도 96발이면 96개인데 회수율 상한
-            // (r = 0.35, 하루 126개)이 거의 다 차서 잭팟에 쓸 몫이 안 남는다.
-            // 한 칸을 1% 로 깎으면 나머지 99% 가 1개씩이어도 그 칸에 25개를 넣을 수 있다.
+            // 발당 기댓값 = 칸 확률 가중 평균:
+            //   골드        12.4   (5,000발에 약 6.2만)   = 5·10·500·10·5 (보기 좋은 수 — 보너스 골드를 깎아 보충)
+            //   시너지 티켓 0.119  (5,000발에 약 594)     = 2·4번 칸 1장 × 24% 확률
+            //   고기        0.11   (고기 루프의 몫 — 위 StaminaPerSlot 주석)  = 가운데 11
+            //   이벤트 재화 0.089  (5,000발에 약 445)     = 1·5번 칸 1개 × 18% 확률 (지급 순간 열린 이벤트의 재화로 풀린다)
             //
-            //   고기 기댓값 = 0.99 x 1 + 0.01 x 25 = 1.24  ->  하루 119개, r = 0.331
-            //   골드 기댓값 = 248.5                        ->  하루 23,856 (수요의 2.6배)
-            //
-            // 골드는 1000/2000/5000 -> 100/200/10000 -> 지금 값으로 두 번 내렸다.
-            // 마지막 인하는 <b>골드를 병목으로 만들기 위한 것</b>이다(StageRewardFormula
-            // .GuaranteedNormalGold 주석). 발당 21.375 로 하루 2,052 다.
-            int[] golds = { 10, 15, 900, 15, 10 };
-            int[] stamina = { 1, 1, 25, 1, 1 };
-            for (int i = 0; i < golds.Length; i++)
+            // 확률 지급(<c>chancePercent</c>)을 쓰는 이유: 정수 1 을 확정으로 걸면 25% 칸에서 발당 0.2475 라 장부의 2~4배가 된다.
+            for (int i = 0; i < GoldPerSlot.Length; i++)
             {
-                bool jackpot = stamina[i] > 1;
+                bool jackpot = GoldPerSlot[i] > 10;
                 var slot = new PinballSlotReward
                 {
-                    label = (jackpot ? "대박! " : string.Empty) +
-                            golds[i].ToString("N0") + " 골드 + 고기 " + stamina[i] +
-                            " + 시너지 티켓 " + SynergyTicketsPerSlot[i],
+                    label = (jackpot ? "대박! " : string.Empty) + GoldPerSlot[i].ToString("N0") + " 골드" +
+                            (StaminaPerSlot[i] > 0 ? " + 고기 " + StaminaPerSlot[i] : string.Empty) +
+                            (SynergyTicketsPerSlot[i] > 0 ? " + 시너지 티켓 " + SynergyTicketsPerSlot[i] + " (" + SynergyTicketChancePercent + "%)" : string.Empty) +
+                            (EventCurrencyPerSlot[i] > 0 ? " + 이벤트 재화 " + EventCurrencyPerSlot[i] + " (" + EventCurrencyChancePercent + "%)" : string.Empty),
                 };
-                slot.rewards.Add(new PinballReward(PointType.Gold, golds[i]));
-                slot.rewards.Add(new PinballReward(PointType.Stamina, stamina[i]));
-                slot.rewards.Add(new PinballReward(PointType.SynergyTicket, SynergyTicketsPerSlot[i]));
+                slot.rewards.Add(new PinballReward(PointType.Gold, GoldPerSlot[i]));
+                if (StaminaPerSlot[i] > 0)
+                    slot.rewards.Add(new PinballReward(PointType.Stamina, StaminaPerSlot[i]));
+                if (SynergyTicketsPerSlot[i] > 0)
+                    slot.rewards.Add(new PinballReward(PointType.SynergyTicket, SynergyTicketsPerSlot[i], SynergyTicketChancePercent));
+                if (EventCurrencyPerSlot[i] > 0)
+                    slot.rewards.Add(new PinballReward(PointType.OpenEventCurrency, EventCurrencyPerSlot[i], EventCurrencyChancePercent));
                 slotRewards.Add(slot);
             }
 
-            // <b>무료젬 10 이었다.</b> 무료젬은 티어 6 이라 여기 있을 물건이 아니다 —
-            // Base 는 티어 3 공급처이고, 상위 재화는 Pinball_Bonus 한 곳에서만 나와야
-            // 성장 페이스가 한 손잡이에 모인다(정책 3.2 · 5.1).
+            // 중간 핀 셋 (기본판의 태그 1·2·3). 필요 적중 수는 위 상수의 시뮬 측정에서 왔다.
             //
-            // 다이스 스크롤은 티어 3 이라 Base 와 티어가 맞고, 고기가 아니라서
-            // 루프 회수율 r 을 건드리지 않는다.
-            //
-            // 10장인 근거: 소탕이 종당 하루 115장을 주므로(정책 1.5) 이 핀이 하루
-            // 다섯 번쯤 차면 종당 10장, 약 9% 다. 그 이상이면 "Scroll 이 강화 게이트"
-            // (정책 7.1)가 핀볼로 우회된다 — Gold 를 게이트로 못 쓰는 이유와 같은 논리다.
-            var scrollPin = new PinballSpecialReward
+            // 1번 핀 = 카피핀: 완주 한 번에 <b>카피 1장</b> — 랜덤 레어·킹 카피 17% / 랜덤 기본 카피 83%(랜덤 1종 핀, chancePercent 가 가중치).
+            //   5,000발에 170번 완주 → 레어·킹 29.0장(3,500원) + 기본 141.5장(700원) ≈ 20.1만 원.
+            var copyPin = new PinballSpecialReward
             {
-                tag = 1, label = "스크롤핀", requiredHits = 10, pickOneAtRandom = true,
+                tag = 1, label = "카피핀", requiredHits = CopyPinRequiredHits, pickOneAtRandom = true,
             };
-            scrollPin.rewards.Add(new PinballReward(PointType.NormalScroll, 10));
-            scrollPin.rewards.Add(new PinballReward(PointType.FireScroll, 10));
-            scrollPin.rewards.Add(new PinballReward(PointType.IceScroll, 10));
-            scrollPin.rewards.Add(new PinballReward(PointType.PoisonScroll, 10));
-            scrollPin.rewards.Add(new PinballReward(PointType.ThunderScroll, 10));
-            specialRewards.Add(scrollPin);
+            copyPin.rewards.Add(new PinballReward(PointType.RandomRareKingCopy, 1, CopyPinRareKingPercent));
+            copyPin.rewards.Add(new PinballReward(PointType.RandomBasicCopy, 1, CopyPinBasicPercent));
+            specialRewards.Add(copyPin);
 
-            // <b>전투 재화를 주면 안 된다.</b> 핀볼은 로비 컨텐츠라, 판이 시작될 때 0 으로
-            // 밀리는 재화(SP·강화석)를 여기서 주면 받자마자 사라진다 — 탑이 먼저 같은
-            // 함정에 빠졌고 같은 이유로 신화석으로 갈아탔다(TowerRunManager.BuildClearRewards).
-            //
-            // <b>강화석 → 레어석 → 장비 스크롤로 두 번 바뀌었다.</b> 레어석은 티어 4 라
-            // 대표 수급처가 Pinball_Bonus 이고(정책 2장), 거기 레어석 핀(75)이 생긴 지금은
-            // Base 가 1개씩 흘리는 것이 원칙만 새게 한다. 당시 근거였던 "핀볼에 다이스 성장
-            // 축이 비어 있다"도 보너스 라운드가 채웠다.
-            //
-            // 10장인 근거: 소탕이 종당 하루 48장을 주므로(정책 1.5) 이 핀이 하루 세 번쯤
-            // 차면 종당 약 5장, 11% 다. 스크롤핀(tag 1)과 같은 비율이다.
-            var equipPin = new PinballSpecialReward
+            // 2번 핀 = 뽑기권핀: 일반 보석 뽑기권 1장. 5,000발에 12장(500원) = 0.6만 원.
+            //   (예전 장비핀이 있던 자리다 — 장비 두루마리의 핀볼 수급은 없어졌고 스테이지 클리어가 남는다.)
+            var gemPin = new PinballSpecialReward
             {
-                tag = 2, label = "장비핀", requiredHits = 15, pickOneAtRandom = true,
+                tag = 2, label = "뽑기권핀", requiredHits = GemTicketPinRequiredHits, pickOneAtRandom = false,
             };
-            equipPin.rewards.Add(new PinballReward(PointType.WeaponScroll, 10));
-            equipPin.rewards.Add(new PinballReward(PointType.HelmetScroll, 10));
-            equipPin.rewards.Add(new PinballReward(PointType.ArmorScroll, 10));
-            equipPin.rewards.Add(new PinballReward(PointType.RingScroll, 10));
-            equipPin.rewards.Add(new PinballReward(PointType.ShoesScroll, 10));
-            equipPin.rewards.Add(new PinballReward(PointType.NecklaceScroll, 10));
-            specialRewards.Add(equipPin);
+            gemPin.rewards.Add(new PinballReward(PointType.NormalGemTicket, 1));
+            specialRewards.Add(gemPin);
+
+            // 3번 핀 = 대박핀: 보상을 걸지 않는다 — 가득 차면 보너스 라운드가 열린다(BonusDiceDatabase.pinballTriggerTag).
+            //   5,000발에 10번(500발당 1회). 아치 판 셋이 둘러싼 상자 핀이라 맞히기 어렵고, 그래서 이 핀이 대박이다.
+            specialRewards.Add(new PinballSpecialReward
+            {
+                tag = 3, label = "대박핀", requiredHits = BonusPinRequiredHits, pickOneAtRandom = false,
+            });
         }
 
         /// <summary>칸 하나의 경품. 범위를 벗어나면 null.</summary>

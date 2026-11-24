@@ -47,8 +47,8 @@ namespace OJ.ContentUnlock
         /// <summary>홈으로 돌아온 뒤 다음 가이드를 걸기까지 잠깐 쉰다. 화면 전환 연출과 겹치지 않게.</summary>
         private const float ChainRestSeconds = 0.6f;
 
-        /// <summary>고기 축제 가이드 때 채워 두는 세트 수. 한 세트가 고기 30개다(<c>IdleRewardManager.MeatPerSet</c>).</summary>
-        private const int GuideMeatSets = 1;
+        /// <summary>고기 축제 가이드 때 채워 두는 세트 수. 한 세트가 고기 <c>IdleRewardManager.MeatPerSet</c> 개(1)라 30개가 되게 30세트를 채운다.</summary>
+        private const int GuideMeatSets = 30;
 
         /// <summary>한 번의 로비 방문에서 이어 붙이는 가이드의 최대 수. 이 수를 넘는 것은 다음 방문에 나온다.</summary>
         /// <summary>스테이지 보상 → 장비 → 다이스가 한 방문에 이어서 나오도록 셋이다.</summary>
@@ -175,7 +175,7 @@ namespace OJ.ContentUnlock
 
                 foreach (ContentUnlockDefinition d in queue)
                 {
-                    // 고기 축제는 "눌러서 받아요" 를 가르치는 가이드라 받을 게 있어야 한다. 한 세트(30개)를 채워 둔다.
+                    // 고기 축제는 "눌러서 받아요" 를 가르치는 가이드라 받을 게 있어야 한다. 고기 30개를 채워 둔다.
                     if (d.contentId == ContentId.MeatFestival)
                         IdleRewardManager.Instance?.EnsureMeatSets(GuideMeatSets);
 
@@ -652,7 +652,7 @@ namespace OJ.ContentUnlock
                 overlay.SetFinger(upgrade);
                 overlay.SetTalk(level <= 1
                     ? "<b>강화</b> 버튼을 눌러요!"
-                    : "한 번 더! <b>" + DiceGuideTargetLevel + "레벨</b>이 되면\n새로운 효과가 열려요.");
+                    : "한 번 더! 레벨이 오를수록\n새로운 효과가 열려요.");
 
                 await UniTask.WaitUntil(() => NormalLevel() > level, PlayerLoopTiming.Update, token);
 
@@ -664,8 +664,10 @@ namespace OJ.ContentUnlock
                 await UniTask.WaitUntil(() => Time.unscaledTime >= rest, PlayerLoopTiming.Update, token);
             }
 
-            // 4) 목표 레벨의 마일스톤 줄을 짚어 준다 — "레벨마다 효과가 열린다 = 어떤 다이스를 키울지가 전략" 을 보여 주는 자리다.
-            RectTransform row = panel.GetMilestoneRow(DiceGuideTargetLevel);
+            // 4) 첫 마일스톤 줄을 짚어 준다 — "레벨마다 효과가 열린다 = 어떤 다이스를 키울지가 전략" 을 보여 주는 자리다.
+            //    튜토리얼은 3레벨까지만 올리고(옛 Lv3 마일스톤은 기본 수치로 합쳐져 없다) 첫 마일스톤(Lv10)은
+            //    아직 잠긴 채로 "여기까지 키우면 열린다" 로 보여 준다.
+            RectTransform row = panel.GetMilestoneRow(OJ.Core.DiceMilestoneLevels.First);
             if (row != null)
                 overlay.SetDim(row);
             else
@@ -673,7 +675,7 @@ namespace OJ.ContentUnlock
 
             overlay.SetFinger(null);
             overlay.SetTalk(
-                "<b>" + DiceGuideTargetLevel + "레벨</b> 효과가 열렸어요!\n레벨마다 이런 효과가 생겨요.\n어떤 다이스를 키울지가 <b>전략</b>이에요!",
+                "<b>" + OJ.Core.DiceMilestoneLevels.First + "레벨</b>이 되면 이 효과가 열려요!\n레벨마다 이런 효과가 생겨요.\n어떤 다이스를 키울지가 <b>전략</b>이에요!",
                 tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
             await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
 
@@ -1039,7 +1041,7 @@ namespace OJ.ContentUnlock
                 && tower.HighestClearedFloor >= 1 && ownership.IsOwned(DiceType.KingThunder);
         }
 
-        /// <summary>1층 보상으로 받은 신화석으로 킹 썬더를 강화해 보게 한다. 다이스 탭을 눌러 열고 한 마디 한다.</summary>
+        /// <summary>1층 보상으로 받은 킹 썬더 카피로 킹 썬더를 강화해 보게 한다. 다이스 탭을 눌러 열고 한 마디 한다.</summary>
         private async UniTask KingUpgradeGuideAsync()
         {
             Button tab = gate != null ? gate.ButtonOf(ContentId.Dice) : null;
@@ -1058,7 +1060,7 @@ namespace OJ.ContentUnlock
                 overlay.Enter();
                 overlay.SetFinger(target);
                 overlay.SetDim(target);
-                overlay.SetTalk("탑 보상으로 <b>신화석</b>을 받았어요!\n다이스에서 킹 썬더를 강화해 봐요.");
+                overlay.SetTalk("탑 보상으로 <b>킹 썬더 카피</b>를 받았어요!\n다이스에서 킹 썬더를 강화해 봐요.");
 
                 bool clicked = false;
                 void OnClick() => clicked = true;
@@ -1080,7 +1082,7 @@ namespace OJ.ContentUnlock
                 float settle = Time.unscaledTime + SettleSeconds;
                 await UniTask.WaitUntil(() => Time.unscaledTime >= settle, PlayerLoopTiming.Update, token);
 
-                overlay.SetTalk("<b>킹 썬더</b>를 눌러 신화석으로 강화하면\n탑과 전투에서 훨씬 강해져요!",
+                overlay.SetTalk("<b>킹 썬더</b>를 눌러 카피로 강화하면\n탑과 전투에서 훨씬 강해져요!",
                     tapToContinue: true, UITutorialOverlay.TalkPlacement.Top);
                 await UniTask.WaitUntil(overlay.ConsumeTap, PlayerLoopTiming.Update, token);
 

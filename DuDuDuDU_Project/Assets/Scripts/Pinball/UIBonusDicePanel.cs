@@ -107,6 +107,15 @@ namespace OJ.Pinball
         private readonly Dictionary<int, List<TMP_Text>> pinGaugeLabels =
             new Dictionary<int, List<TMP_Text>>();
 
+        /// <summary>
+        /// 특수 핀 태그 → 그 핀 링의 채움 그림. 아트 판은 핀 아래에 "Fill" 자식(방사형)을 두고,
+        /// 진행도 비율만큼 채운다. 없는 핀(옛 판)은 글자만 갱신한다.
+        /// </summary>
+        private readonly Dictionary<int, List<Image>> pinFills = new Dictionary<int, List<Image>>();
+
+        /// <summary>판 가로세로 배율을 되돌리는 값. 라벨 묶음에 걸어 그 안을 화면 px 로 쓴다.</summary>
+        private Vector3 boardCounterScale = Vector3.one;
+
         /// <summary>핀 위 라벨을 모아 둔 부모. 다시 지을 때 통째로 지운다.</summary>
         private RectTransform pegLabelRoot;
 
@@ -593,6 +602,7 @@ namespace OJ.Pinball
         private void BuildPinLabels()
         {
             pinGaugeLabels.Clear();
+            pinFills.Clear();
 
             if (pegLabelRoot != null)
                 Destroy(pegLabelRoot.gameObject);
@@ -603,6 +613,13 @@ namespace OJ.Pinball
             {
                 return;
             }
+
+            // 아트 판은 가로세로 다른 배율로 늘어나 있다. 묶음마다 역배율을 걸어야 글자가 찌그러지지 않는다.
+            Vector3 boardScale = boardView.transform.localScale;
+            boardCounterScale = new Vector3(
+                Mathf.Abs(boardScale.x) > 0.0001f ? 1f / boardScale.x : 1f,
+                Mathf.Abs(boardScale.y) > 0.0001f ? 1f / boardScale.y : 1f,
+                1f);
 
             pegLabelRoot = NewChild("PinGauges", boardView.transform);
 
@@ -627,37 +644,60 @@ namespace OJ.Pinball
         {
             BonusDiceManager manager = Manager;
 
+            // 묶음 안의 좌표·크기는 화면 px 다(역배율). 핀 중심이 원점이다.
             RectTransform holder = NewChild("Peg_" + pegIndex + "_Tag" + tag, pegLabelRoot);
             holder.anchoredPosition = PegAnchored(pegIndex);
+            holder.localScale = boardCounterScale;
 
-            // 핀 반지름이 20px 안팎이라 그 위로 올려야 핀을 가리지 않는다.
-            bool hasReward = pin.rewards != null && pin.rewards.Count > 0;
+            RectTransform pegRect = PegRect(pegIndex);
+            float radius = pegRect != null ? Mathf.Max(pegRect.sizeDelta.x, pegRect.sizeDelta.y) * 0.5f : 30f;
+
+            // 보상 아이콘은 핀(링) 한가운데에, 수량과 진행도는 그 아래에 쌓는다.
+            // 핀 위에 적는 보상은 라운드를 열 때 풀에서 뽑힌 것이다(manager.GetPinRewards) — 지급과 같은 함수를 지난다.
+            IReadOnlyList<PinballReward> pinRewards =
+                manager != null ? manager.GetPinRewards(tag) : (IReadOnlyList<PinballReward>)pin.rewards;
+            bool hasReward = pinRewards != null && pinRewards.Count > 0;
+            float rowY = -(radius + 14f);
             if (hasReward)
             {
-                Sprite icon = PointRewardUtility.GetPointIcon(pin.rewards[0].pointType);
+                Sprite icon = PointRewardUtility.GetPointIcon(pinRewards[0].pointType);
                 if (icon != null)
                 {
+                    float iconSize = Mathf.Clamp(radius * 1.1f, 40f, 72f);
                     RectTransform iconRect = NewChild("Icon", holder);
                     var image = iconRect.gameObject.AddComponent<Image>();
                     image.sprite = icon;
                     image.raycastTarget = false;
                     image.preserveAspect = true;
-                    iconRect.sizeDelta = new Vector2(40f, 40f);
-                    iconRect.anchoredPosition = new Vector2(0f, 74f);
+                    iconRect.sizeDelta = new Vector2(iconSize, iconSize);
+                    iconRect.anchoredPosition = Vector2.zero;
+                }
+                else
+                {
+                    // 아이콘이 없는 재화(시너지 티켓)는 링 안에 이름을 적어 빈 링으로 보이지 않게 한다.
+                    TMP_Text nameLabel = NewLabel(
+                        "Name", holder,
+                        PointRewardUtility.GetPointName(pinRewards[0].pointType).Replace(' ', '\n'), pinLabelSize);
+                    nameLabel.color = DoneColor;
+                    nameLabel.textWrappingMode = TextWrappingModes.NoWrap;
+                    nameLabel.rectTransform.sizeDelta = new Vector2(radius * 1.5f, radius * 1.5f);
+                    nameLabel.rectTransform.anchoredPosition = Vector2.zero;
                 }
 
                 TMP_Text amount = NewLabel(
                     "Amount", holder,
-                    BuildRewardText(pin, manager != null ? manager.RewardMultiplier : 1),
-                    pinLabelSize - 2f);
-                amount.rectTransform.sizeDelta = new Vector2(140f, 44f);
-                amount.rectTransform.anchoredPosition = new Vector2(0f, 44f);
+                    BuildRewardText(pinRewards, manager != null ? manager.RewardMultiplier : 1),
+                    pinLabelSize + 2f);
+                amount.color = DoneColor;
+                amount.rectTransform.sizeDelta = new Vector2(140f, 32f);
+                amount.rectTransform.anchoredPosition = new Vector2(0f, rowY);
+                rowY -= 26f;
             }
 
             // 진행도. 공이 맞을 때마다 올라야 하므로 참조를 들고 있는다.
             TMP_Text gauge = NewLabel("Gauge", holder, string.Empty, pinLabelSize);
-            gauge.rectTransform.sizeDelta = new Vector2(140f, 38f);
-            gauge.rectTransform.anchoredPosition = new Vector2(0f, hasReward ? 18f : 44f);
+            gauge.rectTransform.sizeDelta = new Vector2(140f, 32f);
+            gauge.rectTransform.anchoredPosition = new Vector2(0f, rowY);
 
             if (!pinGaugeLabels.TryGetValue(tag, out List<TMP_Text> labels))
             {
@@ -666,6 +706,20 @@ namespace OJ.Pinball
             }
 
             labels.Add(gauge);
+
+            Transform fillTransform = pegRect != null ? pegRect.Find("Fill") : null;
+            var fill = fillTransform != null ? fillTransform.GetComponent<Image>() : null;
+            if (fill != null)
+            {
+                fill.fillAmount = 0f;
+                if (!pinFills.TryGetValue(tag, out List<Image> fills))
+                {
+                    fills = new List<Image>();
+                    pinFills[tag] = fills;
+                }
+
+                fills.Add(fill);
+            }
         }
 
         private void RefreshPinLabels()
@@ -695,6 +749,16 @@ namespace OJ.Pinball
                     labels[i].text = text;
                     labels[i].color = color;
                 }
+
+                if (pinFills.TryGetValue(pair.Key, out List<Image> fills))
+                {
+                    float ratio = pin.requiredHits > 0 ? Mathf.Clamp01(shown / (float)pin.requiredHits) : 0f;
+                    for (int i = 0; i < fills.Count; i++)
+                    {
+                        if (fills[i] != null)
+                            fills[i].fillAmount = ratio;
+                    }
+                }
             }
         }
 
@@ -719,30 +783,36 @@ namespace OJ.Pinball
         /// 배율은 판이 뒤집히기 전에 이미 확정되므로(핀볼 세션에서만 오른다)
         /// 라벨을 한 번 만들어 두면 라운드 내내 맞다.
         /// </summary>
-        private static string BuildRewardText(BonusPinReward pin, int multiplier)
+        private static string BuildRewardText(IReadOnlyList<PinballReward> rewards, int multiplier)
         {
             int scale = Mathf.Max(1, multiplier);
 
             var sb = new StringBuilder();
-            for (int i = 0; i < pin.rewards.Count; i++)
+            for (int i = 0; i < rewards.Count; i++)
             {
                 if (i > 0)
                     sb.Append('\n');
 
-                sb.Append(PinballRules.ScaleAmount(pin.rewards[i].amount, scale).ToString("N0"));
+                sb.Append(PinballRules.ScaleAmount(rewards[i].amount, scale).ToString("N0"));
             }
             return sb.ToString();
         }
 
-        private Vector2 PegAnchored(int pegIndex)
+        private RectTransform PegRect(int pegIndex)
         {
             if (boardView == null || boardView.pegs == null ||
-                pegIndex < 0 || pegIndex >= boardView.pegs.Length || boardView.pegs[pegIndex] == null)
+                pegIndex < 0 || pegIndex >= boardView.pegs.Length)
             {
-                return Vector2.zero;
+                return null;
             }
 
-            return boardView.pegs[pegIndex].anchoredPosition;
+            return boardView.pegs[pegIndex];
+        }
+
+        private Vector2 PegAnchored(int pegIndex)
+        {
+            RectTransform peg = PegRect(pegIndex);
+            return peg != null ? peg.anchoredPosition : Vector2.zero;
         }
 
         private static RectTransform NewChild(string name, Transform parent)

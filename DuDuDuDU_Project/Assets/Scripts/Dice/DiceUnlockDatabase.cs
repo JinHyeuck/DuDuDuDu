@@ -276,11 +276,11 @@ namespace OJ.Dice
         /// 스테이지 8/22, 튜토리얼에 걸려 있던 네 자리가 비었고, <b>그 자리를 다시 채우지
         /// 않았다</b>. 거기 킹을 옮겨 붙이면 탑의 해금 사다리와 정본이 겹친다.
         ///
-        /// <b>가격의 근거.</b> <c>MythicScroll</c> 은 Half 15 + Perfect 10 으로
-        /// <b>스테이지당 1회성</b>이라 30스테이지를 전부 퍼펙트해도 상한이 750 이다.
-        /// 킹 5종 합계 1850 은 그보다 크므로 전부 재화로 사는 것은 구조적으로 불가능하다.
-        /// 가장 싼 KingFire(200)만 8스테이지쯤 전 웨이브를 깨면 닿아서
-        /// "탑 30층 전에 하나 당겨오기" 가 성립한다.
+        /// <b>가격은 전부 1장이다(2026-11, 카피 개편).</b> 가격의 재화는 그 킹의 <b>자기 카피</b>
+        /// (<c>PointManager.ToScrollType</c>)라, 카피 1장으로 해금하고 이미 가진 것을 컨텐츠가 다시 주면
+        /// <b>카피 1장으로 환급</b>된다 — 중복이 곧 카피라는 가챠 문법 그대로다. 예전에는 신화석
+        /// 200~560개였는데, 그 재화는 사라졌고 다이스별 카피 1장이 3,500원 값어치라 가격 사다리를
+        /// 둘 이유가 없다. 킹끼리 값이 같은 것은 해금 경로(층·스테이지)가 다르게 만든다.
         ///
         /// <b>KingFire 30층은 고정이다.</b> 기획서에 박혀 있는 값이다(5.2 목표 배너,
         /// 5.6 해금 진행도). 옮기면 그 두 화면의 문구가 같이 틀어진다.
@@ -295,11 +295,11 @@ namespace OJ.Dice
         {
             return new List<DiceUnlockDefinition>
             {
-                Make(DiceType.KingFire, price: 200, floor: 30),
-                Make(DiceType.KingIce, price: 280, floor: 100),
-                Make(DiceType.KingThunder, price: 360, stage: 3),
-                Make(DiceType.KingNormal, price: 450, floor: 190),
-                Make(DiceType.KingPoison, price: 560, floor: 250),
+                Make(DiceType.KingFire, price: 1, floor: 30),
+                Make(DiceType.KingIce, price: 1, floor: 100),
+                Make(DiceType.KingThunder, price: 1, stage: 3),
+                Make(DiceType.KingNormal, price: 1, floor: 190),
+                Make(DiceType.KingPoison, price: 1, floor: 250),
             };
         }
 

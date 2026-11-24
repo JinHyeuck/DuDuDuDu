@@ -205,7 +205,9 @@ namespace OJ.EditorTools
             for (int i = 0; i < database.slotRewards.Count && i < amounts.Length; i++)
             {
                 PinballSlotReward slot = database.slotRewards[i];
-                if (slot == null || slot.rewards.Any(r => r.pointType == PointType.SynergyTicket))
+                // 0 은 "그 칸은 시너지 티켓을 주지 않는다"는 뜻이다(2026-11 장부 개편 — 가운데 칸에만 준다).
+                // PinballReward 는 최소 1 로 올리므로 걸러야 한다.
+                if (amounts[i] <= 0 || slot == null || slot.rewards.Any(r => r.pointType == PointType.SynergyTicket))
                     continue;
 
                 slot.rewards.Add(new PinballReward(PointType.SynergyTicket, amounts[i]));

@@ -234,7 +234,68 @@ namespace OJ.Hunting
             wasWaveState = false;
         }
 
-        public void ReduceRemainingCooldownPercentForOtherDice(float percent, int targetCount, UIDice sourceDice = null)
+        // ── 승급 효과가 쓰는 쿨타임 조작 ───────────────────────────────────────
+
+        private readonly Dictionary<UIDice, float> nextShotScale = new Dictionary<UIDice, float>();
+
+        /// <summary>이 다이스의 쿨타임을 즉시 끝낸다(스턴 T3).</summary>
+        public void ResetCooldown(UIDice dice)
+        {
+            if (dice == null || !diceNextReadyTime.ContainsKey(dice))
+                return;
+
+            diceNextReadyTime[dice] = Time.time;
+        }
+
+        /// <summary>이 다이스의 남은 쿨타임을 <paramref name="fraction"/> 만큼 줄인다(0.3 이면 30%).</summary>
+        public void CutOwnCooldown(UIDice dice, float fraction)
+        {
+            if (dice == null || !diceNextReadyTime.TryGetValue(dice, out float endTime))
+                return;
+
+            float remaining = Mathf.Max(0f, endTime - Time.time);
+            diceNextReadyTime[dice] = Mathf.Max(Time.time, endTime - remaining * Mathf.Clamp01(fraction));
+        }
+
+        /// <summary>보드 모든 다이스(자기 제외)의 남은 쿨타임에 비율을 곱한다(타임 T3).</summary>
+        public void ScaleAllRemainingCooldowns(float remainingRatio, UIDice except)
+        {
+            cooldownAdjustBuffer.Clear();
+            foreach (var pair in diceNextReadyTime)
+            {
+                if (pair.Key != null && pair.Key != except)
+                    cooldownAdjustBuffer.Add(pair.Key);
+            }
+
+            float ratio = Mathf.Clamp01(remainingRatio);
+            for (int i = 0; i < cooldownAdjustBuffer.Count; i++)
+            {
+                UIDice dice = cooldownAdjustBuffer[i];
+                float endTime = diceNextReadyTime[dice];
+                float remaining = Mathf.Max(0f, endTime - Time.time);
+                diceNextReadyTime[dice] = Time.time + remaining * ratio;
+            }
+        }
+
+        /// <summary>이 다이스의 다음 공격 대미지에 곱할 배수를 건다(타임 T2). 한 번 쓰면 사라진다.</summary>
+        public void SetNextShotScale(UIDice dice, float multiplier)
+        {
+            if (dice != null)
+                nextShotScale[dice] = multiplier;
+        }
+
+        private float ConsumeNextShotScale(UIDice dice)
+        {
+            if (dice != null && nextShotScale.TryGetValue(dice, out float scale))
+            {
+                nextShotScale.Remove(dice);
+                return scale;
+            }
+
+            return 1f;
+        }
+
+        public void ReduceRemainingCooldownPercentForOtherDice(float percent, int targetCount, UIDice sourceDice = null, int promotionTier = 0)
         {
             if (percent <= 0f || targetCount <= 0)
                 return;
@@ -255,10 +316,18 @@ namespace OJ.Hunting
                 cooldownAdjustBuffer.Add(pair.Key);
             }
 
-            for (int i = cooldownAdjustBuffer.Count - 1; i > 0; i--)
+            if (promotionTier >= 1)
             {
-                int j = Random.Range(0, i + 1);
-                (cooldownAdjustBuffer[i], cooldownAdjustBuffer[j]) = (cooldownAdjustBuffer[j], cooldownAdjustBuffer[i]);
+                // 타임 T1: 무작위 대신 남은 쿨타임이 가장 긴(= 가장 느린) 다이스부터 당긴다.
+                cooldownAdjustBuffer.Sort((a, b) => GetDiceCooldownRemaining(b).CompareTo(GetDiceCooldownRemaining(a)));
+            }
+            else
+            {
+                for (int i = cooldownAdjustBuffer.Count - 1; i > 0; i--)
+                {
+                    int j = Random.Range(0, i + 1);
+                    (cooldownAdjustBuffer[i], cooldownAdjustBuffer[j]) = (cooldownAdjustBuffer[j], cooldownAdjustBuffer[i]);
+                }
             }
 
             int applyCount = Mathf.Min(targetCount, cooldownAdjustBuffer.Count);
@@ -272,6 +341,10 @@ namespace OJ.Hunting
                 float remaining = Mathf.Max(0f, endTime - Time.time);
                 float reduceAmount = remaining * ratio;
                 diceNextReadyTime[dice] = Mathf.Max(Time.time, endTime - reduceAmount);
+
+                // 타임 T2: 당겨진 다이스의 다음 공격이 세진다.
+                if (promotionTier >= 2)
+                    SetNextShotScale(dice, OJ.Core.PromotionEffectRules.TimeNextShotMultiplier);
             }
         }
 
@@ -303,7 +376,12 @@ namespace OJ.Hunting
                 int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType.Time) : 1;
                 float reducePercent = DiceMetaDataProvider.GetTimeCooldownReducePercent(DiceType.Time, level);
                 int targetCount = DiceMetaDataProvider.GetTimeTargetCount(level);
-                ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount, sourceDice);
+                int timeTier = OJ.Dice.PromotionManager.TierOf(DiceType.Time);
+                ReduceRemainingCooldownPercentForOtherDice(reducePercent, targetCount, sourceDice, timeTier);
+
+                // 타임 T3(잠정): 확률로 보드 전체의 남은 쿨타임을 줄인다.
+                if (timeTier >= 3 && Random.value <= OJ.Core.PromotionEffectRules.TimeBoardChance)
+                    ScaleAllRemainingCooldowns(OJ.Core.PromotionEffectRules.TimeBoardRemainingRatio, sourceDice);
 
                 if (battle.Monsters.GetClosestMonster(firePoint.position) == null)
                 {
@@ -343,6 +421,8 @@ namespace OJ.Hunting
             bulletObj.transform.position = firePoint.position;
             bulletObj.transform.rotation = Quaternion.identity;
             bulletObj.SetBulletStat(diceType, diceStar);
+            bulletObj.SourceDice = sourceDice;
+            bulletObj.ShotScale = ConsumeNextShotScale(sourceDice);
             bulletObj.Shoot(dir);
             characterAnimation.PlayAnimation(CharacterState.Attack, fireRate);
             bowAnimation.PlayAnimation(CharacterState.Attack, fireRate);

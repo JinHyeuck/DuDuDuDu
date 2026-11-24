@@ -61,6 +61,11 @@ namespace OJ.Equipment
         protected override void OnLoad()
         {
             TryBindButtons();
+
+            // 보석 뽑기권이 모자랄 때 바로 살 수 있는 "충전" 버튼(일괄 레벨업 버튼 아래).
+            OJ.Shop.CurrencyPassPopup.AttachBelow(
+                levelUpAllButton, OJ.Shop.ContentPass.Gem, totalAttackText != null ? totalAttackText.font : null,
+                new UnityEngine.Vector2(220f, 84f));
         }
 
         protected override void OnUnload()

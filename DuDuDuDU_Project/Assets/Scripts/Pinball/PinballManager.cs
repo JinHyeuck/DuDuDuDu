@@ -186,7 +186,10 @@ namespace OJ.Pinball
                 return null;
             }
 
-            IReadOnlyList<PointRewardEntry> rewards = GetLandingRewards(drawn, multiplier);
+            // 확률 줄(chancePercent)은 여기서 한 번 굴려 <b>지급과 연출이 같은 결과를 보게</b> 한다 —
+            // 착지 연출은 이 공이 땅에 닿을 때 줄에서 꺼내 쓴다(ConsumeLandingRewards).
+            IReadOnlyList<PointRewardEntry> rewards = RollSlotRewards(drawn, multiplier);
+            EnqueueLanding(drawn, rewards);
             GrantWithoutSave(rewards);
             Save();     // 차감과 지급이 같은 파일 쓰기 한 번에 굳는다
 
@@ -194,14 +197,71 @@ namespace OJ.Pinball
             // 1 로 두면 x100 한 발이 x1 한 발과 같아진다 — 정책 5.2 의 압축 불변식
             // ("1배 N번과 N배 1번이 같다")을 미션 쪽에서도 지키는 것이다.
             MissionManager.Instance?.Notify(MissionAction.PinballShot, multiplier);
+            OJ.Dice.PromotionManager.Instance?.Notify(PromotionMission.PinballShots, multiplier);
 
             slot = drawn;
             return rewards;
         }
 
+        // 발사 때 굴린 칸 경품을 착지 연출까지 들고 가는 줄. 칸마다 따로 쌓고 먼저 쏜 공부터 꺼낸다 —
+        // 같은 칸에 닿는 공은 순서가 바뀌어도 합계가 같고, 연출에 뜨는 숫자가 실제 지급과 어긋나지 않는다.
+        private readonly Dictionary<int, Queue<IReadOnlyList<PointRewardEntry>>> landingQueues =
+            new Dictionary<int, Queue<IReadOnlyList<PointRewardEntry>>>();
+
+        private void EnqueueLanding(int slot, IReadOnlyList<PointRewardEntry> rewards)
+        {
+            if (!landingQueues.TryGetValue(slot, out Queue<IReadOnlyList<PointRewardEntry>> queue))
+            {
+                queue = new Queue<IReadOnlyList<PointRewardEntry>>();
+                landingQueues[slot] = queue;
+            }
+
+            queue.Enqueue(rewards);
+        }
+
+        /// <summary>착지 연출용: 이 칸으로 쏜 공의 <b>실제 지급 결과</b>. 줄이 비었으면(화면을 새로 열었다 등) 확률 없이 전부 준 값으로 대신한다.</summary>
+        public IReadOnlyList<PointRewardEntry> ConsumeLandingRewards(int slot, int multiplier)
+        {
+            if (landingQueues.TryGetValue(slot, out Queue<IReadOnlyList<PointRewardEntry>> queue) && queue.Count > 0)
+                return queue.Dequeue();
+
+            return GetLandingRewards(slot, multiplier);
+        }
+
+        /// <summary>남은 착지 연출 줄을 비운다. 화면을 닫을 때 부른다 — 오래된 결과가 다음 판 연출에 섞이지 않게.</summary>
+        public void ClearLandingQueues()
+        {
+            landingQueues.Clear();
+        }
+
         /// <summary>
-        /// 그 칸의 경품에 배율을 곱한 것. 발사 때는 지급할 목록으로, 착지 때는 연출에 띄울
-        /// 목록으로 쓴다 — <b>착지 시점에는 조회일 뿐 지급하지 않는다.</b>
+        /// 그 칸의 경품을 <b>확률을 굴려</b> 확정한 것. 확률 줄은 배율만큼 따로 굴려 성공한 횟수만 준다.
+        /// </summary>
+        private IReadOnlyList<PointRewardEntry> RollSlotRewards(int slot, int multiplier)
+        {
+            PinballSlotReward slotReward = Database.GetSlot(slot);
+            if (slotReward == null || slotReward.rewards == null)
+                return GetLandingRewards(slot, multiplier);
+
+            var rewards = new List<PointRewardEntry>();
+            for (int i = 0; i < slotReward.rewards.Count; i++)
+            {
+                PinballReward reward = slotReward.rewards[i];
+                int hits = reward.IsGuaranteed
+                    ? Mathf.Max(1, multiplier)
+                    : PinballRules.CountHits(reward.chancePercent, Mathf.Max(1, multiplier), () => UnityEngine.Random.value);
+                if (hits <= 0)
+                    continue;
+
+                rewards.Add(new PointRewardEntry(reward.pointType, PinballRules.ScaleAmount(reward.amount, hits)));
+            }
+
+            return rewards;
+        }
+
+        /// <summary>
+        /// 그 칸의 경품에 배율을 곱한 것(확률 없이 전부 준 값). <b>조회일 뿐 지급하지 않는다.</b>
+        /// 실제 지급은 <see cref="RollSlotRewards"/> 가 한다.
         /// </summary>
         public IReadOnlyList<PointRewardEntry> GetLandingRewards(int slot, int multiplier)
         {
@@ -279,6 +339,17 @@ namespace OJ.Pinball
 
             if (rule.pickOneAtRandom && rule.rewards.Count > 0)
             {
+                // 줄마다 chancePercent 가 있으면 그것이 <b>가중치</b>다(모두 0 이면 고르게).
+                var weights = new List<int>(rule.rewards.Count);
+                bool anyWeight = false;
+                for (int w = 0; w < rule.rewards.Count; w++)
+                {
+                    int weight = rule.rewards[w].chancePercent;
+                    weights.Add(weight);
+                    if (weight > 0)
+                        anyWeight = true;
+                }
+
                 // 목록에서 하나만 뽑는 핀(스크롤처럼 종류가 여럿인 재화)이다.
                 //
                 // <b>넘은 횟수만큼 따로 뽑는다.</b> 한 번 뽑아 grantCount 배로 주면
@@ -286,7 +357,9 @@ namespace OJ.Pinball
                 // 달라진다 — 정책 5.2 의 압축 불변식이 깨지는 자리다.
                 for (int i = 0; i < grantCount; i++)
                 {
-                    int index = PinballRules.PickIndex(rule.rewards.Count, UnityEngine.Random.value);
+                    int index = anyWeight
+                        ? BonusDiceRules.PickWeightedIndex(weights, UnityEngine.Random.value)
+                        : PinballRules.PickIndex(rule.rewards.Count, UnityEngine.Random.value);
                     if (index < 0)
                         continue;
 
@@ -299,8 +372,14 @@ namespace OJ.Pinball
                 for (int i = 0; i < rule.rewards.Count; i++)
                 {
                     PinballReward reward = rule.rewards[i];
+                    int times = reward.IsGuaranteed
+                        ? grantCount
+                        : PinballRules.CountHits(reward.chancePercent, grantCount, () => UnityEngine.Random.value);
+                    if (times <= 0)
+                        continue;
+
                     rewards.Add(new PointRewardEntry(
-                        reward.pointType, PinballRules.ScaleAmount(reward.amount, grantCount)));
+                        reward.pointType, PinballRules.ScaleAmount(reward.amount, times)));
                 }
             }
 

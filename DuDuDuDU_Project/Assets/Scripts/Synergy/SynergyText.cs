@@ -8,6 +8,23 @@ namespace OJ.Synergy
     /// </summary>
     public static class SynergyText
     {
+        /// <summary>리롤 버튼의 비용 표기. 티켓이 모자라면 모자란 만큼 골드로 메꾼 모습을 보여 준다.</summary>
+        public static string RerollCostLabel(int cost, int tickets, int gold)
+        {
+            if (!SynergyRules.TryPay(cost, tickets, gold, out int ticketsUsed, out int goldUsed))
+            {
+                // 못 낸다 — 티켓 기준으로 보여 준다.
+                return "티켓 " + cost;
+            }
+
+            if (goldUsed == 0)
+                return "티켓 " + ticketsUsed;
+
+            return ticketsUsed == 0
+                ? "골드 " + goldUsed.ToString("N0")
+                : "티켓 " + ticketsUsed + " + 골드 " + goldUsed.ToString("N0");
+        }
+
         public static string CategoryName(SynergyCategory category)
         {
             switch (category)

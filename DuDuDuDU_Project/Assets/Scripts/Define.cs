@@ -127,11 +127,98 @@ namespace OJ
         IceScroll = 102,
         PoisonScroll = 103,
         ThunderScroll = 104,
-        /// <summary>신화석. 다이스석 상점(기획서 8.6)이 파는 것이 이것이다.</summary>
+        /// <summary>
+        /// 신화석. <b>레거시다.</b> 다이스 강화 재료였지만 성장이 카피 방식으로 바뀌며 사용처가 없다
+        /// (킹 다이스는 이제 다이스별 카피 <see cref="KingNormalCopy"/> 등을 쓴다). 보상처를 정리하면 제거한다.
+        /// 번호는 구 세이브와 에셋이 들고 있으니 재사용하지 말 것.
+        /// </summary>
         MythicStone = 105,
 
-        /// <summary>레어석. 신화석과 짝을 이루는 하위 등급이다.</summary>
+        /// <summary>레어석. 신화석과 같은 사정의 레거시다 (레어 다이스는 <see cref="TornadoCopy"/> 등을 쓴다).</summary>
         RareStone = 106,
+
+        /// <summary>
+        /// 일반 보석 상자 열쇠(예전 이름 뽑기권). 일반 보석 상자 1회를 연다. 값어치 500원.
+        ///
+        /// <b>레어석·신화석과는 다른 재화다.</b> 저쪽은 지금 다이스 강화 재료(<c>ToScrollType</c>)이고,
+        /// 다이스 성장이 카피 방식으로 바뀌면(작업 3) 걷어낼 예정이다. 번호도 그래서 새로 땄다 —
+        /// 기존 세이브와 에셋이 105·106 을 강화석으로 들고 있으니 재사용하지 말 것.
+        /// </summary>
+        NormalGemTicket = 107,
+
+        /// <summary>최고급 보석 상자 열쇠(예전 이름 뽑기권). 최고급 보석 상자 1회를 연다. 값어치 1,800원.</summary>
+        PremiumGemTicket = 108,
+
+        // ── 다이스 카피 ─────────────────────────────────────────────────
+        //
+        // <b>다이스마다 하나씩이다.</b> 선택권이 "고른다"는 뜻을 가지려면 카피가 다이스별이어야 한다.
+        // 기본 5종은 새로 만들지 않고 기존 속성 스크롤(NormalScroll~ThunderScroll, 100~104)을 그대로
+        // 카피로 쓴다 — 번호가 세이브와 에셋에 박혀 있고, 레벨업 재료라는 역할이 이미 같다.
+        // 레벨업 비용·초기화 환급·킹 해금 가격이 모두 <c>PointManager.ToScrollType</c> 을 따라가므로
+        // 그 함수가 이 값들을 돌려주면 나머지는 손대지 않는다.
+
+        /// <summary>토네이도 카피.</summary>
+        TornadoCopy = 110,
+        /// <summary>스턴 카피.</summary>
+        StunCopy = 111,
+        /// <summary>방깎 카피.</summary>
+        ArmorBreakCopy = 112,
+        /// <summary>윈드 카피.</summary>
+        WindCopy = 113,
+        /// <summary>타임 카피.</summary>
+        TimeCopy = 114,
+
+        /// <summary>킹 노말 카피.</summary>
+        KingNormalCopy = 115,
+        /// <summary>킹 파이어 카피.</summary>
+        KingFireCopy = 116,
+        /// <summary>킹 아이스 카피.</summary>
+        KingIceCopy = 117,
+        /// <summary>킹 포이즌 카피.</summary>
+        KingPoisonCopy = 118,
+        /// <summary>킹 썬더 카피.</summary>
+        KingThunderCopy = 119,
+
+        /// <summary>
+        /// 선택권. 레어·킹 다이스 중 하나를 골라 카피 1장으로 바꾼다. 값어치 5,250원(카피의 1.5배).
+        /// 쓰는 화면은 아직 없다 — 지급·판매·교환 UI 는 후속 작업이다.
+        /// </summary>
+        SelectTicket = 120,
+
+        // ── 랜덤 카피 (지급용) ──────────────────────────────────────────
+        //
+        // <b>보관되지 않는 재화다.</b> 보상표에 "레어 카피 3장" 처럼 적기 위한 표지이고, 지급하는 순간
+        // (<c>PointManager.Add</c>) 후보 다이스의 구체적인 카피로 풀려서 들어간다 — 이 값 자체의
+        // 보유량은 늘 0 이다. 보상 미리보기에는 이 이름이 그대로 보이고(가챠 미리보기와 같다),
+        // 후보는 <c>DiceCopyRewards</c> 가 정한다.
+
+        /// <summary>랜덤 기본 카피. 기본 5종 중 하나씩 무작위로.</summary>
+        RandomBasicCopy = 130,
+        /// <summary>랜덤 레어 카피. 레어 5종 중 하나씩 무작위로.</summary>
+        RandomRareCopy = 131,
+        /// <summary>랜덤 킹 카피. 킹 5종 중 하나씩 무작위로.</summary>
+        RandomKingCopy = 132,
+        /// <summary>랜덤 레어·킹 카피. 레어·킹 10종 중 하나씩 무작위로(핀볼 보상표용).</summary>
+        RandomRareKingCopy = 133,
+
+        // ── 이벤트 재화 ─────────────────────────────────────────────────
+        //
+        // 이벤트 3종이 3일씩 돌아가며 열린다(9일 주기). 재화는 이벤트마다 따로이고 "열린 이벤트의 것만" 받는다.
+        // 이벤트 시스템 자체는 아직 없다 — 타입과 지급 배선만 먼저 있다. 이름은 이벤트가 정해지면 바꾼다
+        // (숫자 값은 세이브에 박히니 그대로 둘 것).
+
+        /// <summary>이벤트 재화 1. 값어치 20원.</summary>
+        EventCurrency1 = 140,
+        /// <summary>이벤트 재화 2.</summary>
+        EventCurrency2 = 141,
+        /// <summary>이벤트 재화 3.</summary>
+        EventCurrency3 = 142,
+
+        /// <summary>
+        /// 열린 이벤트 재화. <b>지급용 표지다 — 보관되지 않는다.</b> 지급 순간 그날 열린 이벤트의 재화로 풀린다
+        /// (<c>PointManager.Add</c>, 규칙은 <c>EventCurrencyRules</c>). 핀볼 아래 칸·Bonus 풀이 쓴다.
+        /// </summary>
+        OpenEventCurrency = 134,
         WeaponScroll = 200,
         HelmetScroll = 201,
         ArmorScroll = 202,
@@ -214,13 +301,14 @@ namespace OJ
         public static readonly int[] EquipmentSlotUnlockLevels = { 1, 10, 20, 30, 40};
 
         /// <summary>
-        /// 다이스 최대 레벨. <b>마일스톤의 마지막이 12 이고 거기가 끝이다.</b>
+        /// 다이스 최대 레벨. <b>카피 곡선(<c>DiceCopyCurve</c>)의 끝인 30 이다.</b>
         ///
-        /// <c>DiceMetaDataDatabase</c> 의 마일스톤이 3·6·9·12 인데, 그 위로는 레벨이 올라도
-        /// 새로 열리는 것이 없다 — 공격력만 선형으로 늘 뿐이다. 상한이 없던 시절에는
+        /// 승급 T3(Lv30)와 마지막 마일스톤이 모두 이 안에서 끝난다. 상한이 없던 시절에는
         /// 재화만 있으면 무한히 올라갔고, 그러면 "무엇을 목표로 키우는가"가 사라진다.
+        /// Lv31 이상의 카피 규칙은 <c>DiceCopyCurve</c> 에 확장용으로만 들어 있다 —
+        /// 상한을 올릴 때 이 상수만 바꾸면 된다.
         /// </summary>
-        public const int MaxDiceLevel = 12;
+        public const int MaxDiceLevel = 30;
 
         /// <summary>
         /// 장비 최대 레벨. <b>보석 슬롯이 마지막으로 열리는 레벨</b>이다.

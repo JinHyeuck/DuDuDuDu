@@ -70,6 +70,26 @@ namespace OJ.Hunting
             }
 
             hitMonsters.AddRange(fireTargets);
+
+            // 승급 T1: 폭발에 맞은 적이 5마리 이상이면 폭발 피해 +30%. Lv30 마일스톤: 폭발(번진 타) 최종 피해 +30%.
+            // 번진 타에만 곱한다 — 한가운데 맞은 적은 평소 타격이다.
+            bool bigExplosion = OJ.Dice.PromotionManager.TierOf(DiceType) >= 1 && hitMonsters.Count >= OJ.Core.PromotionEffectRules.FireBigExplosionMinTargets;
+            bool finalMilestone = level >= OJ.Core.DiceMilestoneLevels.Final;
+            if (bigExplosion || finalMilestone)
+            {
+                var scaled = new HashSet<Monster>();
+                for (int i = 0; i < fireTargets.Count; i++)
+                {
+                    Monster splash = fireTargets[i];
+                    if (splash == null || splash == rootTarget || !scaled.Add(splash))
+                        continue;
+
+                    if (bigExplosion)
+                        attackContent.ScaleTarget(splash, OJ.Core.PromotionEffectRules.FireBigExplosionMultiplier);
+                    if (finalMilestone)
+                        attackContent.ScaleTarget(splash, OJ.Core.PromotionEffectRules.FireExplosionFinalMultiplier);
+                }
+            }
         }
 
         public override void ApplyOnHit(AttackContent attackContent, Monster target)
@@ -82,7 +102,7 @@ namespace OJ.Hunting
 
             Vector3 center = target.transform.position;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            if (level < 6 || Random.value > 0.2f)
+            if (level < OJ.Core.DiceMilestoneLevels.First || Random.value > 0.2f)
                 return;
 
             attackContent.StartCoroutine(CoDelayedExplosion(attackContent, center, attackContent.CurrentDamage, level));

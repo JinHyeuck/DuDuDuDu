@@ -20,6 +20,14 @@ namespace OJ.Hunting
                 return;
 
             PlayEffectAt(DiceType, target.transform.position);
+
+            // 승급 T1: 공격이 대상을 관통해 근처의 적 1명에게 50% 피해.
+            if (attackContent != null && target == attackContent.CurrentRootTarget && OJ.Dice.PromotionManager.TierOf(DiceType) >= 1)
+            {
+                Monster behind = PromotionCombat.Nearest(battle, target.transform.position, OJ.Core.PromotionEffectRules.NormalPierceRadius, target);
+                if (behind != null)
+                    attackContent.HitMonster(behind, DiceType, UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(attackContent.CurrentDamage * OJ.Core.PromotionEffectRules.NormalPierceRatio)));
+            }
         }
     }
 }

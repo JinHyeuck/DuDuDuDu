@@ -162,6 +162,36 @@ namespace OJ.Pinball
             return gauge * 100 >= requiredHits * nearPercent;
         }
 
+        /// <summary>
+        /// <paramref name="trials"/> 번 시도해 성공한 횟수. 확률이 0 이하이거나 100 이상이면 <b>전부 성공</b>이다
+        /// (<c>PinballReward.chancePercent</c> 의 0 은 "항상"이다). 배율 발사가 한 번에 여러 번을 걸어도
+        /// 1배 N번과 N배 1번이 같도록 <b>시도마다 따로 굴린다</b>(압축 불변식).
+        ///
+        /// 시도가 아주 많으면(배율×완주 수가 큰 경우) 기댓값으로 줄인다 — 루프가 프레임을 먹지 않게.
+        /// </summary>
+        /// <param name="roll">0 이상 1 미만의 난수를 돌려주는 함수. 테스트가 결정적 난수열을 넣는다.</param>
+        public static int CountHits(int chancePercent, int trials, System.Func<float> roll)
+        {
+            if (trials <= 0)
+                return 0;
+
+            if (chancePercent <= 0 || chancePercent >= 100)
+                return trials;
+
+            const int ExactLimit = 1000;
+            if (trials > ExactLimit)
+                return (int)(((long)trials * chancePercent + 50) / 100);
+
+            int hits = 0;
+            for (int i = 0; i < trials; i++)
+            {
+                if (roll() * 100f < chancePercent)
+                    hits++;
+            }
+
+            return hits;
+        }
+
         public static int PickIndex(int count, float roll)
         {
             if (count <= 0)

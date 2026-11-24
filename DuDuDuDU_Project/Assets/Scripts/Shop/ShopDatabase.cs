@@ -100,37 +100,28 @@ namespace OJ.Shop
             public string pairedProductLabel;
         }
 
-        // ── 8.6 다이스석 상점 ─────────────────────────────────────────
-
+        // ── 재화 상점 (2026-11, 가치 장부 기준) ───────────────────────
         /// <summary>
-        /// 다이스석 한 칸. 스샷 레퍼런스대로 <b>수량 티어를 3칸 나열</b>한다(5 / 50 / 150 꼴).
-        ///
-        /// <b>일일 한도도 누진도 없다.</b> 기획서 8.6 은 한도를 요구했지만 개발 중 판단으로
-        /// 뺐다 — 지금은 로직을 눌러 보는 것이 먼저이고, 한도가 있으면 세 번 사고 나면
-        /// 더 못 눌러 본다. <b>되살릴 때는 기획서 8.6-1 의 근거(보유량이 그대로 스펙이 된다)를
-        /// 다시 읽을 것.</b>
+        /// 재화 상점의 한 줄. <b>유료젬으로만 산다</b>(10원 = 1젬, 묶음 할인 없음) —
+        /// 가격은 가치 장부의 값어치를 그대로 옮긴 것이다(선택권 5,250원 = 525젬 등).
+        /// 카피는 직접 팔지 않는다(선택권이 그 자리다).
         /// </summary>
         [Serializable]
-        public sealed class StoneOffer
+        public sealed class CurrencyOffer
         {
-            public PointType stoneType = PointType.MythicStone;
-            public int amountPerPurchase = 5;
-            public int costFreeGem = 500;
+            public PointType pointType;
+            public int amount = 1;
+
+            [Tooltip("유료젬 가격. 가치 장부의 원화 값어치 / 10.")]
+            public int priceGem = 100;
+
+            [Tooltip("하루 구매 한도. 0 이면 한도 없음. 핀볼 1,000발은 하루 2회, 이벤트 재화 250개는 하루 1회다(구매분도 같은 보상 — 이벤트 재화는 쓰면 평균 10배가 돌아와 한도가 곧 보상 상한이다).")]
+            public int dailyLimit;
         }
 
-        // ── 8.7 골드 상점 ─────────────────────────────────────────────
-        [Serializable]
-        public sealed class GoldOffer
-        {
-            public int goldAmount = 1000000;
-            public int baseCostFreeGem = 100;
+        [SerializeField] private List<CurrencyOffer> currencyOffers = new List<CurrencyOffer>();
 
-            /// <summary>
-            /// 구매 1회마다 오르는 단가. 기획서 8.7 2번은 <b>누진을 확정</b>했다(한도가 없으므로
-            /// 이것이 유일한 제동이다). 0 으로 두면 무료젬이 골드로만 빠져나간다.
-            /// </summary>
-            public int costIncreasePerPurchase = 20;
-        }
+        public IReadOnlyList<CurrencyOffer> CurrencyOffers => currencyOffers;
 
         // ── 5 멤버십 (광고제거권 · 고기 멤버십) ───────────────────────
         /// <summary>
@@ -138,8 +129,9 @@ namespace OJ.Shop
         ///
         /// <b>무료 소탕 한도가 여기 있는 이유.</b> 이 한도는 고기 멤버십이 풀라고 있는 것이다 —
         /// 상품과 그것이 푸는 제한이 다른 에셋에 있으면 한쪽만 고쳐져 멤버십이 아무것도 안 푸는
-        /// 날이 온다. 기본값 72 는 <c>SweepEconomy.DailySweepClears</c>(고기 유입으로 하루에 돌 수 있는
-        /// 소탕 수)와 같다 — 기획서 5.3 의 "Day 3 부터 체증" 곡선은 아직 미정이라 고정값이다.
+        /// 날이 온다. 기본값은 하루 5회다(2026-11) — 멤버십이 없으면 하루 5번만 소탕할 수 있고,
+        /// 고기 멤버십이 그 한도를 풀어 <c>SweepEconomy.DailySweepClears</c>(144, 고기 유입으로 하루에 돌 수 있는 소탕 수)까지
+        /// 돌 수 있다. 기획서 5.3 의 "Day 3 부터 체증" 곡선은 아직 미정이라 고정값이다.
         /// </summary>
         [Serializable]
         public sealed class MembershipOffers
@@ -157,7 +149,7 @@ namespace OJ.Shop
             [Min(0)] public int rebuyWindowDays = 3;
 
             [Tooltip("멤버십이 없을 때 하루 소탕 한도. 멤버십은 이것을 풀어 준다.")]
-            [Min(1)] public int freeDailySweepLimit = 72;
+            [Min(1)] public int freeDailySweepLimit = 5;
         }
 
         [Header("5 멤버십")]
@@ -199,11 +191,11 @@ namespace OJ.Shop
             {
                 new DayRewards(new Reward(PointType.PaidGem, 300), new Reward(PointType.Gold, 5000)),
                 new DayRewards(new Reward(PointType.Gold, 10000), new Reward(PointType.Stamina, 180)),
-                new DayRewards(new Reward(PointType.PaidGem, 500), new Reward(PointType.RareStone, 50)),
-                new DayRewards(new Reward(PointType.Stamina, 360), new Reward(PointType.RareStone, 50)),
-                new DayRewards(new Reward(PointType.RareStone, 100), new Reward(PointType.Gold, 10000)),
-                new DayRewards(new Reward(PointType.Gold, 15000), new Reward(PointType.MythicStone, 40)),
-                new DayRewards(new Reward(PointType.MythicStone, 100), new Reward(PointType.Gold, 20000)),
+                new DayRewards(new Reward(PointType.PaidGem, 500), new Reward(PointType.RandomRareCopy, 10)),
+                new DayRewards(new Reward(PointType.Stamina, 360), new Reward(PointType.RandomRareCopy, 10)),
+                new DayRewards(new Reward(PointType.RandomRareCopy, 20), new Reward(PointType.Gold, 10000)),
+                new DayRewards(new Reward(PointType.Gold, 15000), new Reward(PointType.RandomKingCopy, 7)),
+                new DayRewards(new Reward(PointType.RandomKingCopy, 17), new Reward(PointType.Gold, 20000)),
             };
 
             [Tooltip("테두리를 강조할 일차(4.2-2 — 회수 구조의 핵심인 젬 줄).")]
@@ -251,19 +243,11 @@ namespace OJ.Shop
         [Tooltip("한 번에 교환할 수 있는 단위. 화면에 버튼으로 그대로 나온다.")]
         [SerializeField] private List<int> freeGemExchangeUnits = new List<int>();
 
-        [Header("8.6 다이스석 상점")]
-        [SerializeField] private List<StoneOffer> stoneOffers = new List<StoneOffer>();
-
-        [Header("8.7 골드 상점")]
-        [SerializeField] private List<GoldOffer> goldOffers = new List<GoldOffer>();
-
         public IReadOnlyList<GrowthPackage> GrowthPackages => growthPackages;
         public IReadOnlyList<GemBox> GemBoxes => gemBoxes;
         public IReadOnlyList<PaidGemOffer> PaidGemOffers => paidGemOffers;
         public int FreeGemPerPaidGem => Mathf.Max(1, freeGemPerPaidGem);
         public IReadOnlyList<int> FreeGemExchangeUnits => freeGemExchangeUnits;
-        public IReadOnlyList<StoneOffer> StoneOffers => stoneOffers;
-        public IReadOnlyList<GoldOffer> GoldOffers => goldOffers;
 
 
         /// <summary>
@@ -300,7 +284,7 @@ namespace OJ.Shop
                     contents = new List<Reward>
                     {
                         new Reward(PointType.PaidGem, 250),
-                        new Reward(PointType.MythicStone, 15),
+                        new Reward(PointType.RandomKingCopy, 3),
                     },
                 },
             };
@@ -348,22 +332,27 @@ namespace OJ.Shop
             freeGemPerPaidGem = 1;
             freeGemExchangeUnits = new List<int> { 100, 500, 1000 };
 
-            // 스샷 레퍼런스대로 종류마다 3티어. 그리드가 3열이라 신화석 한 줄, 레어석 한 줄로 앉는다.
-            stoneOffers = new List<StoneOffer>
-            {
-                new StoneOffer { stoneType = PointType.MythicStone, amountPerPurchase = 5, costFreeGem = 500 },
-                new StoneOffer { stoneType = PointType.MythicStone, amountPerPurchase = 50, costFreeGem = 5000 },
-                new StoneOffer { stoneType = PointType.MythicStone, amountPerPurchase = 150, costFreeGem = 15000 },
-                new StoneOffer { stoneType = PointType.RareStone, amountPerPurchase = 5, costFreeGem = 500 },
-                new StoneOffer { stoneType = PointType.RareStone, amountPerPurchase = 50, costFreeGem = 5000 },
-                new StoneOffer { stoneType = PointType.RareStone, amountPerPurchase = 150, costFreeGem = 15000 },
-            };
+            currencyOffers = BuildDefaultCurrencyOffers();
+        }
 
-            goldOffers = new List<GoldOffer>
+        /// <summary>
+        /// 재화 상점 기본 표(가치 장부, 계획서 1.5). 에셋이 정본이고 이것은 초기값·폴백이다.
+        /// 유료젬 10원 = 1젬이고 묶음 할인이 없다 — 가격은 값어치 그대로다.
+        /// </summary>
+        public static List<CurrencyOffer> BuildDefaultCurrencyOffers()
+        {
+            return new List<CurrencyOffer>
             {
-                new GoldOffer { goldAmount = 500000, baseCostFreeGem = 500, costIncreasePerPurchase = 50 },
-                new GoldOffer { goldAmount = 5000000, baseCostFreeGem = 5000, costIncreasePerPurchase = 500 },
-                new GoldOffer { goldAmount = 15000000, baseCostFreeGem = 15000, costIncreasePerPurchase = 1500 },
+                new CurrencyOffer { pointType = PointType.PinballTicket, amount = 1000, priceGem = 990, dailyLimit = 2 },
+                new CurrencyOffer { pointType = PointType.SelectTicket, amount = 1, priceGem = 525 },
+                new CurrencyOffer { pointType = PointType.RelicTicket, amount = 1, priceGem = 300 },
+                new CurrencyOffer { pointType = PointType.PremiumGemTicket, amount = 1, priceGem = 180 },
+                new CurrencyOffer { pointType = PointType.NormalGemTicket, amount = 1, priceGem = 50 },
+                new CurrencyOffer { pointType = PointType.SynergyTicket, amount = 100, priceGem = 500 },
+                new CurrencyOffer { pointType = PointType.OpenEventCurrency, amount = 250, priceGem = 500, dailyLimit = 1 },
+                new CurrencyOffer { pointType = PointType.Gold, amount = 10000, priceGem = 100 },
+                new CurrencyOffer { pointType = PointType.Gold, amount = 50000, priceGem = 500 },
+                new CurrencyOffer { pointType = PointType.Gold, amount = 100000, priceGem = 1000 },
             };
         }
 
@@ -398,14 +387,15 @@ namespace OJ.Shop
             if (freeGemExchangeUnits.Count % 3 != 0)
                 problems.Add("무료젬 교환 단위가 " + freeGemExchangeUnits.Count + "칸이다. 3의 배수여야 한다.");
 
-            if (stoneOffers.Count % 3 != 0)
-                problems.Add("다이스석이 " + stoneOffers.Count + "칸이다. 3의 배수여야 한다.");
 
-            for (int i = 0; i < goldOffers.Count; i++)
+            for (int i = 0; i < currencyOffers.Count; i++)
             {
-                if (goldOffers[i].costIncreasePerPurchase <= 0)
-                    problems.Add("골드 " + i + "번: 누진 증가분이 0 이다. 골드 상점은 한도가 없어 " +
-                                 "누진이 유일한 제동이다 (기획서 8.7-2).");
+                CurrencyOffer offer = currencyOffers[i];
+                if (offer.amount <= 0 || offer.priceGem <= 0)
+                    problems.Add("재화 상점 " + i + "번: 수량 또는 가격이 0 이하다.");
+
+                if (offer.dailyLimit < 0)
+                    problems.Add("재화 상점 " + i + "번: 하루 한도가 음수다.");
             }
 
             return problems;

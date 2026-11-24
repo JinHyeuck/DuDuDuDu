@@ -28,6 +28,25 @@ namespace OJ.Pinball
     }
 
     /// <summary>
+    /// 보상 풀의 한 줄. 라운드를 열 때 핀마다 이 풀에서 하나씩 <b>가중치대로</b> 뽑아 걸고,
+    /// 핀이 채워지면 그 줄의 <see cref="rewards"/> 를 <b>전부</b> 준다.
+    ///
+    /// <b>가중치는 "하루 목표 개수 ÷ 하루 추첨 수" 에서 왔다</b> (가치 장부 2026-11). 보너스가 하루 4번 열리고
+    /// 핀이 6개라 하루 24번 뽑으므로, 하루 4장이 목표인 재화는 4/24 = 16.7% 다.
+    /// </summary>
+    [Serializable]
+    public sealed class BonusRewardDraw
+    {
+        [Tooltip("화면·로그에 쓸 이름. 비워도 동작한다.")]
+        public string label;
+
+        [Tooltip("상대 가중치. 합이 1000 이 되게 적으면 퍼밀(‰)로 읽힌다. 0 이하는 뽑히지 않는다.")]
+        [Min(0)] public int weight = 100;
+
+        public List<PinballReward> rewards = new List<PinballReward>();
+    }
+
+    /// <summary>
     /// 핀볼 보상 라운드(주사위 족보 → 공 발사)의 수치 정본.
     ///
     /// <b>이 표는 "쉬움"을 만드는 손잡이다.</b> 보상 라운드는 센터핀을 많이 맞힌 것에 대한
@@ -58,7 +77,32 @@ namespace OJ.Pinball
         public int[] ballTable = (int[])BonusDiceRules.DefaultBallTable.Clone();
 
         [Header("특수 핀")]
+        [Tooltip("핀의 구조(태그·필요 적중 수). 보상 풀이 있으면 핀 위의 보상은 풀에서 뽑고, 여기 적힌 rewards 는 풀이 비었을 때의 폴백이다.")]
         public List<BonusPinReward> pinRewards = new List<BonusPinReward>();
+
+        [Header("보상 풀 — 라운드를 열 때 핀마다 하나씩 가중치대로 뽑는다")]
+        public List<BonusRewardDraw> rewardPool = new List<BonusRewardDraw>();
+
+        /// <summary>풀의 가중치만 뽑아 낸 목록. 추첨 규칙(<see cref="BonusDiceRules.PickWeightedIndex"/>)에 넘긴다.</summary>
+        public List<int> PoolWeights()
+        {
+            var weights = new List<int>(rewardPool != null ? rewardPool.Count : 0);
+            if (rewardPool != null)
+            {
+                for (int i = 0; i < rewardPool.Count; i++)
+                    weights.Add(rewardPool[i] != null ? rewardPool[i].weight : 0);
+            }
+            return weights;
+        }
+
+        /// <summary>풀의 한 줄. 범위를 벗어나면 null.</summary>
+        public BonusRewardDraw GetDraw(int index)
+        {
+            if (rewardPool == null || index < 0 || index >= rewardPool.Count)
+                return null;
+
+            return rewardPool[index];
+        }
 
         /// <summary>그 태그의 규칙. 없으면 null — 보상이 안 걸린 핀이라는 뜻이다.</summary>
         public BonusPinReward GetPin(int tag)
@@ -85,62 +129,63 @@ namespace OJ.Pinball
             cyclesPerRound = 5;
             ballTable = (int[])BonusDiceRules.DefaultBallTable.Clone();
 
-            // 판(BonusBoard)의 특수 핀 태그 1~6 에 맞춰 둔다.
+            // 판(BonusBoard)의 특수 핀 태그 1~6 에 맞춰 둔다. 핀은 <b>구조</b>(태그·필요 적중 수)만 갖고,
+            // 핀 위의 보상은 라운드를 열 때 아래 <see cref="rewardPool"/> 에서 가중치대로 뽑는다(가치 장부 2026-11).
             //
             // <b>requiredHits 를 낮게 잡은 것이 핵심이다.</b> 최악의 경우는
             // 노페어만 5번 나오는 것이라 공이 15발이고, 판의 targetHitProbability 가
             // 0.5 라 핀당 기댓값이 7.5회다. 임계치가 그보다 높으면 운이 나쁜 유저는
             // 광고를 봐야만 끝낼 수 있게 되는데, 이 컨텐츠는 그러라고 만든 것이 아니다.
-            pinRewards = new List<BonusPinReward>
+            //
+            // 여기 적힌 rewards(골드 20)는 <b>풀이 비었을 때의 폴백</b>이다 — 표가 깨져도 핀이 빈손이 되지 않게 한다.
+            int[] requiredHits = { 6, 6, 6, 7, 7, 8 };
+            pinRewards = new List<BonusPinReward>();
+            for (int i = 0; i < requiredHits.Length; i++)
             {
-                new BonusPinReward
+                pinRewards.Add(new BonusPinReward
                 {
-                    tag = 1, label = "골드 핀", requiredHits = 6,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.Gold, 300) },
-                },
-                new BonusPinReward
-                {
-                    // 강화석 → 소환권 → 레어석으로 두 번 바뀌었다.
-                    //
-                    // 소환권(NormalScroll)은 티어 3 이라 여기 있을 물건이 아니었다. 그것은
-                    // 소탕이 하루 1,152장을 뿌리는 재화라(정책 1.5) 보너스 라운드에서 5장을
-                    // 받아 봐야 아무 일도 일어나지 않는다.
-                    //
-                    // 레어석인 이유: 재화 표가 레어석의 <b>대표 수급처를 Pinball_Bonus</b> 로
-                    // 잡고 있는데(정책 2장) 이 표에 레어석이 아예 없었다. 게다가 소탕이
-                    // 하루 720개를 뿌리고 있어서 말과 구현이 정반대였다 — 소탕 쪽을 빼고
-                    // 이리로 옮겼다(StageRewardCalculator.AddAutoBattleClearRewards 주석).
-                    tag = 2, label = "레어석 핀", requiredHits = 6,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.RareStone, 25) },
-                },
-                new BonusPinReward
-                {
-                    tag = 3, label = "유물권 핀", requiredHits = 6,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.RelicTicket, 2) },
-                },
-                new BonusPinReward
-                {
-                    tag = 4, label = "젬 핀", requiredHits = 7,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.FreeGem, 100) },
-                },
-                new BonusPinReward
-                {
-                    // 골드 10000 이었다. 골드는 소탕이 하루 14,400 을 주는 재화라(정책 1.5)
-                    // 상위 재화 자리를 하나 잡아먹고 있었다. 신화석은 재화 표상 대표 수급처가
-                    // 여기인데(정책 2장) 이 표에 없었다 — 레어석과 같은 사정이다.
-                    //
-                    // 킹 다이스 강화 재료이고 lv20 부근 한 레벨이 75 이므로, 하루 두 라운드면
-                    // 킹 1종 +1렙 안팎이 된다. 킹은 탑이 여는 최상위 축이라 이 속도가 맞다.
-                    tag = 5, label = "신화석 핀", requiredHits = 7,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.MythicStone, 20) },
-                },
-                new BonusPinReward
-                {
-                    // 300 이었다. 젬 핀(tag 4)과 합쳐 라운드당 150 이 되도록 낮췄다 —
-                    // 하루 두 라운드면 300 이고, 그것이 보석뽑기 1회 값이다(상점 8.2).
-                    tag = 6, label = "젬 대박 핀", requiredHits = 8,
-                    rewards = new List<PinballReward> { new PinballReward(PointType.FreeGem, 50) },
-                },
+                    tag = i + 1, label = "보상 핀 " + (i + 1), requiredHits = requiredHits[i],
+                    rewards = new List<PinballReward> { new PinballReward(PointType.Gold, 20) },
+                });
+            }
+
+            // 보상 풀. 가중치는 퍼밀(합 1000). <b>하루 4번 열리고(500발당 1회 × 하루 2,000발) 핀이 6개</b>라 하루 24번 뽑는다 —
+            // 하루 목표 개수 ÷ 24 가 확률이다.
+            //
+            //   랜덤 레어·킹 카피 1장   16.7%  (하루 4장)       랜덤 기본 카피 1장      16.7%  (하루 4장)
+            //   일반 보석 뽑기권 1장     8.3%  (하루 2장)       선택권·유물권·최고급 뽑기권 각 4.2%  (하루 1장씩)
+            //   시너지 티켓 5장         15.0%                    이벤트 재화 5개          15.7%  (열린 이벤트의 재화로 풀린다)
+            //   골드 20                 15.0%
+            rewardPool = BuildDefaultPool();
+        }
+
+        /// <summary>
+        /// 기본 보상 풀. <b>목록을 돌려주는 static 이다</b> — 헤드리스 러너에서는 <c>ScriptableObject</c> 를 못 만들어
+        /// 인스턴스 메서드(<see cref="PopulateDefaults"/>)로만 두면 이 표의 검산(가중치 합, 하루 기대량)에 테스트가 닿지 못한다.
+        /// </summary>
+        public static List<BonusRewardDraw> BuildDefaultPool()
+        {
+            return new List<BonusRewardDraw>
+            {
+                Draw("레어·킹 카피", 167, PointType.RandomRareKingCopy, 1),
+                Draw("기본 카피", 167, PointType.RandomBasicCopy, 1),
+                Draw("일반 보석 상자 열쇠", 83, PointType.NormalGemTicket, 1),
+                Draw("선택권", 42, PointType.SelectTicket, 1),
+                Draw("유물권", 42, PointType.RelicTicket, 1),
+                Draw("최고급 보석 상자 열쇠", 42, PointType.PremiumGemTicket, 1),
+                Draw("시너지 티켓", 150, PointType.SynergyTicket, 5),
+                Draw("이벤트 재화", 157, PointType.OpenEventCurrency, 5),
+                Draw("골드", 150, PointType.Gold, 20),
+            };
+        }
+
+        private static BonusRewardDraw Draw(string label, int weight, PointType type, int amount)
+        {
+            return new BonusRewardDraw
+            {
+                label = label,
+                weight = weight,
+                rewards = new List<PinballReward> { new PinballReward(type, amount) },
             };
         }
 
@@ -169,6 +214,32 @@ namespace OJ.Pinball
                 return sb.ToString();
             }
 
+            // 보상 풀이 있으면 그것이 핀 위의 보상을 정한다. 풀은 뽑을 수 있어야 하고(가중치 합 > 0),
+            // 줄마다 줄 것이 있어야 한다.
+            bool hasPool = rewardPool != null && rewardPool.Count > 0;
+            if (hasPool)
+            {
+                long totalWeight = 0;
+                for (int i = 0; i < rewardPool.Count; i++)
+                {
+                    BonusRewardDraw draw = rewardPool[i];
+                    if (draw == null)
+                    {
+                        sb.AppendLine("보상 풀 " + i + "번 줄이 비어 있다.");
+                        continue;
+                    }
+
+                    if (draw.weight > 0)
+                        totalWeight += draw.weight;
+
+                    if (draw.rewards == null || draw.rewards.Count == 0)
+                        sb.AppendLine("보상 풀 " + i + "번 줄에 보상이 없다. 뽑혀도 아무 일도 안 일어난다.");
+                }
+
+                if (totalWeight <= 0)
+                    sb.AppendLine("보상 풀의 가중치 합이 0 이다. 아무것도 뽑을 수 없다.");
+            }
+
             var seen = new HashSet<int>();
             for (int i = 0; i < pinRewards.Count; i++)
             {
@@ -185,7 +256,7 @@ namespace OJ.Pinball
                 if (pin.requiredHits < 1)
                     sb.AppendLine("태그 " + pin.tag + " 의 requiredHits 가 1 미만이라 영원히 안 채워진다.");
 
-                if (pin.rewards == null || pin.rewards.Count == 0)
+                if ((pin.rewards == null || pin.rewards.Count == 0) && !hasPool)
                     sb.AppendLine("태그 " + pin.tag + " 에 보상이 없다. 채워도 아무 일도 안 일어난다.");
             }
 

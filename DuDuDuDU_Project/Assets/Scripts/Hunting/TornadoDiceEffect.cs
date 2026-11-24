@@ -35,7 +35,7 @@ namespace OJ.Hunting
 
             Vector2 center = target.transform.position;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            float pullRange = PullRange * (level >= 3 ? 1.1f : 1f);
+            float pullRange = PullRange * 1.1f;
             int maxTargets = MaxTargets + Mathf.Max(0, level / 8);
             float pullDistance = PullDistancePerHit + Mathf.Max(0, level - 1) * 0.02f;
 
@@ -46,7 +46,9 @@ namespace OJ.Hunting
                 maxTargets,
                 target);
 
-            float pullDuration = level >= 6 ? 2f : attackContent.TornadoPullDuration;
+            float pullDuration = level >= OJ.Core.DiceMilestoneLevels.First ? 2f : attackContent.TornadoPullDuration;
+            int tornadoTier = OJ.Dice.PromotionManager.TierOf(DiceType);
+            var pulled = new List<Monster>(around);
             for (int i = 0; i < around.Count; i++)
             {
                 Monster monster = around[i];
@@ -62,10 +64,18 @@ namespace OJ.Hunting
                 }
             }
 
-            attackContent.StartCoroutine(CoPlayTornadoSequence(center, pullDuration));
+            // 승급 T1: 흡입 중 중심의 적이 받는 피해 +20%.
+            if (tornadoTier >= 1)
+                target.ApplyPromotionDamageTakenBonus(OJ.Core.PromotionEffectRules.TornadoCenterDamageTakenPercent, pullDuration);
+
+            // 승급 T3: 흡입한 적이 5마리 이상이면 자기 쿨타임 30% 단축.
+            if (tornadoTier >= 3 && pulled.Count >= OJ.Core.PromotionEffectRules.TornadoMassPullCount)
+                battle.Player?.CutOwnCooldown(attackContent.CurrentSourceDice, OJ.Core.PromotionEffectRules.TornadoMassPullCooldownCut);
+
+            attackContent.StartCoroutine(CoPlayTornadoSequence(center, pullDuration, tornadoTier >= 2 ? pulled : null));
         }
 
-        private IEnumerator CoPlayTornadoSequence(Vector2 center, float pullDuration)
+        private IEnumerator CoPlayTornadoSequence(Vector2 center, float pullDuration, List<Monster> slowAfter)
         {
             float startDuration = PlayEffect(center, EffectID.S);
             if (startDuration > 0.0001f)
@@ -84,6 +94,17 @@ namespace OJ.Hunting
                 loopEffect.ForceRelease();
 
             PlayEffect(center, EffectID.C2);
+
+            // 승급 T2: 흡입이 끝난 적에게 1.5초 둔화.
+            if (slowAfter != null)
+            {
+                for (int i = 0; i < slowAfter.Count; i++)
+                {
+                    Monster m = slowAfter[i];
+                    if (m != null && m.gameObject.activeInHierarchy)
+                        m.ApplySlow(OJ.Core.PromotionEffectRules.TornadoSlowAfterSeconds, 0.8f, DiceType);
+                }
+            }
         }
 
         private float PlayEffect(Vector2 center, EffectID effectId)

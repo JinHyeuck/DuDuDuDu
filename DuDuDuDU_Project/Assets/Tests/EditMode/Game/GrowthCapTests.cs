@@ -16,13 +16,14 @@ namespace OJ.Game.Tests
     public sealed class GrowthCapTests
     {
         /// <summary>
-        /// 다이스는 12 가 끝이다. <c>DiceMetaDataDatabase</c> 의 마일스톤이 3·6·9·12 이고
-        /// 그 위로는 새로 열리는 것이 없다.
+        /// 다이스는 30 이 끝이다. 카피 곡선(<c>DiceCopyCurve</c>)의 끝이고, 승급 T3(Lv30)와
+        /// 마지막 마일스톤(Lv25·30)이 모두 그 안에서 끝난다. 상한을 올릴 때는 승급·마일스톤 표와
+        /// 곡선을 같이 늘려야 한다.
         /// </summary>
         [Test]
-        public void 다이스_상한은_마일스톤의_끝이다()
+        public void 다이스_상한은_카피_곡선의_끝이다()
         {
-            Assert.AreEqual(12, Define.MaxDiceLevel);
+            Assert.AreEqual(30, Define.MaxDiceLevel);
         }
 
         /// <summary>

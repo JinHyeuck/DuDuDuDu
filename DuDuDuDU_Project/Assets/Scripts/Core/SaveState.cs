@@ -190,6 +190,22 @@ namespace OJ.Core
         /// </summary>
         public SynergySave Synergy { get; } = new SynergySave();
 
+        /// <summary>
+        /// 다이스 승급 저장분. (<c>OJ.Dice.PromotionManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> 필드를 <i>더하는</i> 것이라 예전 세이브에는 이 키가 없고,
+        /// 그 상태는 "승급을 한 번도 안 해 본 사람"과 같다.
+        /// </summary>
+        public PromotionSave Promotion { get; } = new PromotionSave();
+
+        /// <summary>
+        /// 이벤트 미니게임(낚시·보물찾기·래프팅) 저장분. (<c>OJ.EventMinigame.EventMinigameManager</c>)
+        ///
+        /// <b>버전을 올리지 않았다.</b> 필드를 <i>더하는</i> 것이라 예전 세이브에는 이 키가 없고,
+        /// 그 상태는 "이벤트를 한 번도 안 해 본 사람"과 같다.
+        /// </summary>
+        public EventMinigameSave EventMinigames { get; } = new EventMinigameSave();
+
         internal static SortedDictionary<string, int> NewIntMap()
         {
             // Ordinal 을 못 박는다. 기본 비교자는 문화권을 타서 정렬 순서가 기계마다 달라질 수 있다.
@@ -455,6 +471,17 @@ namespace OJ.Core
         /// </summary>
         public SortedDictionary<string, int> PinCounts { get; }
             = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 핀마다 이번 라운드에 걸린 보상의 <b>추첨 결과</b>(보상 풀의 인덱스). 키는 <c>tag:1</c> 꼴이다.
+        ///
+        /// 라운드를 열 때 한 번 뽑아 굳힌다 — 앱이 죽었다 돌아와도 핀 위의 보상이 바뀌면 안 되기 때문이다.
+        /// 필드를 <i>더하는</i> 것이라 버전은 올리지 않았다: 예전 세이브에는 이 키가 없고, 그 상태는
+        /// "라운드가 안 열렸거나, 열렸어도 아직 안 뽑은" 것과 같다(매니저가 첫 조회에 뽑는다).
+        /// 라운드가 끝나면 비운다.
+        /// </summary>
+        public SortedDictionary<string, int> PinDraws { get; }
+            = new SortedDictionary<string, int>(StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -581,6 +608,77 @@ namespace OJ.Core
 
         /// <summary>연출(또는 가이드)을 끝까지 본 컨텐츠. <c>ContentId</c> 이름, 오름차순.</summary>
         public List<string> Announced { get; } = new List<string>();
+    }
+
+    /// <summary>
+    /// 다이스 승급 저장분.
+    ///
+    /// <b>큐는 1칸이다.</b> 등록한 다이스·목표 단계·등록 시각·진행도가 한 벌이고,
+    /// 다른 다이스로 교체하면 이 한 벌이 통째로 새로 시작한다(진행도 초기화).
+    /// </summary>
+    public sealed class PromotionSave
+    {
+        /// <summary><c>DiceType</c> 이름 → 지금까지 오른 승급 단계(1~3). 안 오른 다이스는 키가 없다.</summary>
+        public SortedDictionary<string, int> Tiers { get; } = SaveState.NewIntMap();
+
+        /// <summary>큐에 올라 있는 <c>DiceType</c> 이름. 빈 문자열이면 큐가 비었다.</summary>
+        public string QueuedDice { get; set; } = string.Empty;
+
+        /// <summary>큐의 목표 단계(1~3). 큐가 비었으면 0.</summary>
+        public int QueuedTargetTier { get; set; }
+
+        /// <summary>등록 시각(UTC ticks). 교체 24시간 잠금의 기준이다.</summary>
+        public long RegisteredUtcTicks { get; set; }
+
+        /// <summary>미션 이름(<c>PromotionMission</c>) → 등록 뒤 쌓은 진행도. 큐가 바뀌면 비운다.</summary>
+        public SortedDictionary<string, int> Progress { get; } = SaveState.NewIntMap();
+    }
+
+    /// <summary>
+    /// 이벤트 미니게임 저장분. 이벤트는 3일마다 도니 <b>진행도는 한 회차의 것</b>이고, 회차가 바뀌면 비운다
+    /// (<see cref="OccurrenceId"/> 가 달라진 것으로 안다). 낚시 도감 기록만 회차를 넘어 남는다.
+    /// </summary>
+    public sealed class EventMinigameSave
+    {
+        /// <summary>진행도가 어느 회차(<c>EventMinigameRules.OccurrenceId</c>)의 것인가. <see cref="int.MinValue"/> 면 기록 없음.</summary>
+        public int OccurrenceId { get; set; } = int.MinValue;
+
+        /// <summary>낚시 누적 점수.</summary>
+        public long FishingScore { get; set; }
+
+        /// <summary>떡밥으로 올라 있는 행운 단계(0~4). 시한(<see cref="FishingLuckUntilUtcTicks"/>)이 지나면 0 으로 읽는다.</summary>
+        public int FishingLuckStacks { get; set; }
+
+        public long FishingLuckUntilUtcTicks { get; set; }
+
+        /// <summary>이미 지급한 낚시 마일스톤 줄 수(앞에서부터).</summary>
+        public int FishingClaimed { get; set; }
+
+        /// <summary>어종 id(등급 × 10 + 어종 번호) → 최고 무게(g). <b>회차가 바뀌어도 지우지 않는다.</b></summary>
+        public SortedDictionary<string, int> FishingRecords { get; } = SaveState.NewIntMap();
+
+        /// <summary>
+        /// 보물찾기 지금 스테이지(1부터). <b>기본값이 1 이다</b> — 0 으로 두면 로드 직후 상태(1)가 파일(0)과 달라
+        /// 저장 자가 검사("ReadFrom 이 무언가를 빠뜨렸다")가 오류를 낸다.
+        /// </summary>
+        public int TreasureStage { get; set; } = 1;
+
+        /// <summary>지금 판이 있는가. 판은 시드와 단계로 다시 만들고, 판 내용은 저장하지 않는다.</summary>
+        public bool TreasureHasBoard { get; set; }
+
+        public int TreasureBoardSeed { get; set; }
+
+        /// <summary>지금 판에서 이미 판 칸 번호(y × 가로 + x). 오름차순.</summary>
+        public List<int> TreasureRevealed { get; } = new List<int>();
+
+        /// <summary>래프팅 누적 거리(m).</summary>
+        public long RaftingDistance { get; set; }
+
+        /// <summary>이미 처리한 래프팅 마일스톤 줄 수(선택 대기 줄도 포함).</summary>
+        public int RaftingClaimed { get; set; }
+
+        /// <summary>고르기를 기다리는 3택1 줄 번호. 회차가 끝나면 첫 묶음으로 자동 지급된다.</summary>
+        public List<int> RaftingPending { get; } = new List<int>();
     }
 
     /// <summary>시너지 저장분.</summary>

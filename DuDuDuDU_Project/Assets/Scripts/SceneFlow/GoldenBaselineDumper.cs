@@ -57,7 +57,7 @@ namespace OJ.SceneFlow
 
         private static readonly int[] DumpStages = { 1, 2, 3, 5, 10, 20, 30 };
         private static readonly int[] DumpWaves = { 1, 2, 3, 5, 8, 10, 15, 20 };
-        private static readonly int[] DumpLevels = { 1, 2, 3, 5, 6, 9, 12, 15 };
+        private static readonly int[] DumpLevels = { 1, 2, 5, 9, 10, 20, 25, 30 };
 
         public static void Dump()
         {
@@ -422,7 +422,7 @@ namespace OJ.SceneFlow
                               $"{CriticalFormula.RollHitsDoubleHit(rolls[r])}");
             }
 
-            int[] levels = { 1, 8, 9, 11, 12, 13, 20 };
+            int[] levels = { 1, 12, 24, 25, 26, 30, 31 };
             for (int i = 0; i < levels.Length; i++)
             {
                 sb.AppendLine($"core.crit.doubleHitLevel[{levels[i]}] = " +

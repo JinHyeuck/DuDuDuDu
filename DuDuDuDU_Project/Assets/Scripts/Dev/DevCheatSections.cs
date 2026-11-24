@@ -7,6 +7,7 @@ using OJ.Analytics;
 using OJ.DI;
 using OJ.Dice;
 using OJ.Equipment;
+using OJ.EventMinigame;
 using OJ.Hunting;
 using OJ.IdleReward;
 using OJ.Mission;
@@ -418,6 +419,7 @@ namespace OJ.Dev
 
             BuildMembership(panel, root);
             BuildSpecialSevenDays(panel, root);
+            BuildEventMinigames(panel, root);
 
             DevCheatUI.CreateSectionTitle(root, "미션/업적");
             DevCheatUI.CreateHelpText(root, "재화/스테이지 진행도는 건드리지 않는다. 미션 기록만 비운다.");
@@ -515,6 +517,66 @@ namespace OJ.Dev
                 seven.DevReset();
                 panel.Rebuild();
             });
+        }
+
+        /// <summary>
+        /// 이벤트 미니게임. 이벤트는 3일마다 돌아서 오늘 열리지 않은 것은 못 해 본다 —
+        /// 종류 버튼이 <see cref="EventMinigameClock.DevOffset"/> 만 밀어 그 이벤트가 열린 날로 간다
+        /// (기기 시계·상점 일일 기록은 그대로). 회차가 바뀌므로 진행도는 실제 회차 전환처럼 정산·초기화된다.
+        /// </summary>
+        private static void BuildEventMinigames(DevCheatPanel panel, Transform root)
+        {
+            DevCheatUI.CreateSectionTitle(root, "이벤트 미니게임");
+
+            EventMinigameManager events = EventMinigameManager.Instance;
+            if (events == null)
+            {
+                DevCheatUI.CreateHelpText(root, "EventMinigameManager 가 없다.");
+                return;
+            }
+
+            DateTime now = EventMinigameClock.UtcNow;
+            EventKind open = events.OpenKind(now);
+            DevCheatUI.CreateHelpText(root,
+                "지금 열린 이벤트: " + EventMinigameText.EventName(open) + " (남은 " +
+                EventMinigameText.Remaining(EventMinigameRules.OccurrenceEndUtc(now) - now) + ")" +
+                (EventMinigameClock.DevOffset == TimeSpan.Zero ? "" : " · 시계 " + EventMinigameClock.DevOffset.TotalDays.ToString("0.#") + "일 앞"));
+
+            RectTransform row = DevCheatUI.CreateRow(root);
+            for (int i = 0; i < EventMinigameRules.KindCount; i++)
+            {
+                EventKind kind = (EventKind)i;
+                DevCheatUI.CreateToggleButton("Event" + kind, row,
+                    EventMinigameText.EventName(kind), kind == open,
+                    () => ActivateEvent(panel, kind));
+            }
+
+            DevCheatUI.CreateButton("EventRealTime", root, "실제 시각으로 되돌리기", DevCheatUI.ButtonColor, () =>
+            {
+                EventMinigameClock.DevOffset = TimeSpan.Zero;
+                events.Tick(EventMinigameClock.UtcNow);
+                panel.Rebuild();
+            });
+
+            EventKind currencyKind = open;
+            PointType currency = EventMinigameRules.CurrencyOf(currencyKind);
+            DevCheatUI.CreateButton("EventCurrency", root,
+                EventMinigameText.CurrencyName(currencyKind) + " +600 (보유 " + Current(currency) + ")",
+                DevCheatUI.AccentColor, () =>
+                {
+                    PointManager.Instance?.Add(currency, 600);
+                    panel.Rebuild();
+                });
+
+            DevCheatUI.CreateHelpText(root,
+                "종류 버튼은 그 이벤트가 열린 날로 시계를 민다. 로비의 이벤트 입구에서 들어가면 된다. 핀볼이 주는 재화는 실제 시각 기준이라 위 버튼으로 직접 넣을 것.");
+        }
+
+        private static void ActivateEvent(DevCheatPanel panel, EventKind kind)
+        {
+            EventMinigameClock.DevOffset = EventMinigameClock.OffsetToOpen(kind, DateTime.UtcNow);
+            EventMinigameManager.Instance?.Tick(EventMinigameClock.UtcNow);
+            panel.Rebuild();
         }
 
         // ── 시간 ───────────────────────────────────────────────────────

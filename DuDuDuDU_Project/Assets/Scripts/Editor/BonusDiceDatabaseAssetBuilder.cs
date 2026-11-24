@@ -93,7 +93,7 @@ namespace OJ.EditorTools
             pinballDatabase.specialRewards.Add(new PinballSpecialReward
             {
                 tag = tag,
-                label = "센터핀",
+                label = "대박핀",
                 requiredHits = DefaultTriggerHits,
                 rewards = new List<PinballReward>(),     // 보상은 라운드 그 자체다
             });

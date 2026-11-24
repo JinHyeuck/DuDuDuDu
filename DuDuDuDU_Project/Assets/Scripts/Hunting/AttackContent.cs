@@ -27,6 +27,42 @@ namespace OJ.Hunting
         private int _currentShotDicePip;
         private DiceType _currentAttackType = DiceType.Max;
         private Monster _currentRootTarget;
+        private bool _currentCritical;
+        private float _shotScale = 1f;
+        private readonly Dictionary<Monster, float> _targetScale = new Dictionary<Monster, float>();
+
+        /// <summary>이번 타를 쏜 다이스. <c>Bullet</c> 이 PlayHit 직전에 채우고 끝나면 비운다(자기 쿨타임을 만지는 승급 효과가 쓴다).</summary>
+        public UIDice CurrentSourceDice { get; set; }
+
+        /// <summary>이번 타에 걸린 일회성 배수(타임 T2). <c>Bullet</c> 이 채우고 PlayHit 이 한 번 쓴다.</summary>
+        public float PendingShotScale { get; set; } = 1f;
+
+        /// <summary>이번 타가 크리티컬이었는가.</summary>
+        public bool CurrentCritical => _currentCritical;
+
+        /// <summary>이번 타 전체의 최종 대미지에 곱한다. 효과의 BuildTargets 에서 부른다.</summary>
+        public void ScaleShot(float multiplier)
+        {
+            _shotScale *= multiplier;
+        }
+
+        /// <summary>이번 타에서 이 대상만 곱한다(폭발 번진 타·중심 등).</summary>
+        public void ScaleTarget(Monster target, float multiplier)
+        {
+            if (target == null)
+                return;
+
+            _targetScale.TryGetValue(target, out float current);
+            _targetScale[target] = (current <= 0f ? 1f : current) * multiplier;
+        }
+
+        private int ScaledFor(Monster target, int damage)
+        {
+            if (!_targetScale.TryGetValue(target, out float scale))
+                return damage;
+
+            return Mathf.Max(1, Mathf.RoundToInt(damage * scale));
+        }
 
         [Header("Tornado Tuning")]
         [SerializeField, Min(0.05f)] private float tornadoPullDuration = 0.5f;
@@ -135,6 +171,25 @@ namespace OJ.Hunting
             dtObj.GetComponent<DamageText>().SetText(appliedDamage, typeColor);
         }
 
+        /// <summary>
+        /// 방어력을 무시하는 고정 피해 한 방(방깎 T1). <see cref="HitMonster"/> 와 같이 딜미터·피해 숫자를 남긴다.
+        /// </summary>
+        public void HitMonsterFixed(Monster target, DiceType diceType, int damage)
+        {
+            if (target == null || damage <= 0)
+                return;
+
+            int appliedDamage = target.TakeDamage(damage, true);
+            battle.Contribution.Record(diceType, appliedDamage);
+            if (appliedDamage <= 0)
+                return;
+
+            GameObject dtObj = battle.DamageTexts.GetDamageText();
+            dtObj.transform.position = target.transform.position;
+            dtObj.transform.ResetLocalZ();
+            dtObj.GetComponent<DamageText>().SetText(appliedDamage, DiceMetaDataProvider.GetColor(diceType));
+        }
+
         public void PlayHit(Monster rootTarget, DiceType diceType, int shotDicePip)
         {
             if (rootTarget == null)
@@ -142,6 +197,12 @@ namespace OJ.Hunting
 
             DiceType attackType = diceType;
             DiceEffectBase diceEffect = GetDiceEffect(attackType);
+
+            // 승급 효과의 타 단위 배수. 타임 T2 가 건 일회성 배수를 받아 쓰고 비운다.
+            _shotScale = PendingShotScale > 0f ? PendingShotScale : 1f;
+            PendingShotScale = 1f;
+            _targetScale.Clear();
+            _currentCritical = false;
 
             hitmonsters.Clear();
             hitmonsters.Add(rootTarget);
@@ -185,13 +246,16 @@ namespace OJ.Hunting
 
             damage = CriticalFormula.ApplyCritical(
                 damage, criticalHit, criticalDamageMultiplier, doubleHit, relicMultiplierApplies, relicDamageMultiplier);
+            _currentCritical = criticalHit;
+            if (_shotScale != 1f)
+                damage = Mathf.Max(1, Mathf.RoundToInt(damage * _shotScale));
 
             // 아래는 데미지가 아니라 SP 다. 임계 9 와 0.2f 를 CriticalFormula 로 끌어오지 않은 것은
             // 값이 우연히 겹칠 뿐 다른 기능이기 때문이다 — 합치면 한쪽 조정이 양쪽을 움직인다.
             // 8.3b: 기존 ?. 는 지웠다. 소환 시스템은 같은 씬에 상주하므로 여기서 null 이면
             // 그것은 사고다 — 조용히 SP 를 삼키는 대신 터져야 한다. 난수를 뽑는 조건식은
             // 그대로라 SP 판정의 난수열은 바뀌지 않는다.
-            if (attackType == DiceType.Normal && diceLevel >= 9 && Random.value <= 0.2f)
+            if (attackType == DiceType.Normal && diceLevel >= OJ.Core.DiceMilestoneLevels.Second && Random.value <= 0.2f)
                 battle.Summon.AddSP(5);
 
             _currentDamage = damage;
@@ -213,7 +277,7 @@ namespace OJ.Hunting
                         continue;
 
                     if (diceEffect == null || diceEffect.ShouldApplyDamage)
-                        HitMonster(target, attackType, damage);
+                        HitMonster(target, attackType, ScaledFor(target, damage));
 
                     diceEffect?.ApplyOnHit(this, target);
                 }
@@ -224,6 +288,10 @@ namespace OJ.Hunting
             _currentShotDicePip = 1;
             _currentAttackType = DiceType.Max;
             _currentRootTarget = null;
+            _currentCritical = false;
+            _shotScale = 1f;
+            _targetScale.Clear();
+            CurrentSourceDice = null;
         }
 
         private void PlayKingNormalMultiHit(Monster rootTarget, DiceType attackType, int totalDamage, KingNormalDiceEffect diceEffect)
@@ -233,25 +301,46 @@ namespace OJ.Hunting
             Vector3 areaCenter = rootTarget.transform.position;
             List<Monster> fixedTargets = new List<Monster>(hitmonsters);
 
-            diceEffect.PlayImpactEffect(areaCenter);
-            ApplyKingNormalHit(attackType, firstHitDamage, diceEffect, fixedTargets);
+            // 승급 T3: 크리티컬이 뜨면 4연타가 한 번 더 이어진다.
+            int kingNormalTier = OJ.Dice.PromotionManager.TierOf(DiceType.KingNormal);
+            int rounds = kingNormalTier >= 3 && _currentCritical
+                ? 1 + OJ.Core.PromotionEffectRules.KingNormalCritExtraRounds
+                : 1;
+            int totalHits = KingNormalDiceEffect.TotalHitCount * rounds;
 
-            if (KingNormalDiceEffect.TotalHitCount > 1)
-                StartCoroutine(PlayKingNormalFollowUpHits(attackType, followUpDamage, diceEffect, fixedTargets));
+            diceEffect.PlayImpactEffect(areaCenter);
+            ApplyKingNormalHit(attackType, firstHitDamage, diceEffect, fixedTargets, kingNormalTier, areaCenter);
+
+            if (totalHits > 1)
+                StartCoroutine(PlayKingNormalFollowUpHits(attackType, followUpDamage, diceEffect, fixedTargets, totalHits, kingNormalTier, areaCenter));
         }
 
-        private IEnumerator PlayKingNormalFollowUpHits(DiceType attackType, int damage, KingNormalDiceEffect diceEffect, List<Monster> fixedTargets)
+        private IEnumerator PlayKingNormalFollowUpHits(
+            DiceType attackType, int damage, KingNormalDiceEffect diceEffect, List<Monster> fixedTargets,
+            int totalHits, int tier, Vector3 areaCenter)
         {
             WaitForSeconds delay = new WaitForSeconds(KingNormalDiceEffect.MultiHitInterval);
 
-            for (int i = 1; i < KingNormalDiceEffect.TotalHitCount; i++)
+            for (int i = 1; i < totalHits; i++)
             {
                 yield return delay;
-                ApplyKingNormalHit(attackType, damage, diceEffect, fixedTargets);
+                ApplyKingNormalHit(attackType, damage, diceEffect, fixedTargets, tier, areaCenter);
+
+                // 승급 T1: 4연타의 마지막 타는 근처의 다른 적 한 명도 관통한다.
+                if (tier >= 1 && i == totalHits - 1)
+                {
+                    Monster pierced = PromotionCombat.Nearest(
+                        battle, areaCenter, OJ.Core.PromotionEffectRules.KingNormalPierceRadius, null,
+                        m => !fixedTargets.Contains(m));
+                    if (pierced != null)
+                        HitMonster(pierced, attackType, damage);
+                }
             }
         }
 
-        private void ApplyKingNormalHit(DiceType attackType, int damage, KingNormalDiceEffect diceEffect, List<Monster> fixedTargets)
+        private void ApplyKingNormalHit(
+            DiceType attackType, int damage, KingNormalDiceEffect diceEffect, List<Monster> fixedTargets,
+            int tier, Vector3 areaCenter)
         {
             if (diceEffect == null || fixedTargets == null)
                 return;
@@ -259,7 +348,23 @@ namespace OJ.Hunting
             for (int i = 0; i < fixedTargets.Count; i++)
             {
                 Monster target = fixedTargets[i];
-                if (target == null || target.gameObject.activeInHierarchy == false)
+                bool gone = target == null || target.gameObject.activeInHierarchy == false;
+
+                // 승급 T2: 처치되어 빈 타는 버려지지 않고 다음 적에게 이어진다.
+                if (gone && tier >= 2)
+                {
+                    Monster next = PromotionCombat.Nearest(
+                        battle, areaCenter, OJ.Core.PromotionEffectRules.KingNormalRetargetRadius, null,
+                        m => !fixedTargets.Contains(m));
+                    if (next != null)
+                    {
+                        fixedTargets[i] = next;
+                        target = next;
+                        gone = false;
+                    }
+                }
+
+                if (gone)
                     continue;
 
                 HitMonster(target, attackType, damage);

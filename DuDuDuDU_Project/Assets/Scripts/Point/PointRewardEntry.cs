@@ -95,6 +95,22 @@ namespace OJ.Point
             return metadata != null ? metadata.icon : null;
         }
 
+        /// <summary>재화 설명 한 줄. 에셋에 적힌 것이 전부이고, 비었거나 enum 이름 그대로면 빈 문자열.</summary>
+        public static string GetPointDescription(PointType pointType)
+        {
+            if (!StaticResource.isAlive || StaticResource.Instance == null || StaticResource.Instance.PointMetadataDatabase == null)
+                return string.Empty;
+
+            PointMetadataDatabase.PointMetadata metadata = StaticResource.Instance.PointMetadataDatabase.Get(pointType);
+            if (metadata == null || string.IsNullOrWhiteSpace(metadata.description) ||
+                metadata.description.Trim() == pointType.ToString())
+            {
+                return string.Empty;
+            }
+
+            return metadata.description.Trim();
+        }
+
         /// <summary>
         /// 화면에 적을 재화 이름.
         ///
@@ -137,13 +153,36 @@ namespace OJ.Point
                 case PointType.RelicTicket: return "유물권";
                 case PointType.PinballTicket: return "핀볼 티켓";
                 case PointType.SynergyTicket: return "시너지 티켓";
-                case PointType.NormalScroll: return "일반 소환권";
-                case PointType.FireScroll: return "화염 소환권";
-                case PointType.IceScroll: return "냉기 소환권";
-                case PointType.PoisonScroll: return "독 소환권";
-                case PointType.ThunderScroll: return "번개 소환권";
+                // 다이스 카피. 기본 5종은 예전 속성 스크롤(소환권)을 카피로 쓴다. 이름은 인게임
+                // 다이스 이름(영문)과 맞춘다 — 카피가 어느 다이스 것인지 이름만으로 읽혀야 한다.
+                case PointType.NormalScroll: return "Normal 카피";
+                case PointType.FireScroll: return "Fire 카피";
+                case PointType.IceScroll: return "Ice 카피";
+                case PointType.PoisonScroll: return "Poison 카피";
+                case PointType.ThunderScroll: return "Thunder 카피";
+                case PointType.TornadoCopy: return "Tornado 카피";
+                case PointType.StunCopy: return "Stun 카피";
+                case PointType.ArmorBreakCopy: return "ArmorBreak 카피";
+                case PointType.WindCopy: return "Wind 카피";
+                case PointType.TimeCopy: return "Time 카피";
+                case PointType.KingNormalCopy: return "King Normal 카피";
+                case PointType.KingFireCopy: return "King Fire 카피";
+                case PointType.KingIceCopy: return "King Ice 카피";
+                case PointType.KingPoisonCopy: return "King Poison 카피";
+                case PointType.KingThunderCopy: return "King Thunder 카피";
+                case PointType.SelectTicket: return "선택권";
+                case PointType.RandomBasicCopy: return "랜덤 기본 카피";
+                case PointType.RandomRareCopy: return "랜덤 레어 카피";
+                case PointType.RandomKingCopy: return "랜덤 킹 카피";
+                case PointType.RandomRareKingCopy: return "랜덤 레어·킹 카피";
+                case PointType.OpenEventCurrency: return "이벤트 재화";
+                case PointType.EventCurrency1: return "이벤트 재화 1";
+                case PointType.EventCurrency2: return "이벤트 재화 2";
+                case PointType.EventCurrency3: return "이벤트 재화 3";
                 case PointType.MythicStone: return "신화석";
                 case PointType.RareStone: return "레어석";
+                case PointType.NormalGemTicket: return "일반 보석 상자 열쇠";
+                case PointType.PremiumGemTicket: return "최고급 보석 상자 열쇠";
                 case PointType.WeaponScroll: return "무기 강화권";
                 case PointType.HelmetScroll: return "투구 강화권";
                 case PointType.ArmorScroll: return "갑옷 강화권";

@@ -25,6 +25,37 @@ namespace OJ.Core.Tests
 
         // ── 비용 ──────────────────────────────────────────────
 
+        // ── 골드 결제 ─────────────────────────────────────────
+
+        [Test]
+        public void Pay_TicketsFirst_NoGoldWhenEnough()
+        {
+            Assert.IsTrue(SynergyRules.TryPay(10, 25, 0, out int t, out int g));
+            Assert.AreEqual(10, t);
+            Assert.AreEqual(0, g);
+        }
+
+        [Test]
+        public void Pay_ShortfallIsFilledWithGoldAt500PerTicket()
+        {
+            Assert.IsTrue(SynergyRules.TryPay(10, 4, 3000, out int t, out int g));
+            Assert.AreEqual(4, t);
+            Assert.AreEqual(3000, g);
+
+            // 티켓 0장이면 10장 = 5,000 골드.
+            Assert.IsTrue(SynergyRules.TryPay(10, 0, 5000, out t, out g));
+            Assert.AreEqual(0, t);
+            Assert.AreEqual(5000, g);
+        }
+
+        [Test]
+        public void Pay_FailsWithoutSpendingWhenGoldShort()
+        {
+            Assert.IsFalse(SynergyRules.TryPay(10, 4, 2999, out int t, out int g));
+            Assert.AreEqual(0, t);
+            Assert.AreEqual(0, g);
+        }
+
         [Test]
         public void Cost_FollowsTheAgreedFormula()
         {

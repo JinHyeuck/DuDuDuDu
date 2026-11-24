@@ -18,6 +18,9 @@ namespace OJ.Hunting
 
         public override DiceType DiceType => DiceType.KingThunder;
 
+        // 승급 T3: 공격 횟수. 5번째마다 전이 대상이 늘어난다.
+        private int attackCount;
+
         public override void BuildTargets(AttackContent attackContent, Monster rootTarget, List<Monster> hitMonsters)
         {
             if (attackContent == null || hitMonsters == null)
@@ -25,8 +28,16 @@ namespace OJ.Hunting
 
             int thunderTargets = attackContent.GetThunderTargetCount(DiceType.Thunder) + 2;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            if (level >= 3)
-                thunderTargets += 2;
+            // 옛 Lv3 마일스톤(전이 대상 +2)은 기본 수치로 합쳤다.
+            thunderTargets += 2;
+
+            // 승급 T3: 5번째 공격마다 전이 대상 +3.
+            if (OJ.Dice.PromotionManager.TierOf(DiceType) >= 3)
+            {
+                attackCount++;
+                if (OJ.Core.PromotionEffectRules.IsEveryNth(attackCount, OJ.Core.PromotionEffectRules.KingThunderEveryNth))
+                    thunderTargets += OJ.Core.PromotionEffectRules.KingThunderBonusTargets;
+            }
             // 이 효과는 전투 중에만 만들어지고 불리므로 창구 뒤의 매니저는 null 이 될 수 없다.
             // 그래서 battle.Monsters 에 새 ?. 를 붙이지 않는다 — 비어 있으면 조용히 넘어가는 대신 울어야 한다.
             Dictionary<Monster, List<Monster>> chainedByTarget = attackContent.GetNPerTarget_NoGlobalDup(
@@ -61,10 +72,22 @@ namespace OJ.Hunting
 
             Vector3 center = target.transform.position;
             int level = DiceLevelManager.Instance != null ? DiceLevelManager.Instance.GetLevel(DiceType) : 1;
-            if (level >= 12 && target.gameObject.activeInHierarchy)
+
+            // 승급 T1: 전이 대상에게 감전 표식. 표식을 가진 적이 죽으면 번개가 다시 전이된다(PromotionCombat).
+            // 승급 T2: 표식 대상은 번개 피해 +20%.
+            int kingThunderTier = OJ.Dice.PromotionManager.TierOf(DiceType);
+            if (kingThunderTier >= 1 && target.gameObject.activeInHierarchy)
+            {
+                target.MarkThunder(OJ.Core.PromotionEffectRules.KingThunderMarkSeconds);
+                PromotionCombat.LastKingThunderDamage = attackContent.CurrentDamage;
+                if (kingThunderTier >= 2)
+                    target.ApplyPromotionDamageTakenBonus(OJ.Core.PromotionEffectRules.KingThunderMarkDamageTakenPercent, OJ.Core.PromotionEffectRules.KingThunderMarkSeconds);
+            }
+
+            if (level >= OJ.Core.DiceMilestoneLevels.Third && target.gameObject.activeInHierarchy)
                 target.ApplyThunderDamageTakenBonus(15, 5f, DiceType);
 
-            if (level >= 9 && UnityEngine.Random.value <= 0.3f)
+            if (level >= OJ.Core.DiceMilestoneLevels.Second && UnityEngine.Random.value <= 0.3f)
             {
                 List<Monster> nearby = attackContent.GetRedHitTarget(
                     center,

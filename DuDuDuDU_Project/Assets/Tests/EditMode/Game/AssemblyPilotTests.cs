@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
@@ -42,13 +43,37 @@ namespace OJ.Game.Tests
         /// "언락용 재화"가 갈라진다. 이 매핑이 유일한 정본이라는 것을 여기서 못 박는다.
         /// </summary>
         [Test]
-        public void ToScrollTypeMapsSpecialAndKing()
+        public void ToScrollTypeMapsEveryDiceToItsOwnCopy()
         {
+            // 카피 개편: 레어·킹은 <b>다이스마다</b> 자기 카피를 쓴다(등급 공용 재화가 아니다).
+            Assert.That(PointManager.ToScrollType(DiceType.Tornado), Is.EqualTo(PointType.TornadoCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.Stun), Is.EqualTo(PointType.StunCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.ArmorBreak), Is.EqualTo(PointType.ArmorBreakCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.Wind), Is.EqualTo(PointType.WindCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.Time), Is.EqualTo(PointType.TimeCopy));
+
+            Assert.That(PointManager.ToScrollType(DiceType.KingNormal), Is.EqualTo(PointType.KingNormalCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.KingFire), Is.EqualTo(PointType.KingFireCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.KingIce), Is.EqualTo(PointType.KingIceCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.KingPoison), Is.EqualTo(PointType.KingPoisonCopy));
+            Assert.That(PointManager.ToScrollType(DiceType.KingThunder), Is.EqualTo(PointType.KingThunderCopy));
+
+            // 열다섯 종이 서로 다른 재화여야 한다. 둘이 같으면 한 다이스의 카피로 다른 다이스가 큰다.
+            var seen = new HashSet<PointType>();
+            foreach (DiceType type in Enum.GetValues(typeof(DiceType)))
+            {
+                if (type == DiceType.Max)
+                    continue;
+
+                Assert.That(seen.Add(PointManager.ToScrollType(type)), Is.True, type + " 의 카피 재화가 다른 다이스와 겹친다");
+            }
+
+            // 특수·킹은 옛 레어석·신화석을 더 이상 쓰지 않는다.
             foreach (DiceType special in DiceEvolution.SpecialTypes)
-                Assert.That(PointManager.ToScrollType(special), Is.EqualTo(PointType.RareStone), special.ToString());
+                Assert.That(PointManager.ToScrollType(special), Is.Not.EqualTo(PointType.RareStone), special.ToString());
 
             foreach (DiceType king in DiceEvolution.KingTypes)
-                Assert.That(PointManager.ToScrollType(king), Is.EqualTo(PointType.MythicStone), king.ToString());
+                Assert.That(PointManager.ToScrollType(king), Is.Not.EqualTo(PointType.MythicStone), king.ToString());
         }
 
         /// <summary>

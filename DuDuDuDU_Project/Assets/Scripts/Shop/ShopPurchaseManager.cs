@@ -25,6 +25,9 @@ namespace OJ.Shop
 
         /// <summary>오늘 갱신 횟수를 다 썼다. (일일상점)</summary>
         RefreshLimitReached,
+
+        /// <summary>오늘 구매 한도를 다 썼다. (재화 상점 — 핀볼 1,000발은 하루 2회)</summary>
+        DailyLimitReached,
     }
 
     /// <summary>
@@ -67,7 +70,7 @@ namespace OJ.Shop
         // ── 구매 키 ────────────────────────────────────────────────────
         // 세이브에 그대로 문자열로 들어간다. 바꾸면 그날의 기록이 초기화되므로
         // (다음 날이면 어차피 리셋되는 값이라) 사고는 아니지만, 이유 없이 바꾸지 말 것.
-        public static string GoldKey(int offerIndex) => "gold:" + offerIndex;
+        public static string CurrencyKey(int offerIndex) => "currency:" + offerIndex;
 
         // ── 조회 ───────────────────────────────────────────────────────
 
@@ -105,37 +108,24 @@ namespace OJ.Shop
 
         // ── 구매 ───────────────────────────────────────────────────────
 
-
         /// <summary>
-        /// 다이스석. <b>일일 한도도 누진도 없다</b> — 무료젬만 내면 그만큼 들어온다.
-        /// 한도를 뺀 이유는 <see cref="ShopDatabase.StoneOffer"/> 주석에 적혀 있다.
+        /// 재화 상점. <b>유료젬으로만 산다</b>. 하루 한도가 있는 상품(핀볼 1,000발)은 한도를 먼저 보고,
+        /// 한도 기록은 지불이 끝난 뒤에야 올라간다(<see cref="Settle"/>) — 모자라서 못 산 시도가 한도를 깎지 않는다.
+        /// 같은 상품을 어느 화면(재화 상점·콘텐츠 패스 팝업)에서 사도 같은 키라 한도가 하나다.
         /// </summary>
-        public ShopPurchaseResult TryBuyStone(int offerIndex)
+        public ShopPurchaseResult TryBuyCurrency(int offerIndex)
         {
             ShopDatabase db = ShopDatabaseProvider.Database;
-            if (db == null || offerIndex < 0 || offerIndex >= db.StoneOffers.Count)
-                return Invalid("다이스석 " + offerIndex);
+            if (db == null || offerIndex < 0 || offerIndex >= db.CurrencyOffers.Count)
+                return Invalid("재화 " + offerIndex);
 
-            ShopDatabase.StoneOffer offer = db.StoneOffers[offerIndex];
+            ShopDatabase.CurrencyOffer offer = db.CurrencyOffers[offerIndex];
+            string key = CurrencyKey(offerIndex);
 
-            // 기록 키를 안 넘긴다(null). 한도도 누진도 없으니 셀 이유가 없고,
-            // 세지 않는 것이 "한도가 없다"는 사실을 코드에서 바로 읽히게 한다.
-            return Settle(PointType.FreeGem, offer.costFreeGem,
-                offer.stoneType, offer.amountPerPurchase, null);
-        }
+            if (CurrencyShopRules.IsLimitReached(offer.dailyLimit, GetTodayCount(key)))
+                return ShopPurchaseResult.DailyLimitReached;
 
-        /// <summary>골드. 한도는 없고 누진만 있다(기획서 8.7).</summary>
-        public ShopPurchaseResult TryBuyGold(int offerIndex)
-        {
-            ShopDatabase db = ShopDatabaseProvider.Database;
-            if (db == null || offerIndex < 0 || offerIndex >= db.GoldOffers.Count)
-                return Invalid("골드 " + offerIndex);
-
-            ShopDatabase.GoldOffer offer = db.GoldOffers[offerIndex];
-            string key = GoldKey(offerIndex);
-            int cost = ProgressiveCost(offer.baseCostFreeGem, offer.costIncreasePerPurchase, GetTodayCount(key));
-
-            return Settle(PointType.FreeGem, cost, PointType.Gold, offer.goldAmount, key);
+            return Settle(PointType.PaidGem, offer.priceGem, offer.pointType, offer.amount, key);
         }
 
         /// <summary>

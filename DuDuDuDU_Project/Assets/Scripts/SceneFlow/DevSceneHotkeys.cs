@@ -112,9 +112,7 @@ namespace OJ.SceneFlow
         /// <b>기기 시계를 돌리지 않는다.</b> 시계를 돌리면 상점 일일 리셋·출석 같은 다른
         /// 날짜 판정까지 같이 움직여서 무엇이 왜 바뀌었는지 알 수 없게 된다.
         ///
-        /// 기본 2시간인 것은 그것이 <b>고기 한 세트</b>이기 때문이다
-        /// (<c>IdleRewardManager.MeatSetIntervalSeconds</c>). 한 번 누를 때마다 한 세트씩
-        /// 늘어나는 편이 "얼마나 당겼는지"를 세기 쉽다. Shift 를 누르면 하루치다.
+        /// 기본 1시간(고기 30개)씩 당긴다. Shift 를 누르면 하루치다.
         /// </summary>
         private static void AdvanceIdleTime()
         {
@@ -130,7 +128,7 @@ namespace OJ.SceneFlow
             // 넣으면 System.Object 와 UnityEngine.Object 가 부딪혀 아래 Describe 가 깨진다.
             System.TimeSpan amount = big
                 ? System.TimeSpan.FromHours(24d)
-                : System.TimeSpan.FromSeconds(IdleRewardManager.MeatSetIntervalSeconds);
+                : System.TimeSpan.FromHours(1d);
 
             manager.DevAdvanceTime(amount);
 

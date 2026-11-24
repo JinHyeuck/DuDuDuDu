@@ -33,7 +33,7 @@ namespace OJ.Hunting
 
         CharacterState CharacterState = CharacterState.None;
 
-        private bool IsAlive => gameObject.activeInHierarchy && isActiveAndEnabled && CharacterState != CharacterState.Dead && _hp > 0;
+        public bool IsAlive => gameObject.activeInHierarchy && isActiveAndEnabled && CharacterState != CharacterState.Dead && _hp > 0;
 
         public int MonsterID = -1;
         public int _hp = 3;
@@ -124,6 +124,14 @@ namespace OJ.Hunting
         private float _windDamageTakenBonusUntil;
         private int _relicDamageTakenBonusPercent;
         private float _relicDamageTakenBonusUntil;
+        // 승급 효과용. 유물·원소 보너스와 따로 두는 이유는 IncomingDamageFormula(골든으로 잠긴 합산식)의
+        // 입력 수를 늘리지 않으려는 것이다 — 합산이 끝난 뒤 한 번 곱한다.
+        private int _promoDamageTakenPercent;
+        private float _promoDamageTakenUntil = -1f;
+        private float _thunderMarkUntil = -1f;
+        private DiceType _slowSource = DiceType.Max;
+        private DiceType _defenseDownSource = DiceType.Max;
+        private int _defenseDownPercent;
         private Coroutine _defenseDownRoutine;
         private MonsterStatusIcons _statusIcons;
         private Coroutine _poisonRoutine;
@@ -198,6 +206,13 @@ namespace OJ.Hunting
             _statusIcons?.Clear();
             _stunnedUntilTime = -1f;
             _slowUntilTime = -1f;
+            _promoDamageTakenPercent = 0;
+            _promoDamageTakenUntil = -1f;
+            _thunderMarkUntil = -1f;
+            _slowSource = DiceType.Max;
+            _defenseDownSource = DiceType.Max;
+            _defenseDownPercent = 0;
+            StunSourceDice = null;
             _poisonUntilTime = -1f;
             _poisonDamageMultiplier = 1f;
             _poisonDamageTakenBonusPercent = 0;
@@ -234,6 +249,13 @@ namespace OJ.Hunting
             _statusIcons?.Clear();
             _stunnedUntilTime = -1f;
             _slowUntilTime = -1f;
+            _promoDamageTakenPercent = 0;
+            _promoDamageTakenUntil = -1f;
+            _thunderMarkUntil = -1f;
+            _slowSource = DiceType.Max;
+            _defenseDownSource = DiceType.Max;
+            _defenseDownPercent = 0;
+            StunSourceDice = null;
             _poisonUntilTime = -1f;
             _poisonDamageMultiplier = 1f;
             _poisonDamageTakenBonusPercent = 0;
@@ -343,6 +365,8 @@ namespace OJ.Hunting
                 _relicDamageTakenBonusPercent,
                 stateBonusPercent);
             int appliedDamage = isFixed ? dmg : IncomingDamageFormula.AppliedDamage(dmg, defense, totalBonusPercent);
+            if (!isFixed && _promoDamageTakenPercent > 0 && Clock.GameTime < _promoDamageTakenUntil)
+                appliedDamage = Mathf.Max(1, Mathf.RoundToInt(appliedDamage * (1f + _promoDamageTakenPercent * 0.01f)));
 
             // 탑의 보호막. <b>피해가 아니라 타격 한 번을 통째로 먹는다.</b>
             // 기획서 6.2 가 보호막의 대응으로 "다단 공격" 을 적어 둔 것이 이 뜻이다 —
@@ -377,6 +401,8 @@ namespace OJ.Hunting
                     EquipmentManager.Instance?.OnMonsterKilled(
                         battle.Game != null ? battle.Game.wall : null);
                     RelicManager.Instance?.OnMonsterKilled(this, wasPoisoned, deathPosition);
+                    // 승급 효과의 사망 훅(전이·쿨타임 초기화 등). 상태는 아직 지워지지 않았다.
+                    PromotionCombat.OnMonsterKilled(this, deathPosition, battle);
 
                     // 되돌리기 연출이 되감을 대상. <b>PoolMonster 보다 먼저여야 한다</b> —
                     // 저것이 SetActive(false) 를 부르면 OnDisable 이 스프라이트를 포함한
@@ -420,6 +446,11 @@ namespace OJ.Hunting
                     // 미션의 "적 처치" 는 그 축이 아니라 <b>실제로 죽은 것</b>이므로
                     // 현상금도 함께 센다(현상금 처치 업적은 BountyManager 가 따로 올린다).
                     MissionManager.Instance?.Notify(MissionAction.MonsterKill);
+
+                    // 승급 미션. 보스는 처치 수에도 함께 센다 — 보스도 몬스터다.
+                    PromotionManager.Instance?.Notify(PromotionMission.MonsterKills);
+                    if (IsStageBoss)
+                        PromotionManager.Instance?.Notify(PromotionMission.BossKills);
 
                     // 시너지 전투계(처치·보스·현상금). 발동은 다음 프레임에 하므로 여기서 재진입하지 않는다.
                     battle.Game?.Synergy?.NotifyKilled(this);
@@ -475,6 +506,8 @@ namespace OJ.Hunting
             // 남아 킹아이스의 피해증가(TakeDamage 의 stateBonusPercent)까지 같이 죽는다 —
             // 현상금 앞에서만 특정 다이스가 조용히 약해지는, 화면으로는 알 수 없는 손실이다.
             _slowUntilTime = Mathf.Max(_slowUntilTime, Clock.GameTime + Mathf.Max(0.1f, duration));
+            if (source != DiceType.Max)
+                _slowSource = source;
 
             if (IsBounty)
                 return;
@@ -562,6 +595,9 @@ namespace OJ.Hunting
                 return;
 
             _defenseDownAmount = Mathf.Max(_defenseDownAmount, validAmount);
+            _defenseDownPercent = Mathf.Max(_defenseDownPercent, validPercent);
+            if (source != DiceType.Max)
+                _defenseDownSource = source;
             RecalculateDefense();
             MarkStatus(source, duration);
 
@@ -729,6 +765,70 @@ namespace OJ.Hunting
         private bool IsStunned()
         {
             return Clock.GameTime < _stunnedUntilTime;
+        }
+
+        // ── 승급 효과가 읽고 쓰는 것 ─────────────────────────────────────────
+
+        /// <summary>지금 기절 중인가.</summary>
+        public bool IsStunnedNow => IsStunned();
+
+        /// <summary>스턴 다이스가 건 기절이면 그 다이스. 사망 시 쿨타임 초기화(스턴 T3)가 쓴다.</summary>
+        public UIDice StunSourceDice { get; set; }
+
+        /// <summary>마지막으로 둔화를 건 다이스. 모르면 Max.</summary>
+        public DiceType SlowSource => _slowSource;
+
+        /// <summary>마지막으로 중독을 건 다이스.</summary>
+        public DiceType PoisonSource => _poisonSource;
+
+        /// <summary>방어력 감소 상태인가.</summary>
+        public bool IsDefenseDown => _defenseDownAmount > 0;
+
+        /// <summary>마지막으로 방어력 감소를 건 다이스.</summary>
+        public DiceType DefenseDownSource => _defenseDownSource;
+
+        /// <summary>걸린 방어력 감소 비율(%). 전이할 때 같은 값을 쓴다.</summary>
+        public int DefenseDownPercent => _defenseDownPercent;
+
+        /// <summary>감전 표식이 걸려 있는가(킹썬더 T1).</summary>
+        public bool IsThunderMarked => Clock.GameTime < _thunderMarkUntil;
+
+        public void MarkThunder(float duration)
+        {
+            _thunderMarkUntil = Mathf.Max(_thunderMarkUntil, Clock.GameTime + Mathf.Max(0.1f, duration));
+        }
+
+        /// <summary>
+        /// 승급 효과의 "받는 피해 증가". 유물·속성 보너스와 별개 층이고 합산이 끝난 뒤 한 번 곱한다.
+        /// 겹치면 큰 값과 늦은 만료를 따른다(다른 보너스들과 같은 규칙).
+        /// </summary>
+        public void ApplyPromotionDamageTakenBonus(int percent, float duration)
+        {
+            _promoDamageTakenPercent = Mathf.Max(_promoDamageTakenPercent, Mathf.Max(0, percent));
+            _promoDamageTakenUntil = Mathf.Max(_promoDamageTakenUntil, Clock.GameTime + Mathf.Max(0.1f, duration));
+        }
+
+        /// <summary>
+        /// 중독 틱을 지금 한 번 즉시 때린다(포이즌 T1). 평소 틱과 같은 식이다.
+        /// </summary>
+        public void TickPoisonNow()
+        {
+            if (_hp <= 0 || !IsPoisoned())
+                return;
+
+            int intdamage = Mathf.CeilToInt((_hp * 0.01f) * _poisonDamageMultiplier);
+            if (intdamage <= 0)
+                intdamage = 1;
+
+            int appliedDamage = TakeDamage(intdamage);
+            battle.Contribution?.Record(_poisonSource, appliedDamage);
+            if (appliedDamage > 0)
+            {
+                GameObject dtObj = battle.DamageTexts.GetDamageText();
+                dtObj.transform.position = transform.position;
+                dtObj.transform.ResetLocalZ();
+                dtObj.GetComponent<DamageText>().SetText(appliedDamage, DiceMetaDataProvider.GetColor(DiceType.Poison));
+            }
         }
 
         public bool IsSlowed()
