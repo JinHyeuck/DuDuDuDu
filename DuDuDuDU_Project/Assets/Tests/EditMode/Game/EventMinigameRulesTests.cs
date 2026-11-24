@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 using OJ.EventMinigame;
 using OJ.Point;
@@ -70,6 +71,36 @@ namespace OJ.Game.Tests
             Assert.AreEqual(0, EventMinigameRules.OverflowToShots(0, 300));
             Assert.AreEqual(0, EventMinigameRules.OverflowToShots(-5, 300));
             Assert.AreEqual(0, EventMinigameRules.OverflowToShots(500, 0));
+        }
+
+        [Test]
+        public void 개발_시계는_각_이벤트가_열린_날로_민다()
+        {
+            for (int day = 0; day < 40; day++)
+            {
+                DateTime real = new DateTime(1970, 1, 1, 6, 0, 0, DateTimeKind.Utc).AddDays(day + 20000);
+
+                for (int i = 0; i < EventMinigameRules.KindCount; i++)
+                {
+                    EventKind kind = (EventKind)i;
+                    TimeSpan offset = EventMinigameClock.OffsetToOpen(kind, real);
+
+                    DateTime shifted = real + offset;
+                    Assert.AreEqual(kind, EventMinigameRules.KindOf(EventCurrencyRules.DayIndex(shifted)),
+                        "day " + day + " kind " + kind);
+                    Assert.GreaterOrEqual(offset, TimeSpan.Zero);
+                    Assert.Less(offset, TimeSpan.FromDays(EventMinigameRules.DaysPerOccurrence * EventMinigameRules.KindCount));
+                }
+            }
+        }
+
+        [Test]
+        public void 이미_열린_이벤트는_시계를_밀지_않는다()
+        {
+            DateTime real = new DateTime(2026, 11, 24, 3, 0, 0, DateTimeKind.Utc);
+            EventKind open = EventMinigameRules.KindOf(EventCurrencyRules.DayIndex(real));
+
+            Assert.AreEqual(TimeSpan.Zero, EventMinigameClock.OffsetToOpen(open, real));
         }
     }
 }
