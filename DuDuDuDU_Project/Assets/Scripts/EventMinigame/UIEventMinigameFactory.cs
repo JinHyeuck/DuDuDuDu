@@ -45,7 +45,6 @@ namespace OJ.EventMinigame
         internal const string GaugeBack = "Upgrade/Upgrade_Gauge_Bg";
 
         internal const string SlotGrey = "ItemSlot/Itme_Slot_0";
-        internal const string SlotGreen = "ItemSlot/Itme_Slot_1";
         internal const string SlotGold = "ItemSlot/Itme_Slot_5";
 
         // 마일스톤 줄: 흰 둥근 상자(SmallBox)에 곱하는 색. 줄 글씨가 읽히는 어두운 바탕이다.
@@ -65,10 +64,8 @@ namespace OJ.EventMinigame
         internal static readonly Color MarkerColor = Color.white;
 
         /// <summary>보물찾기 칸 색. 칸 그림(회색/초록/주황 슬롯)에 곱한다.</summary>
-        internal static readonly Color TileHidden = Color.white;
-        internal static readonly Color TileEmpty = new Color(0.38f, 0.38f, 0.46f, 1f);
-        internal static readonly Color TileTreasure = Color.white;
-        internal static readonly Color TileFound = Color.white;
+        internal static readonly Color TileHidden = new Color(0.55f, 0.85f, 1f, 1f);
+        internal static readonly Color TileEmpty = new Color(0.36f, 0.24f, 0.24f, 1f);
 
         internal static string ButtonPath(EventButtonKind kind)
         {

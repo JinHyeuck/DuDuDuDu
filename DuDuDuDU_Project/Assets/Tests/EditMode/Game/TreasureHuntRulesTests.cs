@@ -15,10 +15,45 @@ namespace OJ.Game.Tests
         [Test]
         public void 모양마다_방향과_칸_수가_맞다()
         {
-            int[] expectedCells = { 2, 3, 3, 4, 4, 4, 4, 4, 5 };
+            // 1×1 / 2×1 / 2×2 / 3×1 / 3×2 / 3×3.
+            int[] expectedCells = { 1, 2, 4, 3, 6, 9 };
 
             for (int shape = 0; shape < TreasureHuntRules.ShapeCount; shape++)
                 Assert.AreEqual(expectedCells[shape], ShapeSize(shape), "shape " + shape);
+        }
+
+        [Test]
+        public void 보물은_모두_빈틈없는_직사각형이고_모양_크기와_같다()
+        {
+            int[][] sizes = { new[] { 1, 1 }, new[] { 2, 1 }, new[] { 2, 2 }, new[] { 3, 1 }, new[] { 3, 2 }, new[] { 3, 3 } };
+
+            for (int tier = 1; tier <= TreasureHuntRules.Tiers.Length; tier++)
+            {
+                TreasureTier data = TreasureHuntRules.Tiers[tier - 1];
+
+                for (int seed = 0; seed < 40; seed++)
+                {
+                    TreasureBoard board = TreasureHuntRules.Generate(tier, seed);
+
+                    for (int t = 0; t < board.TreasureCount; t++)
+                    {
+                        TreasureHuntRules.TreasureRect(board, t, out int x, out int y, out int w, out int h);
+
+                        // 틀 안의 칸이 전부 이 보물 칸이어야 한 장의 그림으로 이어진다.
+                        Assert.AreEqual(w * h, board.CellCount(t), "tier " + tier + " seed " + seed + " treasure " + t);
+
+                        int[] size = sizes[data.Shapes[t]];
+                        bool sameOrSwapped = (w == size[0] && h == size[1]) || (w == size[1] && h == size[0]);
+                        Assert.IsTrue(sameOrSwapped, "tier " + tier + " seed " + seed + " treasure " + t);
+
+                        for (int cx = x; cx < x + w; cx++)
+                        {
+                            for (int cy = y; cy < y + h; cy++)
+                                Assert.AreEqual(t, board.Owner[cy * board.Width + cx]);
+                        }
+                    }
+                }
+            }
         }
 
         [Test]
@@ -213,10 +248,10 @@ namespace OJ.Game.Tests
         }
 
         [Test]
-        public void 누적_기대_곡괭이는_12스테이지에_약_373개_24스테이지에_약_2007개다()
+        public void 누적_기대_곡괭이는_12스테이지에_약_365개_24스테이지에_약_2066개다()
         {
-            Assert.AreEqual(3729L, TreasureHuntRules.CumulativePicksTenths(12));
-            Assert.AreEqual(20067L, TreasureHuntRules.CumulativePicksTenths(24));
+            Assert.AreEqual(3648L, TreasureHuntRules.CumulativePicksTenths(12));
+            Assert.AreEqual(20664L, TreasureHuntRules.CumulativePicksTenths(24));
         }
 
         [Test]
@@ -254,7 +289,7 @@ namespace OJ.Game.Tests
         {
             EventBundle reward = TreasureHuntRules.StageReward(1);
 
-            Assert.That(reward.ValueDeci, Is.InRange(20510L, 20522L));
+            Assert.That(reward.ValueDeci, Is.InRange(20210L, 20223L));
             Assert.Greater(reward.PinballShots, 0);
             Assert.Greater(reward.Gold, 0);
             Assert.AreEqual(0, reward.NormalGemTickets);
