@@ -346,7 +346,7 @@ namespace OJ.EventMinigame
             UIMissionUIFactory.SetGauge(progressFill, TrackWidth, ratio);
             trackBoat.anchoredPosition = new Vector2(-TrackWidth / 2f + TrackWidth * ratio, trackBoat.anchoredPosition.y);
 
-            RefreshMarkers(table, claimed);
+            RefreshMarkers(table, claimed, distance);
 
             bool open = IsOpenNow && !animating;
             int held = HeldCurrency;
@@ -370,8 +370,11 @@ namespace OJ.EventMinigame
             PaintSegments();
         }
 
-        /// <summary>강 오른쪽 끝 표식(다음 3택1 상자 · 다음 일반 보상)과 진행 띠 아래 다음 보상 글자.</summary>
-        private void RefreshMarkers(EventMilestone[] table, int claimed)
+        /// <summary>
+        /// 강 오른쪽 끝 표식(다음 3택1 상자 · 다음 일반 보상)과 진행 띠 아래 다음 보상 글자.
+        /// 표식은 남은 거리라서 바퀴가 칸에 멈출 때마다 나온 거리만큼 줄어든다.
+        /// </summary>
+        private void RefreshMarkers(EventMilestone[] table, int claimed, long distance)
         {
             int nextChest = -1;
             int nextReward = -1;
@@ -393,11 +396,11 @@ namespace OJ.EventMinigame
 
             chestMarker.SetActive(nextChest >= 0);
             if (nextChest >= 0)
-                chestMarkerText.text = EventMinigameText.Number(table[nextChest].Threshold) + "m";
+                chestMarkerText.text = EventMinigameText.Number(System.Math.Max(0L, table[nextChest].Threshold - distance)) + "m";
 
             rewardMarker.SetActive(nextReward >= 0);
             if (nextReward >= 0)
-                rewardMarkerText.text = EventMinigameText.Number(table[nextReward].Threshold) + "m";
+                rewardMarkerText.text = EventMinigameText.Number(System.Math.Max(0L, table[nextReward].Threshold - distance)) + "m";
 
             List<int> pending = Manager.GetRaftingPending();
             if (pending.Count > 0 && unshownMeters == 0)
