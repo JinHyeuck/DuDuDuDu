@@ -22,7 +22,7 @@ namespace OJ.Game.Tests
     public sealed class PinballRulesTests
     {
         /// <summary>현재 판(<c>PinballBoard.asset</c>)의 실제 확률표.</summary>
-        private static readonly float[] Declared = { 0.2475f, 0.2475f, 0.01f, 0.2475f, 0.2475f };
+        private static readonly float[] Declared = { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
 
         // ── 칸 추첨 ─────────────────────────────────────────────────────
 
@@ -32,13 +32,14 @@ namespace OJ.Game.Tests
         /// <b>그 차이는 수만 판을 돌려야 눈에 보인다.</b>
         /// </summary>
         [TestCase(0f, 0)]
-        [TestCase(0.24f, 0)]
-        [TestCase(0.26f, 1)]
-        [TestCase(0.48f, 1)]
-        [TestCase(0.50f, 2)]      // 잭팟 칸. 0.495 ~ 0.505 뿐이다
-        [TestCase(0.52f, 3)]
-        [TestCase(0.74f, 3)]
-        [TestCase(0.77f, 4)]
+        [TestCase(0.19f, 0)]
+        [TestCase(0.21f, 1)]
+        [TestCase(0.39f, 1)]
+        [TestCase(0.41f, 2)]      // 가운데 칸도 20% 다. 0.4 ~ 0.6
+        [TestCase(0.59f, 2)]
+        [TestCase(0.61f, 3)]
+        [TestCase(0.79f, 3)]
+        [TestCase(0.81f, 4)]
         [TestCase(0.9999f, 4)]
         public void 칸_추첨이_누적구간_경계를_지킨다(float roll, int expected)
         {

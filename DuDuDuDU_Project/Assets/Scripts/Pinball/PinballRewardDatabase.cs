@@ -166,20 +166,21 @@ namespace OJ.Pinball
         /// 특수 핀 둘은 <c>PinballBoard.asset</c> 의 중앙 범퍼 두 개(태그 1·2)와 짝이다.
         /// </summary>
         /// <summary>
-        /// 칸별 골드. <b>보기 좋은 수</b>로 잡았다 — 가장자리 5·10·10·5, 가운데 잭팟 500.
-        /// 발당 기댓값 = 0.2475 × 30 + 0.01 × 500 = 12.4(5,000발에 약 6.2만 골드, 0.1원/골드 → 약 6,200원).
-        /// 예전 1·2 는 숫자가 너무 작아 하는 맛이 없었다(2026-11 사용자 결정). 보너스 쪽 골드(50 → 20)를 깎아 보충했다.
+        /// 칸별 골드. <b>보기 좋은 수</b>로 잡았다 — 가장자리 10, 안쪽 셋 15. <b>잭팟 칸은 없다</b>(2026-11 사용자 결정:
+        /// "대박"이라는 이름은 보너스 라운드 입구인 대박핀(상자)이 가진다). 가운데 칸도 평범한 15 이다.
+        /// 다섯 칸이 모두 20% 라서 발당 기댓값 = 0.2 × (10 + 15 + 15 + 15 + 10) = 13.0(5,000발에 6.5만 골드, 0.1원/골드 → 약 6,500원).
+        /// 예전 5·10·500·10·5 는 발당 12.4 였다 — 칸 확률을 고르게 하면서 장부(약 6.2만)보다 약 4% 후해졌다.
         /// </summary>
-        public static readonly int[] GoldPerSlot = { 5, 10, 500, 10, 5 };
+        public static readonly int[] GoldPerSlot = { 10, 15, 15, 15, 10 };
 
         /// <summary>
-        /// 칸별 시너지 티켓. 판의 칸 확률이 0.2475 × 4 + 0.01 이라 정수 한 장이 가장자리 칸에 <b>확정</b>으로 걸리면
-        /// 발당 0.2475 로 장부(0.12)의 두 배가 된다. 그래서 <b>확률로 준다</b> — 2·4번 칸에 1장씩, 24% 지급이면
-        /// 0.2475 × 2 × 0.24 ≈ 0.119 (5,000발에 약 594장, 하루 2,000발이면 약 238장).
+        /// 칸별 시너지 티켓. 칸 확률이 20% 라 정수 한 장이 두 칸에 <b>확정</b>으로 걸리면
+        /// 발당 0.4 로 장부(0.12)의 3배가 넘는다. 그래서 <b>확률로 준다</b> — 2·4번 칸에 1장씩, 30% 지급이면
+        /// 0.2 × 2 × 0.30 = 0.12 (5,000발에 600장, 하루 2,016발이면 약 242장).
         /// 0 은 그 칸이 주지 않는다는 뜻이다.
         /// </summary>
         public static readonly int[] SynergyTicketsPerSlot = { 0, 1, 0, 1, 0 };
-        public const int SynergyTicketChancePercent = 24;
+        public const int SynergyTicketChancePercent = 30;
 
         /// <summary>
         /// 칸별 고기. <b>장부 밖 값이다</b> — 고기는 가치 장부에 없고 고기 루프(정책 4장 r)가 따로 잡는다.
@@ -188,28 +189,32 @@ namespace OJ.Pinball
         /// 발당 고기를 1.24 → 0.11 로 내렸다. 그대로 두면 r = 168 × 12 × 1.24 ÷ 720 ≈ 3.5 로 고기가 불어난다.
         /// r = 하루 발수 × 발당 고기 ÷ 하루 소탕 고기(720) = 2,016 × 0.11 ÷ 720 ≈ 0.31 (목표 0.3, 상한 0.35).
         /// 하루 소탕 고기 720 은 고기 축제(2분마다 1개)가 기준이다.
-        /// 가장자리 칸은 0 이다 — 정수 1 만 걸려도 발당 0.99 라 r 이 상한을 넘는다. 가운데 1% 칸만 11(소탕 2회분 + 1)을 준다.
+        /// 정수 1 을 확정으로 걸면 발당 1.0 이라 r 이 상한을 넘는다. 그래서 <b>모든 칸이 1개를 11% 확률로</b> 준다 —
+        /// 칸 확률의 합이 1 이니 발당 기댓값은 어느 칸에 얼마를 걸든 0.11 이다(예전엔 가운데 1% 칸이 11개를 몰아 줘서 같은 0.11 을 냈다).
+        /// 고기 "잭팟"은 없다 — 한 번에 받는 고기는 늘 1개이고, 하루 변동은 2,016발에 걸친 이항 분포라 작다.
         /// </summary>
-        public static readonly int[] StaminaPerSlot = { 0, 0, 11, 0, 0 };
+        public static readonly int[] StaminaPerSlot = { 1, 1, 1, 1, 1 };
+        public const int StaminaChancePercent = 11;
 
         /// <summary>
         /// 칸별 열린 이벤트 재화. 장부 값 발당 0.09(5,000발에 450개, 20원 → 0.9만 원). 가장자리 1·5번 칸에 1개씩
-        /// <b>18% 확률</b>로 준다 — 0.2475 × 2 × 0.18 ≈ 0.089. 지급 순간 그날 열린 이벤트의 재화로 풀린다(<c>EventCurrencyRules</c>).
+        /// <b>22% 확률</b>로 준다 — 0.2 × 2 × 0.22 = 0.088. 지급 순간 그날 열린 이벤트의 재화로 풀린다(<c>EventCurrencyRules</c>).
         /// </summary>
         public static readonly int[] EventCurrencyPerSlot = { 1, 0, 0, 0, 1 };
-        public const int EventCurrencyChancePercent = 18;
+        public const int EventCurrencyChancePercent = 22;
 
         /// <summary>
         /// 중간 핀의 "몇 번 맞으면 보상이 나가는가". 공 1발당 적중 횟수를 시뮬로 쟀다
-        /// (2026-11, 아트 PSD 배치 + 아치 판 셋을 일반 벽으로 둘러 상자를 감싼 판. 칸 확률 0.2475/0.2475/0.01/0.2475/0.2475 로 칸을 뽑고
-        /// 그 칸의 <b>시드표 풀</b>에서 공을 뽑는다 — 실제 게임이 하는 그대로, 표본 20만 개):
-        /// 카피핀(1번) 0.370 / 뽑기권핀(2번) 0.369 / 대박핀(3번) 0.690. 판이나 칸 확률을 바꾸면 다시 재서 고칠 것.
+        /// (2026-11, 아트 PSD 배치 + 아치 판 셋을 일반 벽으로 둘러 상자를 감싼 판. 칸 확률 0.2 × 5 로 칸을 뽑고
+        /// 그 칸의 <b>시드표 풀</b>(칸마다 2,000개)에서 공을 뽑는다 — 실제 게임이 하는 그대로, 풀 전체를 다시 돌려 평균을 냈다):
+        /// 카피핀(1번) 0.3612 / 뽑기권핀(2번) 0.3627 / 대박핀(3번) 0.6186. 판이나 칸 확률을 바꾸면 다시 재서 고칠 것.
+        /// (예전 칸 확률 0.2475/0.2475/0.01/0.2475/0.2475 에서는 0.370 / 0.369 / 0.690 이었다.)
         /// 시드표는 재미있는 궤적을 골라 담아서 날것 궤적보다 특수 핀을 자주 맞힌다(날것으로 재면 대박핀 0.192). 장부는 실제 게임 기준으로 맞춘다.
         ///
         /// 5,000발 기준 완주 횟수 = 발당 적중 × 5,000 ÷ 필요 적중:
-        ///   1번  11회  → 168.2번 (완주마다 카피 1장: 레어·킹 17% / 기본 83% → 레어·킹 28.6장 + 기본 139.6장; 장부 27.5 / 140)
-        ///   2번 154회  → 12.0번 (일반 보석 뽑기권 12장; 장부 12)
-        ///   3번 345회  → 10.0번 (Bonus 입장 10회, 500발당 1회; 장부 10)
+        ///   1번  11회  → 164.2번 (완주마다 카피 1장: 레어·킹 17% / 기본 83% → 레어·킹 27.9장 + 기본 136.3장; 장부 27.5 / 140)
+        ///   2번 151회  → 12.0번 (일반 보석 뽑기권 12장; 장부 12)
+        ///   3번 309회  → 10.0번 (Bonus 입장 10회, 500발당 1회; 장부 10)
         ///
         /// 카피핀은 <b>자주 나오고 한 번에 1장</b>이다(예전엔 40회마다 1장+5장을 몰아 줬다 — 2026-11 사용자 결정).
         /// 무엇이 나올지는 확률이다(랜덤 1종 핀의 가중치).
@@ -221,8 +226,45 @@ namespace OJ.Pinball
         public const int CopyPinRequiredHits = 11;
         public const int CopyPinRareKingPercent = 17;
         public const int CopyPinBasicPercent = 83;
-        public const int GemTicketPinRequiredHits = 154;
-        public const int BonusPinRequiredHits = 345;
+        public const int GemTicketPinRequiredHits = 151;
+        public const int BonusPinRequiredHits = 309;
+
+        /// <summary>
+        /// 칸별 경품 — <b>가치 장부(2026-11)의 5,000발 값에서 거꾸로 잡았다.</b> 에셋과 폴백이 같은 표를 쓰도록 static 으로 뺐다.
+        /// 판의 declaredProbability 는 다섯 칸 모두 0.2 다(2026-11 사용자 결정: 가운데 칸도 20%).
+        ///
+        /// 발당 기댓값 = 칸 확률 가중 평균:
+        ///   골드        13.0   (5,000발에 6.5만)      = 10·15·15·15·10 (보기 좋은 수 — 장부 6.2만보다 약 4% 후하다)
+        ///   시너지 티켓 0.12   (5,000발에 600)        = 2·4번 칸 1장 × 30% 확률
+        ///   고기        0.11   (고기 루프의 몫 — 위 StaminaPerSlot 주석)  = 모든 칸 1개 × 11% 확률
+        ///   이벤트 재화 0.088  (5,000발에 440)        = 1·5번 칸 1개 × 22% 확률 (지급 순간 열린 이벤트의 재화로 풀린다)
+        ///
+        /// 확률 지급(<c>chancePercent</c>)을 쓰는 이유: 정수 1 을 확정으로 걸면 20% 칸에서 발당 0.2 라 장부의 2~4배가 된다.
+        /// </summary>
+        public static List<PinballSlotReward> BuildDefaultSlotRewards()
+        {
+            var result = new List<PinballSlotReward>(GoldPerSlot.Length);
+            for (int i = 0; i < GoldPerSlot.Length; i++)
+            {
+                var slot = new PinballSlotReward
+                {
+                    label = GoldPerSlot[i].ToString("N0") + " 골드" +
+                            (StaminaPerSlot[i] > 0 ? " + 고기 " + StaminaPerSlot[i] + " (" + StaminaChancePercent + "%)" : string.Empty) +
+                            (SynergyTicketsPerSlot[i] > 0 ? " + 시너지 티켓 " + SynergyTicketsPerSlot[i] + " (" + SynergyTicketChancePercent + "%)" : string.Empty) +
+                            (EventCurrencyPerSlot[i] > 0 ? " + 이벤트 재화 " + EventCurrencyPerSlot[i] + " (" + EventCurrencyChancePercent + "%)" : string.Empty),
+                };
+                slot.rewards.Add(new PinballReward(PointType.Gold, GoldPerSlot[i]));
+                if (StaminaPerSlot[i] > 0)
+                    slot.rewards.Add(new PinballReward(PointType.Stamina, StaminaPerSlot[i], StaminaChancePercent));
+                if (SynergyTicketsPerSlot[i] > 0)
+                    slot.rewards.Add(new PinballReward(PointType.SynergyTicket, SynergyTicketsPerSlot[i], SynergyTicketChancePercent));
+                if (EventCurrencyPerSlot[i] > 0)
+                    slot.rewards.Add(new PinballReward(PointType.OpenEventCurrency, EventCurrencyPerSlot[i], EventCurrencyChancePercent));
+                result.Add(slot);
+            }
+
+            return result;
+        }
 
         public void PopulateDefaults()
         {
@@ -231,36 +273,7 @@ namespace OJ.Pinball
             slotRewards.Clear();
             specialRewards.Clear();
             PopulateMultiplierDefaults();
-
-            // 칸별 경품 — <b>가치 장부(2026-11)의 5,000발 값에서 거꾸로 잡았다.</b>
-            // 판의 declaredProbability 는 0.2475 / 0.2475 / <b>0.01</b> / 0.2475 / 0.2475 라 가운데 칸이 100발에 한 번 걸리는 잭팟이다.
-            //
-            // 발당 기댓값 = 칸 확률 가중 평균:
-            //   골드        12.4   (5,000발에 약 6.2만)   = 5·10·500·10·5 (보기 좋은 수 — 보너스 골드를 깎아 보충)
-            //   시너지 티켓 0.119  (5,000발에 약 594)     = 2·4번 칸 1장 × 24% 확률
-            //   고기        0.11   (고기 루프의 몫 — 위 StaminaPerSlot 주석)  = 가운데 11
-            //   이벤트 재화 0.089  (5,000발에 약 445)     = 1·5번 칸 1개 × 18% 확률 (지급 순간 열린 이벤트의 재화로 풀린다)
-            //
-            // 확률 지급(<c>chancePercent</c>)을 쓰는 이유: 정수 1 을 확정으로 걸면 25% 칸에서 발당 0.2475 라 장부의 2~4배가 된다.
-            for (int i = 0; i < GoldPerSlot.Length; i++)
-            {
-                bool jackpot = GoldPerSlot[i] > 10;
-                var slot = new PinballSlotReward
-                {
-                    label = (jackpot ? "대박! " : string.Empty) + GoldPerSlot[i].ToString("N0") + " 골드" +
-                            (StaminaPerSlot[i] > 0 ? " + 고기 " + StaminaPerSlot[i] : string.Empty) +
-                            (SynergyTicketsPerSlot[i] > 0 ? " + 시너지 티켓 " + SynergyTicketsPerSlot[i] + " (" + SynergyTicketChancePercent + "%)" : string.Empty) +
-                            (EventCurrencyPerSlot[i] > 0 ? " + 이벤트 재화 " + EventCurrencyPerSlot[i] + " (" + EventCurrencyChancePercent + "%)" : string.Empty),
-                };
-                slot.rewards.Add(new PinballReward(PointType.Gold, GoldPerSlot[i]));
-                if (StaminaPerSlot[i] > 0)
-                    slot.rewards.Add(new PinballReward(PointType.Stamina, StaminaPerSlot[i]));
-                if (SynergyTicketsPerSlot[i] > 0)
-                    slot.rewards.Add(new PinballReward(PointType.SynergyTicket, SynergyTicketsPerSlot[i], SynergyTicketChancePercent));
-                if (EventCurrencyPerSlot[i] > 0)
-                    slot.rewards.Add(new PinballReward(PointType.OpenEventCurrency, EventCurrencyPerSlot[i], EventCurrencyChancePercent));
-                slotRewards.Add(slot);
-            }
+            slotRewards.AddRange(BuildDefaultSlotRewards());
 
             // 중간 핀 셋 (기본판의 태그 1·2·3). 필요 적중 수는 위 상수의 시뮬 측정에서 왔다.
             //

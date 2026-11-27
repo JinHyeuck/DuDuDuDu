@@ -39,23 +39,23 @@ namespace OJ.Stage
         public const int DeclaredTicketCost = 1;
 
         /// <summary>
-        /// 핀볼 판 5칸의 확률. <c>PinballBoard.asset</c> 의 선언 확률이고
+        /// 핀볼 판 5칸의 확률 — 다섯 칸 모두 20%(2026-11 사용자 결정). <c>PinballBoard.asset</c> 의 선언 확률이고
         /// <c>PinballRules.DrawSlot</c> 이 이 표로 칸을 뽑는다.
         /// </summary>
-        public static readonly float[] DeclaredSlotProbability = { 0.2475f, 0.2475f, 0.01f, 0.2475f, 0.2475f };
+        public static readonly float[] DeclaredSlotProbability = { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
 
         /// <summary>
         /// 칸별 고기. <c>PinballRewardDatabase.asset</c> 의 선언값이다.
         ///
-        /// <b>가운데 1% 칸만 준다.</b> 클리어당 티켓을 21장으로 올려 하루 2,016발이 되면서(2026-11)
-        /// 발당 고기를 0.11 까지 내려야 r 이 0.31 에 머문다. 정수 1 만 가장자리 칸에 걸려도 발당 0.99 라
-        /// r 이 6 을 넘어 발산하므로 가장자리는 0 이고, 가운데 칸이 11(소탕 2회분 + 1)을 준다 —
-        /// 하루 약 20번 터져 고기가 꾸준히 새는 구조다(예전 "바닥값 > 0" 정책 5.1 은 발수가 적을 때의 이야기였다).
+        /// <b>모든 칸이 1개를 <see cref="DeclaredStaminaChancePercent"/>% 확률로 준다.</b> 클리어당 티켓을 12장으로 올려
+        /// 하루 2,016발이 되면서(2026-11) 발당 고기를 0.11 까지 내려야 r 이 0.31 에 머문다. 정수 1 을 확정으로 걸면
+        /// 발당 1.0 이라 r 이 발산하므로 확률로 푼다. 칸 확률의 합이 1 이라 어느 칸에 걸어도 기댓값은 같고,
+        /// 그래서 가운데 칸을 특별하게 둘 이유가 없다(잭팟 칸은 없앴다 — 2026-11 사용자 결정).
         /// </summary>
-        public static readonly int[] DeclaredSlotStamina = { 0, 0, 11, 0, 0 };
+        public static readonly int[] DeclaredSlotStamina = { 1, 1, 1, 1, 1 };
 
-        /// <summary>잭팟 칸의 인덱스. 확률이 가장 낮고 고기가 가장 많은 칸이다.</summary>
-        public const int JackpotSlotIndex = 2;
+        /// <summary>칸별 고기 지급 확률(%). <c>PinballRewardDatabase.StaminaChancePercent</c> 의 선언값.</summary>
+        public const int DeclaredStaminaChancePercent = 11;
 
         /// <summary>
         /// 테스트가 막는 상한. 목표는 0.3 이고 0.35 를 넘으면 실패다.
@@ -63,8 +63,8 @@ namespace OJ.Stage
         /// </summary>
         public const float MaxRecoveryRate = 0.35f;
 
-        /// <summary>핀볼 1발이 돌려주는 고기의 기댓값.</summary>
-        public static float StaminaPerShot(float[] slotProbability, int[] slotStamina)
+        /// <summary>핀볼 1발이 돌려주는 고기의 기댓값. <paramref name="chancePercent"/> 는 칸 보상의 지급 확률(%)이다.</summary>
+        public static float StaminaPerShot(float[] slotProbability, int[] slotStamina, int chancePercent)
         {
             if (slotProbability == null || slotStamina == null)
                 return 0f;
@@ -77,13 +77,13 @@ namespace OJ.Stage
             for (int i = 0; i < count; i++)
                 sum += slotProbability[i] * slotStamina[i];
 
-            return sum;
+            return sum * chancePercent / 100f;
         }
 
         /// <summary>선언값으로 계산한 발당 고기.</summary>
         public static float StaminaPerShot()
         {
-            return StaminaPerShot(DeclaredSlotProbability, DeclaredSlotStamina);
+            return StaminaPerShot(DeclaredSlotProbability, DeclaredSlotStamina, DeclaredStaminaChancePercent);
         }
 
         /// <summary>하루에 쏘는 핀볼 발수. 클리어마다 티켓이 나오고 티켓으로 쏜다.</summary>
