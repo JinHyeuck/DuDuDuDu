@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -11,23 +10,50 @@ using OJ.UI;
 namespace OJ.EventMinigame
 {
     /// <summary>
-    /// 래프팅 화면. 레퍼런스처럼 위에 <b>다음 목표까지의 진행 띠(보트가 달린다)</b>, 가운데에 <b>룰렛</b>, 아래 독에서 돌리고 배율을 바꾼다.
-    /// 룰렛은 결과가 이미 정해진 뒤 칸을 훑는 연출이고, 무료 칸이 나오면 같은 배율로 이어 도는 모습을 그대로 보여 준다.
-    /// 큰 마일스톤은 3택1 상자라 보상 판의 "선택" 버튼으로 연다(회차가 끝나면 첫 묶음이 자동 지급된다).
+    /// 래프팅 화면. 레퍼런스(가이드 PDF 의 실제 플레이 프레임) 구성을 따른다:
+    /// 위 = 누적 거리·다음 목표 진행 띠, 가운데 = <b>강 위의 보트</b>(오른쪽 끝에 다음 상자·다음 보상 거리 표식),
+    /// 아래 = <b>반원 룰렛</b>(가운데 둥근 돌리기 버튼, 위 꼭짓점의 바늘, 오른쪽 배율·왼쪽 보상 버튼).
+    /// 룰렛은 결과가 이미 정해진 뒤 바퀴가 돌아 그 칸에서 멈추는 연출이고, 무료 칸이 나오면 같은 배율로 한 번 더 돈다.
+    /// 큰 마일스톤은 3택1 상자라 선택 창으로 연다(회차가 끝나면 첫 묶음이 자동 지급된다).
+    /// 그림이 없어 원·둥근 상자를 색으로 칠한 임시 모습이다.
     /// </summary>
     public sealed class UIRaftingPage : UIEventMinigameDialog
     {
-        private const float ScanStep = 0.06f;
-        private const float ScanSeconds = 0.8f;
-        private const float HoldSeconds = 0.35f;
+        private const float SpinSeconds = 1.4f;
+        private const float HoldSeconds = 0.5f;
+        private const float GainSeconds = 1.1f;
+        private const int SpinTurns = 2;
         private const float TrackWidth = 880f;
+        private const float SegmentAngle = 360f / RaftingRules.CellCount;
+
+        private const float RiverY = 300f;
+        private const float RiverHeight = 480f;
+        private const float WheelY = -760f;
+        private const float WheelRadius = 400f;
+        private const float WaveSpan = 1240f;
+        private const float BoatX = -90f;
+        private const float BoatY = 250f;
+
+        private static readonly Color SegmentA = UIMissionUIFactory.Hex(0x7b4fd6);
+        private static readonly Color SegmentB = UIMissionUIFactory.Hex(0x3f8fe0);
+        private static readonly Color SegmentFree = UIMissionUIFactory.Hex(0xf2b821);
+        private static readonly Color SegmentBig = UIMissionUIFactory.Hex(0xe0485a);
 
         [SerializeField] private TMP_Text distanceText;
         [SerializeField] private TMP_Text nextText;
         [SerializeField] private TMP_Text progressText;
         [SerializeField] private Image progressFill;
+        [SerializeField] private RectTransform trackBoat;
         [SerializeField] private RectTransform boat;
-        [SerializeField] private Image[] cellImages;
+        [SerializeField] private RectTransform[] waves;
+        [SerializeField] private GameObject chestMarker;
+        [SerializeField] private TMP_Text chestMarkerText;
+        [SerializeField] private GameObject rewardMarker;
+        [SerializeField] private TMP_Text rewardMarkerText;
+        [SerializeField] private TMP_Text rewardText;
+        [SerializeField] private TMP_Text gainText;
+        [SerializeField] private RectTransform wheel;
+        [SerializeField] private Image[] segmentImages;
         [SerializeField] private TMP_Text[] cellLabels;
         [SerializeField] private Button multiplierButton;
         [SerializeField] private TMP_Text multiplierLabel;
@@ -44,11 +70,22 @@ namespace OJ.EventMinigame
 
         // 룰렛 연출
         private bool animating;
+        private bool holding;
         private RaftingSpinResult animResult;
         private int animStep;
         private float animTime;
-        private float scanTimer;
+        private float startAngle;
+        private float targetAngle;
+        private float wheelAngle;
         private int highlight = -1;
+
+        // 돌리는 동안 아직 화면에 안 올린 거리. 매니저는 돌리는 순간 거리를 다 더하지만, 화면은 칸에 멈출 때마다 올린다.
+        private long unshownMeters;
+
+        // 강물·보트
+        private float waveSpeed;
+        private float bobTime;
+        private float gainTimer;
 
         protected override EventKind Kind
         {
@@ -67,12 +104,19 @@ namespace OJ.EventMinigame
 
             spinButton.onClick.AddListener(OnSpin);
             choiceCancel.onClick.AddListener(CloseChoice);
+
+            // 처음엔 칸 경계가 아니라 첫 칸 가운데가 바늘 아래에 오게 둔다.
+            SetWheelAngle(SegmentAngle * 0.5f);
         }
 
         protected override void OnOpened()
         {
             animating = false;
+            holding = false;
             highlight = -1;
+            unshownMeters = 0;
+            gainTimer = 0f;
+            gainText.gameObject.SetActive(false);
             choicePanel.SetActive(false);
             SetStatus(string.Empty);
             RefreshPlay();
@@ -113,62 +157,134 @@ namespace OJ.EventMinigame
 
             animating = true;
             animResult = result;
+            unshownMeters = result.Distance;
             animStep = 0;
-            animTime = 0f;
-            scanTimer = 0f;
+            highlight = -1;
             SetStatus(string.Empty);
+            BeginStep();
             RefreshPlay();
+        }
+
+        /// <summary>바퀴가 지금 각도에서 <see cref="SpinTurns"/> 바퀴 넘게 돌아 이번 칸의 가운데가 바늘(위) 아래에 오게 한다.</summary>
+        private void BeginStep()
+        {
+            holding = false;
+            animTime = 0f;
+            highlight = -1;
+            PaintSegments();
+
+            float cellCenter = (animResult.Cells[animStep] + 0.5f) * SegmentAngle;
+            startAngle = wheelAngle;
+            float current = Mathf.Repeat(wheelAngle, 360f);
+            float delta = Mathf.Repeat(cellCenter - current, 360f);
+            targetAngle = wheelAngle + delta + 360f * SpinTurns;
         }
 
         protected override void OnFrame()
         {
+            float dt = Time.unscaledDeltaTime;
+            AnimateRiver(dt);
+
             if (!animating || animResult == null)
                 return;
 
-            float dt = Time.unscaledDeltaTime;
             animTime += dt;
-            scanTimer += dt;
 
-            int target = animResult.Cells[animStep];
-            if (animTime < ScanSeconds)
+            if (!holding)
             {
-                if (scanTimer >= ScanStep)
-                {
-                    scanTimer = 0f;
-                    highlight = (highlight + 1 + RaftingRules.CellCount) % RaftingRules.CellCount;
-                    PaintCells();
-                }
+                // 감속하며 멈춘다(3차 이즈아웃).
+                float t = Mathf.Clamp01(animTime / SpinSeconds);
+                float eased = 1f - Mathf.Pow(1f - t, 3f);
+                SetWheelAngle(Mathf.Lerp(startAngle, targetAngle, eased));
+                waveSpeed = Mathf.Lerp(900f, 60f, eased);
 
+                if (t < 1f)
+                    return;
+
+                holding = true;
+                animTime = 0f;
+                Land(animResult.Cells[animStep]);
                 return;
             }
 
-            // 목표 칸에 선다.
-            if (highlight != target)
-            {
-                highlight = target;
-                PaintCells();
-            }
-
-            if (animTime < ScanSeconds + HoldSeconds)
+            if (animTime < HoldSeconds)
                 return;
 
             animStep++;
-            animTime = 0f;
-            scanTimer = 0f;
             if (animStep < animResult.Cells.Count)
+            {
+                BeginStep();
                 return;
+            }
 
             FinishAnimation();
+        }
+
+        /// <summary>칸에 멈춘 순간: 칸을 밝히고 보트 위에 이번에 간 거리를 띄운다.</summary>
+        private void Land(int cell)
+        {
+            highlight = cell;
+            PaintSegments();
+
+            long meters = (long)RaftingRules.CellDistance[cell] * animResult.Multiplier;
+            string gain = "+" + EventMinigameText.Number(meters) + "m";
+            gainText.text = RaftingRules.IsFreeCell(cell) ? "무료! " + gain : gain;
+            gainText.color = RaftingRules.IsFreeCell(cell) ? SegmentFree : Color.white;
+            gainText.gameObject.SetActive(true);
+            gainTimer = GainSeconds;
+
+            unshownMeters = System.Math.Max(0L, unshownMeters - meters);
+            RefreshPlay();
+        }
+
+        private void AnimateRiver(float dt)
+        {
+            if (!animating)
+                waveSpeed = Mathf.MoveTowards(waveSpeed, 60f, 900f * dt);
+
+            // 물결이 왼쪽으로 흘러 보트가 앞으로 나아가 보인다. 화면 밖으로 나가면 오른쪽 끝으로 돌린다.
+            for (int i = 0; i < waves.Length; i++)
+            {
+                Vector2 position = waves[i].anchoredPosition;
+                position.x -= waveSpeed * dt;
+                if (position.x < -WaveSpan / 2f)
+                    position.x += WaveSpan;
+                waves[i].anchoredPosition = position;
+            }
+
+            bobTime += dt;
+            boat.anchoredPosition = new Vector2(BoatX, BoatY + Mathf.Sin(bobTime * 2.4f) * 6f);
+            boat.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(bobTime * 1.7f) * 2f);
+
+            if (gainTimer > 0f)
+            {
+                gainTimer -= dt;
+                float k = 1f - Mathf.Clamp01(gainTimer / GainSeconds);
+                gainText.rectTransform.anchoredPosition = new Vector2(BoatX, BoatY + 150f + k * 60f);
+                Color c = gainText.color;
+                c.a = k < 0.7f ? 1f : 1f - (k - 0.7f) / 0.3f;
+                gainText.color = c;
+                if (gainTimer <= 0f)
+                    gainText.gameObject.SetActive(false);
+            }
+        }
+
+        private void SetWheelAngle(float angle)
+        {
+            wheelAngle = angle;
+            wheel.localRotation = Quaternion.Euler(0f, 0f, angle);
         }
 
         private void FinishAnimation()
         {
             RaftingSpinResult result = animResult;
             animating = false;
+            holding = false;
             animResult = null;
+            unshownMeters = 0;
 
             var text = new StringBuilder();
-            text.Append('+').Append(EventMinigameText.Number(result.Distance)).Append('m');
+            text.Append("총 +").Append(EventMinigameText.Number(result.Distance)).Append('m');
             if (result.Multiplier > 1)
                 text.Append("  (x").Append(result.Multiplier).Append(')');
             if (result.Spins > 1)
@@ -197,20 +313,28 @@ namespace OJ.EventMinigame
             if (Manager == null)
                 return;
 
-            long distance = Manager.RaftingDistance;
+            long distance = Manager.RaftingDistance - unshownMeters;
             EventMilestone[] table = EventRewardTables.Rafting;
             int claimed = Manager.RaftingClaimedCount;
 
+            // 돌리는 중에는 화면에 올린 거리까지만 목표를 넘긴 것으로 본다(지급은 끝난 뒤 팝업으로 보여 준다).
+            if (unshownMeters > 0)
+            {
+                claimed = 0;
+                while (claimed < table.Length && table[claimed].Threshold <= distance)
+                    claimed++;
+            }
+
             distanceText.text = "누적 거리 " + EventMinigameText.Number(distance) + "m";
 
-            // 진행 띠: 지난 목표에서 다음 목표까지. 보트가 그 위를 달린다.
+            // 진행 띠: 지난 목표에서 다음 목표까지. 작은 보트가 그 위를 달린다.
             float ratio = 1f;
             if (claimed < table.Length)
             {
                 int previous = claimed > 0 ? table[claimed - 1].Threshold : 0;
                 int next = table[claimed].Threshold;
                 ratio = Mathf.Clamp01((float)(distance - previous) / Mathf.Max(1, next - previous));
-                nextText.text = "다음 목표 " + EventMinigameText.Number(next) + "m";
+                nextText.text = "다음 목표까지 " + EventMinigameText.Number(System.Math.Max(0L, next - distance)) + "m";
                 progressText.text = EventMinigameText.Number(previous) + "m ~ " + EventMinigameText.Number(next) + "m";
             }
             else
@@ -220,7 +344,9 @@ namespace OJ.EventMinigame
             }
 
             UIMissionUIFactory.SetGauge(progressFill, TrackWidth, ratio);
-            boat.anchoredPosition = new Vector2(-TrackWidth / 2f + TrackWidth * ratio, boat.anchoredPosition.y);
+            trackBoat.anchoredPosition = new Vector2(-TrackWidth / 2f + TrackWidth * ratio, trackBoat.anchoredPosition.y);
+
+            RefreshMarkers(table, claimed);
 
             bool open = IsOpenNow && !animating;
             int held = HeldCurrency;
@@ -228,30 +354,83 @@ namespace OJ.EventMinigame
             while (multiplierIndex > 0 && held < RaftingRules.Multipliers[multiplierIndex])
                 multiplierIndex--;
 
-            int cost = RaftingRules.Multipliers[multiplierIndex];
-            multiplierLabel.text = "x" + cost;
+            int multiplier = RaftingRules.Multipliers[multiplierIndex];
+            multiplierLabel.text = "x" + multiplier;
             multiplierButton.interactable = open;
-            spinButton.interactable = open && held >= cost;
-            spinLabel.text = animating ? "돌리는 중" : "돌리기";
+            spinButton.interactable = open && held >= multiplier;
+            spinLabel.text = animating ? "..." : "돌리기";
 
-            PaintCells();
+            // 칸 글자는 배율을 곱한 거리다(레퍼런스도 배율을 올리면 칸 숫자가 커진다).
+            for (int i = 0; i < cellLabels.Length; i++)
+            {
+                string meters = EventMinigameText.Number((long)RaftingRules.CellDistance[i] * multiplier) + "m";
+                cellLabels[i].text = RaftingRules.IsFreeCell(i) ? "무료\n" + meters : meters;
+            }
+
+            PaintSegments();
         }
 
-        private void PaintCells()
+        /// <summary>강 오른쪽 끝 표식(다음 3택1 상자 · 다음 일반 보상)과 진행 띠 아래 다음 보상 글자.</summary>
+        private void RefreshMarkers(EventMilestone[] table, int claimed)
         {
-            for (int i = 0; i < cellImages.Length; i++)
+            int nextChest = -1;
+            int nextReward = -1;
+            for (int i = claimed; i < table.Length; i++)
             {
-                // 칸 그림은 킷 버튼이다: 평범한 칸 회색, 무료 칸 초록, 20m 빨강, 멈춘 칸(훑는 칸) 노랑.
-                EventButtonKind kind = EventButtonKind.Secondary;
+                if (table[i].IsChoice)
+                {
+                    if (nextChest < 0)
+                        nextChest = i;
+                }
+                else if (nextReward < 0)
+                {
+                    nextReward = i;
+                }
+
+                if (nextChest >= 0 && nextReward >= 0)
+                    break;
+            }
+
+            chestMarker.SetActive(nextChest >= 0);
+            if (nextChest >= 0)
+                chestMarkerText.text = EventMinigameText.Number(table[nextChest].Threshold) + "m";
+
+            rewardMarker.SetActive(nextReward >= 0);
+            if (nextReward >= 0)
+                rewardMarkerText.text = EventMinigameText.Number(table[nextReward].Threshold) + "m";
+
+            List<int> pending = Manager.GetRaftingPending();
+            if (pending.Count > 0 && unshownMeters == 0)
+            {
+                rewardText.text = "고르지 않은 상자가 있어요 — 보상에서 골라 주세요";
+            }
+            else if (claimed < table.Length)
+            {
+                EventMilestone next = table[claimed];
+                string reward = next.IsChoice ? "상자 3택1" : EventMinigameText.Describe(next.Default);
+                rewardText.text = "다음 보상 " + EventMinigameText.Number(next.Threshold) + "m   " + reward;
+            }
+            else
+            {
+                rewardText.text = "모든 보상을 받았어요";
+            }
+        }
+
+        /// <summary>칸 색: 보라·파랑 번갈아, 무료 칸 노랑, 20m 빨강. 멈춘 칸은 밝게 빛난다.</summary>
+        private void PaintSegments()
+        {
+            for (int i = 0; i < segmentImages.Length; i++)
+            {
+                Color color = i % 2 == 0 ? SegmentA : SegmentB;
                 if (RaftingRules.IsFreeCell(i))
-                    kind = EventButtonKind.Positive;
+                    color = SegmentFree;
                 else if (RaftingRules.CellDistance[i] >= 20)
-                    kind = EventButtonKind.Danger;
+                    color = SegmentBig;
 
                 if (i == highlight)
-                    kind = EventButtonKind.Primary;
+                    color = Color.Lerp(color, Color.white, 0.55f);
 
-                cellImages[i].sprite = ButtonSprite(kind);
+                segmentImages[i].color = color;
             }
         }
 
@@ -339,6 +518,36 @@ namespace OJ.EventMinigame
 
         // ── 굽기 ───────────────────────────────────────────────────────
 
+        private const string CirclePath = "EventMinigame/Event_Circle";
+
+        private static Image Circle(Transform parent, string name, float diameter, Vector2 position, Color color)
+        {
+            Image image = UIMissionUIFactory.Picture(parent, name, CirclePath, new Vector2(diameter, diameter), position);
+            image.color = color;
+            return image;
+        }
+
+        /// <summary>강 오른쪽 끝 표식 하나: 둥근 그림 + 아래 거리 글자.</summary>
+        private static GameObject Marker(Transform parent, string name, string caption, Color color, float y,
+            TMP_FontAsset font, out TMP_Text distance)
+        {
+            GameObject root = UIMissionUIFactory.CreateRect(name, parent);
+            UIMissionUIFactory.SetRect(root.GetComponent<RectTransform>(), new Vector2(170f, 190f), new Vector2(440f, y));
+
+            Circle(root.transform, "Ring", 132f, new Vector2(0f, 30f), UIMissionUIFactory.Hex(0x2a2a40));
+            Circle(root.transform, "Icon", 116f, new Vector2(0f, 30f), color);
+
+            TMP_Text label = UIMissionUIFactory.CreateText(
+                "Caption", root.transform, caption, 30f, TextAlignmentOptions.Center, UIEventMinigameFactory.DarkText, font);
+            UIMissionUIFactory.SetRect(label.rectTransform, new Vector2(120f, 50f), new Vector2(0f, 30f));
+
+            Image chip = UIEventMinigameFactory.Chip(root.transform, "DistanceChip", new Vector2(170f, 48f), new Vector2(0f, -58f));
+            distance = UIMissionUIFactory.CreateText(
+                "Distance", chip.transform, string.Empty, 28f, TextAlignmentOptions.Center, Color.white, font);
+            UIMissionUIFactory.Stretch(distance.rectTransform);
+            return root;
+        }
+
         public static UIRaftingPage Create(Transform parent, TMP_FontAsset font)
         {
             GameObject root = UIMissionUIFactory.CreateRect("UIRaftingPage", parent);
@@ -347,60 +556,175 @@ namespace OJ.EventMinigame
             var page = root.AddComponent<UIRaftingPage>();
             page.BakeOpenStyle(DialogOpenStyle.Popup);
 
-            Transform p = UIEventMinigameFactory.BakeScreen(page, root.transform, font, "래프팅 이벤트", "StageBg/Map_1");
+            Transform p = UIEventMinigameFactory.BakeScreen(page, root.transform, font, "래프팅 이벤트", "StageBg/Map_2", false);
 
-            page.distanceText = UIEventMinigameFactory.BadgeLine(p, "InfoLeft", "DistanceInfo", 0, 32f, Color.white, font);
+            page.distanceText = UIEventMinigameFactory.BadgeLine(p, "InfoLeft", "DistanceInfo", 0, 34f, Color.white, font);
             page.nextText = UIEventMinigameFactory.BadgeLine(p, "InfoLeft", "NextInfo", 1, 26f, UIEventMinigameFactory.MutedText, font);
 
             TMP_Text hint = UIEventMinigameFactory.BadgeLine(p, "InfoRight", "HintInfo", 1, 26f, UIEventMinigameFactory.MutedText, font);
             hint.text = "보트 1개당 평균 약 6.5m";
 
-            // 진행 띠: 검은 둥근 틀 위에 초록 채움, 보트 표식이 채움 끝에서 달린다.
+            // 진행 띠: 검은 둥근 틀 위에 초록 채움, 작은 보트 표식이 채움 끝에서 달린다. 구간 글자는 띠 안에.
             Image trackFrame = UIMissionUIFactory.Sliced(p, "ProgressFrame", UIEventMinigameFactory.GaugeBack, 3f,
-                new Vector2(TrackWidth + 16f, 56f), new Vector2(0f, 520f), Color.white);
+                new Vector2(TrackWidth + 16f, 52f), new Vector2(0f, 612f), Color.white);
             trackFrame.raycastTarget = false;
 
             page.progressFill = UIMissionUIFactory.CreateGauge(
-                "Progress", p, new Vector2(TrackWidth, 36f), new Vector2(0f, 520f),
+                "Progress", p, new Vector2(TrackWidth, 34f), new Vector2(0f, 612f),
                 UIMissionUIFactory.LimeColor, UIMissionUIFactory.DarkBoxColor, 0f);
 
-            Image boatImage = UIMissionUIFactory.Sliced(p, "Boat", UIEventMinigameFactory.SmallBox, 1f,
-                new Vector2(56f, 56f), new Vector2(-TrackWidth / 2f, 547f), UIMissionUIFactory.Hex(0xf5b83d));
-            boatImage.raycastTarget = false;
-            page.boat = boatImage.rectTransform;
-
             page.progressText = UIMissionUIFactory.CreateText(
-                "ProgressText", p, string.Empty, 26f, TextAlignmentOptions.Center, Color.white, font);
-            UIMissionUIFactory.SetRect(page.progressText.rectTransform, new Vector2(700f, 36f), new Vector2(0f, 468f));
+                "ProgressText", p, string.Empty, 24f, TextAlignmentOptions.Center, Color.white, font);
+            page.progressText.raycastTarget = false;
+            UIMissionUIFactory.SetRect(page.progressText.rectTransform, new Vector2(700f, 34f), new Vector2(0f, 612f));
 
-            // 룰렛 칸 8개 (4 × 2).
+            Image trackBoat = UIMissionUIFactory.Sliced(p, "TrackBoat", UIEventMinigameFactory.SmallBox, 1f,
+                new Vector2(52f, 34f), new Vector2(-TrackWidth / 2f, 648f), UIMissionUIFactory.Hex(0xf5843d));
+            trackBoat.raycastTarget = false;
+            page.trackBoat = trackBoat.rectTransform;
+
+            // 강: 위아래 풀숲 둑 + 물. 물결 줄이 왼쪽으로 흘러 보트가 나아가 보인다.
+            Image bankTop = UIMissionUIFactory.CreateImage("BankTop", p, UIMissionUIFactory.Hex(0x4f9a3c));
+            bankTop.raycastTarget = false;
+            UIMissionUIFactory.SetRect(bankTop.rectTransform, new Vector2(1080f, 34f), new Vector2(0f, RiverY + RiverHeight / 2f + 10f));
+
+            Image river = UIMissionUIFactory.CreateImage("River", p, UIMissionUIFactory.Hex(0x35b9d6));
+            river.raycastTarget = false;
+            UIMissionUIFactory.SetRect(river.rectTransform, new Vector2(1080f, RiverHeight), new Vector2(0f, RiverY));
+
+            Image bankBottom = UIMissionUIFactory.CreateImage("BankBottom", p, UIMissionUIFactory.Hex(0x4f9a3c));
+            bankBottom.raycastTarget = false;
+            UIMissionUIFactory.SetRect(bankBottom.rectTransform, new Vector2(1080f, 34f), new Vector2(0f, RiverY - RiverHeight / 2f - 10f));
+
+            GameObject waveRoot = UIMissionUIFactory.CreateRect("Waves", p);
+            UIMissionUIFactory.SetRect(waveRoot.GetComponent<RectTransform>(), new Vector2(1080f, RiverHeight), new Vector2(0f, RiverY));
+            waveRoot.AddComponent<RectMask2D>();
+
+            float[] waveRows = { 180f, 120f, 40f, -30f, -110f, -175f, 150f, -60f, 80f, -150f };
+            page.waves = new RectTransform[waveRows.Length];
+            for (int i = 0; i < waveRows.Length; i++)
+            {
+                Image wave = UIMissionUIFactory.Sliced(waveRoot.transform, "Wave" + i, UIEventMinigameFactory.SmallBox, 0.6f,
+                    new Vector2(90f + (i % 3) * 40f, 10f), new Vector2(-560f + i * 127f, waveRows[i]), new Color(1f, 1f, 1f, 0.38f));
+                wave.raycastTarget = false;
+                page.waves[i] = wave.rectTransform;
+            }
+
+            // 보트: 주황 선체 + 위에 탄 동료(임시 상자) + 깃발. 위아래로 흔들린다.
+            GameObject boatRoot = UIMissionUIFactory.CreateRect("Boat", p);
+            UIMissionUIFactory.SetRect(boatRoot.GetComponent<RectTransform>(), new Vector2(340f, 220f), new Vector2(BoatX, BoatY));
+            page.boat = boatRoot.GetComponent<RectTransform>();
+
+            Image rider = UIMissionUIFactory.Sliced(boatRoot.transform, "Rider", UIEventMinigameFactory.SmallBox, 2f,
+                new Vector2(104f, 104f), new Vector2(-40f, 50f), UIMissionUIFactory.Hex(0xf07fb0));
+            rider.raycastTarget = false;
+            Image rider2 = UIMissionUIFactory.Sliced(boatRoot.transform, "Rider2", UIEventMinigameFactory.SmallBox, 2f,
+                new Vector2(90f, 90f), new Vector2(70f, 42f), UIMissionUIFactory.Hex(0x9fd8ff));
+            rider2.raycastTarget = false;
+            Image hull = UIMissionUIFactory.Sliced(boatRoot.transform, "Hull", UIEventMinigameFactory.SmallBox, 3f,
+                new Vector2(330f, 100f), new Vector2(0f, -30f), UIMissionUIFactory.Hex(0xf5843d));
+            hull.raycastTarget = false;
+            Image stripe = UIMissionUIFactory.Sliced(boatRoot.transform, "Stripe", UIEventMinigameFactory.SmallBox, 1f,
+                new Vector2(290f, 22f), new Vector2(0f, -22f), UIMissionUIFactory.Hex(0xffd36b));
+            stripe.raycastTarget = false;
+
+            page.gainText = UIMissionUIFactory.CreateText(
+                "GainText", p, string.Empty, 64f, TextAlignmentOptions.Center, Color.white, font);
+            page.gainText.raycastTarget = false;
+            UIMissionUIFactory.SetRect(page.gainText.rectTransform, new Vector2(600f, 90f), new Vector2(BoatX, BoatY + 150f));
+            page.gainText.gameObject.SetActive(false);
+
+            // 강 오른쪽 끝 표식(레퍼런스의 상자 6816m · 보상 816m 자리).
+            page.chestMarker = Marker(p, "ChestMarker", "상자", UIMissionUIFactory.Hex(0xf2b821), RiverY + 120f, font, out page.chestMarkerText);
+            page.rewardMarker = Marker(p, "RewardMarker", "보상", UIMissionUIFactory.Hex(0x9fe6ff), RiverY - 110f, font, out page.rewardMarkerText);
+
+            // 강 아래: 결과 글자 · 다음 보상 칩.
+            UIMissionUIFactory.SetRect(page.StatusTextInternal.rectTransform, new Vector2(860f, 120f), new Vector2(0f, -30f));
+
+            Image rewardChip = UIEventMinigameFactory.Chip(p, "RewardChip", new Vector2(950f, 84f), new Vector2(0f, -165f));
+            page.rewardText = UIMissionUIFactory.CreateText(
+                "RewardInfo", rewardChip.transform, string.Empty, 28f, TextAlignmentOptions.Center, Color.white, font);
+            page.rewardText.textWrappingMode = TextWrappingModes.Normal;
+            UIMissionUIFactory.SetRect(page.rewardText.rectTransform, new Vector2(910f, 76f), Vector2.zero);
+
+            // 반원 룰렛: 테두리 원 위에 8칸(원을 45° 부채꼴로 채움), 바퀴째 돈다. 아래 절반은 바닥 띠가 가린다.
+            Circle(p, "WheelRim", WheelRadius * 2f + 36f, new Vector2(0f, WheelY), UIMissionUIFactory.Hex(0x2a2140));
+
+            GameObject wheelRoot = UIMissionUIFactory.CreateRect("Wheel", p);
+            UIMissionUIFactory.SetRect(wheelRoot.GetComponent<RectTransform>(), new Vector2(WheelRadius * 2f, WheelRadius * 2f), new Vector2(0f, WheelY));
+            page.wheel = wheelRoot.GetComponent<RectTransform>();
+
             int cells = RaftingRules.CellCount;
-            page.cellImages = new Image[cells];
+            page.segmentImages = new Image[cells];
             page.cellLabels = new TMP_Text[cells];
             for (int i = 0; i < cells; i++)
             {
-                int col = i % 4;
-                int row = i / 4;
-                Image cell = UIMissionUIFactory.Sliced(p, "Cell" + i, UIEventMinigameFactory.ButtonSecondary, 3f,
-                    new Vector2(204f, 128f), new Vector2((col - 1.5f) * 216f, 290f - row * 150f), Color.white);
-                cell.raycastTarget = false;
+                // 위에서 시계 방향으로 칸 i 가 [i·45°, (i+1)·45°] 를 차지한다.
+                Image segment = Circle(wheelRoot.transform, "Segment" + i, WheelRadius * 2f, Vector2.zero, SegmentA);
+                segment.type = Image.Type.Filled;
+                segment.fillMethod = Image.FillMethod.Radial360;
+                segment.fillOrigin = (int)Image.Origin360.Top;
+                segment.fillClockwise = true;
+                segment.fillAmount = 1f / cells - 0.006f;
+                segment.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -i * SegmentAngle);
+                page.segmentImages[i] = segment;
+            }
+
+            for (int i = 0; i < cells; i++)
+            {
+                float angle = (i + 0.5f) * SegmentAngle;
+                float radians = angle * Mathf.Deg2Rad;
+                float r = WheelRadius * 0.7f;
 
                 TMP_Text label = UIMissionUIFactory.CreateText(
-                    "Label", cell.transform, EventMinigameText.RaftingCell(i), 38f,
+                    "Label" + i, wheelRoot.transform, EventMinigameText.RaftingCell(i), 36f,
                     TextAlignmentOptions.Center, Color.white, font);
-                UIMissionUIFactory.Stretch(label.rectTransform);
-
-                page.cellImages[i] = cell;
+                label.raycastTarget = false;
+                label.textWrappingMode = TextWrappingModes.NoWrap;
+                label.lineSpacing = -20f;
+                UIMissionUIFactory.SetRect(label.rectTransform, new Vector2(200f, 100f),
+                    new Vector2(Mathf.Sin(radians) * r, Mathf.Cos(radians) * r));
+                label.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -angle);
                 page.cellLabels[i] = label;
             }
 
-            UIMissionUIFactory.SetRect(page.StatusTextInternal.rectTransform, new Vector2(860f, 220f), new Vector2(0f, -110f));
+            Circle(p, "Hub", 280f, new Vector2(0f, WheelY), UIMissionUIFactory.Hex(0x2a2140));
 
-            // 아래 독: 돌리기(가운데) · x배율 · 보상(오른쪽, 공통).
-            page.spinButton = UIEventMinigameFactory.DockMainButton(p, "SpinButton", "돌리기", font);
-            page.spinLabel = page.spinButton.GetComponentInChildren<TMP_Text>();
-            page.multiplierButton = UIEventMinigameFactory.DockMultiplierButton(p, font);
+            // 바늘: 바퀴 꼭대기에서 아래를 가리키는 노란 마름모.
+            Image needle = UIMissionUIFactory.Sliced(p, "Needle", UIEventMinigameFactory.SmallBox, 1f,
+                new Vector2(56f, 56f), new Vector2(0f, WheelY + WheelRadius + 18f), UIMissionUIFactory.Hex(0xffd84a));
+            needle.raycastTarget = false;
+            needle.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+
+            // 바닥 띠(바퀴 아래 절반을 가리고 보유 보트 수를 올린다).
+            Image floor = UIMissionUIFactory.Sliced(p, "Floor", UIEventMinigameFactory.PanelDark, 3f,
+                new Vector2(1120f, 170f), new Vector2(0f, -885f), Color.white);
+            floor.raycastTarget = true;
+            page.CurrencyText.transform.SetAsLastSibling();
+            UIMissionUIFactory.SetRect(page.CurrencyText.rectTransform, new Vector2(620f, 52f), new Vector2(0f, -920f));
+
+            // 가운데 둥근 돌리기 버튼.
+            Image spinImage = Circle(p, "SpinButton", 230f, new Vector2(0f, WheelY), UIMissionUIFactory.Hex(0x3fae5a));
+            spinImage.raycastTarget = true;
+            var spin = spinImage.gameObject.AddComponent<Button>();
+            spin.targetGraphic = spinImage;
+            ColorBlock colors = spin.colors;
+            colors.disabledColor = UIEventMinigameFactory.DisabledTint;
+            spin.colors = colors;
+            page.spinButton = spin;
+
+            page.spinLabel = UIMissionUIFactory.CreateText(
+                "Label", spinImage.transform, "돌리기", 50f, TextAlignmentOptions.Center, Color.white, font);
+            page.spinLabel.raycastTarget = false;
+            UIMissionUIFactory.Stretch(page.spinLabel.rectTransform);
+
+            // 바퀴 양옆: 배율(오른쪽, 레퍼런스의 x50 자리) · 보상(왼쪽).
+            page.multiplierButton = UIEventMinigameFactory.KitButton(p, "MultiplierButton", "x1", EventButtonKind.Primary,
+                new Vector2(160f, 96f), new Vector2(410f, -440f), 40f, font);
             page.multiplierLabel = page.multiplierButton.GetComponentInChildren<TMP_Text>();
+
+            page.SetRewardButton(UIEventMinigameFactory.KitButton(p, "RewardButton", "보상", EventButtonKind.Secondary,
+                new Vector2(200f, 100f), new Vector2(-400f, -440f), 38f, font));
 
             // 보상 판 위에 3택1 덮개를 얹는다.
             UIEventMinigameFactory.BakeRewardSheet(page, p, font);
