@@ -108,7 +108,7 @@ namespace OJ.EventMinigame
     /// </summary>
     public static class TreasureHuntRules
     {
-        public const int ShapeCount = 9;
+        public const int ShapeCount = 6;
         public const int StagesPerTier = 3;
         public const int StagesPerKey = 3;
         public const int KeysPerChest = 4;
@@ -122,33 +122,33 @@ namespace OJ.EventMinigame
 
         public const int ChestSharePercent = 30;
 
-        // 보물 모양(칸 좌표 x,y 를 이어 붙인 목록). 0 D2 / 1 I3 / 2 L3 / 3 O4 / 4 I4 / 5 L4 / 6 T4 / 7 S4 / 8 P5.
+        // 보물 모양: 한 장의 그림으로 이어진 직사각형(칸 좌표 x,y 를 이어 붙인 목록).
+        // 0 1×1 / 1 2×1 / 2 2×2 / 3 3×1 / 4 3×2 / 5 3×3. 판에는 가로·세로 어느 쪽으로든 놓인다.
         private static readonly int[][] ShapeCells =
         {
-            new[] { 0, 0, 0, 1 },
-            new[] { 0, 0, 0, 1, 0, 2 },
-            new[] { 0, 0, 0, 1, 1, 1 },
-            new[] { 0, 0, 0, 1, 1, 0, 1, 1 },
-            new[] { 0, 0, 0, 1, 0, 2, 0, 3 },
-            new[] { 0, 0, 0, 1, 0, 2, 1, 2 },
-            new[] { 0, 0, 1, 0, 2, 0, 1, 1 },
-            new[] { 0, 1, 1, 1, 1, 0, 2, 0 },
-            new[] { 0, 0, 1, 0, 0, 1, 1, 1, 0, 2 },
+            Rectangle(1, 1),
+            Rectangle(2, 1),
+            Rectangle(2, 2),
+            Rectangle(3, 1),
+            Rectangle(3, 2),
+            Rectangle(3, 3),
         };
 
         /// <summary>모양 번호 → 방향(회전·뒤집기, 중복 제거) → 칸 좌표 목록.</summary>
         private static readonly int[][][] Orientations = BuildOrientations();
 
+        // 판마다 보물 칸 수 합계를 옛 구성(도미노·트로미노·테트로미노 모양)과 거의 맞춰 두었다. 기대 소모(마지막 값)는
+        // 적중하면 주변을 파고 아니면 바둑판으로 훑는 시뮬레이션(판마다 4,000회)에서 새로 쟀다.
         public static readonly TreasureTier[] Tiers =
         {
-            new TreasureTier(5, 5, new[] { 0, 1 }, 1, 137),
-            new TreasureTier(6, 5, new[] { 0, 1, 2 }, 1, 182),
-            new TreasureTier(6, 6, new[] { 0, 1, 2 }, 2, 217),
-            new TreasureTier(6, 6, new[] { 0, 1, 2, 3 }, 2, 245),
-            new TreasureTier(7, 6, new[] { 1, 2, 3, 5 }, 3, 281),
-            new TreasureTier(7, 7, new[] { 0, 1, 5, 3, 6 }, 3, 341),
-            new TreasureTier(8, 7, new[] { 1, 2, 5, 3, 6, 7 }, 4, 410),
-            new TreasureTier(8, 8, new[] { 0, 1, 5, 6, 7, 8, 3 }, 4, 485),
+            new TreasureTier(5, 5, new[] { 1, 3 }, 1, 135),
+            new TreasureTier(6, 5, new[] { 1, 3, 3 }, 1, 183),
+            new TreasureTier(6, 6, new[] { 1, 3, 3 }, 2, 208),
+            new TreasureTier(6, 6, new[] { 1, 3, 3, 2 }, 2, 241),
+            new TreasureTier(7, 6, new[] { 3, 2, 4, 1 }, 3, 281),
+            new TreasureTier(7, 7, new[] { 0, 3, 2, 2, 4 }, 3, 371),
+            new TreasureTier(8, 7, new[] { 3, 3, 2, 2, 4, 1 }, 4, 400),
+            new TreasureTier(8, 8, new[] { 5, 4, 2, 3, 1, 0, 0 }, 4, 529),
         };
 
         // ── 스테이지 · 열쇠 · 상자 ────────────────────────────────────────
@@ -320,6 +320,62 @@ namespace OJ.EventMinigame
         public static int[] ShapeSilhouette(int shape)
         {
             return Orientations[Math.Max(0, Math.Min(ShapeCount - 1, shape))][0];
+        }
+
+        /// <summary>
+        /// 판에 놓인 보물 하나가 차지한 직사각형(왼쪽 위 칸 좌표와 가로·세로 칸 수). 보물이 한 장의 그림이라
+        /// 화면이 그림을 이 자리에 통째로 깐다.
+        /// </summary>
+        public static void TreasureRect(TreasureBoard board, int treasure, out int x, out int y, out int width, out int height)
+        {
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = -1;
+            int maxY = -1;
+
+            for (int i = 0; i < board.Owner.Length; i++)
+            {
+                if (board.Owner[i] != treasure)
+                    continue;
+
+                int cx = i % board.Width;
+                int cy = i / board.Width;
+                if (cx < minX) minX = cx;
+                if (cy < minY) minY = cy;
+                if (cx > maxX) maxX = cx;
+                if (cy > maxY) maxY = cy;
+            }
+
+            if (maxX < 0)
+            {
+                x = 0;
+                y = 0;
+                width = 0;
+                height = 0;
+                return;
+            }
+
+            x = minX;
+            y = minY;
+            width = maxX - minX + 1;
+            height = maxY - minY + 1;
+        }
+
+        /// <summary>가로 <paramref name="width"/> × 세로 <paramref name="height"/> 직사각형의 칸 좌표 목록.</summary>
+        private static int[] Rectangle(int width, int height)
+        {
+            var cells = new int[width * height * 2];
+            int n = 0;
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    cells[n++] = x;
+                    cells[n++] = y;
+                }
+            }
+
+            return cells;
         }
 
         private static int RevealedCount(TreasureBoard board, bool[] revealed, int treasure)

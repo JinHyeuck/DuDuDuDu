@@ -45,7 +45,6 @@ namespace OJ.EventMinigame
         internal const string GaugeBack = "Upgrade/Upgrade_Gauge_Bg";
 
         internal const string SlotGrey = "ItemSlot/Itme_Slot_0";
-        internal const string SlotGreen = "ItemSlot/Itme_Slot_1";
         internal const string SlotGold = "ItemSlot/Itme_Slot_5";
 
         // 마일스톤 줄: 흰 둥근 상자(SmallBox)에 곱하는 색. 줄 글씨가 읽히는 어두운 바탕이다.
@@ -65,10 +64,8 @@ namespace OJ.EventMinigame
         internal static readonly Color MarkerColor = Color.white;
 
         /// <summary>보물찾기 칸 색. 칸 그림(회색/초록/주황 슬롯)에 곱한다.</summary>
-        internal static readonly Color TileHidden = Color.white;
-        internal static readonly Color TileEmpty = new Color(0.38f, 0.38f, 0.46f, 1f);
-        internal static readonly Color TileTreasure = Color.white;
-        internal static readonly Color TileFound = Color.white;
+        internal static readonly Color TileHidden = new Color(0.55f, 0.85f, 1f, 1f);
+        internal static readonly Color TileEmpty = new Color(0.36f, 0.24f, 0.24f, 1f);
 
         internal static string ButtonPath(EventButtonKind kind)
         {
@@ -128,7 +125,7 @@ namespace OJ.EventMinigame
         /// 좌표는 1080x1920 화면 중심 기준이다.
         /// </summary>
         internal static Transform BakeScreen(UIEventMinigameDialog dialog, Transform parent, TMP_FontAsset font,
-            string title, string backgroundPath)
+            string title, string backgroundPath, bool withDock = true)
         {
             GameObject view = UIMissionUIFactory.CreateRect("View", parent);
             UIMissionUIFactory.Stretch(view.GetComponent<RectTransform>());
@@ -169,10 +166,13 @@ namespace OJ.EventMinigame
                 "Timer", right.transform, string.Empty, 30f, TextAlignmentOptions.Center, MutedText, font));
             UIMissionUIFactory.SetRect(dialog.TimerText.rectTransform, new Vector2(460f, 44f), new Vector2(0f, 34f));
 
-            // 아래 조작부
-            Image dock = UIMissionUIFactory.Sliced(p, "Dock", PanelDark, 3f,
-                new Vector2(1120f, 340f), new Vector2(0f, -810f), Color.white);
-            dock.raycastTarget = true;
+            // 아래 조작부. 낚시는 독 없이 장면 위에 버튼을 바로 얹는다(withDock = false) — 보상 버튼도 그쪽에서 둔다.
+            if (withDock)
+            {
+                Image dock = UIMissionUIFactory.Sliced(p, "Dock", PanelDark, 3f,
+                    new Vector2(1120f, 340f), new Vector2(0f, -810f), Color.white);
+                dock.raycastTarget = true;
+            }
 
             dialog.SetCurrency(UIMissionUIFactory.CreateText(
                 "Currency", p, string.Empty, 36f, TextAlignmentOptions.Center, GoldText, font));
@@ -188,8 +188,11 @@ namespace OJ.EventMinigame
                 ButtonSprite(EventButtonKind.Primary), ButtonSprite(EventButtonKind.Secondary),
                 ButtonSprite(EventButtonKind.Positive), ButtonSprite(EventButtonKind.Danger));
 
-            dialog.SetRewardButton(KitButton(p, "RewardButton", "보상", EventButtonKind.Secondary,
-                new Vector2(220f, 116f), new Vector2(385f, -770f), 38f, font));
+            if (withDock)
+            {
+                dialog.SetRewardButton(KitButton(p, "RewardButton", "보상", EventButtonKind.Secondary,
+                    new Vector2(220f, 116f), new Vector2(385f, -770f), 38f, font));
+            }
 
             return p;
         }

@@ -53,6 +53,17 @@ namespace OJ.EventMinigame
             }
         }
 
+        /// <summary>타이밍을 눌렀을 때 화면에 터지는 글자. 미스(범위 밖)도 "Cool!" 이다 — 실패 문구를 띄우지 않는 것이 레퍼런스 연출이다.</summary>
+        public static string TimingBurst(FishTiming timing)
+        {
+            switch (timing)
+            {
+                case FishTiming.Perfect: return "Perfect!";
+                case FishTiming.Good: return "Great!";
+                default: return "Cool!";
+            }
+        }
+
         /// <summary>3자리마다 쉼표를 찍은 정수. 문화권을 타지 않는다.</summary>
         public static string Number(long value)
         {
