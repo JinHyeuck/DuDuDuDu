@@ -15,11 +15,11 @@ namespace OJ.Game.Tests
     public sealed class PinballLedgerTests
     {
         // 칸 확률: 판의 declaredProbability.
-        private static readonly double[] SlotProb = { 0.2475, 0.2475, 0.01, 0.2475, 0.2475 };
+        private static readonly double[] SlotProb = { 0.2, 0.2, 0.2, 0.2, 0.2 };
 
-        // 기본판(PSD 배치 + 아치 판 셋)의 공 1발당 특수 핀 적중 횟수. 시드표 칸별 풀 × 표기 확률로 20만 표본을 쟀다 —
+        // 기본판(PSD 배치 + 아치 판 셋)의 공 1발당 특수 핀 적중 횟수. 시드표 칸별 풀(칸마다 2,000개) 전체를 돌려 표기 확률로 가중 평균했다 —
         // 실제 게임이 공을 뽑는 방식 그대로다(날것 궤적이 아니라 시드표의 재미있는 궤적).
-        private const double Tag1HitsPerBall = 0.370, Tag2HitsPerBall = 0.369, Tag3HitsPerBall = 0.690;
+        private const double Tag1HitsPerBall = 0.3612, Tag2HitsPerBall = 0.3627, Tag3HitsPerBall = 0.6186;
 
         private const int Balls = 5000;
 
@@ -37,13 +37,13 @@ namespace OJ.Game.Tests
             Assert.That(SlotProb.Sum(), Is.EqualTo(1.0).Within(1e-9));
         }
 
-        /// <summary>골드는 보기 좋은 수(5·10·500·10·5)로 잡았다 — 발당 12.4, 5,000발에 약 6.2만 골드(0.1원/골드 → 약 6,200원).</summary>
+        /// <summary>골드는 보기 좋은 수(10·15·15·15·10)로 잡았다 — 칸이 모두 20% 라 발당 13.0, 5,000발에 6.5만 골드(0.1원/골드 → 약 6,500원).</summary>
         [Test]
-        public void 아래칸_골드는_5천발에_6만2천_골드_근처다()
+        public void 아래칸_골드는_5천발에_6만5천_골드_근처다()
         {
             double perBall = Expect(PinballRewardDatabase.GoldPerSlot);
 
-            Assert.That(perBall * Balls, Is.EqualTo(62125).Within(200));
+            Assert.That(perBall * Balls, Is.EqualTo(65000).Within(200));
         }
 
         /// <summary>시너지 티켓은 발당 0.12 — 5,000발에 약 600장(50원 → 3만 원). 확률 지급이라 기댓값은 양 × 확률이다.</summary>
@@ -56,7 +56,7 @@ namespace OJ.Game.Tests
             Assert.That(perBall * Balls, Is.EqualTo(600).Within(10));
         }
 
-        /// <summary>시너지 티켓은 가운데 칸에 걸지 않고, 가장자리 칸에는 <b>확률</b>로만 준다 — 확정 1장이면 발당 0.2475 로 장부의 두 배가 된다.</summary>
+        /// <summary>시너지 티켓은 가운데 칸에 걸지 않고, 가장자리 칸에는 <b>확률</b>로만 준다 — 확정 1장이면 발당 0.4 로 장부의 3배가 넘는다.</summary>
         [Test]
         public void 시너지_티켓은_가장자리_칸에_확률로_준다()
         {
@@ -67,7 +67,7 @@ namespace OJ.Game.Tests
             Assert.Less(PinballRewardDatabase.SynergyTicketChancePercent, 100);
         }
 
-        /// <summary>카피핀: 5,000발에 완주 약 168번, 완주마다 카피 1장(레어·킹 17% / 기본 83%) → 레어·킹 28.6장 + 기본 139.6장(장부 27.5 / 140).</summary>
+        /// <summary>카피핀: 5,000발에 완주 약 164번, 완주마다 카피 1장(레어·킹 17% / 기본 83%) → 레어·킹 27.9장 + 기본 136.3장(장부 27.5 / 140).</summary>
         [Test]
         public void 카피핀은_장부의_카피_수에_맞는다()
         {

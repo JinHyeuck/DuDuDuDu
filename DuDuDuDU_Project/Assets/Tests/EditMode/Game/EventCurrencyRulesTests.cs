@@ -66,7 +66,7 @@ namespace OJ.Game.Tests
         [Test]
         public void 아래칸_이벤트_재화는_5천발에_450개_근처다()
         {
-            double[] prob = { 0.2475, 0.2475, 0.01, 0.2475, 0.2475 };
+            double[] prob = { 0.2, 0.2, 0.2, 0.2, 0.2 };
             double perBall = 0;
             for (int i = 0; i < prob.Length; i++)
                 perBall += prob[i] * PinballRewardDatabase.EventCurrencyPerSlot[i];
@@ -79,7 +79,7 @@ namespace OJ.Game.Tests
         [Test]
         public void 하루_이벤트_재화는_200개_근처다()
         {
-            double[] prob = { 0.2475, 0.2475, 0.01, 0.2475, 0.2475 };
+            double[] prob = { 0.2, 0.2, 0.2, 0.2, 0.2 };
             double baseDaily = 0;
             for (int i = 0; i < prob.Length; i++)
                 baseDaily += prob[i] * PinballRewardDatabase.EventCurrencyPerSlot[i] * 2000;

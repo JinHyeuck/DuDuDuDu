@@ -272,7 +272,7 @@ namespace OJ.EditorTools
             bonusSide.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             bonusSide.SetActive(false);
 
-            Image springImage = BuildStage(side, false);
+            Image springImage = BuildStage(side);
 
             // 판. 프리팹 인스턴스로 넣어야 나중에 판을 다시 구웠을 때 따라온다.
             var board = PrefabUtility.InstantiatePrefab(boardPrefab, side) as GameObject;
@@ -437,9 +437,9 @@ namespace OJ.EditorTools
 
         /// <summary>
         /// 면 하나의 무대: 바닥 · 아치 · 스프링. 두 면이 같은 그림을 쓴다.
-        /// 보상 면은 가운데 분홍 칸을 옆 칸 그림으로 덮는다 — 칸이 의미 없는 판이라 분홍만 튀면 "저기가 특별한가" 로 읽힌다.
+        /// 가운데 분홍 칸은 옆 칸 그림으로 덮는다 — 다섯 칸이 모두 같은 확률(20%)이라 분홍만 튀면 "저기가 특별한가" 로 읽힌다.
         /// </summary>
-        private static Image BuildStage(Transform side, bool neutralCenterCup)
+        private static Image BuildStage(Transform side)
         {
             // 바닥은 아래 바 밑으로 내려가는 그림이라 바 윗선(1710)에서 자른다.
             // 바를 판 위로 올리면 보상 면의 버튼이 가려져서 마스크로 푼다.
@@ -452,17 +452,15 @@ namespace OJ.EditorTools
             Art arch = LoadArt("Pinball/Pinball_Bg_Center");
             PlaceBox(side, "Arch", arch, ArchX, ArchY, ArchW, ArchH, Vector2.zero);
 
-            if (neutralCenterCup)
-            {
-                // 아치 그림 한 장을 칸 하나 폭(원본 37px = 화면 148px)만큼 옮겨 겹치고, 분홍 칸 사각형만 남긴다.
-                GameObject patch = NewRect("CenterCupPatch", side);
-                RectTransform patchRect = patch.GetComponent<RectTransform>();
-                SetBox(patchRect, ArchX + 105f * ArchPixel, ArchY + 231f * ArchPixel,
-                       31f * ArchPixel, 42f * ArchPixel, Vector2.zero);
-                patch.AddComponent<RectMask2D>();
-                PlaceBox(patch.transform, "ArchCopy", arch, ArchX - 37f * ArchPixel, ArchY, ArchW, ArchH,
-                         patchRect.anchoredPosition);
-            }
+            // 아치 그림 한 장을 칸 하나 폭(원본 37px = 화면 148px)만큼 옮겨 겹치고, 분홍 칸 사각형만 남긴다.
+            // 사방 1px 넓혀 검은 테두리까지 덮는다 — 안 그러면 확대 샘플링 때 가장자리에 분홍이 번진다(이웃 칸도 같은 테두리다).
+            GameObject patch = NewRect("CenterCupPatch", side);
+            RectTransform patchRect = patch.GetComponent<RectTransform>();
+            SetBox(patchRect, ArchX + 104f * ArchPixel, ArchY + 230f * ArchPixel,
+                   33f * ArchPixel, 44f * ArchPixel, Vector2.zero);
+            patch.AddComponent<RectMask2D>();
+            PlaceBox(patch.transform, "ArchCopy", arch, ArchX - 37f * ArchPixel, ArchY, ArchW, ArchH,
+                     patchRect.anchoredPosition);
 
             return PlaceBox(side, "Spring", LoadArt("Pinball/Pinball_Spring"), SpringX, SpringY, SpringW, SpringH, Vector2.zero);
         }
@@ -751,7 +749,7 @@ namespace OJ.EditorTools
             Transform parent, TMP_FontAsset font,
             GameObject bonusBoardPrefab, SeedTable bonusSeedTable, PinballBoard bonusBoard)
         {
-            BuildStage(parent, true);
+            BuildStage(parent);
 
             var board = PrefabUtility.InstantiatePrefab(bonusBoardPrefab, parent) as GameObject;
             if (board == null)

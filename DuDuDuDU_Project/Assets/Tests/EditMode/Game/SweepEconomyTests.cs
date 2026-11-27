@@ -106,22 +106,25 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 발당 고기는 칸 확률의 가중 평균이다. 하루 2,016발이라 발당 0.11 — 가운데 칸만 준다.
-        /// 가장자리 칸에 정수 1 이라도 걸리면 발당 0.99 가 돼 r 이 상한을 넘는다.
+        /// 발당 고기는 칸 확률의 가중 평균에 지급 확률을 곱한 값이다. 하루 2,016발이라 발당 0.11 —
+        /// 모든 칸이 1개를 11% 확률로 준다. 정수 1 을 확정으로 걸면 발당 1.0 이 돼 r 이 상한을 넘는다.
         /// </summary>
         [Test]
         public void 발당_고기는_칸_확률의_가중평균이다()
         {
             float perShot = SweepEconomy.StaminaPerShot();
             Assert.That(perShot, Is.EqualTo(0.11f).Within(0.001f));
+        }
 
-            for (int i = 0; i < SweepEconomy.DeclaredSlotStamina.Length; i++)
-            {
-                if (i == SweepEconomy.JackpotSlotIndex)
-                    continue;
+        /// <summary>어느 칸에 걸어도 기댓값이 같으니 가운데 칸만 고기를 몰아 주는 구조(잭팟)로 돌아가지 못하게 잠근다.</summary>
+        [Test]
+        public void 고기는_모든_칸이_똑같이_확률로_준다()
+        {
+            Assert.Greater(SweepEconomy.DeclaredStaminaChancePercent, 0);
+            Assert.Less(SweepEconomy.DeclaredStaminaChancePercent, 100, "확정이면 발당 고기가 정수 단위로 뛴다.");
 
-                Assert.AreEqual(0, SweepEconomy.DeclaredSlotStamina[i], $"{i}번 칸 — 가장자리 칸에 걸면 r 이 발산한다.");
-            }
+            foreach (int stamina in SweepEconomy.DeclaredSlotStamina)
+                Assert.AreEqual(1, stamina, "한 번에 받는 고기는 1개다 — 몰아 주는 칸이 없다.");
         }
 
         /// <summary>핀볼 보상표(PinballRewardDatabase)의 고기 칸이 이 선언값과 같아야 한다 — 어긋나면 r 이 어긋난다.</summary>
@@ -129,6 +132,7 @@ namespace OJ.Game.Tests
         public void 핀볼_보상표의_고기가_선언값과_같다()
         {
             CollectionAssert.AreEqual(SweepEconomy.DeclaredSlotStamina, OJ.Pinball.PinballRewardDatabase.StaminaPerSlot);
+            Assert.AreEqual(SweepEconomy.DeclaredStaminaChancePercent, OJ.Pinball.PinballRewardDatabase.StaminaChancePercent);
         }
 
         [Test]
@@ -142,37 +146,49 @@ namespace OJ.Game.Tests
         }
 
         /// <summary>
-        /// 잭팟 칸은 <b>확률이 가장 낮고 고기가 가장 많아야</b> 한다.
-        ///
-        /// 이 둘이 뒤집히면 회수율이 바로 상한을 넘는다 — 잭팟 5개를 확률 0.2475 칸에 두면
-        /// 기댓값이 0.11 에서 2.64 로 뛰어 r 이 6 을 넘는다(발산).
+        /// 잭팟 칸은 없다(2026-11 사용자 결정 — "대박"은 보너스 라운드 입구인 대박핀의 이름이다).
+        /// 칸 보상이 칸 사이에서 2배 넘게 벌어지면 다시 가운데 칸이 튀는 판이 된 것이다.
+        /// 골드가 가장 큰 칸이 가장 작은 칸의 2배를 넘지 않고, 기본 판 보상표에 "대박" 이름이 없어야 한다.
         /// </summary>
         [Test]
-        public void 잭팟_칸은_가장_드물고_가장_크다()
+        public void 핀볼_칸에는_잭팟이_없다()
         {
-            int jp = SweepEconomy.JackpotSlotIndex;
-            float[] probability = SweepEconomy.DeclaredSlotProbability;
-            int[] stamina = SweepEconomy.DeclaredSlotStamina;
-
-            for (int i = 0; i < probability.Length; i++)
+            int min = int.MaxValue;
+            int max = int.MinValue;
+            foreach (int gold in OJ.Pinball.PinballRewardDatabase.GoldPerSlot)
             {
-                if (i == jp)
-                    continue;
-
-                Assert.Less(probability[jp], probability[i], $"{i}번 칸보다 확률이 높다.");
-                Assert.Greater(stamina[jp], stamina[i], $"{i}번 칸보다 고기가 적다.");
+                if (gold < min) min = gold;
+                if (gold > max) max = gold;
             }
+
+            Assert.LessOrEqual(max, min * 2, "칸 사이 골드 차이가 2배를 넘는다 — 잭팟이 다시 생겼다.");
+
+            foreach (OJ.Pinball.PinballSlotReward slot in OJ.Pinball.PinballRewardDatabase.BuildDefaultSlotRewards())
+                StringAssert.DoesNotContain("대박", slot.label);
         }
 
-        /// <summary>
-        /// 잭팟 한 방이 <b>소탕 몇 회분</b>인지 잠근다. 소탕 1회가 고기 5 이므로 11개면 2회분(+1)이고,
-        /// 하루 2,016발에 1% 면 하루 20번 정도 터진다.
-        /// </summary>
+        /// <summary>모든 칸 보상표에 고기가 11% 확률로 들어 있다 — 에셋을 굽는 표와 선언값이 같다.</summary>
         [Test]
-        public void 잭팟_한_방이_소탕_2회분이다()
+        public void 기본_보상표의_모든_칸에_고기가_확률로_들어_있다()
         {
-            int jackpotStamina = SweepEconomy.DeclaredSlotStamina[SweepEconomy.JackpotSlotIndex];
-            Assert.AreEqual(2, jackpotStamina / SweepRules.StaminaCostPerSweep);
+            var slots = OJ.Pinball.PinballRewardDatabase.BuildDefaultSlotRewards();
+            Assert.AreEqual(SweepEconomy.DeclaredSlotProbability.Length, slots.Count);
+
+            foreach (OJ.Pinball.PinballSlotReward slot in slots)
+            {
+                int found = 0;
+                foreach (OJ.Pinball.PinballReward reward in slot.rewards)
+                {
+                    if (reward.pointType != OJ.PointType.Stamina)
+                        continue;
+
+                    found++;
+                    Assert.AreEqual(1, reward.amount);
+                    Assert.AreEqual(SweepEconomy.DeclaredStaminaChancePercent, reward.chancePercent);
+                }
+
+                Assert.AreEqual(1, found, slot.label);
+            }
         }
 
         [Test]

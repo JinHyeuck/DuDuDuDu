@@ -32,46 +32,62 @@ MonoBehaviour:
   - multiplier: 100
     requiredTickets: 12000
   slotRewards:
-  - label: "5 \uACE8\uB4DC + \uC774\uBCA4\uD2B8 \uC7AC\uD654 1 (18%)"
-    rewards:
-    - pointType: 0
-      amount: 5
-      chancePercent: 0
-    - pointType: 134
-      amount: 1
-      chancePercent: 18
-  - label: "10 \uACE8\uB4DC + \uC2DC\uB108\uC9C0 \uD2F0\uCF13 1 (24%)"
+  - label: "10 \uACE8\uB4DC + \uACE0\uAE30 1 (11%) + \uC774\uBCA4\uD2B8 \uC7AC\uD654
+      1 (22%)"
     rewards:
     - pointType: 0
       amount: 10
-      chancePercent: 0
-    - pointType: 7
-      amount: 1
-      chancePercent: 24
-  - label: "\uB300\uBC15! 500 \uACE8\uB4DC + \uACE0\uAE30 11"
-    rewards:
-    - pointType: 0
-      amount: 500
       chancePercent: 0
     - pointType: 2
-      amount: 11
+      amount: 1
+      chancePercent: 11
+    - pointType: 134
+      amount: 1
+      chancePercent: 22
+  - label: "15 \uACE8\uB4DC + \uACE0\uAE30 1 (11%) + \uC2DC\uB108\uC9C0 \uD2F0\uCF13
+      1 (30%)"
+    rewards:
+    - pointType: 0
+      amount: 15
       chancePercent: 0
-  - label: "10 \uACE8\uB4DC + \uC2DC\uB108\uC9C0 \uD2F0\uCF13 1 (24%)"
+    - pointType: 2
+      amount: 1
+      chancePercent: 11
+    - pointType: 7
+      amount: 1
+      chancePercent: 30
+  - label: "15 \uACE8\uB4DC + \uACE0\uAE30 1 (11%)"
+    rewards:
+    - pointType: 0
+      amount: 15
+      chancePercent: 0
+    - pointType: 2
+      amount: 1
+      chancePercent: 11
+  - label: "15 \uACE8\uB4DC + \uACE0\uAE30 1 (11%) + \uC2DC\uB108\uC9C0 \uD2F0\uCF13
+      1 (30%)"
+    rewards:
+    - pointType: 0
+      amount: 15
+      chancePercent: 0
+    - pointType: 2
+      amount: 1
+      chancePercent: 11
+    - pointType: 7
+      amount: 1
+      chancePercent: 30
+  - label: "10 \uACE8\uB4DC + \uACE0\uAE30 1 (11%) + \uC774\uBCA4\uD2B8 \uC7AC\uD654
+      1 (22%)"
     rewards:
     - pointType: 0
       amount: 10
       chancePercent: 0
-    - pointType: 7
+    - pointType: 2
       amount: 1
-      chancePercent: 24
-  - label: "5 \uACE8\uB4DC + \uC774\uBCA4\uD2B8 \uC7AC\uD654 1 (18%)"
-    rewards:
-    - pointType: 0
-      amount: 5
-      chancePercent: 0
+      chancePercent: 11
     - pointType: 134
       amount: 1
-      chancePercent: 18
+      chancePercent: 22
   specialRewards:
   - tag: 1
     label: "\uCE74\uD53C\uD540"
@@ -86,7 +102,7 @@ MonoBehaviour:
       chancePercent: 83
   - tag: 2
     label: "\uBF51\uAE30\uAD8C\uD540"
-    requiredHits: 154
+    requiredHits: 151
     pickOneAtRandom: 0
     rewards:
     - pointType: 107
@@ -94,6 +110,6 @@ MonoBehaviour:
       chancePercent: 0
   - tag: 3
     label: "\uB300\uBC15\uD540"
-    requiredHits: 345
+    requiredHits: 309
     pickOneAtRandom: 0
     rewards: []
